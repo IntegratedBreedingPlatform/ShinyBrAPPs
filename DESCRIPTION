@@ -10,3 +10,5 @@ Description: ShinyBrAPPs
 License: TO BE DISCUSSED
 Encoding: UTF-8
 LazyData: true
+Depends:
+	shiny
