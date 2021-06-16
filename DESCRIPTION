@@ -1,0 +1,12 @@
+Package: shinybrapps
+Type: Package
+Title: ShinyBrAPPs
+Version: 0.1.0
+Author: Leo Valette <leovalette@posteo.net>
+Maintainer: Leo Valette <leovalette@posteo.net>
+Description: ShinyBrAPPs 
+    Shiny apps integrated to the Breeding Management System
+    Use four spaces when indenting paragraphs within the Description.
+License: TO BE DISCUSSED
+Encoding: UTF-8
+LazyData: true
