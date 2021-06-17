@@ -1,0 +1,62 @@
+    <div class="add_top_padding">
+        <label class=" control-label"><strong>Number of replications:</strong></label>
+        <span><input name="replicationsCount" ng-model="data.replicationsCount" input-type="number" min-val="2" max-val="12" valid-number="" class="form-control" style="width: 100px" ng-disabled="measurementDetails.hasMeasurement" /></span>
+    </div>
+    <div class="add_top_padding">
+        <label class=" control-label"><strong>Number of rows in replications:</strong></label>
+        <span><input name="rowsPerReplications" ng-model="data.rowsPerReplications" input-type="number" valid-number="" class="form-control" style="width: 100px" ng-disabled="measurementDetails.hasMeasurement" /> </span>
+    </div>
+    <div class="add_top_padding">
+        <label class=" control-label"><strong>Number of columns in replications:</strong></label>
+        <span><input name="colsPerReplications" ng-model="data.colsPerReplications" input-type="number" valid-number="" class="form-control" style="width: 100px" ng-disabled="measurementDetails.hasMeasurement" /> </span>
+    </div>
+
+<div ng-show="!hideFeatures">
+    <div ng-hide="settings.showAdvancedOptions[currentDesignType.id]" class="add_top_padding">
+        <a ng-click="showOrHideAdvancedOptions(true)">Show advanced options</a>
+    </div>
+
+    <div ng-show="settings.showAdvancedOptions[currentDesignType.id]">
+
+
+        <div class="add_top_padding">
+            <label class="checkbox-inline">
+                <input name="useLatenized" ng-model="data.useLatenized" type="checkbox" id="inlineCheckbox2" value="true"
+                        ng-disabled="measurementDetails.hasMeasurement" /> <span>Use Latinized Design</span>
+            </label>
+        </div>
+
+        <div class="add_top_padding">
+            <label class=" control-label"><strong>Number of contiguous rows to latinize:</strong></label>
+            <span><input name="nrlatin" ng-disabled="!data.useLatenized || measurementDetails.hasMeasurement" ng-model="data.nrlatin" min-val="1" type="text" valid-number="" class="form-control" style="width: 100px" /> </span>
+        </div>
+        <div class="add_top_padding">
+            <label class=" control-label"><strong>Number of contiguous columns to latinize:</strong></label>
+            <span><input name="nclatin" ng-disabled="!data.useLatenized || measurementDetails.hasMeasurement" ng-model="data.nclatin" min-val="1" type="text" valid-number="" class="form-control" style="width: 80px"/> </span>
+        </div>
+
+        <div class="add_top_padding">
+            <label class=" control-label"><strong style="display: inline-block; width: 180px;">How are the replications to be arranged in the field?</strong></label>
+            <span style="display: inline-block; width: 210px !important;">
+                <select name="replicationsArrangement" ng-disabled="!data.useLatenized || measurementDetails.hasMeasurement" ui-select2="{minimumResultsForSearch: 10}" class="form-control" ng-model="data.replicationsArrangement">
+                    <option value=""></option>
+                    <option ng-repeat="(key,name) in replicationsArrangementGroupsOpts" value="{{key}}">{{name}}</option>
+                </select>
+            </span>
+        </div>
+
+        <div class="add_top_padding">
+            <label class=" control-label"><strong style="display: inline-block; width: 270px;">Please enter the number of reps in each column, running from left to right:</strong></label>
+            <div style="display: inline-block; vertical-align: top">
+                <input name="replatinGroups" ng-pattern="/^[1-9][0-9]*(,[1-9][0-9]*)*$/" ng-disabled="!data.useLatenized || data.replicationsArrangement != 3 || measurementDetails.hasMeasurement" ng-model="$parent.data.replatinGroups" style="width: 100px" type="text" class="form-control"/>
+                <span class="bms-fa-question-circle help-tooltip-study" tooltip-placement="right" tooltip-append-to-body="true" uib-tooltip="The number of reps in each column should be noted as numbers separated by columns, e.g. 1,1,1"></span>
+            </div>
+        </div>
+
+        <div class="add_top_padding ">
+            <a ng-click="showOrHideAdvancedOptions(false)">Hide advanced options</a>
+        </div>
+
+    </div>
+</div>
+

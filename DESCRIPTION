@@ -2,13 +2,26 @@ Package: shinybrapps
 Type: Package
 Title: ShinyBrAPPs
 Version: 0.1.0
-Author: Leo Valette <leovalette@posteo.net>
+Authors@R: c(
+  person("Léo", "Valette", email = "leovalette@posteo.net", role = c("aut", "ctb", "cre")),
+  person("Jean-François", "Rami", email = "rami@cirad.fr", role = c("aut", "ctb")),
+  person("Mariano", "Crimi", email = "mcrimi@cgiar.org", role = c("aut", "ctb"))
+  )
 Maintainer: Leo Valette <leovalette@posteo.net>
 Description: ShinyBrAPPs 
     Shiny apps integrated to the Breeding Management System
-    Use four spaces when indenting paragraphs within the Description.
 License: TO BE DISCUSSED
 Encoding: UTF-8
 LazyData: true
 Depends:
-	shiny
+	shiny,
+	shinyjs,
+	data.table,
+	ggplot2,
+	plotly,
+	DT,
+	magrittr,
+	RColorBrewer,
+	e1071,
+	brapirv1
+RoxygenNote: 7.1.1

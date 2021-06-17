@@ -8,3 +8,12 @@ run_test <- function() {
   shiny::runApp(appDir, display.mode = "normal",launch.browser = T)
 }
 
+#' @export
+run_stabrap <- function() {
+  appDir <- system.file("apps", "stabrap", package = "shinybrapps")
+  if (appDir == "") {
+    stop("Could not find app directory. Try re-installing `stabrap`.", call. = FALSE)
+  }
+
+  shiny::runApp(appDir, display.mode = "normal",launch.browser = T)
+}

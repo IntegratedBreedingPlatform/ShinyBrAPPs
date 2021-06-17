@@ -1,0 +1,50 @@
+<div class="add_top_padding" xmlns:th="http://www.thymeleaf.org">
+
+    <div>
+        <div style="display:inline-block; width: 30px; padding: 4px 0 5px 0"><img src="/Fieldbook/static/img/build-new-list.png" /></div>
+        <strong th:text="#{germplasm.list.specify.checks}">Specify checks</strong>
+    </div>
+
+    <div class="row">
+        <div class="row form-group col-xs-12 col-md-12">
+            <div class="col-xs-5 col-md-5 add_top_padding">
+                <label class="control-label label-bold" th:text="#{germplasm.list.choose.check.type.starting.position}">Starting Position</label>
+                <span class="required">*</span>
+            </div>
+            <div class="col-xs-7 col-md-7">
+                <input class="form-control" input-type="number" valid-number="" ng-model="data.checkStartingPosition" ng-change=""
+                       name="checkStartingPosition" style="width: 100px" ng-disabled="measurementDetails.hasMeasurement"/>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="row form-group col-xs-12 col-md-12">
+            <div class="col-xs-5 col-md-5 add_top_padding">
+                <label class="control-label label-bold" th:text="#{germplasm.list.choose.check.type.spacing}">Spacing</label>
+                <span class="required">*</span>
+            </div>
+            <div class="col-xs-7 col-md-7">
+                <input class="form-control" input-type="number" valid-number="" ng-model="data.checkSpacing" ng-change="" name="interval"
+                       style="width: 100px" ng-disabled="measurementDetails.hasMeasurement"/>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="row form-group col-xs-12 col-md-12">
+            <div class="col-xs-5 col-md-5 add_top_padding">
+                <label class="control-label label-bold" th:text="#{germplasm.list.choose.check.type.manner.of.insertion}">Manner of
+                    Insertion</label>
+            </div>
+                <div class="col-xs-7 col-md-7">
+                    <select ui-select2="{minimumResultsForSearch : -1}"
+                            ng-model="data.checkInsertionManner"
+                            ng-disabled="measurementDetails.hasMeasurement">
+                        <option value="{{item.id}}"
+                                ng-repeat="item in insertionMannerView">
+                            {{item.description}}
+                        </option>
+                    </select>
+                </div>
+        </div>
+    </div>
+</div>

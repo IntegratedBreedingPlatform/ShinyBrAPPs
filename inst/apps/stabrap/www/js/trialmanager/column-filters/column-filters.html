@@ -1,0 +1,143 @@
+<script type="text/ng-template" id="studyColumnFilterIcon.html">
+	<span class="glyphicon glyphicon-filter"
+		  ng-class="filterHelper.getFilteringByClass(filter)"
+		  style="cursor:pointer; padding-left: 5px;"
+		  popover-placement="auto bottom"
+		  popover-append-to-body="true"
+		  popover-trigger="'outsideClick'"
+		  uib-popover-template="studyColumnFilterPopoverTemplate"
+	></span>
+</script>
+<script type="text/ng-template" id="studyColumnFilter.html">
+	<div class="column-filter">
+		<form class="form-horizontal" name="studyColumnFilterForm">
+			<div class="btn-group btn-group-justified " role="group">
+				<div class="btn-group" role="group">
+					<button ng-click="filterHelper.sortColumn(columnName, true)" class="btn btn-sm"
+							ng-class="filterHelper.isSortingAsc(columnName) === true ? ' btn-info' : 'btn-primary btn-inverse'">
+						<span class="glyphicon glyphicon-sort-by-alphabet"></span>
+					</button>
+				</div>
+				<div class="btn-group" role="group">
+					<button ng-click="filterHelper.sortColumn(columnName, false)" class="btn btn-sm"
+							ng-class="filterHelper.isSortingAsc(columnName) === false ? 'btn-info' : ' btn-primary btn-inverse'">
+						<span class="glyphicon glyphicon-sort-by-alphabet-alt"></span>
+					</button>
+				</div>
+			</div>
+			<div class="add_top_padding">
+				<ng-transclude></ng-transclude>
+			</div>
+			<div class="add_top_padding">
+				<button class="btn btn-info" ng-click="filterHelper.filterByColumn(filter)" ng-disabled="studyColumnFilterForm.$invalid" title="Apply filter">Apply</button>
+				<button class="btn btn-default" ng-click="filterHelper.resetFilterByColumn(filter)" title="Reset filter">Reset</button>
+			</div>
+		</form>
+	</div>
+</script>
+<script type="text/ng-template" id="studyColumnFilterText.html">
+	<study-column-filter>
+		<input class="form-control" ng-model='filter.value' placeholder="{{filter.placeholder || 'Contains text'}}"/>
+	</study-column-filter>
+</script>
+<script type="text/ng-template" id="studyColumnFilterTextNumberOnly.html">
+	<study-column-filter>
+		<input type="number" maxlength="10" class="form-control" ng-model='filter.value' placeholder="{{filter.placeholder || 'Contains numbers'}}"/>
+	</study-column-filter>
+</script>
+<script type="text/ng-template" id="studyColumnFilterList.html">
+	<study-column-filter>
+		<div ng-class="{'has-error': studyColumnFilterForm.listValue.$invalid}">
+			<input class="form-control" name="listValue" ng-model='filter.value' pattern="^[\d]+(,[\d]+)*$" placeholder="comma-separated values"/>
+		</div>
+	</study-column-filter>
+</script>
+<script type="text/ng-template" id="studyColumnFilterChecklist.html">
+	<study-column-filter>
+		<div class="checkbox" ng-repeat="option in filter.options">
+			<label>
+				<input type="checkbox" ng-model="option.checked">
+				{{option.name}}
+			</label>
+		</div>
+	</study-column-filter>
+</script>
+<script type="text/ng-template" id="studyColumnFilterNumber.html">
+	<study-column-filter>
+		<div class="form-group" ng-class="{'has-error': studyColumnFilterForm.columnFilterNumberMin.$invalid}">
+			<label class="col-sm-3 control-label control-label-left" for="columnFilterNumberMin">Min</label>
+			<div class="col-sm-9">
+				<input type="number" class="form-control" placeholder="min value"
+					   id="columnFilterNumberMin"
+					   name="columnFilterNumberMin"
+					   max="{{filter.max}}"
+					   ng-max="filter.max"
+					   ng-model="filter.min"/>
+			</div>
+		</div>
+		<div class="form-group" ng-class="{'has-error': studyColumnFilterForm.columnFilterNumberMax.$invalid}">
+			<label class="col-sm-3 control-label control-label-left" for="columnFilterNumberMax">Max</label>
+			<div class="col-sm-9">
+				<input type="number" class="form-control" placeholder="max value"
+					   id="columnFilterNumberMax"
+					   name="columnFilterNumberMax"
+					   min="{{filter.min}}"
+					   ng-min="filter.min"
+					   ng-model="filter.max"/>
+			</div>
+		</div>
+		<div ng-messages="studyColumnFilterForm.$error" class="text-danger" role="alert">
+			<div ng-message="min">Max must be higher than min</div>
+			<div ng-message="max">Max must be higher than min</div>
+		</div>
+	</study-column-filter>
+</script>
+<script type="text/ng-template" id="studyColumnFilterDate.html">
+	<study-column-filter>
+		<div class="form-group" ng-class="{'has-error': studyColumnFilterForm.columnFilterDateFrom.$invalid}">
+			<label class="col-sm-4 control-label control-label-left" for="columnFilterDateFrom">From</label>
+			<div class="col-sm-8">
+				<div class="input-group uib-datepicker-style-trasformer">
+					<input type="text" class="form-control"
+						   id="columnFilterDateFrom"
+						   name="columnFilterDateFrom"
+						   placeholder="from"
+						   uib-datepicker-popup="yyyy-MM-dd"
+						   is-open="isDatepickerFromOpen"
+						   close-on-date-selection="false"
+						   ng-model="filter.from"
+						   datepicker-options="{maxDate: filter.to, showWeeks: false}"/>
+					<span class="input-group-btn">
+						<button type="button" class="btn" ng-click="isDatepickerFromOpen = !isDatepickerFromOpen">
+							<i class="glyphicon glyphicon-calendar"></i>
+						</button>
+					</span>
+				</div>
+			</div>
+		</div>
+		<div class="form-group" ng-class="{'has-error': studyColumnFilterForm.columnFilterDateTo.$invalid}">
+			<label class="col-sm-4 control-label control-label-left" for="columnFilterDateTo">To</label>
+			<div class="col-sm-8">
+				<div class="input-group uib-datepicker-style-trasformer">
+					<input type="text" class="form-control"
+						   id="columnFilterDateTo"
+						   name="columnFilterDateTo"
+						   placeholder="to"
+						   uib-datepicker-popup="yyyy-MM-dd"
+						   is-open="isDatepickerToOpen"
+						   close-on-date-selection="false"
+						   ng-model="filter.to"
+						   datepicker-options="{minDate: filter.from, showWeeks: false}"/>
+					<span class="input-group-btn">
+						<button type="button" class="btn" ng-click="isDatepickerToOpen = !isDatepickerToOpen">
+							<i class="glyphicon glyphicon-calendar"></i>
+						</button>
+					</span>
+				</div>
+			</div>
+		</div>
+		<div ng-messages="studyColumnFilterForm.$error" class="text-danger" role="alert">
+			<div ng-message="dateDisabled">"To" must be after "From"</div>
+		</div>
+	</study-column-filter>
+</script>

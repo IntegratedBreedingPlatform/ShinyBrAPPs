@@ -1,0 +1,42 @@
+<div class="modal-body">
+	<div class="row form-group">
+		<div class="col-xs-11 col-md-11">
+			<label class="modal-title fbk-modal-title" id="heading-selectDatasetPerInputVariableModal">Execute Calculated variable</label>
+		</div>
+		<div class="col-xs-1 col-md-1">
+			&nbsp;<button ng-click="cancel()" type="button" class="close pull-right glyphicon glyphicon-remove"></button>
+		</div>
+	</div>
+	<div class="separator"></div>
+	<br/>
+	<div class="row form-group">
+		<div class="col-xs-12 col-md-12">
+			<label class=""><span class='required'>*</span><em> indicates a mandatory field</em></label>
+		</div>
+	</div>
+	<div class="row form-group">
+		<div class="col-xs-12 col-md-12">
+			<label class="control-label import-confirmation">Multiple occurrences
+				of {{inputVariablesWithMultipleDataset.join(', ')}}</span>
+				input variable(s) were found in the study. To execute the calculation you have to confirm <b>from which dataset</b> each input variable must be read:</label>
+		</div>
+	</div>
+	<div class="row form-group" ng-repeat="(key, value) in inputVariableDatasetMap" ng-if="value.datasets.length > 1">
+		<div class="col-xs-10 col-md-10 dataset-options">
+			<label class="label-bold">{{value.variableName}} <span class="required">*</span></label>
+			<ui-select ng-model="calculateRequestData.inputVariableDatasetMap[key]" theme="select2" search-enabled="false" class="text-truncate">
+				<ui-select-match placeholder="Choose a dataset">{{$select.selected.name}}</ui-select-match>
+				<ui-select-choices repeat="dataset.id as dataset in value.datasets">
+					<span uib-tooltip="{{dataset.name}}" tooltip-append-to-body="true">
+					{{dataset.name}}</span>
+				</ui-select-choices>
+			</ui-select>
+		</div>
+		<div class="col-xs-2 col-md-2">
+		</div>
+	</div>
+	<div class="modal-footer">
+		<button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>
+		<button type="button" class="btn btn-primary" ng-click="proceed()">Calculate</button>
+	</div>
+</div>
