@@ -39,7 +39,7 @@ In `deployment_shinyproxy/application.yml`, define the `shinybrapps` apps that `
 
 The `shinybrapps` image contains all the `shinybrapps` apps. To tell `ShinyProxy` to launch a given app, specify the container start up command `container-cmd: ["R", "-e", "shinybrapps::run_<my app>()"]`
 
-See  [R/runapps.R](.R/runapps.R) for available apps.
+See  [R/runapps.R](../R/runapps.R) for available apps.
 
 #### Set up the template
 
