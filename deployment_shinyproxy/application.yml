@@ -12,6 +12,12 @@ proxy:
     container-cmd: ["R", "-e", "shinybrapps::run_test()"]
     container-image: shinybrapps
     container-network: shinyproxy-network
+  - id: stabrap
+    display-name: single trial analysis
+    description: stabrap
+    container-cmd: ["R", "-e", "shinybrapps::run_stabrap()"]
+    container-image: shinybrapps
+    container-network: shinyproxy-network
 
 logging:
   file:
