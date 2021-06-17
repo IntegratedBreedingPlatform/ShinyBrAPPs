@@ -1,0 +1,54 @@
+<!--
+	based on https://github.com/openanalytics/shinyproxy/blob/master/src/main/resources/templates/app.html
+
+	modifications:
+	- the navbar is removed
+	- css: using fielbook.css only (no thymeleaf default nor bootstrap)
+	- the loading gif is replaced by the bms one
+		- the bms loading-animation.gif is now inside the .loading div
+		- /assets/css/app.R overwrites the .loading style and removes the loading.gif background
+
+-->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4">
+<head lang="en">
+	<title th:text="${appTitle}"></title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<!--	<link rel="stylesheet" media="screen" th:href="@{${bootstrapCss}}" /> -->
+<!--	<link rel="stylesheet" media="screen" th:href="@{/css/default.css}"/>	-->
+<link rel="stylesheet" media="screen" th:href="@{/assets/css/fieldbook.css}"/>
+	<link rel="stylesheet" media="screen" th:href="@{/assets/css/app.css}"/>
+	<script th:src="@{${jqueryJs}}"></script>
+	<script th:src="@{${bootstrapJs}}"></script>
+</head>
+<body>
+	<!--	<div th:replace="../fragments/navbar :: navbar"></div> -->
+	
+    <iframe id="shinyframe" th:src="${container}" width="100%" frameBorder="0"></iframe>
+    <div class="loading"><div class="loading-txt">Launching <span th:text="${appTitle}"></span></div><img th:src="@{/assets/img/loading-animation.gif}"></img></div>
+    
+	<script type="text/javascript" th:inline="javascript">
+		function setShinyframeHeight() {
+			$('#shinyframe').css('height', ($(window).height())+'px');
+		}
+		window.addEventListener("load", setShinyframeHeight);
+		window.addEventListener("resize",  setShinyframeHeight);
+		
+		$(window).on('load', function() {
+			var source = $("#shinyframe").attr("src");
+			if (source == "") {
+				$(".loading").show();
+				$.post(window.location.pathname + window.location.search, function(response) {
+					$("#shinyframe").attr("src", response.containerPath);
+					$(".loading").fadeOut("slow");
+				}).fail(function(request) {
+					var newDoc = document.open("text/html", "replace");
+					newDoc.write(request.responseText);
+					newDoc.close();
+				});
+			}
+		});
+	</script>
+</body>
+</html>

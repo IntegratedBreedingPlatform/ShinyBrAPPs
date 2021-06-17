@@ -1,0 +1,18 @@
+proxy:
+  title: shinyproxy dev server
+  logo-url: https://www.bms-uat-test.net/ibpworkbench/controller/static/images/logo.png
+  port: 8080
+  template-path: ./templates/bms_shinyapps
+  docker:
+      internal-networking: true
+  specs:
+  - id: test
+    display-name: test app
+    description: displays hello world
+    container-cmd: ["R", "-e", "shinybrapps::run_test()"]
+    container-image: shinybrapps
+    container-network: shinyproxy-network
+
+logging:
+  file:
+    shinyproxy.log
