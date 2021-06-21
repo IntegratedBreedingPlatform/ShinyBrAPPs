@@ -43,3 +43,13 @@ sudo docker run \
 
 
 See [deployment_shinyproxy/README.md](deployment_shinyproxy/README.md) for more details
+
+## Apps
+
+### stabrap
+
+[http://127.0.0.1/app/stabrap/?token=TOKEN&cropDb=CROPDB&studyDbId=STUDYDBID]()
+
+or
+
+[http://127.0.0.1/app/stabrap/]()
