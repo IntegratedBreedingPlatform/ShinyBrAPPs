@@ -23,5 +23,6 @@ Depends:
 	magrittr,
 	RColorBrewer,
 	e1071,
-	brapirv1
+	brapirv1,
+	brapirv2
 RoxygenNote: 7.1.1

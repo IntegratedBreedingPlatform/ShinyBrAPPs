@@ -45,7 +45,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
           if(!(is.null(parse_GET_param()$token) | is.null(parse_GET_param()$cropDb) | is.null(parse_GET_param()$studyDbId))){
 
-            rv$con <- brapirv1::brapi_connect(
+            rv$con <- brapirv2::brapi_connect(
               secure = TRUE,
               protocol = brapi_protocol,
               db = brapi_db,
@@ -75,7 +75,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         # token -> cropdb -> study -> trait
         observeEvent(c(input$token,input$cropDb),{
           req(input$token)
-          rv$con <- brapirv1::brapi_connect(
+          rv$con <- brapirv2::brapi_connect(
             secure = TRUE,
             protocol = brapi_protocol,
             db = brapi_db,
@@ -89,7 +89,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             bms = TRUE
           )
           try({
-            studies <- as.data.table(brapirv1::brapi_get_studies(con = rv$con))
+            studies <- as.data.table(brapirv2::brapi_get_studies(con = rv$con))
             studies <- unique(studies[,.(studyDbId,studyName)])
             study_choices <- studies[,studyDbId]
             names(study_choices) <- studies[,studyName]
