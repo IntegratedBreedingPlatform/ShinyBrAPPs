@@ -88,11 +88,13 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             clientid = "brapir",
             bms = TRUE
           )
-          studies <- as.data.table(brapirv1::brapi_get_studies(con = rv$con))
-          studies <- unique(studies[,.(studyDbId,studyName)])
-          study_choices <- studies[,studyDbId]
-          names(study_choices) <- studies[,studyName]
-          updateSelectizeInput(inputId = "study", session = session, choices = study_choices)
+          try({
+            studies <- as.data.table(brapirv1::brapi_get_studies(con = rv$con))
+            studies <- unique(studies[,.(studyDbId,studyName)])
+            study_choices <- studies[,studyDbId]
+            names(study_choices) <- studies[,studyName]
+            updateSelectizeInput(inputId = "study", session = session, choices = study_choices)
+          })
         })
 
         observeEvent(input$study,{
@@ -121,7 +123,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
         output$title_study_name <- renderUI({
           h1(rv$study[studyDbId==input$study, unique(studyName)])
-          })
+        })
       })
 
       return(studydata)
