@@ -60,6 +60,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             )
             study <- as.data.table(brapirv1::brapi_get_studies_studyDbId_observationunits(con = rv$con, studyDbId = parse_GET_param()$studyDbId))
             rv$study <- study
+            rv$studyName <- unique(study[,studyName])
           }else{
 
             shinyjs::show(id = "study_selection_UI")
@@ -67,7 +68,6 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             if(is.null(parse_GET_param()$token)){
               updateTextInput("token", session = session, value = parse_GET_param()$token)
             }
-
           }
         })
 
@@ -100,15 +100,27 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         observeEvent(input$study,{
           req(input$study)
           study <- as.data.table(brapirv1::brapi_get_studies_studyDbId_observationunits(con = rv$con, studyDbId = input$study))
-
-          updateSelectInput(
-            inputId = "trait", session = session,
-            choices = study[, unique(observations.observationVariableName)]
-          )
           rv$study <- study
+          rv$studyName <- unique(study[,studyName])
         })
 
 
+        observeEvent(rv$study,{
+          if("observations.observationVariableName" %in% names(rv$study)){
+            updateSelectInput(
+              inputId = "trait", session = session,
+              label = "Trait",
+              choices = rv$study[, unique(observations.observationVariableName)]
+            )
+          }else{
+            updateSelectInput(
+              inputId = "trait", session = session,
+              label = paste0("No trait observations in ", rv$studyName),
+              choices = c(""),
+              selected = NULL
+            )
+          }
+        })
 
         studydata <- eventReactive(input$trait,{
           req(input$trait)
@@ -117,13 +129,14 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
       }
 
+      output$title_study_name <- renderUI({
+        h1(rv$studyName)
+      })
+
       observeEvent(studydata(),{
         studydata()[,is.missing:=F]
         studydata()[,observations.value:=as.numeric(observations.value)]
 
-        output$title_study_name <- renderUI({
-          h1(rv$study[studyDbId==input$study, unique(studyName)])
-        })
       })
 
       return(studydata)
