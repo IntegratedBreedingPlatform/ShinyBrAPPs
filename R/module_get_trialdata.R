@@ -118,7 +118,6 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
       observeEvent(studydata(),{
         studydata()[,is.missing:=F]
         studydata()[,observations.value:=as.numeric(observations.value)]
-        studydata()[(observations.value>90),is.missing:=T] ### XX fonction qui détecte les missing values (NA, "", ...)
 
         output$title_study_name <- renderUI({
           h1(rv$study[studyDbId==input$study, unique(studyName)])
