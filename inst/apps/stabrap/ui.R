@@ -17,7 +17,7 @@ ui <- fluidPage(
 
   shinyjs::useShinyjs(),
 
-  mod_get_trialdata_ui("get_trialdata"),
+  mod_get_studydata_ui("get_studydata"),
   tabsetPanel(
     tabPanel(
       "Raw Data",

@@ -1,10 +1,10 @@
 #' @export
-mod_get_trialdata_ui <- function(id){
+mod_get_studydata_ui <- function(id){
   ns <- NS(id)
 
   tagList(
     # title
-    htmlOutput("title_trial_name"),
+    htmlOutput(ns("title_study_name")),
 
     # UI for study selection (if no GET parameters)
     div(
@@ -20,22 +20,21 @@ mod_get_trialdata_ui <- function(id){
         )
       )
     ),
-    selectInput(ns("trial"), label = "Trial", choices = NULL),
     selectInput(ns("trait"), label = "Trait", choices = NULL)
   )
 }
 
 #' @export
-mod_get_trialdata_server <- function(id, rv, dataset_4_dev = NULL){
+mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_dev = NULL
   moduleServer(
     id,
     function(input, output, session){
 
       ns <- NS(id)
 
-      if(!is.null(dataset_4_dev)){
+      if(!is.null(dataset_4_dev)){ # XXX
         dataset_4_dev[,is.missing:=F]
-        trialdata <- reactive(dataset_4_dev)
+        studydata <- reactive(dataset_4_dev)
       }else{
         # parses the url
         parse_GET_param  <- reactive({
@@ -54,14 +53,12 @@ mod_get_trialdata_server <- function(id, rv, dataset_4_dev = NULL){
               apipath = brapi_apipath,
               multicrop = TRUE,
               token = parse_GET_param()$token,
-              # commoncropname = "wheat",
               commoncropname = parse_GET_param()$cropDb,
               granttype = "token",
               clientid = "brapir",
               bms = TRUE
             )
             study <- as.data.table(brapirv1::brapi_get_studies_studyDbId_observationunits(con = rv$con, studyDbId = parse_GET_param()$studyDbId))
-            bar <<- study
             rv$study <- study
           }else{
 
@@ -75,7 +72,7 @@ mod_get_trialdata_server <- function(id, rv, dataset_4_dev = NULL){
         })
 
 
-        # token -> cropdb -> study -> trial -> trait
+        # token -> cropdb -> study -> trait
         observeEvent(c(input$token,input$cropDb),{
           req(input$token)
           rv$con <- brapirv1::brapi_connect(
@@ -95,41 +92,38 @@ mod_get_trialdata_server <- function(id, rv, dataset_4_dev = NULL){
 
           updateSelectizeInput(inputId = "study", session = session, choices = unique(studies$studyDbId))
         })
+
         observeEvent(input$study,{
           req(input$study)
           study <- as.data.table(brapirv1::brapi_get_studies_studyDbId_observationunits(con = rv$con, studyDbId = input$study))
+
+          updateSelectInput(
+            inputId = "trait", session = session,
+            choices = study[, unique(observations.observationVariableName)]
+          )
           rv$study <- study
         })
 
-        observeEvent(rv$study,{
-          updateSelectInput(inputId = "trial", session = session, choices = unique(rv$study$trialName))
-        })
 
-        observeEvent(input$trial,{
-          req(input$trial)
-          output$titleTrialName <- renderUI({
-            titlePanel(title = paste0("Trial: ", input$trial))
-          })
-          updateSelectInput(
-            inputId = "trait", session = session,
-            choices = rv$study[trialName==input$trial, unique(observations.observationVariableName)]
-          )
-        })
 
-        trialdata <- eventReactive(input$trait,{
-          req(input$trial)
+        studydata <- eventReactive(input$trait,{
           req(input$trait)
-          return(rv$study[trialName==input$trial & observations.observationVariableName == input$trait])
+          return(rv$study[observations.observationVariableName == input$trait])
         })
+
       }
 
-      observeEvent(trialdata(),{
-        trialdata()[,is.missing:=F]
-        trialdata()[,observations.value:=as.numeric(observations.value)]
-        trialdata()[(observations.value>90),is.missing:=T] ### XX fonction qui détecte les missing values (NA, "", ...)
+      observeEvent(studydata(),{
+        studydata()[,is.missing:=F]
+        studydata()[,observations.value:=as.numeric(observations.value)]
+        studydata()[(observations.value>90),is.missing:=T] ### XX fonction qui détecte les missing values (NA, "", ...)
+
+        output$title_study_name <- renderUI({
+          h1(paste0("Study: ", input$study))
+          })
       })
 
-      return(trialdata)
+      return(studydata)
     }
   )
 }
