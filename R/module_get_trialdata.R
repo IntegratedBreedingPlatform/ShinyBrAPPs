@@ -13,9 +13,9 @@ mod_get_studydata_ui <- function(id){
       textInput(ns("token"), "Token", placeholder = "Enter Token"),
       textInput(ns("cropDb"), "CropDb", value = "wheat", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames"),
       selectizeInput(
-        ns("study"), label = "studyDbId", choices = NULL,
+        ns("study"), label = "study", choices = NULL,
         options = list(
-          placeholder = 'Select StudyDbId',
+          placeholder = 'Select Study',
           onInitialize = I('function() { this.setValue(""); }')
         )
       )
@@ -88,9 +88,11 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             clientid = "brapir",
             bms = TRUE
           )
-          studies <- brapirv1::brapi_get_studies(con = rv$con)
-
-          updateSelectizeInput(inputId = "study", session = session, choices = unique(studies$studyDbId))
+          studies <- as.data.table(brapirv1::brapi_get_studies(con = rv$con))
+          studies <- unique(studies[,.(studyDbId,studyName)])
+          study_choices <- studies[,studyDbId]
+          names(study_choices) <- studies[,studyName]
+          updateSelectizeInput(inputId = "study", session = session, choices = study_choices)
         })
 
         observeEvent(input$study,{
@@ -119,7 +121,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         studydata()[(observations.value>90),is.missing:=T] ### XX fonction qui détecte les missing values (NA, "", ...)
 
         output$title_study_name <- renderUI({
-          h1(paste0("Study: ", input$study))
+          h1(rv$study[studyDbId==input$study, unique(studyName)])
           })
       })
 
