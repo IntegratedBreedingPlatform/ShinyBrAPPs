@@ -280,10 +280,25 @@ mod_rawdata_server <- function(id, d){
         rv_mod$selected_obs_layout <- NULL
       })
 
-      output$selected_obs_table <- renderDataTable({
-        rv_mod$d_missing
-      },
-      option = list(scrollX = T)
+      output$selected_obs_table <- renderDT(
+        datatable(
+          rv_mod$d_excluded,
+          extensions = 'Buttons',
+          options = list(
+            columnDefs = list(
+              list(
+              visible=FALSE,
+              targets=match(hidden_columns_observationunits, names(rv_mod$d_excluded))
+              )
+            ),
+            paging = F,
+            scrollX = T,
+            scrollY = "300px",
+            scrollCollapse = T,
+            dom = 'Bt',
+            buttons = I('colvis')
+          )
+        )
       )
 
       observeEvent(input$set_missing_obs,{
@@ -296,12 +311,26 @@ mod_rawdata_server <- function(id, d){
         rv_mod$d <- reactive(d)
       })
 
-      output$missing_obs_table <- renderDataTable({
-        rv_mod$d()[is.missing==T]
-      },
-      option = list(
-        scrollX = T
-      ))
+      output$excluded_obs_table <- renderDT(
+        datatable(
+          rv_mod$d()[is.excluded==T],
+          extensions = 'Buttons',
+          options = list(
+            columnDefs = list(
+              list(
+                visible=FALSE,
+                targets=match(hidden_columns_observationunits, names(rv_mod$d_excluded))
+              )
+            ),
+            paging = F,
+            scrollX = T,
+            scrollY = "300px",
+            scrollCollapse = T,
+            dom = 'Bt',
+            buttons = I('colvis')
+          )
+        )
+      )
 
       observeEvent(input$set_non_missing_obs,{
         d <- rv_mod$d()
