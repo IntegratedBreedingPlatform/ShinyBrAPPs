@@ -43,12 +43,12 @@ mod_rawdata_ui <- function(id){
         5,
         h2("Selected data"),
         dataTableOutput(ns("selected_obs_table")),
-        actionButton(ns("set_missing_obs"), "Set selected row(s) as missing observation(s)"),
+        actionButton(ns("set_excluded_obs"), "Set selected row(s) as excluded observation(s)"),
         actionButton(ns("reset_selected_obs"), "Clear selection"),
         tags$hr(),
-        h2("Missing data"),
-        dataTableOutput(ns("missing_obs_table")),
-        actionButton(ns("set_non_missing_obs"), "Set selected row(s) as non-missing observation(s)"),
+        h2("Excluded data"),
+        dataTableOutput(ns("excluded_obs_table")),
+        actionButton(ns("set_non_excluded_obs"), "Set selected row(s) as non-excluded observation(s)"),
       )
     )
   )
@@ -70,7 +70,7 @@ mod_rawdata_server <- function(id, d){
       })
 
       output$histogram_plot <- renderPlotly({
-        g <- ggplot(rv_mod$d()[is.missing==F], aes(x = observations.value)) +
+        g <- ggplot(rv_mod$d()[is.excluded==F], aes(x = observations.value)) +
           geom_histogram(aes(y=..density..), binwidth = input$histogram_binwidth, position = "identity") +
           geom_density() +
           theme_minimal()
@@ -80,14 +80,16 @@ mod_rawdata_server <- function(id, d){
       })
 
       observeEvent(event_data("plotly_selected", source = "A"),{
+        rv_mod$selected_obs_boxplot <- NULL
+        rv_mod$selected_obs_layout <- NULL
         rv_mod$selected_obs_hist <- unlist(lapply(event_data("plotly_selected", source = "A")$x, function(val){
-          rv_mod$d()[is.missing==F][observations.value >= val - input$histogram_binwidth/2 & observations.value <= val + input$histogram_binwidth/2, observations.observationDbId]
+          rv_mod$d()[is.excluded==F][observations.value >= val - input$histogram_binwidth/2 & observations.value <= val + input$histogram_binwidth/2, observations.observationDbId]
         }))
       })
 
       # boxplot
       output$boxplot_plot <- renderPlotly({
-        g <- ggplot(rv_mod$d()[is.missing==F], aes(x = observations.value)) +
+        g <- ggplot(rv_mod$d()[is.excluded==F], aes(x = observations.value)) +
           geom_point(color = "green", y = 0, alpha = 0) +
           geom_boxplot(notch = T, fill = "red", stat = "boxplot") +
           theme_minimal()
@@ -97,8 +99,10 @@ mod_rawdata_server <- function(id, d){
       })
 
       observeEvent(event_data("plotly_selected", source = "B"),{
+        rv_mod$selected_obs_hist <- NULL
+        rv_mod$selected_obs_layout <- NULL
         rv_mod$selected_obs_boxplot <- unlist(lapply(event_data("plotly_selected", source = "B")$x, function(val){
-          rv_mod$d()[is.missing==F][observations.value == val, observations.observationDbId]
+          rv_mod$d()[is.excluded==F][observations.value == val, observations.observationDbId]
         }))
       })
 
@@ -107,7 +111,7 @@ mod_rawdata_server <- function(id, d){
         myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")))
         rv_mod$d()[,replicate:=as.factor(replicate)]
 
-        g <- ggplot(rv_mod$d()[is.missing==F], aes(x = positionCoordinateX, y = positionCoordinateY, fill = observations.value, linetype = replicate)) +
+        g <- ggplot(rv_mod$d()[is.excluded==F], aes(x = positionCoordinateX, y = positionCoordinateY, fill = observations.value, linetype = replicate)) +
           geom_tile(size = 0.7, color = "grey") +
           coord_equal() +
           scale_fill_gradientn(colours = myPalette(100)) +
@@ -122,7 +126,7 @@ mod_rawdata_server <- function(id, d){
 
       output$layout_hover_ui <- renderUI({
         req(input$layout_plot_hover)
-        obs <- select_from_layout(rv_mod$d()[is.missing==F], input_click = input$layout_plot_hover)
+        obs <- select_from_layout(rv_mod$d()[is.excluded==F], input_click = input$layout_plot_hover)
         tagList(
           tags$table(
             tags$tr(
@@ -131,49 +135,53 @@ mod_rawdata_server <- function(id, d){
             ),
             tags$tr(
               tags$td(tags$label("replicate")),
-              tags$td(tags$data(rv_mod$d()[is.missing==F][observations.observationDbId %in% obs, replicate]))
+              tags$td(tags$data(rv_mod$d()[is.excluded==F][observations.observationDbId %in% obs, replicate]))
             ),
             tags$tr(
               tags$td(tags$label("observationUnitName")),
-              tags$td(tags$data(rv_mod$d()[is.missing==F][observations.observationDbId %in% obs, observationUnitName]))
+              tags$td(tags$data(rv_mod$d()[is.excluded==F][observations.observationDbId %in% obs, observationUnitName]))
             ),
             tags$tr(
               tags$td(tags$label("plot no.")),
-              tags$td(tags$data(rv_mod$d()[is.missing==F][observations.observationDbId %in% obs, plotNumber]))
+              tags$td(tags$data(rv_mod$d()[is.excluded==F][observations.observationDbId %in% obs, plotNumber]))
             ),
             tags$tr(
               tags$td(tags$label("germplasmDbId")),
-              tags$td(tags$data(rv_mod$d()[is.missing==F][observations.observationDbId %in% obs, germplasmDbId]))
+              tags$td(tags$data(rv_mod$d()[is.excluded==F][observations.observationDbId %in% obs, germplasmDbId]))
             ),
             tags$tr(
               tags$td(tags$label("germplasmName")),
-              tags$td(tags$data(rv_mod$d()[is.missing==F][observations.observationDbId %in% obs, germplasmName]))
+              tags$td(tags$data(rv_mod$d()[is.excluded==F][observations.observationDbId %in% obs, germplasmName]))
             ),
             tags$tr(
               tags$td(tags$label("value")),
-              tags$td(tags$data(rv_mod$d()[is.missing==F][observations.observationDbId %in% obs, observations.value]))
+              tags$td(tags$data(rv_mod$d()[is.excluded==F][observations.observationDbId %in% obs, observations.value]))
             )
           )
         )
       })
 
       observeEvent(input$layout_plot_brush,{
-        rv_mod$selected_obs_layout <- select_from_layout(rv_mod$d()[is.missing==F], input_brush = input$layout_plot_brush)
+        rv_mod$selected_obs_hist <- NULL
+        rv_mod$selected_obs_boxplot <- NULL
+        rv_mod$selected_obs_layout <- select_from_layout(rv_mod$d()[is.excluded==F], input_brush = input$layout_plot_brush)
       })
       observeEvent(input$layout_plot_click,{
-        rv_mod$selected_obs_layout <- select_from_layout(rv_mod$d()[is.missing==F], input_click = input$layout_plot_click)
+        rv_mod$selected_obs_hist <- NULL
+        rv_mod$selected_obs_boxplot <- NULL
+        rv_mod$selected_obs_layout <- select_from_layout(rv_mod$d()[is.excluded==F], input_click = input$layout_plot_click)
       })
 
       # summary statistics
       output$sum_stats <- renderUI({
 
-        q <- rv_mod$d()[is.missing==F, quantile(observations.value, probs = c(0,0.25,0.5,0.75,1))]
-        n_obs <- rv_mod$d()[is.missing==F,.N,observations.observationDbId][,.N]
-        d_mean <- rv_mod$d()[is.missing==F,mean(observations.value, na.rm = T)]
-        d_sd <- rv_mod$d()[is.missing==F,sd(observations.value, na.rm = T)]
-        d_var <- rv_mod$d()[is.missing==F,var(observations.value, na.rm = T)]
-        d_skewness <- e1071::skewness(rv_mod$d()[is.missing==F,observations.value])
-        d_kurtosis <- e1071::kurtosis(rv_mod$d()[is.missing==F,observations.value])
+        q <- rv_mod$d()[is.excluded==F, quantile(observations.value, probs = c(0,0.25,0.5,0.75,1))]
+        n_obs <- rv_mod$d()[is.excluded==F,.N,observations.observationDbId][,.N]
+        d_mean <- rv_mod$d()[is.excluded==F,mean(observations.value, na.rm = T)]
+        d_sd <- rv_mod$d()[is.excluded==F,sd(observations.value, na.rm = T)]
+        d_var <- rv_mod$d()[is.excluded==F,var(observations.value, na.rm = T)]
+        d_skewness <- e1071::skewness(rv_mod$d()[is.excluded==F,observations.value])
+        d_kurtosis <- e1071::kurtosis(rv_mod$d()[is.excluded==F,observations.value])
 
         tags$table(
           tags$tr(
@@ -185,8 +193,8 @@ mod_rawdata_server <- function(id, d){
             tags$td(tags$data(n_obs))
           ),
           tags$tr(
-            tags$td(tags$label("No. of missing values")),
-            tags$td(tags$data(rv_mod$d()[is.missing==T,.N,observations.observationDbId][,.N]))
+            tags$td(tags$label("No. of excluded values")),
+            tags$td(tags$data(rv_mod$d()[is.excluded==T,.N,observations.observationDbId][,.N]))
           ),
           tags$tr(
             tags$td(tags$label("Mean")),
@@ -238,15 +246,15 @@ mod_rawdata_server <- function(id, d){
           ),
           tags$tr(
             tags$td(tags$label("Sum of values")),
-            tags$td(tags$data(rv_mod$d()[is.missing==F,sum(observations.value, na.rm = T)]))
+            tags$td(tags$data(rv_mod$d()[is.excluded==F,sum(observations.value, na.rm = T)]))
           ),
           tags$tr(
             tags$td(tags$label("Sum of squares")),
-            tags$td(tags$data(sum(rv_mod$d()[is.missing==F,(observations.value-d_mean)^2], na.rm = T)))
+            tags$td(tags$data(sum(rv_mod$d()[is.excluded==F,(observations.value-d_mean)^2], na.rm = T)))
           ),
           tags$tr(
             tags$td(tags$label("Uncorrected sum of squares")),
-            tags$td(tags$data(sum(rv_mod$d()[is.missing==F,observations.value^2], na.rm = T)))
+            tags$td(tags$data(sum(rv_mod$d()[is.excluded==F,observations.value^2], na.rm = T)))
           ),
           tags$tr(
             tags$td(tags$label("Skewness")),
@@ -267,10 +275,10 @@ mod_rawdata_server <- function(id, d){
         )
       })
 
-      # selected and missing obs (right column)
+      # selected and excluded obs (right column)
 
       observe({
-        rv_mod$d_missing <- rv_mod$d()[
+        rv_mod$d_excluded <- rv_mod$d()[
           observations.observationDbId %in% c(rv_mod$selected_obs_hist, rv_mod$selected_obs_boxplot, rv_mod$selected_obs_layout)
         ]
       })
@@ -301,13 +309,13 @@ mod_rawdata_server <- function(id, d){
         )
       )
 
-      observeEvent(input$set_missing_obs,{
+      observeEvent(input$set_excluded_obs,{
         d <- rv_mod$d()
-        missing_obs <- rv_mod$d()[
+        excluded_obs <- rv_mod$d()[
           observations.observationDbId %in% c(rv_mod$selected_obs_hist, rv_mod$selected_obs_boxplot, rv_mod$selected_obs_layout)
         ][
           input$selected_obs_table_rows_selected, observations.observationDbId]
-        d[observations.observationDbId %in% missing_obs, is.missing:=T]
+        d[observations.observationDbId %in% excluded_obs, is.excluded:=T]
         rv_mod$d <- reactive(d)
       })
 
@@ -332,11 +340,11 @@ mod_rawdata_server <- function(id, d){
         )
       )
 
-      observeEvent(input$set_non_missing_obs,{
+      observeEvent(input$set_non_excluded_obs,{
         d <- rv_mod$d()
-        non_missing_obs <- rv_mod$d()[is.missing==T][
-          input$missing_obs_table_rows_selected, observations.observationDbId]
-        d[observations.observationDbId %in% non_missing_obs, is.missing:=F]
+        non_excluded_obs <- rv_mod$d()[is.excluded==T][
+          input$excluded_obs_table_rows_selected, observations.observationDbId]
+        d[observations.observationDbId %in% non_excluded_obs, is.excluded:=F]
         rv_mod$d <- reactive(d)
       })
     }
