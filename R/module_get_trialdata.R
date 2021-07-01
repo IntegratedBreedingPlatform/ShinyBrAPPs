@@ -33,7 +33,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
       ns <- NS(id)
 
       if(!is.null(dataset_4_dev)){ # XXX
-        dataset_4_dev[,is.missing:=F]
+        dataset_4_dev[,is.excluded:=F]
         studydata <- reactive(dataset_4_dev)
       }else{
         # parses the url
@@ -134,7 +134,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
       })
 
       observeEvent(studydata(),{
-        studydata()[,is.missing:=F]
+        studydata()[,is.excluded:=F]
         studydata()[,observations.value:=as.numeric(observations.value)]
 
       })
