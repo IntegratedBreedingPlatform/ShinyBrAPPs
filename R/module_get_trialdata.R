@@ -11,16 +11,23 @@ mod_get_studydata_ui <- function(id){
       style = "display:none",
       id = ns("study_selection_UI"),
       textInput(ns("token"), "Token", placeholder = "Enter Token"),
-      textInput(ns("cropDb"), "CropDb", value = "wheat", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames"),
-      selectizeInput(
-        ns("study"), label = "study", choices = NULL,
-        options = list(
-          placeholder = 'Select Study',
-          onInitialize = I('function() { this.setValue(""); }')
-        )
+      textInput(ns("cropDb"), "CropDb", value = "wheat", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames")
+    ),
+    selectizeInput(
+      ns("trait"), label = "Trait", choices = NULL,
+      options = list(
+        placeholder = '',
+        onInitialize = I('function() { this.setValue(""); }')
       )
     ),
-    selectInput(ns("trait"), label = "Trait", choices = NULL)
+    selectizeInput(
+      ns("studies"), label = "Environments", choices = NULL,
+      multiple = T,
+      options = list(
+        placeholder = '',
+        onInitialize = I('function() { this.setValue(""); }')
+      )
+    )
   )
 }
 
@@ -36,14 +43,13 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         dataset_4_dev[,is.excluded:=F]
         studydata <- reactive(dataset_4_dev)
       }else{
-        # parses the url
         parse_GET_param  <- reactive({
           pars <- parseQueryString(session$clientData$url_search)
         })
 
         observeEvent(parse_GET_param(),{
 
-          if(!(is.null(parse_GET_param()$token) | is.null(parse_GET_param()$cropDb) | is.null(parse_GET_param()$studyDbId))){
+          if(!(is.null(parse_GET_param()$token) | is.null(parse_GET_param()$cropDb) | is.null(parse_GET_param()$trialDbId))){
 
             rv$con <- brapirv2::brapi_connect(
               secure = TRUE,
@@ -58,9 +64,24 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               clientid = "brapir",
               bms = TRUE
             )
-            study <- as.data.table(brapirv1::brapi_get_studies_studyDbId_observationunits(con = rv$con, studyDbId = parse_GET_param()$studyDbId))
-            rv$study <- study
-            rv$studyName <- unique(study[,studyName])
+            try({
+              ## get the observed variables for the trial
+              studies <- brapirv2::brapi_get_studies(con = con, trialDbId = parse_GET_param()$trialDbId)
+              trial_vars <- rbindlist(l = lapply(studies[,"studyDbId"], function(study_id){
+                as.data.table(brapirv1::brapi_get_studies_studyDbId_observationvariables(con = con, studyDbId = study_id))
+              }), use.names = T, fill = T)
+              variables <- unique(trial_vars[,.(observationVariableDbId, observationVariableName)])
+
+              trait_choices <- variables[,observationVariableDbId]
+              names(trait_choices) <- variables[,observationVariableName]
+              updateSelectizeInput(
+                inputId = "trait", session = session, choices = trait_choices,
+                options = list(
+                  placeholder = 'Select a trait',
+                  onInitialize = I('function() { this.setValue(""); }')
+                )
+              )
+            })
           }else{
 
             shinyjs::show(id = "study_selection_UI")
@@ -71,10 +92,9 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           }
         })
 
-
-        # token -> cropdb -> study -> trait
         observeEvent(c(input$token,input$cropDb),{
           req(input$token)
+          req(input$cropDb)
           rv$con <- brapirv2::brapi_connect(
             secure = TRUE,
             protocol = brapi_protocol,
@@ -89,57 +109,66 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             bms = TRUE
           )
           try({
-            studies <- as.data.table(brapirv2::brapi_get_studies(con = rv$con))
-            studies <- unique(studies[,.(studyDbId,studyName)])
-            study_choices <- studies[,studyDbId]
-            names(study_choices) <- studies[,studyName]
-            updateSelectizeInput(inputId = "study", session = session, choices = study_choices)
+            # get all the observed traits (regardless of the trials)
+            variables <- as.data.table(brapirv1::brapi_get_variables(con = rv$con))
+            trait_choices <- variables[,observationVariableDbId]
+            names(trait_choices) <- variables[,observationVariableName]
+            updateSelectizeInput(
+              inputId = "trait", session = session, choices = trait_choices,
+              options = list(
+                placeholder = 'Select a trait',
+                onInitialize = I('function() { this.setValue(""); }')
+              )
+            )
           })
         })
 
-        observeEvent(input$study,{
-          req(input$study)
-          study <- as.data.table(brapirv1::brapi_get_studies_studyDbId_observationunits(con = rv$con, studyDbId = input$study))
-          rv$study <- study
-          rv$studyName <- unique(study[,studyName])
-        })
-
-
-        observeEvent(rv$study,{
-          if("observations.observationVariableName" %in% names(rv$study)){
-            updateSelectInput(
-              inputId = "trait", session = session,
-              label = "Trait",
-              choices = rv$study[, unique(observations.observationVariableName)]
-            )
-          }else{
-            updateSelectInput(
-              inputId = "trait", session = session,
-              label = paste0("No trait observations in ", rv$studyName),
-              choices = c(""),
-              selected = NULL
-            )
-          }
-        })
-
-        studydata <- eventReactive(input$trait,{
+        observeEvent(input$trait,{
+          # 4/ get the studies with observations for a given trait
           req(input$trait)
-          return(rv$study[observations.observationVariableName == input$trait])
+          try({
+            if(is.null(parse_GET_param()$trialDbId)){
+            studies <- as.data.table(brapirv2::brapi_get_studies(con = rv$con, observationVariableDbId = as.character(input$trait)))
+            }else{
+            studies <- as.data.table(brapirv2::brapi_get_studies(con = rv$con, observationVariableDbId = as.character(input$trait), trialDbId = parse_GET_param()$trialDbId))
+          }
+            studies <- unique(studies[,.(studyDbId,studyName)])
+            study_choices <- studies[,studyDbId]
+            names(study_choices) <- studies[,studyName]
+            updateSelectizeInput(
+              inputId = "studies", session = session, choices = study_choices,
+              options = list(
+                placeholder = 'Select 1 or more environments',
+                onInitialize = I('function() { this.setValue(""); }')
+              )
+            )
+          })
         })
 
+        studiesTD <- eventReactive(input$studies,{
+          # 5/ data of the selected studies
+          req(input$studies)
+
+          studies <- rbindlist(l = lapply(input$studies, function(study_id){
+            try({
+              study <- as.data.table(brapirv1::brapi_get_studies_studyDbId_observationunits(con = rv$con, studyDbId = study_id))
+              return(as.data.table(study[observations.observationVariableDbId == input$trait]))
+            })
+          }), use.names = T, fill = T)
+
+          studiesTD <- createTD(data = studies,
+                                genotype = "germplasmDbId",
+                                trial = "studyDbId",
+                                loc = "studyLocationDbId",
+                                repId = "replicate",
+                                subBlock = "observationUnitDbId",
+                                rowCoord = "positionCoordinateY",
+                                colCoord = "positionCoordinateX")
+
+          return(studiesTD)
+        })
       }
-
-      output$title_study_name <- renderUI({
-        h1(rv$studyName)
-      })
-
-      observeEvent(studydata(),{
-        studydata()[,is.excluded:=F]
-        studydata()[,observations.value:=as.numeric(observations.value)]
-
-      })
-
-      return(studydata)
+      return(studiesTD)
     }
   )
 }
