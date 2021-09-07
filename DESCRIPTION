@@ -25,5 +25,6 @@ Depends:
 	e1071,
 	statgenSTA,
 	brapirv1,
-	brapirv2
+	brapirv2,
+	SpATS
 RoxygenNote: 7.1.1
