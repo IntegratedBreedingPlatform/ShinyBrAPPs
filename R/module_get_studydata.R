@@ -19,21 +19,6 @@ mod_get_studydata_ui <- function(id){
           onInitialize = I('function() { this.setValue(""); }')
         )
       ),
-    ),
-    selectizeInput(
-      ns("trait"), label = "Trait", choices = NULL,
-      options = list(
-        placeholder = '',
-        onInitialize = I('function() { this.setValue(""); }')
-      )
-    ),
-    selectizeInput(
-      ns("studies"), label = "Environments", choices = NULL,
-      multiple = T,
-      options = list(
-        placeholder = '',
-        onInitialize = I('function() { this.setValue(""); }')
-      )
     )
   )
 }
@@ -56,7 +41,6 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         observeEvent(parse_GET_param(),{
 
           if(!(is.null(parse_GET_param()$token) | is.null(parse_GET_param()$cropDb) | is.null(parse_GET_param()$trialDbId))){
-            print("is not null")
             rv$con <- brapirv2::brapi_connect(
               secure = TRUE,
               protocol = brapi_protocol,
@@ -70,33 +54,9 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               clientid = "brapir",
               bms = TRUE
             )
-            print("parse_GET_param()$trialDbId")
-            print(parse_GET_param()$trialDbId)
             rv$trialDbId <- parse_GET_param()$trialDbId
-            print(rv$trialDbId)
-            # rv$trigger_get_data_studies <- ifelse(is.null(rv$trigger_get_data_studies), 1, rv$trigger_get_data_studies + 1)
-            # try({
-            #   ## get the observed variables for the trial
-            #   studies <- brapirv2::brapi_get_studies(con = rv$con, trialDbId = parse_GET_param()$trialDbId)
-            #   trial_vars <- rbindlist(l = lapply(studies[,"studyDbId"], function(study_id){
-            #     as.data.table(brapirv1::brapi_get_studies_studyDbId_observationvariables(con = rv$con, studyDbId = study_id))
-            #   }), use.names = T, fill = T)
-            #   variables <- unique(trial_vars[,.(observationVariableDbId, observationVariableName)])
-            #
-            #   trait_choices <- variables[,observationVariableDbId]
-            #   names(trait_choices) <- variables[,observationVariableName]
-            #   updateSelectizeInput(
-            #     inputId = "trait", session = session, choices = trait_choices,
-            #     options = list(
-            #       placeholder = 'Select a trait',
-            #       onInitialize = I('function() { this.setValue(""); }')
-            #     )
-            #   )
-            # })
           }else{
-
             shinyjs::show(id = "study_selection_UI")
-
             if(is.null(parse_GET_param()$token)){
               updateTextInput("token", session = session, value = parse_GET_param()$token)
             }
@@ -133,22 +93,18 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             )
           })
         })
-        # observe({
-        #   print(paste(input$trials, parse_GET_param()$trialDbId, collapse = ""))
-        #   # rv$trialDbId <- paste(input$trials, parse_GET_param()$trialDbId, collapse = "")
-        # })
+
         observeEvent(input$trials,{
           req(input$trials)
           rv$trialDbId <- input$trials
         })
 
-        observeEvent(rv$trialDbId,{
+        studiesTD <- eventReactive(rv$trialDbId,{
           req(rv$trialDbId)
           try({
             # get all the studies of a trial
             trial_studies <- as.data.table(brapirv2::brapi_get_studies(con = rv$con, trialDbId = rv$trialDbId))
-            trial_studies$studyDbId %>% print()
-            rv$data_studies <- rbindlist(l = lapply(trial_studies$studyDbId, function(study_id){
+            data_studies <- rbindlist(l = lapply(trial_studies$studyDbId, function(study_id){
               try({
                 study <- as.data.table(brapirv1::brapi_get_studies_studyDbId_observationunits(con = rv$con, studyDbId = study_id))
                 study[,is.excluded:=F]
@@ -156,84 +112,28 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
                 return(study)
               })
             }), use.names = T, fill = T)
+            studiesTD <- createTD(
+              data = data_studies,
+              genotype = "germplasmDbId",
+              trial = "studyDbId",
+              loc = "studyLocationDbId",
+              repId = "replicate",
+              subBlock = "observationUnitDbId",
+              rowCoord = "positionCoordinateY",
+              colCoord = "positionCoordinateX")
 
-            updateSelectizeInput(
-              inputId = "trait", session = session,
-              choices = rv$data_studies[,unique(observations.observationVariableName)],
-              options = list(
-                placeholder = 'Select a trait'
-                # onInitialize = I('function() { this.setValue(""); }')
-              )
-            )
-            study_names <- rv$data_studies[,.(id = unique(studyDbId), name = unique(studyName))]
-            study_choices <- study_names[,id]
-            names(study_choices) <- study_names[, name]
-            updateSelectizeInput(
-              inputId = "studies", session = session, choices = study_choices,
-              options = list(
-                placeholder = 'Select 1 or more environments',
-                onInitialize = I('function() { this.setValue(""); }')
-              )
-            )
+            studiesTD <- lapply(studiesTD, as.data.table)
+
+            TDall <- rbindlist(l = studiesTD, use.names = T, fill = T)
+            TDall[,trials:=trial]
+            TDall[,trial:="all"]
+            TDall[,is.excluded:=F]
+            studiesTD <- addTD(TD = studiesTD, data = TDall)
+            setDT(studiesTD$all)
+            return(studiesTD)
           })
         })
-        # observeEvent(input$trait,{
-        #   # 4/ get the studies with observations for a given trait
-        #   req(input$trait)
-        #   try({
-        #     if(is.null(parse_GET_param()$trialDbId)){
-        #       studies <- as.data.table(brapirv2::brapi_get_studies(con = rv$con, observationVariableDbId = as.character(input$trait)))
-        #     }else{
-        #       studies <- as.data.table(brapirv2::brapi_get_studies(con = rv$con, observationVariableDbId = as.character(input$trait), trialDbId = parse_GET_param()$trialDbId))
-        #     }
-        #     studies <- unique(studies[,.(studyDbId,studyName)])
-        #     study_choices <- studies[,studyDbId]
-        #
-        #     names(study_choices) <- studies[,studyName]
-        #     updateSelectizeInput(
-        #       inputId = "studies", session = session, choices = study_choices,
-        #       options = list(
-        #         placeholder = 'Select 1 or more environments',
-        #         onInitialize = I('function() { this.setValue(""); }')
-        #       )
-        #     )
-        #   })
-        # })
-
-        studiesTD <- eventReactive(input$studies,{
-          req(input$studies)
-          req(input$trait)
-          print(input$trait)
-          print(input$studies)
-          print(rv$data_studies[studyDbId%in%input$studies])
-          studiesTD <- createTD(
-            data = rv$data_studies[
-              studyDbId%in%input$studies &
-                observations.observationVariableName == input$trait
-            ],
-            genotype = "germplasmDbId",
-            trial = "studyDbId",
-            loc = "studyLocationDbId",
-            repId = "replicate",
-            subBlock = "observationUnitDbId",
-            rowCoord = "positionCoordinateY",
-            colCoord = "positionCoordinateX")
-
-          studiesTD <- lapply(studiesTD, as.data.table)
-
-          TDall <- rbindlist(l = studiesTD, use.names = T, fill = T)
-          TDall[,trials:=trial]
-          TDall[,trial:="all"]
-          TDall[,is.excluded:=F]
-          studiesTD <- addTD(TD = studiesTD, data = TDall)
-          setDT(studiesTD$all)
-
-          return(studiesTD)
-        })
       }
-      # observe({
-      #   foo <<- studiesTD()
-      # })
       return(studiesTD)
     }
   )
