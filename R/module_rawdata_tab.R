@@ -3,6 +3,21 @@ mod_rawdata_ui <- function(id){
   ns <- NS(id)
   tagList(
     h1("QA"),
+    selectizeInput(
+      ns("trait"), label = "Trait", choices = NULL,
+      options = list(
+        placeholder = '',
+        onInitialize = I('function() { this.setValue(""); }')
+      )
+    ),
+    selectizeInput(
+      ns("studies"), label = "Environments", choices = NULL,
+      multiple = T,
+      options = list(
+        placeholder = '',
+        onInitialize = I('function() { this.setValue(""); }')
+      )
+    ),
     fluidRow(
       column(
         8,
@@ -62,7 +77,29 @@ mod_rawdata_server <- function(id, d){
       rv <- reactiveValues()
       observe({
 
-        rv$TD <- d()
+        d()
+
+        updateSelectizeInput(
+          inputId = "trait", session = session,
+          choices = d()$all[,unique(observations.observationVariableName)],
+          options = list(
+            placeholder = 'Select a trait'
+            # onInitialize = I('function() { this.setValue(""); }')
+          )
+        )
+
+        studyDbIds <- names(d())[names(d()) != "all"]
+        studyNames <- unlist(lapply(studyDbIds, function(x){
+          d()[[x]][,unique(studyName)]
+        }))
+        names(studyDbIds) <- studyNames
+        updateSelectizeInput(
+          inputId = "studies", session = session, choices = studyDbIds,
+          options = list(
+            placeholder = 'Select 1 or more environments',
+            onInitialize = I('function() { this.setValue(""); }')
+          )
+        )
 
         are_num <- d()$all[,lapply(.SD, is.numeric)]
         non_numeric_variables <- names(are_num)[are_num==F]
@@ -75,6 +112,17 @@ mod_rawdata_server <- function(id, d){
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
+      })
+
+      observe({
+        req(input$trait)
+        req(input$studies)
+        TD <- d()[c(input$studies, "all")]
+        TD$all <- TD$all[trials%in%input$studies]
+        for(i in c(input$studies, "all")){
+          TD[[i]] <- TD[[i]][observations.observationVariableName == input$trait]
+        }
+        rv$TD <- TD
       })
 
       observeEvent(input$select_variable,{
