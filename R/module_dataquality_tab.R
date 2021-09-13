@@ -62,12 +62,12 @@ mod_dataquality_ui <- function(id){
           ),
           tabPanel(
             "Correlations",
-            plotlyOutput(ns("rawdata_cor")),# width = 800, height = 600),
+            plotlyOutput(ns("correlationPlot")),# width = 800, height = 600),
           ),
           tabPanel(
             "Summary Statistics",
             h2("Summary Statistics"),
-            dataTableOutput(ns("rawdata_sumstats"))
+            dataTableOutput(ns("sumstats_table"))
           )
         )
       ),
@@ -360,14 +360,14 @@ mod_dataquality_server <- function(id, d){
         rv$sel_observationDbIds <- sel_observationDbIds
       })
 
-      output$rawdata_cor <- renderPlotly({
+      output$correlationPlot <- renderPlotly({
         p <- plot(d(), plotType="cor", traits = "observations.value", output = F, trials = names(d())[names(d())!="all"])
         # p <- plot(d(), plotType="cor", traits = "observations.value", output = F, trials = names(d())[names(d())!="all"])
         ggplotly(p[['observations.value']], source = "C")
       })
 
       # summary statistics
-      output$rawdata_sumstats <- renderDataTable({
+      output$sumstats_table <- renderDataTable({
         sumtable <- data.table(Environment=unlist(lapply(d(), function(x){
           if(unique(x$trial) == "all"){"all"}else{unique(x$studyName)}
         })))
