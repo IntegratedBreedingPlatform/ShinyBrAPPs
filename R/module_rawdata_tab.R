@@ -180,6 +180,7 @@ mod_dataquality_server <- function(id, d){
       output$distribution_viz <- renderPlotly({
 
         req(rv$TD)
+        req(input$studies)
 
         input$set_excluded_obs
         input$set_non_excluded_obs
@@ -228,6 +229,7 @@ mod_dataquality_server <- function(id, d){
       output$layout_viz <- renderPlotly({
 
         req(rv$TD)
+        req(input$studies)
 
         input$set_excluded_obs
         input$set_non_excluded_obs
@@ -415,6 +417,7 @@ mod_dataquality_server <- function(id, d){
       output$selected_obs_table <- renderDT({
 
         req(rv$sel_observationDbIds)
+        req(input$studies)
 
         input$set_excluded_obs
         input$set_non_excluded_obs
