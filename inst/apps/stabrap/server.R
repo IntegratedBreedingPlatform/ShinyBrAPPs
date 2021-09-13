@@ -4,5 +4,5 @@ rv <- reactiveValues()
 
 server <- function(input, output, session){
   studiesTD <- mod_get_studydata_server("get_studydata", rv)
-  studiesTD_postQA <- mod_rawdata_server("rawdata", studiesTD)
+  studiesTD_postQA <- mod_dataquality_server("dataquality", studiesTD)
 }

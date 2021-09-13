@@ -21,10 +21,10 @@ ui <- fluidPage(
   shinysky::busyIndicator(wait = 200, text = NULL, img = "img/loading-animation.gif"),
 
   mod_get_studydata_ui("get_studydata"),
-  tabsetPanel(selected = "Raw Data",
+  tabsetPanel(id = "tabsetPanel_main", selected = "Data Quality",
     tabPanel(
-      "Raw Data",
-      mod_rawdata_ui("rawdata")
+      "Data Quality",
+      mod_dataquality_ui("dataquality")
     ),
     tabPanel("Model"),
     tabPanel("BLUES/BLUPS"),

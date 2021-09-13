@@ -1,5 +1,5 @@
 #' @export
-mod_rawdata_ui <- function(id){
+mod_dataquality_ui <- function(id){
   ns <- NS(id)
   tagList(
     h1("QA"),
@@ -22,13 +22,13 @@ mod_rawdata_ui <- function(id){
       column(
         8,
         tabsetPanel(
-          selected = "Raw Data Viz",
+          selected = "Distributions",
           # selected = "Summary Statistics",
           tabPanel(
-            "Raw Data Viz",
-            h2("Raw data viz"),
+            "Distributions",
             fluidRow(
-              column(width = 6,plotlyOutput(ns("distribution_viz"))),
+              column(width = 6,
+                     plotlyOutput(ns("distribution_viz"))),
               column(width = 6, plotlyOutput(ns("layout_viz")))
             )
           ),
@@ -69,7 +69,7 @@ mod_rawdata_ui <- function(id){
 }
 
 #' @export
-mod_rawdata_server <- function(id, d){
+mod_dataquality_server <- function(id, d){
   moduleServer(
     id,
     function(input, output, session){
