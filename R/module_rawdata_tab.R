@@ -8,7 +8,7 @@ mod_dataquality_ui <- function(id){
         selectizeInput(
           ns("trait"), label = "Trait", choices = NULL, width = "100%",
           options = list(
-            placeholder = '',
+            placeholder = 'Select a dataset first',
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
@@ -19,7 +19,7 @@ mod_dataquality_ui <- function(id){
           ns("studies"), label = "Environments", choices = NULL, width = "100%",
           multiple = T,
           options = list(
-            placeholder = '',
+            placeholder = 'Select a dataset first',
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
@@ -33,6 +33,27 @@ mod_dataquality_ui <- function(id){
           # selected = "Summary Statistics",
           tabPanel(
             "Distributions",
+            fluidRow(
+              column(4,
+                     selectizeInput(ns("select_variable"), label = "Select observations by variable value",
+                                    choices = NULL, multiple = F, width = "100%",
+                                    options = list(
+                                      placeholder = 'Select a dataset first',
+                                      onInitialize = I('function() { this.setValue(""); }')
+                                    ))
+              ),
+              column(8,
+                     selectizeInput(ns("select_variable_value"),label = HTML("<br/>"), choices = NULL, multiple = T, width = "100%", options = list(
+                       placeholder = 'Select a dataset first',
+                       onInitialize = I('function() { this.setValue(""); }')
+                     ))
+              )
+            ),
+            fluidRow(
+              column(12,
+              tags$label("Or select observations directly on the plots")
+                     )
+            ),
             fluidRow(
               column(width = 6,
                      plotlyOutput(ns("distribution_viz"))),
@@ -53,17 +74,7 @@ mod_dataquality_ui <- function(id){
       column(
         4,
         # verbatimTextOutput(ns("debug")),
-        h2("Select observations"),
-        selectizeInput(ns("select_variable"), label = "Select observations by",
-                       choices = NULL, multiple = F, width = "50%",
-                       options = list(
-                         placeholder = 'Select a dataset first',
-                         onInitialize = I('function() { this.setValue(""); }')
-                       )),
-        selectizeInput(ns("select_variable_value"),label = "", choices = NULL, multiple = T, width = "100%", options = list(
-          placeholder = 'Select a variable first',
-          onInitialize = I('function() { this.setValue(""); }')
-        )),
+        h2("Selected observations"),
         dataTableOutput(ns("selected_obs_table")),
         actionButton(ns("set_excluded_obs"), "Set selected row(s) as excluded observation(s)"),
         tags$hr(),
@@ -115,7 +126,15 @@ mod_dataquality_server <- function(id, d){
           inputId = "select_variable",
           choices = non_numeric_variables,
           options = list(
-            placeholder = 'Select a variable below',
+            placeholder = 'Select a variable',
+            onInitialize = I('function() { this.setValue(""); }')
+          )
+        )
+        updateSelectizeInput(
+          session = session,
+          inputId = "select_variable_value",
+          options = list(
+            placeholder = 'Select a value',
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
@@ -141,8 +160,12 @@ mod_dataquality_server <- function(id, d){
         updateSelectizeInput(
           session = session,
           inputId = "select_variable_value",
-          label = paste(input$select_variable, "values"),
-          choices = values
+          # label = paste(input$select_variable, "values"),
+          choices = values,
+          options = list(
+            placeholder = 'Select a value',
+            onInitialize = I('function() { this.setValue(""); }')
+          )
         )
       })
 
@@ -328,7 +351,7 @@ mod_dataquality_server <- function(id, d){
             session = session,
             inputId = "select_variable_value",
             options = list(
-              placeholder = 'Select values below',
+              placeholder = 'Select a value',
               onInitialize = I('function() { this.setValue(""); }')
             )
           )
