@@ -2,20 +2,27 @@
 mod_dataquality_ui <- function(id){
   ns <- NS(id)
   tagList(
-    h1("QA"),
-    selectizeInput(
-      ns("trait"), label = "Trait", choices = NULL,
-      options = list(
-        placeholder = '',
-        onInitialize = I('function() { this.setValue(""); }')
-      )
-    ),
-    selectizeInput(
-      ns("studies"), label = "Environments", choices = NULL,
-      multiple = T,
-      options = list(
-        placeholder = '',
-        onInitialize = I('function() { this.setValue(""); }')
+    fluidRow(
+      column(
+        3,
+        selectizeInput(
+          ns("trait"), label = "Trait", choices = NULL, width = "100%",
+          options = list(
+            placeholder = '',
+            onInitialize = I('function() { this.setValue(""); }')
+          )
+        )
+      ),
+      column(
+        9,
+        selectizeInput(
+          ns("studies"), label = "Environments", choices = NULL, width = "100%",
+          multiple = T,
+          options = list(
+            placeholder = '',
+            onInitialize = I('function() { this.setValue(""); }')
+          )
+        )
       )
     ),
     fluidRow(
@@ -209,7 +216,6 @@ mod_dataquality_server <- function(id, d){
         td[, y:=as.numeric(y)]
 
         myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")))
-
 
         g2 <- ggplot(
           td[is.excluded==F],
