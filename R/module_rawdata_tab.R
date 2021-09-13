@@ -51,8 +51,8 @@ mod_dataquality_ui <- function(id){
             ),
             fluidRow(
               column(12,
-              tags$label("Or select observations directly on the plots")
-                     )
+                     tags$label("Or select observations directly on the plots")
+              )
             ),
             fluidRow(
               column(width = 6,
@@ -74,13 +74,12 @@ mod_dataquality_ui <- function(id){
       column(
         4,
         # verbatimTextOutput(ns("debug")),
-        h2("Selected observations"),
+        h2("Selected observations", class = "display_if_selection", style = "display: none"),
         dataTableOutput(ns("selected_obs_table")),
-        actionButton(ns("set_excluded_obs"), "Set selected row(s) as excluded observation(s)"),
-        tags$hr(),
-        h2("Exclude observations"),
+        actionButton(ns("set_excluded_obs"), "Set selected row(s) as excluded observation(s)", class = "display_if_selection", style = "display: none"),
+        h2("Excluded observations", class = "display_if_exclusion", style = "display: none"),
         dataTableOutput(ns("excluded_obs_table")),
-        actionButton(ns("set_non_excluded_obs"), "Set selected row(s) as non-excluded observation(s)"),
+        actionButton(ns("set_non_excluded_obs"), "Set selected row(s) as non-excluded observation(s)", class = "display_if_exclusion", style = "display: none"),
       )
     )
   )
@@ -416,8 +415,12 @@ mod_dataquality_server <- function(id, d){
 
       output$selected_obs_table <- renderDT({
 
+        shinyjs::hide(selector = ".display_if_selection")
+
         req(rv$sel_observationDbIds)
         req(input$studies)
+
+        shinyjs::show(selector = ".display_if_selection")
 
         input$set_excluded_obs
         input$set_non_excluded_obs
@@ -442,6 +445,7 @@ mod_dataquality_server <- function(id, d){
       })
 
       observeEvent(input$set_excluded_obs,{
+
         td <- rv$TD$all
         excluded_obs <- td[
           observations.observationDbId %in% rv$sel_observationDbIds
@@ -453,10 +457,13 @@ mod_dataquality_server <- function(id, d){
       })
 
       output$excluded_obs_table <- renderDT({
+        shinyjs::hide(selector = ".display_if_exclusion")
         req(rv$TD)
         rv$TD
         input$set_excluded_obs
         input$set_non_excluded_obs
+        req(rv$TD$all[is.excluded==T,.N]>0)
+        shinyjs::show(selector = ".display_if_exclusion")
         datatable(
           rv$TD$all[is.excluded==T],
           extensions = 'Buttons',
