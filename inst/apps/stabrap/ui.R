@@ -1,6 +1,7 @@
 library(shinybrapps)
 library(shiny)
 library(shinyjs)
+library(shinyBS)
 library(data.table)
 library(ggplot2)
 library(plotly)
@@ -12,7 +13,7 @@ library(brapirv1)
 
 ui <- fluidPage(
   tags$head(
-    tags$link(rel = "stylesheet", type = "text/css", href = "css/fieldbook.css"),
+    # tags$link(rel = "stylesheet", type = "text/css", href = "css/fieldbook.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/style.css")
   ),
 

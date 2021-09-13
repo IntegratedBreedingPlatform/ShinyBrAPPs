@@ -3,20 +3,24 @@ mod_get_studydata_ui <- function(id){
   ns <- NS(id)
 
   tagList(
-    # title
-    htmlOutput(ns("title_study_name")),
-
     # UI for study selection (if no GET parameters)
     div(
       style = "display:none",
       id = ns("study_selection_UI"),
-      textInput(ns("token"), "Token", placeholder = "Enter Token"),
-      textInput(ns("cropDb"), "CropDb", value = "wheat", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames"),
-      selectizeInput(
-        ns("trials"), label = "Study", choices = NULL, multiple = FALSE,
-        options = list(
-          placeholder = '',
-          onInitialize = I('function() { this.setValue(""); }')
+      shinyBS::bsCollapse(
+        id = ns("dataImportCollapse"),
+        open = "Data import",
+        # style = "width : 50%",
+        bsCollapsePanel("Data import",
+                        textInput(ns("token"), "Token", placeholder = "Enter Token", width = "100%"),
+                        textInput(ns("cropDb"), "CropDb", value = "wheat", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
+                        selectizeInput(
+                          ns("trials"), label = "Study", choices = NULL, multiple = FALSE, width = "100%",
+                          options = list(
+                            placeholder = '',
+                            onInitialize = I('function() { this.setValue(""); }')
+                          )
+                        )
         )
       ),
     )
@@ -130,6 +134,12 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             TDall[,is.excluded:=F]
             studiesTD <- addTD(TD = studiesTD, data = TDall)
             setDT(studiesTD$all)
+
+            shinyBS::updateCollapse(
+              id = "dataImportCollapse",
+              session = session,
+              close = "Data import"
+            )
             return(studiesTD)
           })
         })
