@@ -107,7 +107,7 @@ mod_dataquality_server <- function(id, d){
 
         studyDbIds <- names(d())[names(d()) != "all"]
         studyNames <- unlist(lapply(studyDbIds, function(x){
-          d()[[x]][,unique(studyName)]
+          d()[[x]][,unique(environment_label)]
         }))
         names(studyDbIds) <- studyNames
         updateSelectizeInput(
@@ -192,7 +192,7 @@ mod_dataquality_server <- function(id, d){
 
         g1 <- ggplot(td, aes(
           y = observations.value,
-          x = trials
+          x = environment_label_abbrev
         )) +
           geom_violin(alpha = 0.2) +
           geom_boxplot(
@@ -215,7 +215,8 @@ mod_dataquality_server <- function(id, d){
             size = 4
           ) +
           scale_alpha(guide = "none") + coord_flip() +
-          theme_minimal()
+          theme_minimal() +
+          theme(axis.text.y = element_text(angle = 80), axis.title = element_blank())
         ggplotly(
           g1,
           dynamicTicks = "TRUE", source = "A", originalData = T,
@@ -261,7 +262,7 @@ mod_dataquality_server <- function(id, d){
             )
           ) +
           coord_equal() +
-          facet_wrap(trials~., ncol = 1) +
+          facet_wrap(environment_label_abbrev~., ncol = 1) +
           scale_fill_gradientn(colours = myPalette(100)) +
           scale_color_discrete(guide = "none") +
           scale_alpha(guide = "none") +

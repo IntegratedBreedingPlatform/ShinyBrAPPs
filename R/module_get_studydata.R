@@ -116,6 +116,36 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
                 return(study)
               })
             }), use.names = T, fill = T)
+            data_studies[,environment_label := paste0(
+              studyDbId, " - ",
+              studyName, " AT ",
+              studyLocation
+            )]
+            maxchar <- 8
+            data_studies[,environment_label_abbrev :=
+                           paste0(
+                             studyDbId, " - ",
+                             ifelse(
+                               nchar(studyName)>maxchar,
+                               paste0(
+                                 substr(studyName,1,maxchar/2 - 1),
+                                 "...",
+                                 substr(studyName,nchar(studyName)- maxchar/2 - 1,nchar(studyName))
+                               ),
+                               studyName
+                             ),
+                             " AT ",
+                             ifelse(
+                               nchar(studyLocation)>20,
+                               paste0(
+                                 substr(studyLocation,1,8),
+                                 "...",
+                                 substr(studyLocation,nchar(studyLocation)-8,nchar(studyLocation))
+                               ),
+                               studyLocation
+                             )
+                           )
+            ]
             studiesTD <- createTD(
               data = data_studies,
               genotype = "germplasmDbId",

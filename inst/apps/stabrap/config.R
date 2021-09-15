@@ -8,5 +8,6 @@ hidden_columns_observationunits <- c(
   "studyDbId","studyName","studyLocationDbId", "studyLocation",
   "programName", "programDbId",
   "trialDbId", "trialName",
-  "observations.observationVariableName"
+  "observations.observationVariableName",
+  "environment_label_abbrev"
   )
