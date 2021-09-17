@@ -276,7 +276,7 @@ mod_dataquality_server <- function(id, d){
           repBord$horW$W <- "horW"
           repBord$vertW$W <- "vertW"
           repBordBind <- rbindlist(repBord, use.names = T, fill = T)
-          repBordBind[,trials := tr]
+          repBordBind[,environment_label_abbrev := unique(d()[[tr]][,environment_label_abbrev])]
         }), use.names = T, fill = T)
         g2 <- g2 +
           ggplot2::geom_segment(ggplot2::aes_string(x = "x - 0.5",
