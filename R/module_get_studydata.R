@@ -36,7 +36,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
       ns <- NS(id)
 
       if(!is.null(dataset_4_dev)){ # XXX
-        studiesTD <- reactive(dataset_4_dev)
+        rv$TD <- dataset_4_dev
       }else{
         parse_GET_param  <- reactive({
           pars <- parseQueryString(session$clientData$url_search)
@@ -103,7 +103,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           rv$trialDbId <- input$trials
         })
 
-        studiesTD <- eventReactive(rv$trialDbId,{
+        observeEvent(rv$trialDbId,{
           req(rv$trialDbId)
           try({
             # get all the studies of a trial
@@ -170,11 +170,11 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               session = session,
               close = "Data import"
             )
-            return(studiesTD)
+            rv$TD <- studiesTD
           })
         })
       }
-      return(studiesTD)
+      return(rv)
     }
   )
 }

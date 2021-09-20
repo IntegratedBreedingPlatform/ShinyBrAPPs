@@ -86,28 +86,27 @@ mod_dataquality_ui <- function(id){
 }
 
 #' @export
-mod_dataquality_server <- function(id, d){
+mod_dataquality_server <- function(id, rv){
   moduleServer(
     id,
     function(input, output, session){
 
-      rv <- reactiveValues()
       observe({
 
-        d()
+        req(rv$TD)
 
         updateSelectizeInput(
           inputId = "trait", session = session,
-          choices = d()$all[,unique(observations.observationVariableName)],
+          choices = rv$TD$all[,unique(observations.observationVariableName)],
           options = list(
             placeholder = 'Select a trait'
             # onInitialize = I('function() { this.setValue(""); }')
           )
         )
 
-        studyDbIds <- names(d())[names(d()) != "all"]
+        studyDbIds <- names(rv$TD)[names(rv$TD) != "all"]
         studyNames <- unlist(lapply(studyDbIds, function(x){
-          d()[[x]][,unique(environment_label)]
+          rv$TD[[x]][,unique(environment_label)]
         }))
         names(studyDbIds) <- studyNames
         updateSelectizeInput(
@@ -118,7 +117,7 @@ mod_dataquality_server <- function(id, d){
           )
         )
 
-        are_num <- d()$all[,lapply(.SD, is.numeric)]
+        are_num <- rv$TD$all[,lapply(.SD, is.numeric)]
         non_numeric_variables <- names(are_num)[are_num==F]
         updateSelectizeInput(
           session = session,
@@ -142,17 +141,17 @@ mod_dataquality_server <- function(id, d){
       observe({
         req(input$trait)
         req(input$studies)
-        TD <- d()[c(input$studies, "all")]
+        TD <- rv$TD[c(input$studies, "all")]
         TD$all <- TD$all[trials%in%input$studies]
         for(i in c(input$studies, "all")){
           TD[[i]] <- TD[[i]][observations.observationVariableName == input$trait]
         }
-        rv$TD <- TD
+        rv$TD_dq <- TD
       })
 
       observeEvent(input$select_variable,{
         req(input$select_variable)
-        values <- unique(d()$all[,input$select_variable, with = F])
+        values <- unique(rv$TD$all[,input$select_variable, with = F])
         if(values[,.N]==1){
           values <- unname(values)
         }
@@ -169,7 +168,7 @@ mod_dataquality_server <- function(id, d){
       })
 
       observeEvent(input$select_variable_value,{
-        sel_observationDbIds <- d()$all[
+        sel_observationDbIds <- rv$TD$all[
           eval(as.name(input$select_variable)) %in% input$select_variable_value,
           observations.observationDbId
         ]
@@ -178,13 +177,13 @@ mod_dataquality_server <- function(id, d){
 
       output$distribution_viz <- renderPlotly({
 
-        req(rv$TD)
+        req(rv$TD_dq)
         req(input$studies)
 
         input$set_excluded_obs
         input$set_non_excluded_obs
 
-        td <- rv$TD$all[is.excluded==F]
+        td <- rv$TD_dq$all[is.excluded==F]
 
         td[, is.selected:=F]
         td[observations.observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
@@ -228,13 +227,13 @@ mod_dataquality_server <- function(id, d){
 
       output$layout_viz <- renderPlotly({
 
-        req(rv$TD)
+        req(rv$TD_dq)
         req(input$studies)
 
         input$set_excluded_obs
         input$set_non_excluded_obs
 
-        td <- rv$TD$all[is.excluded==F]
+        td <- rv$TD_dq$all[is.excluded==F]
 
         td[observations.observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
         td[, x:=as.numeric(x)]
@@ -271,12 +270,12 @@ mod_dataquality_server <- function(id, d){
           theme(legend.position="top", panel.grid = element_blank(), axis.line = element_blank(), axis.text = element_blank(), axis.title = element_blank())
 
         ## drawing a vertical and horizontal lines for replicates
-        repBords <- rbindlist(lapply(names(d())[names(d())%in%input$studies], function(tr){
-          repBord <- calcPlotBorders(as.data.frame(d()[[tr]][observations.observationDbId %in% td[is.excluded == F & trials == tr, observations.observationDbId]]), bordVar = "repId")
+        repBords <- rbindlist(lapply(names(rv$TD)[names(rv$TD)%in%input$studies], function(tr){
+          repBord <- calcPlotBorders(as.data.frame(rv$TD[[tr]][observations.observationDbId %in% td[is.excluded == F & trials == tr, observations.observationDbId]]), bordVar = "repId")
           repBord$horW$W <- "horW"
           repBord$vertW$W <- "vertW"
           repBordBind <- rbindlist(repBord, use.names = T, fill = T)
-          repBordBind[,environment_label_abbrev := unique(d()[[tr]][,environment_label_abbrev])]
+          repBordBind[,environment_label_abbrev := unique(rv$TD[[tr]][,environment_label_abbrev])]
         }), use.names = T, fill = T)
         g2 <- g2 +
           ggplot2::geom_segment(ggplot2::aes_string(x = "x - 0.5",
@@ -362,40 +361,40 @@ mod_dataquality_server <- function(id, d){
       })
 
       output$correlationPlot <- renderPlotly({
-        p <- plot(d(), plotType="cor", traits = "observations.value", output = F, trials = names(d())[names(d())!="all"])
-        # p <- plot(d(), plotType="cor", traits = "observations.value", output = F, trials = names(d())[names(d())!="all"])
+        p <- plot(rv$TD, plotType="cor", traits = "observations.value", output = F, trials = names(rv$TD)[names(rv$TD)!="all"])
+        # p <- plot(rv$TD, plotType="cor", traits = "observations.value", output = F, trials = names(rv$TD)[names(rv$TD)!="all"])
         ggplotly(p[['observations.value']], source = "C")
       })
 
       # summary statistics
       output$sumstats_table <- renderDataTable({
-        sumtable <- data.table(Environment=unlist(lapply(d(), function(x){
+        sumtable <- data.table(Environment=unlist(lapply(rv$TD, function(x){
           if(unique(x$trial) == "all"){"all"}else{unique(x$studyName)}
         })))
-        sumtable[, "No. of values":=unlist(lapply(d(), function(x){x[,.N]}))]
-        sumtable[, "No. of observations":=unlist(lapply(d(), function(x){x[is.excluded==F,.N]}))]
+        sumtable[, "No. of values":=unlist(lapply(rv$TD, function(x){x[,.N]}))]
+        sumtable[, "No. of observations":=unlist(lapply(rv$TD, function(x){x[is.excluded==F,.N]}))]
         sumtable[, "No. of excluded values":= `No. of values` - `No. of observations`]
-        sumtable[, "Mean":=unlist(lapply(d(), function(x){x[is.excluded==F,mean(observations.value, na.rm = T)]}))]
-        sumtable[, "Minimum":=unlist(lapply(d(), function(x){x[is.excluded==F,min(observations.value, na.rm = T)]}))]
-        sumtable[, "Quantile 0.25":=unlist(lapply(d(), function(x){x[is.excluded==F,quantile(observations.value, probs = c(0.25))]}))]
-        sumtable[, "Median":=unlist(lapply(d(), function(x){x[is.excluded==F,quantile(observations.value, probs = c(0.5))]}))]
-        sumtable[, "Quantile 0.75":=unlist(lapply(d(), function(x){x[is.excluded==F,quantile(observations.value, probs = c(0.75))]}))]
-        sumtable[, "Maximum":=unlist(lapply(d(), function(x){x[is.excluded==F,max(observations.value, na.rm = T)]}))]
+        sumtable[, "Mean":=unlist(lapply(rv$TD, function(x){x[is.excluded==F,mean(observations.value, na.rm = T)]}))]
+        sumtable[, "Minimum":=unlist(lapply(rv$TD, function(x){x[is.excluded==F,min(observations.value, na.rm = T)]}))]
+        sumtable[, "Quantile 0.25":=unlist(lapply(rv$TD, function(x){x[is.excluded==F,quantile(observations.value, probs = c(0.25))]}))]
+        sumtable[, "Median":=unlist(lapply(rv$TD, function(x){x[is.excluded==F,quantile(observations.value, probs = c(0.5))]}))]
+        sumtable[, "Quantile 0.75":=unlist(lapply(rv$TD, function(x){x[is.excluded==F,quantile(observations.value, probs = c(0.75))]}))]
+        sumtable[, "Maximum":=unlist(lapply(rv$TD, function(x){x[is.excluded==F,max(observations.value, na.rm = T)]}))]
         sumtable[, "Range":=Maximum - Minimum]
-        sumtable[, "Standard deviation":=unlist(lapply(d(), function(x){x[is.excluded==F,sd(observations.value, na.rm = T)]}))]
+        sumtable[, "Standard deviation":=unlist(lapply(rv$TD, function(x){x[is.excluded==F,sd(observations.value, na.rm = T)]}))]
         sumtable[, "Standard error of mean":=`Standard deviation`/sqrt(`No. of observations`)]
-        sumtable[, "Variance":=unlist(lapply(d(), function(x){x[is.excluded==F,var(observations.value, na.rm = T)]}))]
+        sumtable[, "Variance":=unlist(lapply(rv$TD, function(x){x[is.excluded==F,var(observations.value, na.rm = T)]}))]
         sumtable[, "Standard error of variance":=`Variance`/sqrt(`No. of observations`)]
         sumtable[, "%cov":=`Variance`/`Mean`]
-        sumtable[, "Sum of values":=unlist(lapply(d(), function(x){x[is.excluded==F,sum(observations.value, na.rm = T)]}))]
-        sumtable[, "Sum of squares":=unlist(lapply(d(), function(x){
+        sumtable[, "Sum of values":=unlist(lapply(rv$TD, function(x){x[is.excluded==F,sum(observations.value, na.rm = T)]}))]
+        sumtable[, "Sum of squares":=unlist(lapply(rv$TD, function(x){
           m <- x[is.excluded==F,mean(observations.value, na.rm = T)]
           sum(x[is.excluded==F,(observations.value-m)^2])
         }))]
-        sumtable[, "Uncorrected sum of squares":=unlist(lapply(d(), function(x){x[is.excluded==F,sum(observations.value^2, na.rm = T)]}))]
-        sumtable[, "Skewness":=unlist(lapply(d(), function(x){e1071::skewness(x[is.excluded==F,observations.value])}))]
+        sumtable[, "Uncorrected sum of squares":=unlist(lapply(rv$TD, function(x){x[is.excluded==F,sum(observations.value^2, na.rm = T)]}))]
+        sumtable[, "Skewness":=unlist(lapply(rv$TD, function(x){e1071::skewness(x[is.excluded==F,observations.value])}))]
         sumtable[, "%Standard error of skewness":=`Skewness`/sqrt(`No. of observations`)]
-        sumtable[, "Kurtosis":=unlist(lapply(d(), function(x){e1071::kurtosis(x[is.excluded==F,observations.value])}))]
+        sumtable[, "Kurtosis":=unlist(lapply(rv$TD, function(x){e1071::kurtosis(x[is.excluded==F,observations.value])}))]
         sumtable[, "%Standard error of kurtosis":=`Kurtosis`/sqrt(`No. of observations`)]
         rownames(sumtable) <- sumtable[,Environment]
         sumtable[,Environment:=NULL]
@@ -426,13 +425,13 @@ mod_dataquality_server <- function(id, d){
         input$set_excluded_obs
         input$set_non_excluded_obs
         datatable(
-          rv$TD$all[observations.observationDbId %in% rv$sel_observationDbIds & is.excluded ==F],
+          rv$TD_dq$all[observations.observationDbId %in% rv$sel_observationDbIds & is.excluded ==F],
           extensions = 'Buttons',
           options = list(
             columnDefs = list(
               list(
                 visible=FALSE,
-                targets=match(hidden_columns_observationunits, names(rv$TD$all))
+                targets=match(hidden_columns_observationunits, names(rv$TD_dq$all))
               )
             ),
             paging = F,
@@ -448,32 +447,32 @@ mod_dataquality_server <- function(id, d){
 
       observeEvent(input$set_excluded_obs,{
 
-        td <- rv$TD$all
+        td <- rv$TD_dq$all
         excluded_obs <- td[
           observations.observationDbId %in% rv$sel_observationDbIds
         ][
           input$selected_obs_table_rows_selected, observations.observationDbId
         ]
         td[observations.observationDbId %in% excluded_obs, is.excluded:=T]
-        rv$TD$all <- td
+        rv$TD_dq$all <- td
       })
 
       output$excluded_obs_table <- renderDT({
         shinyjs::hide(selector = ".display_if_exclusion")
-        req(rv$TD)
-        rv$TD
+        req(rv$TD_dq)
+        rv$TD_dq
         input$set_excluded_obs
         input$set_non_excluded_obs
-        req(rv$TD$all[is.excluded==T,.N]>0)
+        req(rv$TD_dq$all[is.excluded==T,.N]>0)
         shinyjs::show(selector = ".display_if_exclusion")
         datatable(
-          rv$TD$all[is.excluded==T],
+          rv$TD_dq$all[is.excluded==T],
           extensions = 'Buttons',
           options = list(
             columnDefs = list(
               list(
                 visible=FALSE,
-                targets=match(hidden_columns_observationunits, names(rv$TD$all))
+                targets=match(hidden_columns_observationunits, names(rv$TD_dq$all))
               )
             ),
             paging = F,
@@ -488,14 +487,14 @@ mod_dataquality_server <- function(id, d){
       })
 
       observeEvent(input$set_non_excluded_obs,{
-        td <- rv$TD$all
+        td <- rv$TD_dq$all
         non_excluded_obs <- td[is.excluded==T][
           input$excluded_obs_table_rows_selected, observations.observationDbId]
         td[observations.observationDbId %in% non_excluded_obs, is.excluded:=F]
-        rv$TD$all <- td
+        rv$TD_dq$all <- td
       })
 
-      return(rv)
+     return(rv)
     }
   )
 }
