@@ -111,7 +111,6 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             data_studies <- rbindlist(l = lapply(trial_studies$studyDbId, function(study_id){
               try({
                 study <- as.data.table(brapirv1::brapi_get_studies_studyDbId_observationunits(con = rv$con, studyDbId = study_id))
-                study[,is.excluded:=F]
                 study[,observations.value:=as.numeric(observations.value)] # XXX this should not always be the case
                 return(study)
               })
@@ -161,7 +160,6 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             TDall <- rbindlist(l = studiesTD, use.names = T, fill = T)
             TDall[,trials:=trial]
             TDall[,trial:="all"]
-            TDall[,is.excluded:=F]
             studiesTD <- addTD(TD = studiesTD, data = TDall)
             setDT(studiesTD$all)
 

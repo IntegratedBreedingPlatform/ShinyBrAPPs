@@ -188,6 +188,7 @@ mod_dataquality_server <- function(id, rv){
         td[, is.selected:=F]
         td[observations.observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
 
+        td[,environment_label_abbrev:=factor(environment_label_abbrev, levels = rev(levels(factor(environment_label_abbrev))))]
 
         g1 <- ggplot(td, aes(
           y = observations.value,
@@ -215,7 +216,7 @@ mod_dataquality_server <- function(id, rv){
           ) +
           scale_alpha(guide = "none") + coord_flip() +
           theme_minimal() +
-          theme(axis.text.y = element_text(angle = 80), axis.title = element_blank())
+          theme(axis.text.y = element_text(angle = 60), axis.title = element_blank())
         ggplotly(
           g1,
           dynamicTicks = "TRUE", source = "A", originalData = T,
