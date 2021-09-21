@@ -26,7 +26,10 @@ ui <- fluidPage(
       "Data Quality",
       mod_dataquality_ui("dataquality")
     ),
-    tabPanel("Model"),
+    tabPanel(
+      "Model",
+      mod_model_ui('model')
+    ),
     tabPanel("BLUES/BLUPS"),
     tabPanel("Diagnosis")
   )

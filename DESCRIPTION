@@ -26,5 +26,6 @@ Depends:
 	statgenSTA,
 	brapirv1,
 	brapirv2,
-	SpATS
+	SpATS,
+	shinyWidgets
 RoxygenNote: 7.1.1
