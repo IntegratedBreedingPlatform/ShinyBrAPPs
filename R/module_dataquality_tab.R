@@ -106,7 +106,7 @@ mod_dataquality_server <- function(id, rv){
 
         studyDbIds <- names(rv$TD)[names(rv$TD) != "all"]
         studyNames <- unlist(lapply(studyDbIds, function(x){
-          rv$TD[[x]][,unique(environment_label)]
+          rv$TD[[x]][,unique(study_name_app)]
         }))
         names(studyDbIds) <- studyNames
         updateSelectizeInput(
@@ -189,11 +189,11 @@ mod_dataquality_server <- function(id, rv){
         td[, is.selected:=F]
         td[observations.observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
 
-        td[,environment_label_abbrev:=factor(environment_label_abbrev, levels = rev(levels(factor(environment_label_abbrev))))]
+        td[,study_name_abbrev_app:=factor(study_name_abbrev_app, levels = rev(levels(factor(study_name_abbrev_app))))]
 
         g1 <- ggplot(td, aes(
           y = observations.value,
-          x = environment_label_abbrev
+          x = study_name_abbrev_app
         )) +
           geom_violin(alpha = 0.2) +
           geom_boxplot(
@@ -263,8 +263,8 @@ mod_dataquality_server <- function(id, rv){
             )
           ) +
           #coord_equal() +
-          facet_wrap(environment_label_abbrev~., ncol = 1) +
-          scale_fill_gradientn(colours = topo.colors(100)) +
+          facet_wrap(study_name_abbrev_app~., ncol = 1) +
+          scale_fill_gradientn(colours = myPalette(100)) +
           scale_color_discrete(guide = "none") +
           scale_alpha(guide = "none") +
           # scale_linetype(guide = "none") +
@@ -277,7 +277,7 @@ mod_dataquality_server <- function(id, rv){
           repBord$horW$W <- "horW"
           repBord$vertW$W <- "vertW"
           repBordBind <- rbindlist(repBord, use.names = T, fill = T)
-          repBordBind[,environment_label_abbrev := unique(rv$TD[[tr]][,environment_label_abbrev])]
+          repBordBind[,study_name_abbrev_app := unique(rv$TD[[tr]][,study_name_abbrev_app])]
         }), use.names = T, fill = T)
         g2 <- g2 +
           ggplot2::geom_segment(ggplot2::aes_string(x = "x - 0.5",
