@@ -156,6 +156,10 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               locationName, "-",
               locationNameAbbrev
             )]
+            data_studies[,study_name_abbrev_app := paste0(
+              environmentNumber, "-",
+              locationNameAbbrev
+            )]
 
             rv$data <- data_studies
 

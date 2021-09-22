@@ -188,11 +188,11 @@ mod_dataquality_server <- function(id, rv){
         td[, is.selected:=F]
         td[observations.observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
 
-        td[,locationNameAbbrev:=factor(locationNameAbbrev, levels = rev(levels(factor(locationNameAbbrev))))]
+        td[,study_name_abbrev_app:=factor(study_name_abbrev_app, levels = rev(levels(factor(study_name_abbrev_app))))]
 
         g1 <- ggplot(td, aes(
           y = observations.value,
-          x = locationNameAbbrev
+          x = study_name_abbrev_app
         )) +
           geom_violin(alpha = 0.2) +
           geom_boxplot(
@@ -262,7 +262,7 @@ mod_dataquality_server <- function(id, rv){
             )
           ) +
           coord_equal() +
-          facet_wrap(locationNameAbbrev~., ncol = 1) +
+          facet_wrap(study_name_abbrev_app~., ncol = 1) +
           scale_fill_gradientn(colours = myPalette(100)) +
           scale_color_discrete(guide = "none") +
           scale_alpha(guide = "none") +
@@ -276,7 +276,7 @@ mod_dataquality_server <- function(id, rv){
           repBord$horW$W <- "horW"
           repBord$vertW$W <- "vertW"
           repBordBind <- rbindlist(repBord, use.names = T, fill = T)
-          repBordBind[,locationNameAbbrev := unique(rv$TD[[tr]][,locationNameAbbrev])]
+          repBordBind[,study_name_abbrev_app := unique(rv$TD[[tr]][,study_name_abbrev_app])]
         }), use.names = T, fill = T)
         g2 <- g2 +
           ggplot2::geom_segment(ggplot2::aes_string(x = "x - 0.5",
