@@ -56,7 +56,7 @@ mod_dataquality_ui <- function(id){
             ),
             fluidRow(
               column(width = 6,
-                     plotlyOutput(ns("distribution_viz"))),
+                     plotlyOutput(ns("distribution_viz"),height = "400px")),
               column(width = 6, plotlyOutput(ns("layout_viz")))
             )
           ),
@@ -147,6 +147,7 @@ mod_dataquality_server <- function(id, rv){
           TD[[i]] <- TD[[i]][observations.observationVariableName == input$trait]
         }
         rv$TD_dq <- TD
+        
       })
 
       observeEvent(input$select_variable,{
@@ -216,8 +217,10 @@ mod_dataquality_server <- function(id, rv){
           ) +
           scale_alpha(guide = "none") + coord_flip() +
           theme_minimal() +
-          theme(axis.text.y = element_text(angle = 60), axis.title = element_blank())
-        ggplotly(
+          theme(#axis.text.y = element_text(angle = 60),
+            axis.text.y = element_blank(),
+            axis.title = element_blank())
+        ggplotly(height=length(input$studies)*400,
           g1,
           dynamicTicks = "TRUE", source = "A", originalData = T,
           tooltip = c("germplasmName", "observations.value", "key")) %>%
@@ -240,8 +243,6 @@ mod_dataquality_server <- function(id, rv){
         td[, x:=as.numeric(x)]
         td[, y:=as.numeric(y)]
 
-        myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")))
-
         g2 <- ggplot(
           td[!(observations.observationDbId %in% rv$excluded_obs)],
           aes(x = x, y = y)
@@ -261,14 +262,14 @@ mod_dataquality_server <- function(id, rv){
               replicate = repId
             )
           ) +
-          coord_equal() +
+          #coord_equal() +
           facet_wrap(environment_label_abbrev~., ncol = 1) +
-          scale_fill_gradientn(colours = myPalette(100)) +
+          scale_fill_gradientn(colours = topo.colors(100)) +
           scale_color_discrete(guide = "none") +
           scale_alpha(guide = "none") +
           # scale_linetype(guide = "none") +
           theme_minimal() +
-          theme(legend.position="top", panel.grid = element_blank(), axis.line = element_blank(), axis.text = element_blank(), axis.title = element_blank())
+          theme(legend.position="none",panel.margin = unit(0, "lines"), panel.grid = element_blank(), axis.line = element_blank(), axis.text = element_blank(), axis.title = element_blank())
 
         ## drawing a vertical and horizontal lines for replicates
         repBords <- rbindlist(lapply(names(rv$TD)[names(rv$TD)%in%input$studies], function(tr){
@@ -318,7 +319,7 @@ mod_dataquality_server <- function(id, rv){
                                   data = td[is.selected==T], size = 1, alpha = 1)
         }
 
-        ggplotly(
+        ggplotly(height=length(input$studies)*400,
           g2,
           dynamicTicks = "TRUE", source = "A", originalData = T,
           tooltip = c("germplasmName", "observations.value", "replicate", "observations.observationDbId")) %>%
