@@ -264,7 +264,7 @@ mod_dataquality_server <- function(id, rv){
           ) +
           #coord_equal() +
           facet_wrap(study_name_abbrev_app~., ncol = 1) +
-          scale_fill_gradientn(colours = myPalette(100)) +
+          scale_fill_gradientn(colours = topo.colors(100)) +
           scale_color_discrete(guide = "none") +
           scale_alpha(guide = "none") +
           # scale_linetype(guide = "none") +
