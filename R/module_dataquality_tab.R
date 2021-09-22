@@ -272,7 +272,7 @@ mod_dataquality_server <- function(id, rv){
 
         ## drawing a vertical and horizontal lines for replicates
         repBords <- rbindlist(lapply(names(rv$TD)[names(rv$TD)%in%input$studies], function(tr){
-          repBord <- calcPlotBorders(as.data.frame(rv$TD[[tr]][!(observations.observationDbId %in% rv$excluded_obs)]), bordVar = "repId")
+          repBord <- calcPlotBorders(as.data.frame(rv$TD[[tr]]), bordVar = "repId")
           repBord$horW$W <- "horW"
           repBord$vertW$W <- "vertW"
           repBordBind <- rbindlist(repBord, use.names = T, fill = T)
