@@ -84,7 +84,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             bms = TRUE
           )
           try({
-            # get the brapi::trials for the crop
+            ## get the brapi::trials for the crop
             trials <- as.data.table(brapirv2::brapi_get_trials(con = rv$con))
             trial_choices <- trials[,trialDbId]
             names(trial_choices) <- trials[,trialName]
@@ -106,15 +106,42 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         observeEvent(rv$trialDbId,{
           req(rv$trialDbId)
           try({
-            # get all the studies of a trial
+            ## get all the studies of a trial
             trial_studies <- as.data.table(brapirv2::brapi_get_studies(con = rv$con, trialDbId = rv$trialDbId))
-            data_studies <- rbindlist(l = lapply(trial_studies$studyDbId, function(study_id){
+            study_ids <- unique(trial_studies$studyDbId)
+            data_studies <- rbindlist(l = lapply(1:length(study_ids), function(k){
               try({
+                study_id <- study_ids[k]
                 study <- as.data.table(brapirv1::brapi_get_studies_studyDbId_observationunits(con = rv$con, studyDbId = study_id))
                 study[,observations.value:=as.numeric(observations.value)] # XXX this should not always be the case
+
+                location_name <- trial_studies[studyDbId == study_id,unique(locationName)]
+
+                location_abbrev <- trial_studies[studyDbId == study_id & environmentParameters.parameterName == "LOCATION_ABBR",environmentParameters.value]
+                maxchar <- 8
+                location_abbrev <- ifelse(
+                  length(location_abbrev)==0,
+                  ifelse(
+                    nchar(location_name)>maxchar,
+                    paste0(
+                      substr(location_name,1,maxchar/2 - 1),
+                      "...",
+                      substr(location_name,nchar(location_name)- maxchar/2 - 1,nchar(location_name))
+                    ),
+                    location_name
+                  ),
+                  location_abbrev
+                )
+                study[, studyLocationAbbrev:=location_abbrev]
+
+                environment_number <- trial_studies[studyDbId == study_id & environmentParameters.parameterName == "ENVIRONMENT_NUMBER",environmentParameters.value]
+                environment_number <- ifelse(length(environment_number)==0,k,environment_number)
+                study[, environmentNumber:=environment_number]
+
                 return(study)
               })
             }), use.names = T, fill = T)
+
             data_studies[,environment_label := paste0(
               studyDbId, " - ",
               studyName, " AT ",
