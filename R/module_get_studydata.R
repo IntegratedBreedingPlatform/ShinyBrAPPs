@@ -113,6 +113,10 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               try({
                 study_id <- study_ids[k]
                 study <- as.data.table(brapirv1::brapi_get_studies_studyDbId_observationunits(con = rv$con, studyDbId = study_id))
+
+                if(!("observations.value"%in%names(study))){
+                  study[,observations.value:=NA]
+                }
                 study[,observations.value:=as.numeric(observations.value)] # XXX this should not always be the case
 
                 location_name <- trial_studies[studyDbId == study_id,unique(locationName)]
