@@ -96,7 +96,7 @@ mod_model_server <- function(id, rv){
     function(input, output, session){
       observe({
         req(rv$data)
-        choices_env <- rv$data[,unique(environment_label)]
+        choices_env <- rv$data[,unique(study_name_app)]
         updateSelectizeInput(
           session,"select_environments",
           choices = choices_env,
@@ -127,7 +127,7 @@ mod_model_server <- function(id, rv){
         ## make 1 column per trait
         data_filtered_casted <- dcast(
           data_filtered,
-          germplasmDbId + studyDbId + studyLocationDbId + environment_label + germplasmName +
+          germplasmDbId + studyDbId + studyLocationDbId + study_name_app + germplasmName +
             replicate + observationUnitDbId + positionCoordinateY +
             positionCoordinateX ~ observations.observationVariableName,
           value.var = "observations.value"
@@ -136,7 +136,7 @@ mod_model_server <- function(id, rv){
         TD <- createTD(
           data = data_filtered_casted,
           genotype = "germplasmName", # XXX using germplasmName instead of germplasmDbId makes the output easier to read but is it always OK?
-          trial = "environment_label", # XXX environment_label is the concatenation of studyDbId and location
+          trial = "study_name_app",
           loc = "studyLocationDbId", # XXX
           repId = "replicate",
           subBlock = "observationUnitDbId",

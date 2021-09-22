@@ -120,6 +120,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
                 study[,observations.value:=as.numeric(observations.value)] # XXX this should not always be the case
 
                 location_name <- trial_studies[studyDbId == study_id,unique(locationName)]
+                study[, locationName:=location_name]
 
                 location_abbrev <- trial_studies[studyDbId == study_id & environmentParameters.parameterName == "LOCATION_ABBR",environmentParameters.value]
                 maxchar <- 8
@@ -136,7 +137,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
                   ),
                   location_abbrev
                 )
-                study[, studyLocationAbbrev:=location_abbrev]
+                study[, locationNameAbbrev:=location_abbrev]
 
                 environment_number <- trial_studies[studyDbId == study_id & environmentParameters.parameterName == "ENVIRONMENT_NUMBER",environmentParameters.value]
                 environment_number <- ifelse(length(environment_number)==0,k,environment_number)
@@ -146,36 +147,16 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               })
             }), use.names = T, fill = T)
 
-            data_studies[,environment_label := paste0(
-              studyDbId, " - ",
-              studyName, " AT ",
-              studyLocation
+            data_studies[,study_name_BMS := paste0(
+              environmentNumber, "-",
+              locationName
             )]
-            maxchar <- 8
-            data_studies[,environment_label_abbrev :=
-                           paste0(
-                             studyDbId, " - ",
-                             ifelse(
-                               nchar(studyName)>maxchar,
-                               paste0(
-                                 substr(studyName,1,maxchar/2 - 1),
-                                 "...",
-                                 substr(studyName,nchar(studyName)- maxchar/2 - 1,nchar(studyName))
-                               ),
-                               studyName
-                             ),
-                             " AT ",
-                             ifelse(
-                               nchar(studyLocation)>20,
-                               paste0(
-                                 substr(studyLocation,1,8),
-                                 "...",
-                                 substr(studyLocation,nchar(studyLocation)-8,nchar(studyLocation))
-                               ),
-                               studyLocation
-                             )
-                           )
-            ]
+            data_studies[,study_name_app := paste0(
+              environmentNumber, "-",
+              locationName, "-",
+              locationNameAbbrev
+            )]
+
             rv$data <- data_studies
 
             studiesTD <- createTD(
