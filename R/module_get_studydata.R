@@ -233,6 +233,11 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               updateCheckboxGroupInput(session = session,inputId = "environments", label = "", choices = vector())
               shinyjs::hide(id = "load_env")
               shinyjs::hide(id = "load_all_env")
+              shinyBS::updateCollapse(
+                id = "dataImportCollapse",
+                session = session,
+                close = "Data import"
+              )
             }else{
               names(env_choices) <- rv$study_names[loaded==F,study_name_app]
               updateCheckboxGroupInput(session = session,inputId = "environments", choices = env_choices)
