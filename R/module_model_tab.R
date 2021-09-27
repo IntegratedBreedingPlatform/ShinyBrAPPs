@@ -94,7 +94,15 @@ mod_model_ui <- function(id){
               )
             )
           ),
-          tabPanel("Results")
+          tabPanel(
+            "Results",
+            tags$label("Heritabilities"),
+            dataTableOutput(ns("herits")),
+            tags$label("BLUPs"),
+            dataTableOutput(ns("BLUPs")),
+            tags$label("BLUEs"),
+            dataTableOutput(ns("BLUEs"))
+          )
         )
       )
     )
@@ -267,6 +275,49 @@ mod_model_server <- function(id, rv){
         },
         height=length(input$select_environment_fit)*500
         )
+      })
+
+      output$herits <- renderDT({
+        req(rv$fit)
+        herits <- extractSTA(STA = rv$fit, what = "heritability")
+        datatable(
+          herits,
+          rownames = F,
+          options = list(
+            paging = F,
+            scrollX = T,
+            scrollY = "500px",
+            scrollCollapse = T,
+            dom = 't'
+          ))
+      })
+      output$BLUPs <- renderDT({
+        req(rv$fit)
+        BLUPs <- extractSTA(STA = rv$fit, what = "BLUPs")
+        datatable(
+          BLUPs,
+          rownames = F,
+          options = list(
+            paging = F,
+            scrollX = T,
+            scrollY = "500px",
+            scrollCollapse = T,
+            dom = 't'
+          ))
+      })
+      output$BLUEs <- renderDT({
+        req(rv$fit)
+        BLUEs <- extractSTA(STA = rv$fit, what = "BLUEs")
+        datatable(
+          BLUEs,
+          rownames = F,
+          options = list(
+            paging = F,
+            scrollX = T,
+            scrollY = "500px",
+            scrollCollapse = T,
+            dom = 't'
+          ))
       })
     }
   )
