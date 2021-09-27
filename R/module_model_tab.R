@@ -1,91 +1,103 @@
 #' @export
 mod_model_ui <- function(id){
   ns <- NS(id)
-  column(12,
-         fluidRow(
-           column(
-             3,
-             selectizeInput(
-               ns("select_environments"), "Environments", multiple = TRUE, choices = NULL, width = "100%"
-             )
-           ),
-           column(
-             3,
-             selectInput(ns("select_traits"), label = "Select Traits", multiple = TRUE, choices = NULL, width = "100%")
-           ),
-           column(
-             3,
-             selectInput(ns("model_design"), "Select Model Design",
-                         choices = c("incomplete block design" = "ibd",
-                                     "resolvable incomplete block design" = "res.ibd",
-                                     "randomized complete block design" = "rcbd",
-                                     "row column design" = "rowcol",
-                                     "resolvable row column design" = "res.rowcol"),
-                         width = "100%")
-           ),
-           column(
-             2,
-             selectInput(ns("model_engine"), "Select Modelling Engine",
-                         choices = c("SpATS", "lme4", "asreml"),
-                         selected = "SpATS",
-                         width = "100%")
-           ),
-           column(
-             1,
-             actionButton(ns("go_fit_model"), "Fit model")
-           )
-         ),
-         fluidRow(
-           bsCollapse(open = NULL,
-                      bsCollapsePanel(
-                        title = "Advanced fitting options",
-                        # XXX
-                        tags$p("NOT FUNCTIONNAL"),
-                        pickerInput(inputId = 'xcol2',
-                                    label = 'other param 1',
-                                    choices = names(iris),
-                                    options = list(`style` = "btn-info")),
+  fluidRow(
+    fluidRow(
+      column(
+        3,
+        selectInput(ns("select_traits"), label = "Select Traits", multiple = TRUE, choices = NULL, width = "100%")
+      ),
+      column(
+        3,
+        selectizeInput(
+          ns("select_environments"), "Environments", multiple = TRUE, choices = NULL, width = "100%"
+        )
+      ),
+      column(
+        3,
+        selectInput(ns("model_design"), "Select Model Design",
+                    choices = c("incomplete block design" = "ibd",
+                                "resolvable incomplete block design" = "res.ibd",
+                                "randomized complete block design" = "rcbd",
+                                "row column design" = "rowcol",
+                                "resolvable row column design" = "res.rowcol"),
+                    width = "100%")
+      ),
+      column(
+        2,
+        selectInput(ns("model_engine"), "Select Modelling Engine",
+                    choices = c("SpATS", "lme4", "asreml"),
+                    selected = "SpATS",
+                    width = "100%")
+      ),
+      column(
+        1,
+        actionButton(ns("go_fit_model"), "Fit model")
+      )
+    ),
+    fluidRow(
+      bsCollapse(open = NULL,
+                 bsCollapsePanel(
+                   title = "Advanced fitting options",
+                   # XXX
+                   tags$p("NOT FUNCTIONNAL"),
+                   pickerInput(inputId = 'xcol2',
+                               label = 'other param 1',
+                               choices = names(iris),
+                               options = list(`style` = "btn-info")),
 
-                        pickerInput(inputId = 'ycol2',
-                                    label = 'other param 2',
-                                    choices = names(iris),
-                                    selected = names(iris)[[2]],
-                                    options = list(`style` = "btn-warning")),
+                   pickerInput(inputId = 'ycol2',
+                               label = 'other param 2',
+                               choices = names(iris),
+                               selected = names(iris)[[2]],
+                               options = list(`style` = "btn-warning")),
 
-                        sliderInput(inputId = 'clusters2',
-                                    label = 'numeric param 1',
-                                    value = 3,
-                                    min = 1, max = 9)
-                      )
-           )
-         ),
-         fluidRow(
-           tabsetPanel(
-             tabPanel(
-               "Fitted models",
-               fluidRow(
-                 column(
-                   3,
-                   selectizeInput(
-                     ns("select_environment_fit"),"Environments", multiple = T, choices = NULL, width = "100%"
-                   ),
-                   selectizeInput(
-                     ns("select_trait_fit"),"Environments", multiple = F, choices = NULL, width = "100%"
-                   )
-                 ),
-                 column(
-                   4,
-                   verbatimTextOutput(ns("fit_summary"))
-                 ),
-                 column(
-                   5,
-                   plotOutput(ns("fit_spatial"))
+                   sliderInput(inputId = 'clusters2',
+                               label = 'numeric param 1',
+                               value = 3,
+                               min = 1, max = 9)
                  )
-               )
-             ),
-             tabPanel("Results")
-           )
-         )
+      )
+    ),
+    fluidRow(
+      column(
+        12,
+        tabsetPanel(
+          tabPanel(
+            "Fitted models",
+            fluidRow(
+              column(
+                3,
+                selectizeInput(
+                  ns("select_trait_fit"),"Trait", multiple = F, choices = NULL, width = "100%"
+                )
+              ),
+              column(
+                3,
+                selectizeInput(
+                  ns("select_environment_fit"),"Environments", multiple = T, choices = NULL, width = "100%"
+                )
+              )
+            ),
+            fluidRow(
+              column(
+                4,
+                verbatimTextOutput(ns("fit_summary"))
+              ),
+              column(
+                4,
+                plotOutput(ns("fit_residuals"))
+              ),
+              column(
+                4,
+                plotOutput(ns("fit_spatial"))
+              )
+            )
+          ),
+          tabPanel("Results")
+        )
+      )
+    )
   )
 }
 
@@ -202,6 +214,32 @@ mod_model_server <- function(id, rv){
           s["all environments"] <- s_all
           s
         })
+
+        output$fit_residuals <- renderPlot({
+          plots_envs <- lapply(input$select_environment_fit, function(trial){
+            plot(
+              rv$fit,
+              trait = input$select_trait_fit,
+              trials = trial,
+              output = F
+            )
+          })
+
+          plot_envs <- lapply(1:length(input$select_environment_fit), function(k){
+            do.call("arrangeGrob",
+                    c(
+                      plots_envs[[k]][[input$select_environment_fit[k]]][[input$select_trait_fit]],
+                      ncol=2,
+                      top = paste0("Trial: ", input$select_environment_fit[k],
+                                   " Trait: ", input$select_trait_fit)
+                    )
+            )
+          })
+          plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
+          plot(plot_multi_env)
+        },
+        height=length(input$select_environment_fit)*500
+        )
 
         output$fit_spatial <- renderPlot({
           plots_envs <- lapply(input$select_environment_fit, function(trial){
