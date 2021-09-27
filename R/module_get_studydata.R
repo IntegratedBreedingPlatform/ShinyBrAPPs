@@ -207,6 +207,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         })
 
         observeEvent(input$load_env,{
+          req(input$environments)
           withProgress(message = "Loading", value = 0, {
             n_studies <- length(input$environments)
 
@@ -247,6 +248,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         })
 
         observeEvent(input$load_all_env,{
+          req(input$trials)
           withProgress(message = "Loading", value = 0, {
             n_studies <- rv$study_names[,.N]
 
