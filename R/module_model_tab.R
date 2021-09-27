@@ -186,11 +186,21 @@ mod_model_server <- function(id, rv){
         req(input$select_trait_fit)
 
         output$fit_summary <- renderPrint({
-          summary(
+          s_all <- summary(
             rv$fit,
             trait = input$select_trait_fit,
             trials = input$select_environment_fit
           )
+          s <- lapply(input$select_environment_fit, function(env){
+            summary(
+              rv$fit,
+              trait = input$select_trait_fit,
+              trials = env
+            )
+          })
+          names(s) <- input$select_environment_fit
+          s["all environments"] <- s_all
+          s
         })
 
         output$fit_spatial <- renderPlot({
