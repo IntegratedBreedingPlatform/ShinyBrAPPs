@@ -245,7 +245,18 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             )
           })
 
+          if("trialDbId" %in% names(rv$data)){
+            rv$data <- rbindlist(
+              list(
+                rv$data[trialDbId == rv$trialDbId],
+                studies
+              ),
+              use.names = T, fill = T
+            )
+
+          }else{
           rv$data <- studies
+          }
         })
       })
 
