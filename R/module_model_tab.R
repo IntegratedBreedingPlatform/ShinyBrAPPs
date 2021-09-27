@@ -101,7 +101,11 @@ mod_model_ui <- function(id){
             tags$label("BLUPs"),
             dataTableOutput(ns("BLUPs")),
             tags$label("BLUEs"),
-            dataTableOutput(ns("BLUEs"))
+            dataTableOutput(ns("BLUEs")),
+            tags$label("seBLUPs"),
+            dataTableOutput(ns("seBLUPs")),
+            tags$label("seBLUEs"),
+            dataTableOutput(ns("seBLUEs"))
           )
         )
       )
@@ -310,6 +314,34 @@ mod_model_server <- function(id, rv){
         BLUEs <- extractSTA(STA = rv$fit, what = "BLUEs")
         datatable(
           BLUEs,
+          rownames = F,
+          options = list(
+            paging = F,
+            scrollX = T,
+            scrollY = "500px",
+            scrollCollapse = T,
+            dom = 't'
+          ))
+      })
+      output$seBLUEs <- renderDT({
+        req(rv$fit)
+        seBLUEs <- extractSTA(STA = rv$fit, what = "seBLUEs")
+        datatable(
+          seBLUEs,
+          rownames = F,
+          options = list(
+            paging = F,
+            scrollX = T,
+            scrollY = "500px",
+            scrollCollapse = T,
+            dom = 't'
+          ))
+      })
+      output$seBLUPs <- renderDT({
+        req(rv$fit)
+        seBLUPs <- extractSTA(STA = rv$fit, what = "seBLUPs")
+        datatable(
+          seBLUPs,
           rownames = F,
           options = list(
             paging = F,
