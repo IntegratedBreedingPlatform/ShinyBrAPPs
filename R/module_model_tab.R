@@ -194,13 +194,31 @@ mod_model_server <- function(id, rv){
         })
 
         output$fit_spatial <- renderPlot({
-          plot(
-            rv$fit,
-            plotType = "spatial",
-            trait = input$select_trait_fit,
-            trials = input$select_environment_fit
-          )
-        })
+          plots_envs <- lapply(input$select_environment_fit, function(trial){
+            plot(
+              rv$fit,
+              plotType = "spatial",
+              trait = input$select_trait_fit,
+              trials = trial,
+              output = F
+            )
+          })
+
+          plot_envs <- lapply(1:length(input$select_environment_fit), function(k){
+            do.call("arrangeGrob",
+                    c(
+                      plots_envs[[k]][[input$select_environment_fit[k]]][[input$select_trait_fit]],
+                      ncol=2,
+                      top = paste0("Trial: ", input$select_environment_fit[k],
+                                   " Trait: ", input$select_trait_fit)
+                    )
+            )
+          })
+          plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
+          plot(plot_multi_env)
+        },
+        height=length(input$select_environment_fit)*500
+        )
       })
     }
   )
