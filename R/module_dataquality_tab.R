@@ -8,20 +8,24 @@ mod_dataquality_ui <- function(id){
         selectizeInput(
           ns("trait"), label = "Trait", choices = NULL, width = "100%",
           options = list(
-            placeholder = 'Select a dataset first',
+            placeholder = 'Load Environments First',
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
       ),
       column(
         9,
-        selectizeInput(
-          ns("studies"), label = "Environments", choices = NULL, width = "100%",
+        pickerInput(
+          inputId = ns("studies"),
+          label = "Environments",
+          choices = NULL,
+          width = "100%",
           multiple = T,
           options = list(
-            placeholder = 'Select a dataset first',
+            `actions-box` = TRUE,
+            title = 'Load Environments First',
             onInitialize = I('function() { this.setValue(""); }')
-          )
+            )
         )
       )
     ),
@@ -38,13 +42,13 @@ mod_dataquality_ui <- function(id){
                      selectizeInput(ns("select_variable"), label = "Select observations by variable value",
                                     choices = NULL, multiple = F, width = "100%",
                                     options = list(
-                                      placeholder = 'Select a dataset first',
+                                      placeholder = 'Load Environments First',
                                       onInitialize = I('function() { this.setValue(""); }')
                                     ))
               ),
               column(8,
                      selectizeInput(ns("select_variable_value"),label = HTML("<br/>"), choices = NULL, multiple = T, width = "100%", options = list(
-                       placeholder = 'Select a dataset first',
+                       placeholder = 'Load Environments First',
                        onInitialize = I('function() { this.setValue(""); }')
                      ))
               )
@@ -106,10 +110,10 @@ mod_dataquality_server <- function(id, rv){
 
         env_choices <- rv$study_names[loaded==T,study_id]
         names(env_choices) <- rv$study_names[loaded==T,study_name_app]
-        updateSelectizeInput(
+        updatePickerInput(
           inputId = "studies", session = session, choices = env_choices,
           options = list(
-            placeholder = 'Select 1 or more environments',
+            title = 'Select 1 or more environments',
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
