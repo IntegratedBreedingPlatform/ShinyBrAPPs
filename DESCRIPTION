@@ -20,6 +20,7 @@ Depends:
 	ggplot2,
 	plotly,
 	DT,
+	gridExtra,
 	magrittr,
 	RColorBrewer,
 	e1071,
