@@ -1,15 +1,4 @@
 library(shinybrapps)
-library(shiny)
-library(shinyjs)
-library(shinyBS)
-library(data.table)
-library(ggplot2)
-library(plotly)
-library(DT)
-library(magrittr)
-library(RColorBrewer)
-library(e1071)
-library(brapirv1)
 
 ui <- fluidPage(
   tags$head(
@@ -34,4 +23,3 @@ ui <- fluidPage(
     tabPanel("Diagnosis")
   )
 )
-

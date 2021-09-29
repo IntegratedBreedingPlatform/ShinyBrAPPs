@@ -3,8 +3,8 @@ mod_get_studydata_ui <- function(id){
   ns <- NS(id)
 
   tagList(
-    # UI for study selection (if no GET parameters)
-    shinyBS::bsCollapse(
+    ## UI for study selection (if no GET parameters)
+    bsCollapse(
       id = ns("dataImportCollapse"),
       open = "Data import",
       # style = "width : 50%",
