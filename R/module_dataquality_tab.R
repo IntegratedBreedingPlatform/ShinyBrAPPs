@@ -5,10 +5,10 @@ mod_dataquality_ui <- function(id){
     fluidRow(
       column(
         3,
-        selectizeInput(
+        pickerInput(
           ns("trait"), label = "Trait", choices = NULL, width = "100%",
           options = list(
-            placeholder = 'Load Environments First',
+            title = 'Load Environments First',
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
@@ -39,28 +39,36 @@ mod_dataquality_ui <- function(id){
             "Distributions",
             fluidRow(
               column(4,
-                     selectizeInput(ns("select_variable"), label = "Select observations by variable value",
-                                    choices = NULL, multiple = F, width = "100%",
-                                    options = list(
-                                      placeholder = 'Load Environments First',
-                                      onInitialize = I('function() { this.setValue(""); }')
-                                    ))
+                     pickerInput(
+                       ns("select_variable"), label = "Select observations by variable value",
+                       choices = NULL, multiple = F, width = "100%",
+                       options = list(
+                         title = 'Load Environments First',
+                         onInitialize = I('function() { this.setValue(""); }')
+                       )
+                     )
               ),
-              column(8,
-                     selectizeInput(ns("select_variable_value"),label = HTML("<br/>"), choices = NULL, multiple = T, width = "100%", options = list(
-                       placeholder = 'Load Environments First',
-                       onInitialize = I('function() { this.setValue(""); }')
-                     ))
+              column(
+                8,
+                pickerInput(
+                  ns("select_variable_value"),label = HTML("<br/>"), choices = NULL, multiple = T, width = "100%",
+                  options = list(
+                    title = 'Load Environments First',
+                    onInitialize = I('function() { this.setValue(""); }')
+                  )
+                )
               )
             ),
             fluidRow(
-              column(12,
-                     tags$label("Or select observations directly on the plots")
+              column(
+                12,
+                tags$label("Or select observations directly on the plots")
               )
             ),
             fluidRow(
-              column(width = 6,
-                     plotlyOutput(ns("distribution_viz"),height = "400px")),
+              column(
+                width = 6,
+                plotlyOutput(ns("distribution_viz"),height = "400px")),
               column(width = 6, plotlyOutput(ns("layout_viz")))
             )
           ),
@@ -99,11 +107,12 @@ mod_dataquality_server <- function(id, rv){
 
         req(rv$data)
 
-        updateSelectizeInput(
+        updatePickerInput(
           inputId = "trait", session = session,
           choices = rv$data[,unique(observations.observationVariableName)],
+          selected = rv$data[,unique(observations.observationVariableName)][1],
           options = list(
-            placeholder = 'Select a trait'
+            title = 'Select a trait'
             # onInitialize = I('function() { this.setValue(""); }')
           )
         )
@@ -121,20 +130,20 @@ mod_dataquality_server <- function(id, rv){
 
         are_num <- rv$data[,lapply(.SD, is.numeric)]
         non_numeric_variables <- names(are_num)[are_num==F]
-        updateSelectizeInput(
+        updatePickerInput(
           session = session,
           inputId = "select_variable",
           choices = non_numeric_variables,
           options = list(
-            placeholder = 'Select a variable',
+            title = 'Select a variable',
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
-        updateSelectizeInput(
+        updatePickerInput(
           session = session,
           inputId = "select_variable_value",
           options = list(
-            placeholder = 'Select a value',
+            title = 'Select a value',
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
@@ -153,13 +162,13 @@ mod_dataquality_server <- function(id, rv){
         if(values[,.N]==1){
           values <- unname(values)
         }
-        updateSelectizeInput(
+        updatePickerInput(
           session = session,
           inputId = "select_variable_value",
           # label = paste(input$select_variable, "values"),
           choices = values,
           options = list(
-            placeholder = 'Select a value',
+            title = 'Select a value',
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
@@ -353,11 +362,11 @@ mod_dataquality_server <- function(id, rv){
           )
         })
         if(length(sel_observationDbIds)>0){
-          updateSelectizeInput(
+          updatePickerInput(
             session = session,
             inputId = "select_variable_value",
             options = list(
-              placeholder = 'Select a value',
+              title = 'Select a value',
               onInitialize = I('function() { this.setValue(""); }')
             )
           )

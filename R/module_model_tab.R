@@ -6,17 +6,19 @@ mod_model_ui <- function(id){
     fluidRow(
       column(
         3,
-        selectInput(ns("select_traits"), label = "Select Traits", multiple = TRUE, choices = NULL, width = "100%")
-      ),
-      column(
-        3,
-        selectizeInput(
-          ns("select_environments"), "Environments", multiple = TRUE, choices = NULL, width = "100%"
+        pickerInput(
+          ns("select_traits"), label = "Select Traits", multiple = TRUE, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
         )
       ),
       column(
         3,
-        selectInput(ns("model_design"), "Select Model Design",
+        pickerInput(
+          ns("select_environments"), "Environments", multiple = TRUE, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
+        )
+      ),
+      column(
+        3,
+        pickerInput(ns("model_design"), "Select Model Design",
                     choices = c("incomplete block design" = "ibd",
                                 "resolvable incomplete block design" = "res.ibd",
                                 "randomized complete block design" = "rcbd",
@@ -26,7 +28,7 @@ mod_model_ui <- function(id){
       ),
       column(
         2,
-        selectInput(ns("model_engine"), "Select Modelling Engine",
+        pickerInput(ns("model_engine"), "Select Modelling Engine",
                     choices = c("SpATS", "lme4", "asreml"),
                     selected = "SpATS",
                     width = "100%")
@@ -55,14 +57,14 @@ mod_model_ui <- function(id){
             fluidRow(
               column(
                 3,
-                selectizeInput(
+                pickerInput(
                   ns("select_trait_fit"),"Trait", multiple = F, choices = NULL, width = "100%"
                 )
               ),
               column(
                 3,
-                selectizeInput(
-                  ns("select_environment_fit"),"Environments", multiple = T, choices = NULL, width = "100%"
+                pickerInput(
+                  ns("select_environment_fit"),"Environments", multiple = T, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
                 )
               )
             ),
@@ -108,7 +110,7 @@ mod_model_server <- function(id, rv){
       observe({
         req(rv$data)
         choices_env <- rv$data[,unique(study_name_app)]
-        updateSelectizeInput(
+        updatePickerInput(
           session,"select_environments",
           choices = choices_env,
           selected = choices_env,
@@ -119,9 +121,10 @@ mod_model_server <- function(id, rv){
         )
 
         choices_traits <- rv$data[,unique(observations.observationVariableName)]
-        updateSelectizeInput(
+        updatePickerInput(
           session,"select_traits",
           choices = choices_traits,
+          selected = choices_traits,
           options = list(
             placeholder = 'Select 1 or more traits',
             onInitialize = I('function() { this.setValue(""); }')
@@ -176,7 +179,7 @@ mod_model_server <- function(id, rv){
 
         ## update selectors
 
-        updateSelectizeInput(
+        updatePickerInput(
           session, "select_environment_fit",
           choices = input$select_environments,
           selected = input$select_environments
@@ -185,7 +188,7 @@ mod_model_server <- function(id, rv){
           #   onInitialize = I('function() { this.setValue(""); }')
           # )
         )
-        updateSelectizeInput(
+        updatePickerInput(
           session, "select_trait_fit",
           choices = input$select_traits,
           selected = input$select_traits[1]
