@@ -64,7 +64,8 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
       ns <- NS(id)
 
       if(!is.null(dataset_4_dev)){ # XXX
-        rv$TD <- dataset_4_dev
+        rv$data <- dataset_4_dev$data
+        rv$study_names <- dataset_4_dev$study_names
       }else{
         parse_GET_param  <- reactive({
           pars <- parseQueryString(session$clientData$url_search)
@@ -179,8 +180,8 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           )]
           study_names[,study_name_app := paste0(
             environment_number, "-",
-            location_name, "-",
-            location_name_abbrev
+            location_name, " (",
+            location_name_abbrev, ")",
           )]
           study_names[,study_name_abbrev_app := paste0(
             environment_number, "-",
