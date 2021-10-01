@@ -1,7 +1,8 @@
 #' @export
 mod_model_ui <- function(id){
   ns <- NS(id)
-  fluidRow(
+  column(
+    12,
     fluidRow(
       column(
         3,
@@ -36,27 +37,13 @@ mod_model_ui <- function(id){
       )
     ),
     fluidRow(
-      bsCollapse(open = NULL,
-                 bsCollapsePanel(
-                   title = "Advanced fitting options",
-                   # XXX
-                   tags$p("NOT FUNCTIONNAL"),
-                   pickerInput(inputId = 'xcol2',
-                               label = 'other param 1',
-                               choices = names(iris),
-                               options = list(`style` = "btn-info")),
-
-                   pickerInput(inputId = 'ycol2',
-                               label = 'other param 2',
-                               choices = names(iris),
-                               selected = names(iris)[[2]],
-                               options = list(`style` = "btn-warning")),
-
-                   sliderInput(inputId = 'clusters2',
-                               label = 'numeric param 1',
-                               value = 3,
-                               min = 1, max = 9)
-                 )
+      column(
+        12,
+        bsCollapse(open = NULL,
+                   bsCollapsePanel(
+                     title = "Advanced fitting options"
+                   )
+        )
       )
     ),
     fluidRow(
