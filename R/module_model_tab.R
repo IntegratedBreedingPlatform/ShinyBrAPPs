@@ -124,6 +124,7 @@ mod_model_server <- function(id, rv){
         updateSelectizeInput(
           session,"select_environments",
           choices = choices_env,
+          selected = choices_env,
           options = list(
             placeholder = 'Select 1 or more environments',
             onInitialize = I('function() { this.setValue(""); }')
@@ -184,7 +185,6 @@ mod_model_server <- function(id, rv){
         if(!is.null(mess)){
           showNotification(mess, type = "error", duration = NULL)
         }
-
         req(rv$fit)
 
         ## update selectors
