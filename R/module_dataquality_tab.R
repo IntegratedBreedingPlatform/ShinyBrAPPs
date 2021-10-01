@@ -111,7 +111,8 @@ mod_dataquality_server <- function(id, rv){
         env_choices <- rv$study_names[loaded==T,study_id]
         names(env_choices) <- rv$study_names[loaded==T,study_name_app]
         updatePickerInput(
-          inputId = "studies", session = session, choices = env_choices,
+          inputId = "studies", session = session,
+          choices = env_choices, selected = env_choices,
           options = list(
             title = 'Select 1 or more environments',
             onInitialize = I('function() { this.setValue(""); }')
