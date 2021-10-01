@@ -191,7 +191,8 @@ mod_model_server <- function(id, rv){
 
         updateSelectizeInput(
           session, "select_environment_fit",
-          choices = input$select_environments
+          choices = input$select_environments,
+          selected = input$select_environments
           # options = list(
           #   placeholder = 'Select 1 environment',
           #   onInitialize = I('function() { this.setValue(""); }')
