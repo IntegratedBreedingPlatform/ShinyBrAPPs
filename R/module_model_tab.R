@@ -136,10 +136,11 @@ mod_model_server <- function(id, rv){
 
         ## the possible covariates
         # - have to be numerical
-        # - must not be (some) ids
+        # - must not be some columns (like ids)
         choices_cov <- names(rv$data)[unlist(rv$data[,lapply(.SD, is.numeric)])]
         not_cov <- c(
           "studyDbId", "trialDbId","observations.observationDbId",
+          "environment_number",
           "observations.observationVariableDbId",
           "observations.value",
           "programDbId"

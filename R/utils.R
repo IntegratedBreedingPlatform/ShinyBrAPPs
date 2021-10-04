@@ -30,7 +30,7 @@ select_from_layout <- function(d, input_click = NULL, input_brush = NULL){
 }
 
 #' @export
-get_env_data <- function(con, studyDbId, environment_number, location_name, location_name_abbrev, study_name_app, study_name_abbrev_app){
+get_env_data <- function(con, studyDbId, env_number, loc_name, loc_name_abbrev, stu_name_app, stu_name_abbrev_app){
   study <- data.table()
   try({
     study <- as.data.table(brapirv1::brapi_get_studies_studyDbId_observationunits(con = con, studyDbId = studyDbId))
@@ -38,18 +38,17 @@ get_env_data <- function(con, studyDbId, environment_number, location_name, loca
       study[,observations.value:=NA]
     }
     study[,observations.value:=as.numeric(observations.value)] # XXX this should not always be the case
-    study[, locationName:=location_name]
-    study[, environmentNumber:=environment_number]
+    study[, locationName:=loc_name]
 
     study[,study_name_BMS := paste0(
-      environment_number, "-",
-      location_name
+      env_number, "-",
+      loc_name
     )]
-    study[,environment_number := environment_number]
-    study[,location_name := location_name]
-    study[,location_abbrev := location_name_abbrev]
-    study[,study_name_app := study_name_app]
-    study[,study_name_abbrev_app := study_name_abbrev_app]
+    study[,environment_number := env_number]
+    study[,location_name := loc_name]
+    study[,location_abbrev := loc_name_abbrev]
+    study[,study_name_app := stu_name_app]
+    study[,study_name_abbrev_app := stu_name_abbrev_app]
   })
 return(study)
 }
