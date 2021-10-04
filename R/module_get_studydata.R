@@ -181,7 +181,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           study_names[,study_name_app := paste0(
             environment_number, "-",
             location_name, " (",
-            location_name_abbrev, ")",
+            location_name_abbrev, ")"
           )]
           study_names[,study_name_abbrev_app := paste0(
             environment_number, "-",
