@@ -214,12 +214,13 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
             incProgress(1/n_studies, detail = rv$study_names[study_id == id,study_name_app])
 
-            study <- get_env_data(con = rv$con, studyDbId = id,
-                                  environment_number = rv$study_names[study_id == id,environment_number],
-                                  location_name = rv$study_names[study_id == id,location_name],
-                                  location_name_abbrev = rv$study_names[study_id == id,location_name_abbrev],
-                                  study_name_app = rv$study_names[study_id == id,study_name_app],
-                                  study_name_abbrev_app = rv$study_names[study_id == id,study_name_abbrev_app]
+            study <- get_env_data(
+              con = rv$con, studyDbId = id,
+              env_number = rv$study_names[study_id == id,environment_number],
+              loc_name = rv$study_names[study_id == id,location_name],
+              loc_name_abbrev = rv$study_names[study_id == id,location_name_abbrev],
+              stu_name_app = rv$study_names[study_id == id,study_name_app],
+              stu_name_abbrev_app = rv$study_names[study_id == id,study_name_abbrev_app]
             )
             rv$study_names[study_id == id,loaded:=T]
             return(study)
@@ -245,7 +246,6 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               lapply(rv$study_names[loaded == T,study_name_app], tags$li)
             )
           })
-
           if("trialDbId" %in% names(rv$data)){
             rv$data <- rbindlist(
               list(
@@ -254,9 +254,8 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               ),
               use.names = T, fill = T
             )
-
           }else{
-          rv$data <- studies
+            rv$data <- studies
           }
         })
       })
@@ -270,13 +269,15 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
             incProgress(1/n_studies, detail = rv$study_names[k,study_name_app])
 
-            study <- get_env_data(con = rv$con, studyDbId = rv$study_names[k,study_id],
-                                  environment_number = rv$study_names[k,environment_number],
-                                  location_name = rv$study_names[k,location_name],
-                                  location_name_abbrev = rv$study_names[k,location_name_abbrev],
-                                  study_name_app = rv$study_names[k,study_name_app],
-                                  study_name_abbrev_app = rv$study_names[k,study_name_abbrev_app]
+            study <- get_env_data(
+              con = rv$con, studyDbId = rv$study_names[k,study_id],
+              env_number = rv$study_names[k,environment_number],
+              loc_name = rv$study_names[k,location_name],
+              loc_name_abbrev = rv$study_names[k,location_name_abbrev],
+              stu_name_app = rv$study_names[k,study_name_app],
+              stu_name_abbrev_app = rv$study_names[k,study_name_abbrev_app]
             )
+
             rv$study_names[k,loaded:=T]
             return(study)
           }
