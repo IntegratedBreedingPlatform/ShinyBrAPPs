@@ -112,7 +112,8 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             clientid = "brapir",
             bms = TRUE
           )
-          try({
+
+          catch <- tryCatch({
             ## get the brapi::trials for the crop
             trials <- as.data.table(brapirv2::brapi_get_trials(con = rv$con))
             trial_choices <- trials[,trialDbId]
@@ -124,7 +125,13 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
                 onInitialize = I('function() { this.setValue(""); }')
               )
             )
-          })
+          },
+          warning=function(w){w},
+          error=function(e){e})
+          mess <- catch$message
+          if(!is.null(mess)){
+            showNotification(mess, type = "error", duration = NULL)
+          }
         })
       }
 
@@ -227,6 +234,15 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           }), use.names = T,fill = T
           )
 
+          ## convert variables from text to numeric (when variable is numeric)
+          studies <- studies[,lapply(.SD, function(x){
+            if(all(check.numeric(x))){
+              as.numeric(x)
+            }else{
+              x
+            }
+          })]
+
           env_choices <- rv$study_names[loaded==F,study_id]
           if(length(env_choices)==0){
             updateCheckboxGroupInput(session = session,inputId = "environments", label = "", choices = vector())
@@ -282,6 +298,14 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             return(study)
           }
           ))
+          ## convert variables from text to numeric (when variable is numeric)
+          studies <- studies[,lapply(.SD, function(x){
+            if(all(check.numeric(x))){
+              as.numeric(x)
+            }else{
+              x
+            }
+          })]
 
           updateCheckboxGroupInput(session = session,inputId = "environments", label = "", choices = vector())
           output$loaded_env <- renderUI({
