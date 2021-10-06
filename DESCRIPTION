@@ -30,5 +30,6 @@ Depends:
 	SpATS,
 	shinyWidgets,
 	shinysky,
-	shinyBS
+	shinyBS,
+	varhandle
 RoxygenNote: 7.1.1
