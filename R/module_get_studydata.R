@@ -66,13 +66,14 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
       ns <- NS(id)
 
+      parse_GET_param  <- reactive({
+        pars <- parseQueryString(session$clientData$url_search)
+      })
+
       if(!is.null(dataset_4_dev)){ # XXX
         rv$data <- dataset_4_dev$data
         rv$study_names <- dataset_4_dev$study_names
       }else{
-        parse_GET_param  <- reactive({
-          pars <- parseQueryString(session$clientData$url_search)
-        })
 
         observeEvent(parse_GET_param(),{
 
@@ -234,6 +235,11 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
       ### load BMS study data
       env_to_load <- reactiveVal()
+      observeEvent(parse_GET_param(),{
+        req(parse_GET_param()$studyDbIds)
+        ids <- unlist(strsplit(parse_GET_param()$studyDbIds, ","))
+        env_to_load(rv$study_names[loaded==F & study_id %in% ids,study_id])
+      })
       observeEvent(input$load_env,{
         req(input$environments)
         env_to_load(input$environments)
@@ -242,8 +248,10 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         req(rv$study_names)
         env_to_load(rv$study_names[loaded==F,study_id])
       })
+
       observeEvent(env_to_load(),{
         req(env_to_load())
+        req(rv$study_names)
 
         withProgress(message = "Loading", value = 0, {
           n_studies <- length(env_to_load())
