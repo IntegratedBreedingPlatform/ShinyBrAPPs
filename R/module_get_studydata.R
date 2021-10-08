@@ -149,93 +149,107 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
       observeEvent(rv$trialDbId,{
         req(rv$trialDbId)
+
+        ## get all the studies of a trial
         try({
-          ## get all the studies of a trial
           trial_studies <- as.data.table(brapirv2::brapi_get_studies(con = rv$con, trialDbId = rv$trialDbId))
           study_ids <- unique(trial_studies$studyDbId)
-
-          ## make environment names
-          withProgress(message = "Reaching environment metadata", value = 0, {
-            n_studies <- length(study_ids)
-
-            study_names <- rbindlist(l = lapply(1:length(study_ids), function(k){
-              try({
-                study_id <- study_ids[k]
-
-                location_name <- trial_studies[studyDbId == study_id,unique(locationName)]
-                location_id <- trial_studies[locationName == location_name, unique(locationDbId)]
-
-                location_name_abbrev <- NULL
-                try({
-                  incProgress(1/n_studies, detail = location_name)
-
-                  loc <- brapirv2::brapi_get_locations_locationDbId(con = rv$con, locationDbId = location_id)
-                  location_name_abbrev <- loc[,unique("abbreviation")]
-                })
-                maxchar <- 9
-                location_name_abbrev <- ifelse(
-                  length(location_name_abbrev)==0,
-                  ifelse(
-                    nchar(location_name)>maxchar,
-                    paste0(
-                      substr(location_name,1,4),
-                      "...",
-                      substr(location_name,nchar(location_name)-3,nchar(location_name))
-                    ),
-                    location_name
-                  ),
-                  location_name_abbrev
-                )
-                environment_number <- trial_studies[studyDbId == study_id & environmentParameters.parameterName == "ENVIRONMENT_NUMBER",environmentParameters.value]
-                environment_number <- ifelse(length(environment_number)==0,k,environment_number)
-
-                return(
-                  data.table(
-                    study_id,location_name,location_name_abbrev,environment_number,
-                    exp_design_pui = trial_studies[studyDbId == study_id,unique(experimentalDesign.pui)]
-                  )
-                )
-              })
-            }), use.names = T, fill = T)
-          })
-
-          study_names[,study_name_BMS := paste0(
-            environment_number, "-",
-            location_name
-          )]
-          study_names[,study_name_app := paste0(
-            environment_number, "-",
-            location_name, " (",
-            location_name_abbrev, ")"
-          )]
-          study_names[,study_name_abbrev_app := paste0(
-            environment_number, "-",
-            location_name_abbrev
-          )]
-          study_names[, loaded:=F]
-
-          env_choices <- study_names[,study_id]
-          names(env_choices) <- study_names[,study_name_app]
-
-          updateCheckboxGroupInput(
-            inputId = "environments",
-            session = session,
-            label = "Available environments",
-            choices = env_choices
-          )
-          shinyjs::show(id = "load_env")
-          shinyjs::show(id = "load_all_env")
-          rv$study_names <- study_names
         })
+
+        req(study_ids)
+
+        ## make environment names
+        withProgress(message = "Reaching environment metadata", value = 0, {
+          n_studies <- length(study_ids)
+
+          study_names <- rbindlist(l = lapply(1:length(study_ids), function(k){
+            try({
+              study_id <- study_ids[k]
+
+              location_name <- trial_studies[studyDbId == study_id,unique(locationName)]
+              location_id <- trial_studies[locationName == location_name, unique(locationDbId)]
+
+              location_name_abbrev <- NULL
+              try({
+                incProgress(1/n_studies, detail = location_name)
+
+                loc <- brapirv2::brapi_get_locations_locationDbId(con = rv$con, locationDbId = location_id)
+                location_name_abbrev <- loc[,unique("abbreviation")]
+              })
+              maxchar <- 9
+              location_name_abbrev <- ifelse(
+                length(location_name_abbrev)==0,
+                ifelse(
+                  nchar(location_name)>maxchar,
+                  paste0(
+                    substr(location_name,1,4),
+                    "...",
+                    substr(location_name,nchar(location_name)-3,nchar(location_name))
+                  ),
+                  location_name
+                ),
+                location_name_abbrev
+              )
+              environment_number <- trial_studies[studyDbId == study_id & environmentParameters.parameterName == "ENVIRONMENT_NUMBER",environmentParameters.value]
+              environment_number <- ifelse(length(environment_number)==0,k,environment_number)
+
+              return(
+                data.table(
+                  study_id,location_name,location_name_abbrev,environment_number,
+                  exp_design_pui = trial_studies[studyDbId == study_id,unique(experimentalDesign.pui)]
+                )
+              )
+            })
+          }), use.names = T, fill = T)
+        })
+
+        study_names[,study_name_BMS := paste0(
+          environment_number, "-",
+          location_name
+        )]
+        study_names[,study_name_app := paste0(
+          environment_number, "-",
+          location_name, " (",
+          location_name_abbrev, ")"
+        )]
+        study_names[,study_name_abbrev_app := paste0(
+          environment_number, "-",
+          location_name_abbrev
+        )]
+        study_names[, loaded:=F]
+
+        env_choices <- study_names[,study_id]
+        names(env_choices) <- study_names[,study_name_app]
+
+        updateCheckboxGroupInput(
+          inputId = "environments",
+          session = session,
+          label = "Available environments",
+          choices = env_choices
+        )
+        shinyjs::show(id = "load_env")
+        shinyjs::show(id = "load_all_env")
+        rv$study_names <- study_names
       })
 
+      ### load BMS study data
+      env_to_load <- reactiveVal()
       observeEvent(input$load_env,{
         req(input$environments)
+        env_to_load(input$environments)
+      })
+      observeEvent(input$load_all_env,{
+        req(rv$study_names)
+        env_to_load(rv$study_names[loaded==F,study_id])
+      })
+      observeEvent(env_to_load(),{
+        req(env_to_load())
+
         withProgress(message = "Loading", value = 0, {
-          n_studies <- length(input$environments)
+          n_studies <- length(env_to_load())
 
           studies <- rbindlist(lapply(1:n_studies, function(k){
-            id <- input$environments[k]
+            id <- env_to_load()[k]
 
             incProgress(1/n_studies, detail = rv$study_names[study_id == id,study_name_app])
 
@@ -291,56 +305,6 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           }else{
             rv$data <- studies
           }
-        })
-      })
-
-      observeEvent(input$load_all_env,{
-        req(input$trials)
-        withProgress(message = "Loading", value = 0, {
-          n_studies <- rv$study_names[,.N]
-
-          studies <- rbindlist(lapply(1:n_studies, function(k){
-
-            incProgress(1/n_studies, detail = rv$study_names[k,study_name_app])
-
-            study <- get_env_data(
-              con = rv$con, studyDbId = rv$study_names[k,study_id],
-              env_number = rv$study_names[k,environment_number],
-              loc_name = rv$study_names[k,location_name],
-              loc_name_abbrev = rv$study_names[k,location_name_abbrev],
-              stu_name_app = rv$study_names[k,study_name_app],
-              stu_name_abbrev_app = rv$study_names[k,study_name_abbrev_app]
-            )
-
-            rv$study_names[k,loaded:=T]
-            return(study)
-          }
-          ))
-          ## convert variables from text to numeric (when variable is numeric)
-          studies <- studies[,lapply(.SD, function(x){
-            if(all(check.numeric(x))){
-              as.numeric(x)
-            }else{
-              x
-            }
-          })]
-
-          updateCheckboxGroupInput(session = session,inputId = "environments", label = "", choices = vector())
-          output$loaded_env <- renderUI({
-            tags$ul(
-              lapply(rv$study_names[loaded == T,study_name_app], tags$li)
-            )
-          })
-          shinyjs::hide(id = "load_env")
-          shinyjs::hide(id = "load_all_env")
-
-          rv$data <- studies
-
-          shinyBS::updateCollapse(
-            id = "dataImportCollapse",
-            session = session,
-            close = "Data import"
-          )
         })
       })
 
