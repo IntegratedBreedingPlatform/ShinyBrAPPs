@@ -19,12 +19,12 @@ mod_model_ui <- function(id){
       column(
         3,
         pickerInput(ns("model_design"), "Select Model Design",
-                    choices = c("incomplete block design" = "ibd",
-                                "resolvable incomplete block design" = "res.ibd",
-                                "randomized complete block design" = "rcbd",
-                                "row column design" = "rowcol",
-                                "resolvable row column design" = "res.rowcol"),
-                    selected = "rowcol",
+                    choices = choices_model_design,
+                    selected = NULL, multiple = F,
+                    options = list(
+                      title = "Select Model Design",
+                      onInitialize = I('function() { this.setValue(""); }')
+                    ),
                     width = "100%")
       ),
       column(
@@ -150,6 +150,27 @@ mod_model_server <- function(id, rv){
         updatePickerInput(
           session, "covariates", choices = choices_cov, selected = NULL
         )
+      })
+
+      observeEvent(input$select_environments, {
+        ## update experimental design
+        design_pui <- rv$study_names[study_name_app %in% input$select_environments,unique(exp_design_pui)]
+        StatGenSTA_code <- exp_designs_corresp[BMS_pui == design_pui, StatGenSTA_code]
+        if(length(StatGenSTA_code)==1 & length(StatGenSTA_code)>0){
+          updatePickerInput(
+            session, "model_design",
+            selected = StatGenSTA_code
+          )
+        }else{
+          updatePickerInput(
+            session, "model_design",
+            selected = "",
+            options = list(
+              title = "Select Model Design",
+              onInitialize = I('function() { this.setValue(""); }')
+            )
+          )
+        }
       })
 
       observeEvent(input$go_fit_model,{

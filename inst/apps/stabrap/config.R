@@ -11,3 +11,28 @@ hidden_columns_observationunits <- c(
   "observations.observationVariableName",
   "environment_label_abbrev"
   )
+
+## correspondence of experimental designs
+exp_designs_corresp <- data.table(
+  StatGenSTA_code = c(
+    "rowcol", "ibd","res.ibd","rcbd", "res.rowcol"
+  ),
+  statGenSTA = c(
+    "row column design",
+    "incomplete block design",
+    "resolvable incomplete block design",
+    "randomized complete block design",
+    "resolvable row column design"
+    ),
+  BMS_pui = c(
+    NA, NA, "10130", "10110", "10145"
+  )
+)
+
+choices_model_design <- exp_designs_corresp$StatGenSTA_code
+names(choices_model_design) <- exp_designs_corresp$statGenSTA
+
+
+
+
+
