@@ -115,16 +115,19 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
           catch <- tryCatch({
             ## get the brapi::trials for the crop
-            trials <- as.data.table(brapirv2::brapi_get_trials(con = rv$con))
-            trial_choices <- trials[,trialDbId]
-            names(trial_choices) <- trials[,trialName]
-            updateSelectizeInput(
-              inputId = "trials", session = session, choices = trial_choices,
-              options = list(
-                placeholder = 'Select a study',
-                onInitialize = I('function() { this.setValue(""); }')
+            withProgress(message = "Reaching studies", value = 0, {
+              incProgress(1)
+              trials <- as.data.table(brapirv2::brapi_get_trials(con = rv$con))
+              trial_choices <- trials[,trialDbId]
+              names(trial_choices) <- trials[,trialName]
+              updateSelectizeInput(
+                inputId = "trials", session = session, choices = trial_choices,
+                options = list(
+                  placeholder = 'Select a study',
+                  onInitialize = I('function() { this.setValue(""); }')
+                )
               )
-            )
+            })
           },
           warning=function(w){w},
           error=function(e){e})
@@ -147,44 +150,50 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           trial_studies <- as.data.table(brapirv2::brapi_get_studies(con = rv$con, trialDbId = rv$trialDbId))
           study_ids <- unique(trial_studies$studyDbId)
 
-          ## make environment names
-          study_names <- rbindlist(l = lapply(1:length(study_ids), function(k){
-            try({
-              study_id <- study_ids[k]
+          withProgress(message = "Reaching environment metadata", value = 0, {
+            n_studies <- length(study_ids)
 
-              location_name <- trial_studies[studyDbId == study_id,unique(locationName)]
-              location_id <- trial_studies[locationName == location_name, unique(locationDbId)]
-
-              location_name_abbrev <- NULL
+            ## make environment names
+            study_names <- rbindlist(l = lapply(1:length(study_ids), function(k){
               try({
-                loc <- brapirv2::brapi_get_locations_locationDbId(con = rv$con, locationDbId = location_id)
-                location_name_abbrev <- loc[,unique("abbreviation")]
-              })
-              maxchar <- 9
-              location_name_abbrev <- ifelse(
-                length(location_name_abbrev)==0,
-                ifelse(
-                  nchar(location_name)>maxchar,
-                  paste0(
-                    substr(location_name,1,4),
-                    "...",
-                    substr(location_name,nchar(location_name)-3,nchar(location_name))
-                  ),
-                  location_name
-                ),
-                location_name_abbrev
-              )
-              environment_number <- trial_studies[studyDbId == study_id & environmentParameters.parameterName == "ENVIRONMENT_NUMBER",environmentParameters.value]
-              environment_number <- ifelse(length(environment_number)==0,k,environment_number)
+                study_id <- study_ids[k]
 
-              return(
-                data.table(
-                  study_id,location_name,location_name_abbrev,environment_number,
-                  exp_design_pui = trial_studies[studyDbId == study_id,unique(experimentalDesign.pui)]
+                location_name <- trial_studies[studyDbId == study_id,unique(locationName)]
+                location_id <- trial_studies[locationName == location_name, unique(locationDbId)]
+
+                location_name_abbrev <- NULL
+                try({
+                  incProgress(1/n_studies, detail = location_name)
+
+                  loc <- brapirv2::brapi_get_locations_locationDbId(con = rv$con, locationDbId = location_id)
+                  location_name_abbrev <- loc[,unique("abbreviation")]
+                })
+                maxchar <- 9
+                location_name_abbrev <- ifelse(
+                  length(location_name_abbrev)==0,
+                  ifelse(
+                    nchar(location_name)>maxchar,
+                    paste0(
+                      substr(location_name,1,4),
+                      "...",
+                      substr(location_name,nchar(location_name)-3,nchar(location_name))
+                    ),
+                    location_name
+                  ),
+                  location_name_abbrev
                 )
-              )
-            })
-          }), use.names = T, fill = T)
+                environment_number <- trial_studies[studyDbId == study_id & environmentParameters.parameterName == "ENVIRONMENT_NUMBER",environmentParameters.value]
+                environment_number <- ifelse(length(environment_number)==0,k,environment_number)
+
+                return(
+                  data.table(
+                    study_id,location_name,location_name_abbrev,environment_number,
+                    exp_design_pui = trial_studies[studyDbId == study_id,unique(experimentalDesign.pui)]
+                  )
+                )
+              })
+            }), use.names = T, fill = T)
+          })
 
           study_names[,study_name_BMS := paste0(
             environment_number, "-",
