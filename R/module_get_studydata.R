@@ -21,7 +21,10 @@ mod_get_studydata_ui <- function(id){
                 placeholder = '',
                 onInitialize = I('function() { this.setValue(""); }')
               )
-            )
+            ),
+            actionButton(ns("go_trial_metadata"), "Show study metadata"),
+            bsModal(ns("modal_trial_metadata"), "Study Metadata", ns("go_trial_metadata"), size = "large",
+                    dataTableOutput(ns("table_trial_metadata")))
           ),
           column(
             3,
@@ -127,6 +130,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
                   onInitialize = I('function() { this.setValue(""); }')
                 )
               )
+              rv$trials_metadata <- trials
             })
           },
           warning=function(w){w},
@@ -150,10 +154,10 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           trial_studies <- as.data.table(brapirv2::brapi_get_studies(con = rv$con, trialDbId = rv$trialDbId))
           study_ids <- unique(trial_studies$studyDbId)
 
+          ## make environment names
           withProgress(message = "Reaching environment metadata", value = 0, {
             n_studies <- length(study_ids)
 
-            ## make environment names
             study_names <- rbindlist(l = lapply(1:length(study_ids), function(k){
               try({
                 study_id <- study_ids[k]
@@ -338,6 +342,24 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             close = "Data import"
           )
         })
+      })
+
+      output$table_trial_metadata <- renderDT({
+        req(input$trials)
+        trial_metadata <- data.table(
+          metadata = names(rv$trials_metadata[trialDbId==input$trials]),
+          value = unlist(rv$trials_metadata[trialDbId==input$trials])
+        )
+        datatable(
+          trial_metadata,
+          rownames = F,
+          options = list(
+            paging = F,
+            scrollX = T,
+            # scrollY = "500px",
+            scrollCollapse = T,
+            dom = 't'
+          ))
       })
 
       return(rv)
