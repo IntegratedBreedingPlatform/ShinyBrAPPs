@@ -1,4 +1,5 @@
 library(shinybrapps)
+source("config.R")
 
 ui <- fluidPage(
   tags$head(

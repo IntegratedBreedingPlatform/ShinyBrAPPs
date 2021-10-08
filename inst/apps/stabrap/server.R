@@ -1,5 +1,3 @@
-source("config.R")
-
 rv <- reactiveValues(
   con = NULL,                 # brapi connection information
   data = NULL,                # trial data as a data.table object
