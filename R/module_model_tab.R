@@ -36,7 +36,7 @@ mod_model_ui <- function(id){
       ),
       column(
         1,
-        actionButton(ns("go_fit_model"), "Fit model")
+        shiny::actionButton(ns("go_fit_model"), "Fit model")
       )
     ),
     fluidRow(
@@ -107,7 +107,7 @@ mod_model_ui <- function(id){
             column(
               12,
               downloadButton(ns("export_metrics"), "CSV Export"),
-              actionButton(ns("push_metrics_to_BMS"), "Push metrics to BMS", icon = icon("leaf"))
+              shiny::actionButton(ns("push_metrics_to_BMS"), "Push metrics to BMS", icon = icon("leaf"))
               )
             )
           )

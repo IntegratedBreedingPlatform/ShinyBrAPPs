@@ -22,7 +22,7 @@ mod_get_studydata_ui <- function(id){
                 onInitialize = I('function() { this.setValue(""); }')
               )
             ),
-            actionButton(ns("go_trial_metadata"), "Show study metadata"),
+            shiny::actionButton(ns("go_trial_metadata"), "Show study metadata"),
             bsModal(ns("modal_trial_metadata"), "Study Metadata", ns("go_trial_metadata"), size = "large",
                     dataTableOutput(ns("table_trial_metadata")))
           ),
@@ -38,11 +38,11 @@ mod_get_studydata_ui <- function(id){
               width = "100%",
               animation = "jelly"
             ),
-            actionButton(
+            shiny::actionButton(
               inputId = ns("load_env"),
               label = "Load Selected"
             ),
-            actionButton(
+            shiny::actionButton(
               inputId = ns("load_all_env"),
               label = "Load All"
             )
@@ -303,13 +303,13 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             )
           })
           if("trialDbId" %in% names(rv$data)){
-            rv$data <- rbindlist(
+            rv$data <- unique(rbindlist(
               list(
                 rv$data[trialDbId == rv$trialDbId],
                 studies
               ),
               use.names = T, fill = T
-            )
+            ))
           }else{
             rv$data <- studies
           }
