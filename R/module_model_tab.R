@@ -92,8 +92,7 @@ mod_model_ui <- function(id){
               column(
                 6,
                 tags$label("Heritabilities"),
-                dataTableOutput(ns("herits")),
-                actionButton("export_herits", "Export")
+                dataTableOutput(ns("herits"))
               ),
               column(
                 6,
@@ -101,8 +100,14 @@ mod_model_ui <- function(id){
                 pickerInput(ns("select_metrics"), "Metric", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs"), width = "40%", inline = T),
                 pickerInput(ns("select_environment_metrics"), "Environment", multiple = F, choices = NULL, width = "50%", inline = T),
                 # pickerInput(ns("select_trait_metrics"), label = "Trait", multiple = F, choices = NULL, width = "50%"),
-                dataTableOutput(ns("metrics_table")),
-                actionButton("export_metrics", "Export")
+                dataTableOutput(ns("metrics_table"))
+              )
+            ),
+            fluidRow(
+            column(
+              12,
+              downloadButton(ns("export_metrics"), "CSV Export"),
+              actionButton(ns("push_metrics_to_BMS"), "Push metrics to BMS", icon = icon("leaf"))
               )
             )
           )
@@ -357,23 +362,48 @@ mod_model_server <- function(id, rv){
         return(metrics_table)
 
       })
-        output$metrics_table <- renderDataTable({
-          req(input$select_metrics)
-          req(input$select_environment_metrics)
-          # req(input$select_trait_metrics)
-          # metrics_table_filt <- metrics_table()[trial==input$select_environment_metrics, c("genotype", "entryType", input$select_trait_metrics), with = F] # XXX in case table is filtered by trait
-          metrics_table_filt <- metrics_table()[trial==input$select_environment_metrics, -c("trial"), with = F]
-          datatable(
-            metrics_table_filt,
-            rownames = F,
-            options = list(
-              paging = F,
-              scrollX = T,
-              scrollY = "500px",
-              scrollCollapse = T,
-              dom = 't'
-            ))
-        })
+      output$metrics_table <- renderDataTable({
+        req(input$select_metrics)
+        req(input$select_environment_metrics)
+        # req(input$select_trait_metrics)
+        # metrics_table_filt <- metrics_table()[trial==input$select_environment_metrics, c("genotype", "entryType", input$select_trait_metrics), with = F] # XXX in case table is filtered by trait
+        metrics_table_filt <- metrics_table()[trial==input$select_environment_metrics, -c("trial"), with = F]
+        datatable(
+          metrics_table_filt,
+          rownames = F,
+          options = list(
+            paging = F,
+            scrollX = T,
+            scrollY = "500px",
+            scrollCollapse = T,
+            dom = 't'
+          ))
+      })
+
+      output$export_metrics <- downloadHandler(
+        filename = function() {"metrics.csv"},
+        content = function(file) {
+          table_herit <- as.data.table(extractSTA(STA = rv$fit, what = "heritability"))
+          table_herit[,metrics:="heritability"]
+          table_BLUPs <- as.data.table(extractSTA(STA = rv$fit, what = c("BLUPs")))
+          table_BLUPs[,metrics:="BLUPs"]
+          table_seBLUPs <- as.data.table(extractSTA(STA = rv$fit, what = c("seBLUPs")))
+          table_seBLUPs[,metrics:="seBLUPs"]
+          table_BLUEs <- as.data.table(extractSTA(STA = rv$fit, what = c("BLUEs")))
+          table_BLUEs[,metrics:="BLUEs"]
+          table_seBLUEs <- as.data.table(extractSTA(STA = rv$fit, what = c("seBLUEs")))
+          table_seBLUEs[,metrics:="seBLUEs"]
+
+          table_metrics <- rbindlist(l = list(table_herit, table_BLUPs,table_seBLUPs,table_BLUEs,table_seBLUEs), use.names = T, fill = T)
+          table_metrics <- melt(
+            data = table_metrics,
+            measure.vars = names(table_metrics)[!(names(table_metrics)%in%c("genotype","trial","metrics"))],
+            variable.name = "trait"
+          )
+
+          write.csv(table_metrics, file, row.names = FALSE)
+        }
+      )
     }
   )
 }
