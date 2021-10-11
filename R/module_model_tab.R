@@ -368,8 +368,8 @@ mod_model_server <- function(id, rv){
           req(input$select_metrics)
           req(input$select_environment_metrics)
           # req(input$select_trait_metrics)
-          # metrics_table_filt <- metrics_table()[trial==input$select_environment_metrics, c("genotype", "entryType", input$select_trait_metrics), with = F]
-          metrics_table_filt <- metrics_table()[trial==input$select_environment_metrics, c("genotype", "entryType"), with = F]
+          # metrics_table_filt <- metrics_table()[trial==input$select_environment_metrics, c("genotype", "entryType", input$select_trait_metrics), with = F] # XXX in case table is filtered by trait
+          metrics_table_filt <- metrics_table()[trial==input$select_environment_metrics, -c("trial"), with = F]
           datatable(
             metrics_table_filt,
             rownames = F,
