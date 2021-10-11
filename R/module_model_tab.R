@@ -188,23 +188,16 @@ mod_model_server <- function(id, rv){
         data_filtered <- rv$data[!(observations.observationDbId %in% rv$excluded_observations)]
 
         ## make 1 column per trait
-        cols <- names(data_filtered)[!(names(data_filtered) %in% c("observations.observationVariableName", "observations.value"))]
         data_filtered_casted <- dcast(
-          data = data_filtered,
-          formula =  paste0(
-            paste(cols, collapse = " + "), " ~ observations.observationVariableName"
-          ),
+          data = data_filtered[,.(
+            genotype = germplasmName, trial = study_name_app, loc = studyLocationDbId,
+            repId = replicate, subBlock = observationUnitDbId,
+            rowCoord = positionCoordinateY, colCoord = positionCoordinateX,
+            observations.observationVariableName, observations.value
+          )],
+          formula = "genotype + trial + loc + repId + subBlock + rowCoord + colCoord ~ observations.observationVariableName",
           value.var = "observations.value"
         )
-
-        ## duplicate and renames the columns used to create the TD
-        data_filtered_casted[,genotype := germplasmName] # XXX using germplasmName instead of germplasmDbId makes the output easier to read but is it always OK?
-        data_filtered_casted[,trial := study_name_app]
-        data_filtered_casted[,loc := studyLocationDbId] # XXX
-        data_filtered_casted[,repId := replicate]
-        data_filtered_casted[,subBlock := observationUnitDbId]
-        data_filtered_casted[,rowCoord := positionCoordinateY]
-        data_filtered_casted[,colCoord := positionCoordinateX]
 
         TD <- createTD(
           data = data_filtered_casted,
