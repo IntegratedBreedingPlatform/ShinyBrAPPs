@@ -194,10 +194,15 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               environment_number <- trial_studies[studyDbId == study_id & environmentParameters.parameterName == "ENVIRONMENT_NUMBER",environmentParameters.value]
               environment_number <- ifelse(length(environment_number)==0,k,environment_number)
 
+              if("experimentalDesign.pui"%in% names(trial_studies)){
+                  e_d_pui <- trial_studies[studyDbId == study_id,unique(experimentalDesign.pui)]
+              }else{
+                e_d_pui  <- NULL
+              }
               return(
                 data.table(
                   study_id,location_name,location_name_abbrev,environment_number,
-                  exp_design_pui = trial_studies[studyDbId == study_id,unique(experimentalDesign.pui)]
+                  exp_design_pui = e_d_pui
                 )
               )
             })
