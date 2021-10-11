@@ -124,6 +124,7 @@ mod_model_server <- function(id, rv){
     function(input, output, session){
       observe({
         req(rv$data)
+        req("observations.observationVariableName"%in%names(rv$data))
         choices_env <- rv$data[,unique(study_name_app)]
         updatePickerInput(
           session,"select_environments",

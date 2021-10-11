@@ -106,6 +106,10 @@ mod_dataquality_server <- function(id, rv){
       observe({
 
         req(rv$data)
+        if(!("observations.observationVariableName"%in%names(rv$data))){
+          showNotification("No trait data", type = "error", duration = NULL)
+        }
+        req("observations.observationVariableName"%in%names(rv$data))
 
         updatePickerInput(
           inputId = "trait", session = session,
