@@ -88,16 +88,23 @@ mod_model_ui <- function(id){
           ),
           tabPanel(
             "Results",
-            tags$label("Heritabilities"),
-            dataTableOutput(ns("herits")),
-            tags$label("BLUPs"),
-            dataTableOutput(ns("BLUPs")),
-            tags$label("BLUEs"),
-            dataTableOutput(ns("BLUEs")),
-            tags$label("seBLUPs"),
-            dataTableOutput(ns("seBLUPs")),
-            tags$label("seBLUEs"),
-            dataTableOutput(ns("seBLUEs"))
+            fluidRow(
+              column(
+                6,
+                tags$label("Heritabilities"),
+                dataTableOutput(ns("herits")),
+                actionButton("export_herits", "Export")
+              ),
+              column(
+                6,
+                # tags$label("Other metrics"),
+                pickerInput(ns("select_metrics"), "Metric", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs"), width = "40%", inline = T),
+                pickerInput(ns("select_environment_metrics"), "Environment", multiple = F, choices = NULL, width = "50%", inline = T),
+                # pickerInput(ns("select_trait_metrics"), label = "Trait", multiple = F, choices = NULL, width = "50%"),
+                dataTableOutput(ns("metrics_table")),
+                actionButton("export_metrics", "Export")
+              )
+            )
           )
         )
       )
@@ -238,15 +245,21 @@ mod_model_server <- function(id, rv){
           session, "select_environment_fit",
           choices = input$select_environments,
           selected = input$select_environments
-          # options = list(
-          #   placeholder = 'Select 1 environment',
-          #   onInitialize = I('function() { this.setValue(""); }')
-          # )
         )
         updatePickerInput(
           session, "select_trait_fit",
           choices = input$select_traits,
           selected = input$select_traits[1]
+        )
+
+        updatePickerInput(
+          session,"select_trait_metrics",
+          choices = input$select_traits
+          # selected = input$select_traits[1]
+        )
+        updatePickerInput(
+          session, "select_environment_metrics",
+          choices = input$select_environments
         )
       })
 
@@ -341,62 +354,33 @@ mod_model_server <- function(id, rv){
             dom = 't'
           ))
       })
-      output$BLUPs <- renderDT({
-        req(rv$fit)
-        BLUPs <- extractSTA(STA = rv$fit, what = "BLUPs")
-        datatable(
-          BLUPs,
-          rownames = F,
-          options = list(
-            paging = F,
-            scrollX = T,
-            scrollY = "500px",
-            scrollCollapse = T,
-            dom = 't'
-          ))
+      metrics_table <- eventReactive(input$select_metrics,{
+        req(input$select_metrics)
+        metrics_table <- as.data.table(extractSTA(STA = rv$fit, what = input$select_metrics))
+        entry_types <- unique(rv$data[,.(genotype=germplasmName, entryType)])
+        setkey(metrics_table, genotype)
+        setkey(entry_types, genotype)
+        metrics_table <- entry_types[metrics_table]
+        return(metrics_table)
+
       })
-      output$BLUEs <- renderDT({
-        req(rv$fit)
-        BLUEs <- extractSTA(STA = rv$fit, what = "BLUEs")
-        datatable(
-          BLUEs,
-          rownames = F,
-          options = list(
-            paging = F,
-            scrollX = T,
-            scrollY = "500px",
-            scrollCollapse = T,
-            dom = 't'
-          ))
-      })
-      output$seBLUEs <- renderDT({
-        req(rv$fit)
-        seBLUEs <- extractSTA(STA = rv$fit, what = "seBLUEs")
-        datatable(
-          seBLUEs,
-          rownames = F,
-          options = list(
-            paging = F,
-            scrollX = T,
-            scrollY = "500px",
-            scrollCollapse = T,
-            dom = 't'
-          ))
-      })
-      output$seBLUPs <- renderDT({
-        req(rv$fit)
-        seBLUPs <- extractSTA(STA = rv$fit, what = "seBLUPs")
-        datatable(
-          seBLUPs,
-          rownames = F,
-          options = list(
-            paging = F,
-            scrollX = T,
-            scrollY = "500px",
-            scrollCollapse = T,
-            dom = 't'
-          ))
-      })
+        output$metrics_table <- renderDataTable({
+          req(input$select_metrics)
+          req(input$select_environment_metrics)
+          # req(input$select_trait_metrics)
+          # metrics_table_filt <- metrics_table()[trial==input$select_environment_metrics, c("genotype", "entryType", input$select_trait_metrics), with = F]
+          metrics_table_filt <- metrics_table()[trial==input$select_environment_metrics, c("genotype", "entryType"), with = F]
+          datatable(
+            metrics_table_filt,
+            rownames = F,
+            options = list(
+              paging = F,
+              scrollX = T,
+              scrollY = "500px",
+              scrollCollapse = T,
+              dom = 't'
+            ))
+        })
     }
   )
 }
