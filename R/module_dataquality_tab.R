@@ -220,15 +220,18 @@ mod_dataquality_server <- function(id, rv){
               # fill = observations.value,
               germplasmName = germplasmName,
               stroke = ifelse(is.selected,1,0.1),
+              color = is.selected,
               key = observations.observationDbId
             ),
-            colour = "black",
             size = 4
           ) +
+          scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black"), guide = "none") +
           scale_alpha(guide = "none") + coord_flip() +
           theme_minimal() +
           xlab(input$trait) +
-          theme(#axis.text.y = element_text(angle = 60),
+          theme(
+            legend.position = "none",
+            #axis.text.y = element_text(angle = 60),
             axis.text.y = element_blank(),
             axis.title.y = element_blank())
         ggplotly(height=length(input$studies)*400,
@@ -316,23 +319,23 @@ mod_dataquality_server <- function(id, rv){
                                                       xend = "x - 0.5",
                                                       y = "y - 0.5",
                                                       yend = "y + 0.5"),
-                                  size = 1, alpha = 1) +
+                                  size = 1, alpha = 1, color = "red") +
             ggplot2::geom_segment(data = data_dq[is.selected==T],
                                   ggplot2::aes_string(x = "x + 0.5",
                                                       xend = "x + 0.5",
                                                       y = "y - 0.5",
                                                       yend = "y + 0.5"),
-                                  size = 1, alpha = 1) +
+                                  size = 1, alpha = 1, color = "red") +
             ggplot2::geom_segment(ggplot2::aes_string(x = "x - 0.5",
                                                       xend = "x + 0.5",
                                                       y = "y - 0.5",
                                                       yend = "y - 0.5"),
-                                  data = data_dq[is.selected==T], size = 1, alpha = 1) +
+                                  data = data_dq[is.selected==T], size = 1, alpha = 1, color = "red") +
             ggplot2::geom_segment(ggplot2::aes_string(x = "x - 0.5",
                                                       xend = "x + 0.5",
                                                       y = "y + 0.5",
                                                       yend = "y + 0.5"),
-                                  data = data_dq[is.selected==T], size = 1, alpha = 1)
+                                  data = data_dq[is.selected==T], size = 1, alpha = 1, color = "red")
         }
 
         ggplotly(height=length(input$studies)*400,
