@@ -572,6 +572,14 @@ mod_dataquality_server <- function(id, rv){
         rv$excluded_obs <- setdiff(rv$excluded_obs, non_excluded_obs)
       })
 
+      observeEvent(input$select_variable,{
+        if(input$select_variable==""){
+          shinyjs::hide("select_variable_value")
+        }else{
+          shinyjs::show("select_variable_value")
+        }
+      })
+
       return(rv)
     }
   )
