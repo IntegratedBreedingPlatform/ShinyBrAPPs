@@ -19,8 +19,6 @@ ui <- fluidPage(
     tabPanel(
       "Model",
       mod_model_ui('model')
-    ),
-    tabPanel("BLUES/BLUPS"),
-    tabPanel("Diagnosis")
+    )
   )
 )
