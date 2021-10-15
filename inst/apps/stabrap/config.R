@@ -4,13 +4,24 @@ brapi_port <- 80
 brapi_apipath <- "bmsapi"
 brapi_version <- "1.3"
 
-hidden_columns_observationunits <- c(
-  "studyDbId","studyName","studyLocationDbId", "studyLocation",
-  "programName", "programDbId",
-  "trialDbId", "trialName",
-  "observations.observationVariableName",
-  "environment_label_abbrev"
-  )
+# hidden_columns_observationunits <- c(
+#   "studyDbId","studyName","studyLocationDbId", "studyLocation",
+#   "programName", "programDbId",
+#   "trialDbId", "trialName",
+#   "observations.observationVariableName",
+#   "environment_label_abbrev"
+#   )
+visible_columns_selected_obs <- c(
+  "study_name_abbrev_app",
+  "entryType",
+  "entryNumber",
+  "germplasmName",
+  "blockNumber",
+  "replicate",
+  "plotNumber",
+  "positionCoordinateX",
+  "positionCoordinateY"
+)
 
 ## correspondence of experimental designs
 exp_designs_corresp <- data.table(

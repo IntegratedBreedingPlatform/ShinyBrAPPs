@@ -504,14 +504,17 @@ mod_dataquality_server <- function(id, rv){
 
         input$set_excluded_obs
         input$set_non_excluded_obs
+        selected_obs <- rv$data_dq[observations.observationDbId %in% rv$sel_observationDbIds & !(observations.observationDbId %in% rv$excluded_obs)]
+        setcolorder(selected_obs, visible_columns_selected_obs)
         datatable(
-          rv$data_dq[observations.observationDbId %in% rv$sel_observationDbIds & !(observations.observationDbId %in% rv$excluded_obs)],
+          selected_obs,
           extensions = 'Buttons',
+          colnames = c("study"="study_name_abbrev_app"),
           options = list(
             columnDefs = list(
               list(
                 visible=FALSE,
-                targets=match(hidden_columns_observationunits, names(rv$data_dq))
+                targets=match(names(selected_obs)[!(names(selected_obs)%in%visible_columns_selected_obs)], names(selected_obs))
               )
             ),
             paging = F,
@@ -544,14 +547,18 @@ mod_dataquality_server <- function(id, rv){
         input$set_non_excluded_obs
         req(rv$data_dq[observations.observationDbId %in% rv$excluded_obs,.N]>0)
         shinyjs::show(selector = ".display_if_exclusion")
+
+        selected_excl_obs <- rv$data_dq[observations.observationDbId %in% rv$excluded_obs]
+        setcolorder(selected_excl_obs, visible_columns_selected_obs)
         datatable(
-          rv$data_dq[observations.observationDbId %in% rv$excluded_obs],
+          selected_excl_obs,
+          colnames = c("study"="study_name_abbrev_app"),
           extensions = 'Buttons',
           options = list(
             columnDefs = list(
               list(
                 visible=FALSE,
-                targets=match(hidden_columns_observationunits, names(rv$data_dq))
+                targets=match(names(selected_excl_obs)[!(names(selected_excl_obs)%in%visible_columns_selected_obs)], names(selected_excl_obs))
               )
             ),
             paging = F,
