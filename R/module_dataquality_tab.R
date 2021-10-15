@@ -121,8 +121,8 @@ mod_dataquality_server <- function(id, rv){
           )
         )
 
-        env_choices <- rv$study_names[loaded==T,study_id]
-        names(env_choices) <- rv$study_names[loaded==T,study_name_app]
+        env_choices <- rv$study_metadata[loaded==T,unique(studyDbId)]
+        names(env_choices) <- rv$study_metadata[loaded==T,unique(study_name_app)]
         updatePickerInput(
           inputId = "studies", session = session,
           choices = env_choices, selected = env_choices,
@@ -401,7 +401,7 @@ mod_dataquality_server <- function(id, rv){
           rowCoord = "positionCoordinateY",
           colCoord = "positionCoordinateX"
         )
-        p <- plot(TD, plotType="cor", traits = input$trait, output = F, trials = rv$study_names[study_id %in% input$studies, study_name_app])
+        p <- plot(TD, plotType="cor", traits = input$trait, output = F, trials = rv$study_metadata[studyDbId %in% input$studies, unique(study_name_app)])
         ggplotly(p[[input$trait]], source = "B")
       })
 

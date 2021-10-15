@@ -167,7 +167,7 @@ mod_model_server <- function(id, rv){
 
       observeEvent(input$select_environments, {
         ## update experimental design
-        design_pui <- rv$study_names[study_name_app %in% input$select_environments,unique(exp_design_pui)]
+        design_pui <- rv$study_metadata[study_name_app %in% input$select_environments,unique(experimentalDesign.pui)]
         StatGenSTA_code <- exp_designs_corresp[BMS_pui == design_pui, StatGenSTA_code]
         if(length(StatGenSTA_code)==1 & length(StatGenSTA_code)>0){
           updatePickerInput(
