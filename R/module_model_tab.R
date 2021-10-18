@@ -120,7 +120,7 @@ mod_model_ui <- function(id){
             fluidRow(
               column(
                 12,
-                pickerInput(ns("select_environment_metrics"), "Environment", multiple = F, choices = NULL, width = "50%", inline = T),
+                pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL, width = "50%", inline = T),
               )
             ),
             fluidRow(
