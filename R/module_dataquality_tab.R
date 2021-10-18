@@ -306,7 +306,7 @@ mod_dataquality_server <- function(id, rv){
           repBord$horW$W <- "horW"
           repBord$vertW$W <- "vertW"
           repBordBind <- rbindlist(repBord, use.names = T, fill = T)
-          repBordBind[,study_name_abbrev_app := data_dq[studyDbId==tr, unique(study_name_abbrev_app)]]
+          repBordBind[,study_name_BMS := data_dq[studyDbId==tr, unique(study_name_BMS)]]
           repBordBind
         }), use.names = T, fill = T)
         g2 <- g2 +
