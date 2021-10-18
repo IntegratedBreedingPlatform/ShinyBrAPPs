@@ -1,8 +1,9 @@
-brapi_protocol <- "https://"
-brapi_db <- "brapi.bms-uat-test.net"
-brapi_port <- 80
-brapi_apipath <- "bmsapi"
-brapi_version <- "1.3"
+# brapi_protocol <- "https://"
+# brapi_db <- "brapi.bms-uat-test.net"
+# brapi_port <- 80
+# brapi_apipath <- "bmsapi"
+brapi_version <- "2.0"
+
 
 # hidden_columns_observationunits <- c(
 #   "studyDbId","studyName","studyLocationDbId", "studyLocation",
@@ -43,6 +44,7 @@ exp_designs_corresp <- data.table(
 choices_model_design <- exp_designs_corresp$StatGenSTA_code
 names(choices_model_design) <- exp_designs_corresp$statGenSTA
 
+notification_duration = 10 # in seconds
 
 
 

@@ -12,7 +12,8 @@ mod_get_studydata_ui <- function(id){
         "Data import",
         fluidRow(
           column(
-            6,id = ns("select_trialDbId_UI"),style = "display:none",
+            6,id = ns("select_trialDbId_UI"),style = "display:block",
+            textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://brapi.bms-uat-test.net:80/bmsapi", value = "https://brapi.bms-uat-test.net:80/bmsapi", width = "100%"),
             textInput(ns("token"), "Token", placeholder = "Enter Token", width = "100%"),
             textInput(ns("cropDb"), "CropDb", value = "wheat", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
             selectizeInput(
@@ -65,6 +66,8 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
     function(input, output, session){
 
       ns <- NS(id)
+      rv
+      env_to_load <- reactiveVal()
 
       parse_GET_param  <- reactive({
         pars <- parseQueryString(session$clientData$url_search)
@@ -72,37 +75,44 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
       if(!is.null(dataset_4_dev)){ # XXX
         rv$data <- dataset_4_dev$data
+        rv$trial_metadata <- dataset_4_dev$trial_metadata
         rv$study_metadata <- dataset_4_dev$study_metadata
       }else{
 
-        observeEvent(parse_GET_param(),{
 
-          if(!(is.null(parse_GET_param()$token) | is.null(parse_GET_param()$cropDb) | is.null(parse_GET_param()$trialDbId))){
-            rv$con <- brapirv2::brapi_connect(
-              secure = TRUE,
-              protocol = brapi_protocol,
-              db = brapi_db,
-              port = brapi_port,
-              apipath = brapi_apipath,
-              multicrop = TRUE,
-              token = parse_GET_param()$token,
-              commoncropname = parse_GET_param()$cropDb,
-              granttype = "token",
-              clientid = "brapir",
-              bms = TRUE
-            )
-            rv$trialDbId <- parse_GET_param()$trialDbId
-          }else{
-            shinyjs::show(id = "select_trialDbId_UI")
-            if(!is.null(parse_GET_param()$token)){
-              updateTextInput("token", session = session, value = parse_GET_param()$token)
-            }
-          }
+        observeEvent(parse_GET_param()$apiURL,{
+          req(parse_GET_param()$apiURL)
+          updateTextInput(session = session, inputId = "apiURL", value = parse_GET_param()$apiURL)
+        })
+        observeEvent(parse_GET_param()$token,{
+          req(parse_GET_param()$token)
+          updateTextInput(session = session, inputId = "token", value = parse_GET_param()$token)
+        })
+        observeEvent(parse_GET_param()$cropDb,{
+          req(parse_GET_param()$cropDb)
+          updateTextInput(session = session, inputId = "cropDb", value = parse_GET_param()$cropDb)
         })
 
-        observeEvent(c(input$token,input$cropDb),{
+        ### BrAPI GET trials
+        observeEvent(c(input$apiURL, input$token, input$cropDb),{
+          req(input$apiURL)
           req(input$token)
           req(input$cropDb)
+
+          ### parse URL
+          ## get protocol (default = "https://")
+          protocolless_url <- gsub("(^http://|^https://)(.*)$", "\\2",input$apiURL)
+          brapi_protocol <- gsub("(^http://|^https://)(.*)$", "\\1",input$apiURL)
+          brapi_protocol <- ifelse(brapi_protocol == input$apiURL, "https://", brapi_protocol)
+
+          ## get base url and port (default = 80)
+          db_split <- strsplit(gsub("([^/]*).*", "\\1",protocolless_url), ":")
+          brapi_db <- db_split[[1]][1]
+          brapi_port <- ifelse(is.na(db_split[[1]][2]),80,as.numeric(db_split[[1]][2]))
+
+          ## brapi api path (default = "/")
+          brapi_apipath <- ifelse(grepl("/.*",protocolless_url),gsub("[^/]*/(.*)", "\\1", protocolless_url),"/")
+
           rv$con <- brapirv2::brapi_connect(
             secure = TRUE,
             protocol = brapi_protocol,
@@ -116,11 +126,10 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             clientid = "brapir",
             bms = TRUE
           )
-
-          catch <- tryCatch({
-            ## get the brapi::trials for the crop
-            withProgress(message = "Reaching studies", value = 0, {
-              incProgress(1)
+          ## get the brapi::trials
+          withProgress(message = "Reaching studies", value = 0, {
+            incProgress(1)
+            tryCatch({
               trials <- as.data.table(brapirv2::brapi_get_trials(con = rv$con))
               trial_choices <- trials[,trialDbId]
               names(trial_choices) <- trials[,trialName]
@@ -131,15 +140,23 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
                   onInitialize = I('function() { this.setValue(""); }')
                 )
               )
-              rv$trials_metadata <- trials
+              rv$trial_metadata <- trials
+
+              ## set trialDbId if in http query string
+              if(length(parse_GET_param()$trialDbId%in%trial_choices)>0){
+                if(parse_GET_param()$trialDbId%in%trial_choices){
+                  updateSelectizeInput(
+                    inputId = "trials", session = session, selected = parse_GET_param()$trialDbId
+                  )
+                }else{
+                  showNotification("trialDbId not in cropDb", type = "error", duration = notification_duration)
+                }
+              }
+            },
+            error=function(e){
+              showNotification("check url, token and/or cropDb", type = "error", duration = notification_duration)
             })
-          },
-          warning=function(w){w},
-          error=function(e){e})
-          mess <- catch$message
-          if(!is.null(mess)){
-            showNotification(mess, type = "error", duration = NULL)
-          }
+          })
         })
       }
 
@@ -148,108 +165,122 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         rv$trialDbId <- input$trials
       })
 
+      ### BrAPI GET studies and GET locations
       observeEvent(rv$trialDbId,{
         req(rv$trialDbId)
 
         ## get all the studies of a trial
-        try({
+        tryCatch({
           study_metadata <- as.data.table(brapirv2::brapi_get_studies(con = rv$con, trialDbId = rv$trialDbId))
           study_ids <- unique(study_metadata$studyDbId)
           location_ids <- unique(study_metadata$locationDbId)
+        },
+        error=function(e){
+          showNotification("study metadata not found", type = "error", duration = notification_duration)
         })
 
-        ## get location abbreviations
-        withProgress(message = "Reaching location metadata", value = 0, {
-          req(location_ids)
-          loc_names <- rbindlist(l = lapply(1:length(location_ids), function(k){
-            incProgress(
-              1/length(location_ids),
-              detail = study_metadata[locationDbId==location_ids[k], unique(locationName)]
-            )
-            try({
-              brapirv2::brapi_get_locations_locationDbId(con = rv$con, locationDbId = location_ids[k])
-            })
-          }), fill = T, use.names = T)
-        })
-        req(loc_names)
-        maxchar <- 9
-        loc_names[,location_name_abbrev := lapply(abbreviation, function(x){
-          if(is.na(x)){
-            if(nchar(locationName)>maxchar){
-              paste0(
-                substr(locationName,1,4),
-                "...",
-                substr(locationName,nchar(locationName)-3,nchar(locationName))
+        if(exists("location_ids")){
+          ## get location abbreviations
+          withProgress(message = "Reaching location metadata", value = 0, {
+            req(location_ids)
+            loc_names <- rbindlist(l = lapply(1:length(location_ids), function(k){
+              incProgress(
+                1/length(location_ids),
+                detail = study_metadata[locationDbId==location_ids[k], unique(locationName)]
               )
+              try({
+                brapirv2::brapi_get_locations_locationDbId(con = rv$con, locationDbId = location_ids[k])
+              })
+            }), fill = T, use.names = T)
+          })
+          req(loc_names)
+          maxchar <- 9
+          loc_names[,location_name_abbrev := lapply(abbreviation, function(x){
+            if(is.na(x)){
+              if(nchar(locationName)>maxchar){
+                paste0(
+                  substr(locationName,1,4),
+                  "...",
+                  substr(locationName,nchar(locationName)-3,nchar(locationName))
+                )
+              }else{
+                locationName
+              }
             }else{
-              locationName
+              x
             }
-          }else{
-            x
+          })]
+          study_metadata <- merge.data.table(
+            x = study_metadata[,-intersect(names(study_metadata)[names(study_metadata)!="locationDbId"], names(loc_names)), with = F],
+            # x = study_metadata[,-"locationName", with = F],
+            y = loc_names,
+            by = "locationDbId", all.x = T)
+
+          ## environment number
+          env_number <- merge.data.table(
+            x = study_metadata[,.(studyDbId = unique(studyDbId))],
+            y = study_metadata[environmentParameters.parameterName == "ENVIRONMENT_NUMBER",.(studyDbId, environment_number = environmentParameters.value)],
+            by = "studyDbId", all.x = T)
+          env_number[is.na(environment_number), environment_number:=studyDbId]
+          study_metadata <- merge.data.table(
+            x = study_metadata,
+            y = env_number,
+            by = "studyDbId", all.x = T)
+
+          ## environment names
+          study_metadata[,study_name_BMS := paste0(
+            environment_number, "-",
+            locationName
+          )]
+          study_metadata[,study_name_app := paste0(
+            study_name_BMS, " (",
+            location_name_abbrev, ")"
+          )]
+          study_metadata[,study_name_abbrev_app := paste0(
+            environment_number, "-",
+            location_name_abbrev
+          )]
+          study_metadata[, loaded:=F]
+          env_choices <- study_metadata[,unique(studyDbId)]
+          names(env_choices) <- study_metadata[,unique(study_name_app)]
+
+          updateCheckboxGroupInput(
+            inputId = "environments",
+            session = session,
+            label = "Available environments",
+            choices = env_choices
+          )
+          shinyjs::show(id = "load_env")
+          shinyjs::show(id = "load_all_env")
+          rv$study_metadata <- study_metadata
+
+          ## load environments if indicated in url
+          req(parse_GET_param()$studyDbIds)
+          ids <- unlist(strsplit(parse_GET_param()$studyDbIds, ","))
+          env_to_load(rv$study_metadata[loaded==F & studyDbId %in% ids,unique(studyDbId)])
+          if(any(!(ids%in%rv$study_metadata[,unique(studyDbId)]))){
+            showNotification(
+              paste0(
+                "studyDbId ",
+                paste(ids[!(ids%in%rv$study_metadata[,unique(studyDbId)])], collapse = ", "),
+                " not in trialDbId"
+              ),
+              type = "error", duration = notification_duration
+            )
           }
-        })]
-        study_metadata <- merge.data.table(
-          x = study_metadata[,-intersect(names(study_metadata)[names(study_metadata)!="locationDbId"], names(loc_names)), with = F],
-          # x = study_metadata[,-"locationName", with = F],
-          y = loc_names,
-          by = "locationDbId", all.x = T)
-
-        ## environment number
-        env_number <- merge.data.table(
-          x = study_metadata[,.(studyDbId = unique(studyDbId))],
-          y = study_metadata[environmentParameters.parameterName == "ENVIRONMENT_NUMBER",.(studyDbId, environment_number = environmentParameters.value)],
-          by = "studyDbId", all.x = T)
-        env_number[is.na(environment_number), environment_number:=studyDbId]
-        study_metadata <- merge.data.table(
-          x = study_metadata,
-          y = env_number,
-          by = "studyDbId", all.x = T)
-
-        ## environment names
-        study_metadata[,study_name_BMS := paste0(
-          environment_number, "-",
-          locationName
-        )]
-        study_metadata[,study_name_app := paste0(
-          study_name_BMS, " (",
-          location_name_abbrev, ")"
-        )]
-        study_metadata[,study_name_abbrev_app := paste0(
-          environment_number, "-",
-          location_name_abbrev
-        )]
-        study_metadata[, loaded:=F]
-
-        env_choices <- study_metadata[,unique(studyDbId)]
-        names(env_choices) <- study_metadata[,unique(study_name_app)]
-
-        updateCheckboxGroupInput(
-          inputId = "environments",
-          session = session,
-          label = "Available environments",
-          choices = env_choices
-        )
-        shinyjs::show(id = "load_env")
-        shinyjs::show(id = "load_all_env")
-        rv$study_metadata <- study_metadata
+        }
       })
 
-      ### load BMS study data
-      env_to_load <- reactiveVal()
-      observeEvent(parse_GET_param(),{
-        req(parse_GET_param()$studyDbIds)
-        ids <- unlist(strsplit(parse_GET_param()$studyDbIds, ","))
-        env_to_load(rv$study_metadata[loaded==F & studyDbId %in% ids,unique(studyDbId)])
-      })
+      ### load environment data
       observeEvent(input$load_env,{
         req(input$environments)
+        req(rv$study_metadata)
         env_to_load(input$environments)
       })
       observeEvent(input$load_all_env,{
         req(rv$study_metadata)
         env_to_load(rv$study_metadata[loaded==F,unique(studyDbId)])
       })
-
       observeEvent(env_to_load(),{
         req(env_to_load())
         req(rv$study_metadata)
@@ -320,8 +351,8 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
       output$table_trial_metadata <- renderDT({
         req(input$trials)
         trial_metadata <- data.table(
-          metadata = names(rv$trials_metadata[trialDbId==input$trials]),
-          value = unlist(rv$trials_metadata[trialDbId==input$trials])
+          metadata = names(rv$trial_metadata[trialDbId==input$trials]),
+          value = unlist(rv$trial_metadata[trialDbId==input$trials])
         )
         datatable(
           trial_metadata,
