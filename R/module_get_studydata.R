@@ -217,11 +217,16 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             by = "locationDbId", all.x = T)
 
           ## environment number
+          if("environmentParameters.parameterName"%in%names(study_metadata)){
           env_number <- merge.data.table(
             x = study_metadata[,.(studyDbId = unique(studyDbId))],
             y = study_metadata[environmentParameters.parameterName == "ENVIRONMENT_NUMBER",.(studyDbId, environment_number = environmentParameters.value)],
             by = "studyDbId", all.x = T)
           env_number[is.na(environment_number), environment_number:=studyDbId]
+          }else{
+            env_number <- study_metadata[,.(studyDbId = unique(studyDbId))]
+            env_number[, environment_number:=studyDbId]
+          }
           study_metadata <- merge.data.table(
             x = study_metadata,
             y = env_number,
