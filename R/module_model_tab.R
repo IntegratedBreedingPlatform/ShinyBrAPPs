@@ -87,6 +87,27 @@ mod_model_ui <- function(id){
             )
           ),
           tabPanel(
+            "Outliers",
+            fluidRow(
+              column(
+                4,
+                pickerInput(
+                  ns("select_trait_outliers"),"Trait", multiple = F, choices = NULL, width = "100%"
+                )
+              ),
+              column(
+                4,
+                sliderInput(ns("limit_residual"), label = "Threshold for standardized residuals", min = 0, max = 0, value = 0, width = "100%")
+              )
+            ),
+            fluidRow(
+              column(
+                12,
+                dataTableOutput(ns("table_outliers"))
+              )
+            )
+          ),
+          tabPanel(
             "Results",
             fluidRow(
               column(
@@ -257,6 +278,11 @@ mod_model_server <- function(id, rv){
           choices = input$select_traits,
           selected = input$select_traits[1]
         )
+        updatePickerInput(
+          session, "select_trait_outliers",
+          choices = input$select_traits,
+          selected = input$select_traits[1]
+        )
 
         if(input$model_engine%in%c("lme4")){
           choices_metrics_A <- c("Wald"="wald", "Heritability"="heritability", "CV"="CV")
@@ -356,6 +382,44 @@ mod_model_server <- function(id, rv){
         )
       })
 
+      ### Outliers
+      observeEvent(input$select_trait_outliers,{
+        req(input$select_trait_outliers)
+        stdResR <- as.data.table(extractSTA(STA = rv$fit, traits = input$select_trait_outliers, what = "stdResR"))
+        res_q <- quantile(abs(stdResR[[input$select_trait_outliers]]), probs = seq(0,1,0.01))
+        updateSliderInput(
+          session = session, "limit_residual",
+          max = as.numeric(res_q[101]),
+          value = as.numeric(res_q[100]) # by default, the 1% extreme residuals are returned
+        )
+      })
+      output$table_outliers <- renderDataTable({
+        req(input$select_trait_outliers)
+        req(input$limit_residual>0)
+        outliersSTA <- outlierSTA(
+          rv$fit,
+          traits = input$select_trait_outliers,
+          what = "random",
+          rLimit = input$limit_residual,
+          commonFactors = "genotype",
+          verbose = F
+        )
+        outliers <- as.data.table(outliers$outliers)
+        setnames(outliers, "trial", "environment")
+        datatable(
+          outliers,
+          rownames = F,
+          options = list(
+            paging = F,
+            scrollX = T,
+            scrollY = "500px",
+            scrollCollapse = T,
+            dom = 't'
+          )
+        )
+      })
+
+      ### Metrics
       metrics_A_table <- eventReactive(input$select_metrics_A,{
         req(input$select_metrics_A)
         if(input$select_metrics_A == "wald"){
@@ -377,8 +441,8 @@ mod_model_server <- function(id, rv){
           setnames(metrics_table, "trial", "environment")
         }
         return(metrics_table)
-
       })
+
       output$metrics_A_table <- renderDT({
         req(metrics_A_table())
         req(input$select_environment_metrics)
@@ -407,7 +471,7 @@ mod_model_server <- function(id, rv){
           ))
       })
 
-      metrics_table <- eventReactive(input$select_metrics_B,{
+      metrics_B_table <- eventReactive(input$select_metrics_B,{
         req(input$select_metrics_B)
         rvfit <<- rv$fit
         metrics_table <- as.data.table(extractSTA(STA = rv$fit, what = input$select_metrics_B))
@@ -419,12 +483,12 @@ mod_model_server <- function(id, rv){
         return(metrics_table)
       })
 
-      output$metrics_table <- renderDataTable({
+      output$metrics_B_table <- renderDataTable({
         req(input$select_metrics_B)
         req(input$select_environment_metrics)
         # req(input$select_trait_metrics)
         # metrics_table_filt <- metrics_table()[environment==input$select_environment_metrics, c("genotype", "entryType", input$select_trait_metrics), with = F] # XXX in case table is filtered by trait
-        metrics_table_filt <- metrics_table()[environment==input$select_environment_metrics, -c("environment"), with = F]
+        metrics_table_filt <- metrics_B_table()[environment==input$select_environment_metrics, -c("environment"), with = F]
         datatable(
           metrics_table_filt,
           rownames = F,
