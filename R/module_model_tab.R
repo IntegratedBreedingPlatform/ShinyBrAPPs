@@ -13,7 +13,7 @@ mod_model_ui <- function(id){
       column(
         3,
         pickerInput(
-          ns("select_environments"), "Environments", multiple = TRUE, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
+          ns("select_environments"), "Select Environments", multiple = TRUE, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
         )
       ),
       column(
@@ -174,11 +174,17 @@ mod_model_server <- function(id, rv){
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
+      })
 
+      observeEvent(input$select_traits,{
+        # req(input$select_traits)
         ## the possible covariates
         # - have to be numerical
         # - must not be some columns (like ids)
-        choices_cov <- names(rv$data)[unlist(rv$data[,lapply(.SD, is.numeric)])]
+        # - can be traits
+        all_traits <- rv$data[,unique(observations.observationVariableName)]
+        remaining_traits <- setdiff(all_traits, input$select_traits)
+        choices_cov <- c(names(rv$data)[unlist(rv$data[,lapply(.SD, is.numeric)])], remaining_traits)
         not_cov <- c(
           "studyDbId", "trialDbId","observations.observationDbId",
           "environment_number",
@@ -187,7 +193,6 @@ mod_model_server <- function(id, rv){
           "programDbId"
         )
         choices_cov <- choices_cov[!(choices_cov%in%not_cov)]
-
         updatePickerInput(
           session, "covariates", choices = choices_cov, selected = NULL
         )
