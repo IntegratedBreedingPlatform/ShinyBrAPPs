@@ -552,6 +552,7 @@ mod_dataquality_server <- function(id, rv){
           input$selected_obs_table_rows_selected, observations.observationDbId
         ]
 
+        rv$sel_observationDbIds <- setdiff(rv$sel_observationDbIds, new_excluded_obs) # remove the "selected" status from the new excluded observations
         rv$excluded_obs <- union(rv$excluded_obs, new_excluded_obs)
       })
 
