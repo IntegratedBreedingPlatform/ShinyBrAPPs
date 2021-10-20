@@ -267,7 +267,7 @@ mod_model_server <- function(id, rv){
           error=function(e){ e })
         mess <- a$message
         if(!is.null(mess)){
-          showNotification(mess, type = "error", duration = NULL)
+          showNotification(mess, type = "error", duration = notification_duration)
         }
         req(rv$fit)
 

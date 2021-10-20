@@ -108,7 +108,7 @@ mod_dataquality_server <- function(id, rv){
 
         req(rv$data)
         if(!("observations.observationVariableName"%in%names(rv$data))){
-          showNotification("No trait data", type = "error", duration = NULL)
+          showNotification("No trait data", type = "error", duration = notification_duration)
         }
         req("observations.observationVariableName"%in%names(rv$data))
 
