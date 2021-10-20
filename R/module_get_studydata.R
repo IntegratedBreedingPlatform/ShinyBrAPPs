@@ -46,7 +46,10 @@ mod_get_studydata_ui <- function(id){
             shiny::actionButton(
               inputId = ns("load_all_env"),
               label = "Load All"
-            )
+            ),
+            shiny::actionButton(ns("go_study_metadata"), "Show Environment Metadata"),
+            bsModal(ns("modal_study_metadata"), "Environment Metadata", ns("go_study_metadata"), size = "large",
+                    dataTableOutput(ns("table_study_metadata")))
           ),
           column(
             3,
@@ -369,6 +372,28 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             scrollCollapse = T,
             dom = 't'
           ))
+      })
+
+      output$table_study_metadata <- renderDT({
+        req(rv$study_metadata)
+        dtable <- datatable(
+          rv$study_metadata,
+          rownames = F,
+          options = list(
+            paging = F,
+            scrollX = T,
+            scrollY = "500px",
+            scrollCollapse = T,
+            dom = 't',
+            rowsGroup = as.list(c(0,(1:length(names(rv$study_metadata)))[unlist(rv$study_metadata[,lapply(.SD, function(x){length(unique(x))}),studyDbId][,lapply(.SD,function(x){all(x==1)})])] - 1)) # indices of the columns with duplicated values per studyDbId
+          ))
+        path <- "www/js/datatables-rowsgroup/"
+        dep <- htmltools::htmlDependency(
+          "RowsGroup", "2.0.0",
+          path, script = "dataTables.rowsGroup.js"
+        )
+        dtable$dependencies <- c(dtable$dependencies, list(dep))
+        dtable
       })
 
       return(rv)
