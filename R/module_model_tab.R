@@ -135,7 +135,7 @@ mod_model_ui <- function(id){
                 tags$h4("Metrics ~ Environment x Trait x Genotype"),
                 pickerInput(ns("select_metrics_B"), "Metric", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs"), width = "40%", inline = T),
                 # pickerInput(ns("select_trait_metrics"), label = "Trait", multiple = F, choices = NULL, width = "50%"),
-                dataTableOutput(ns("metrics_table"))
+                dataTableOutput(ns("metrics_B_table"))
               )
             )
           )
@@ -478,7 +478,6 @@ mod_model_server <- function(id, rv){
 
       metrics_B_table <- eventReactive(input$select_metrics_B,{
         req(input$select_metrics_B)
-        rvfit <<- rv$fit
         metrics_table <- as.data.table(extractSTA(STA = rv$fit, what = input$select_metrics_B))
         entry_types <- unique(rv$data[,.(genotype=germplasmName, entryType)])
         setkey(metrics_table, genotype)
@@ -491,8 +490,6 @@ mod_model_server <- function(id, rv){
       output$metrics_B_table <- renderDataTable({
         req(input$select_metrics_B)
         req(input$select_environment_metrics)
-        # req(input$select_trait_metrics)
-        # metrics_table_filt <- metrics_table()[environment==input$select_environment_metrics, c("genotype", "entryType", input$select_trait_metrics), with = F] # XXX in case table is filtered by trait
         metrics_table_filt <- metrics_B_table()[environment==input$select_environment_metrics, -c("environment"), with = F]
         datatable(
           metrics_table_filt,
