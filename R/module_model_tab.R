@@ -409,7 +409,7 @@ mod_model_server <- function(id, rv){
           commonFactors = "genotype",
           verbose = F
         )
-        outliers <- as.data.table(outliers$outliers)
+        outliers <- as.data.table(outliersSTA$outliers)
         setnames(outliers, "trial", "environment")
         datatable(
           outliers,
