@@ -82,6 +82,10 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         rv$study_metadata <- dataset_4_dev$study_metadata
       }else{
 
+        rv$trialDbId <- NULL
+        rv$study_metadata <- NULL
+        rv$data <- NULL
+        rv$trial_metadata <- NULL
 
         observeEvent(parse_GET_param()$apiURL,{
           req(parse_GET_param()$apiURL)
