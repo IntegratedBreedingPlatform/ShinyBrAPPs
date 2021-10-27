@@ -158,6 +158,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
       observeEvent(input$trials,{
         req(input$trials)
+        rv$data <- NULL
         rv$trialDbId <- input$trials
       })
 
