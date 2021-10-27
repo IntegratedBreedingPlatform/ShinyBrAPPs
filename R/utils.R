@@ -50,6 +50,30 @@ get_env_data <- function(con, studyDbId, env_number, loc_name, loc_name_abbrev, 
     study[,study_name_app := stu_name_app]
     study[,study_name_abbrev_app := stu_name_abbrev_app]
   })
-return(study)
+  return(study)
 }
 
+#' @export
+parse_api_url <- function(url){
+  ## get protocol (default = "https://")
+  protocolless_url <- gsub("(^http://|^https://)(.*)$", "\\2",url)
+  brapi_protocol <- gsub("(^http://|^https://)(.*)$", "\\1",url)
+  brapi_protocol <- ifelse(brapi_protocol == url, "https://", brapi_protocol)
+
+  ## get base url and port (default = 80)
+  db_split <- strsplit(gsub("([^/]*).*", "\\1",protocolless_url), ":")
+  brapi_db <- db_split[[1]][1]
+  brapi_port <- ifelse(is.na(db_split[[1]][2]),80,as.numeric(db_split[[1]][2]))
+
+  ## brapi api path (default = "/")
+  brapi_apipath <- ifelse(grepl("/.*",protocolless_url),gsub("[^/]*/(.*)", "\\1", protocolless_url),"/")
+
+  return(
+    list(
+      brapi_protocol = brapi_protocol,
+      brapi_db = brapi_db,
+      brapi_port = brapi_port,
+      brapi_apipath = brapi_apipath
+    )
+  )
+}

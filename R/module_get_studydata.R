@@ -107,25 +107,14 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           req(input$cropDb)
 
           ### parse URL
-          ## get protocol (default = "https://")
-          protocolless_url <- gsub("(^http://|^https://)(.*)$", "\\2",input$apiURL)
-          brapi_protocol <- gsub("(^http://|^https://)(.*)$", "\\1",input$apiURL)
-          brapi_protocol <- ifelse(brapi_protocol == input$apiURL, "https://", brapi_protocol)
-
-          ## get base url and port (default = 80)
-          db_split <- strsplit(gsub("([^/]*).*", "\\1",protocolless_url), ":")
-          brapi_db <- db_split[[1]][1]
-          brapi_port <- ifelse(is.na(db_split[[1]][2]),80,as.numeric(db_split[[1]][2]))
-
-          ## brapi api path (default = "/")
-          brapi_apipath <- ifelse(grepl("/.*",protocolless_url),gsub("[^/]*/(.*)", "\\1", protocolless_url),"/")
+          parsed_url <- parse_api_url(input$apiURL)
 
           rv$con <- brapirv2::brapi_connect(
             secure = TRUE,
-            protocol = brapi_protocol,
-            db = brapi_db,
-            port = brapi_port,
-            apipath = brapi_apipath,
+            protocol = parsed_url$brapi_protocol,
+            db = parsed_url$brapi_db,
+            port = parsed_url$brapi_port,
+            apipath = parsed_url$brapi_apipath,
             multicrop = TRUE,
             commoncropname = input$cropDb,
             token = input$token,
