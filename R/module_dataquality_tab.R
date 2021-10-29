@@ -4,16 +4,6 @@ mod_dataquality_ui <- function(id){
   tagList(
     fluidRow(
       column(
-        3,
-        pickerInput(
-          ns("trait"), label = "Trait", choices = NULL, width = "100%",
-          options = list(
-            title = 'Load Environments First',
-            onInitialize = I('function() { this.setValue(""); }')
-          )
-        )
-      ),
-      column(
         9,
         pickerInput(
           inputId = ns("studies"),
@@ -25,7 +15,17 @@ mod_dataquality_ui <- function(id){
             `actions-box` = TRUE,
             title = 'Load Environments First',
             onInitialize = I('function() { this.setValue(""); }')
-            )
+          )
+        )
+      ),
+      column(
+        3,
+        pickerInput(
+          ns("trait"), label = "Trait", choices = NULL, width = "100%",
+          options = list(
+            title = 'Load Environments First',
+            onInitialize = I('function() { this.setValue(""); }')
+          )
         )
       )
     ),
@@ -112,16 +112,6 @@ mod_dataquality_server <- function(id, rv){
         }
         req("observations.observationVariableName"%in%names(rv$data))
 
-        updatePickerInput(
-          inputId = "trait", session = session,
-          choices = rv$data[,unique(observations.observationVariableName)],
-          selected = rv$data[,unique(observations.observationVariableName)][1],
-          options = list(
-            title = 'Select a trait'
-            # onInitialize = I('function() { this.setValue(""); }')
-          )
-        )
-
         env_choices <- rv$study_metadata[loaded==T,unique(studyDbId)]
         names(env_choices) <- rv$study_metadata[loaded==T,unique(study_name_app)]
         updatePickerInput(
@@ -154,11 +144,26 @@ mod_dataquality_server <- function(id, rv){
         )
       })
 
+      observeEvent(input$studies,{
+        ## only traits found in all environments can be selected
+        trait_by_studyDbIds <- rv$data[studyDbId %in% input$studies,.(trait = unique(observations.observationVariableName)), .(studyDbId)]
+        trait_choices <- trait_by_studyDbIds[,.N,trait][N==length(trait_by_studyDbIds[,unique(studyDbId)]), trait]
+        updatePickerInput(
+          inputId = "trait", session = session,
+          choices = trait_choices,
+          selected = trait_choices[1],
+          options = list(
+            title = 'Select a trait'
+            # onInitialize = I('function() { this.setValue(""); }')
+          )
+        )
+      })
+
       observe({
         req(input$trait)
         req(input$studies)
+        req(rv$data)
         rv$data_dq <- rv$data[observations.observationVariableName == input$trait & studyDbId %in% input$studies]
-
       })
 
       observeEvent(input$select_variable,{
@@ -251,7 +256,6 @@ mod_dataquality_server <- function(id, rv){
 
 
       output$layout_viz <- renderPlotly({
-
         req(rv$data_dq)
         req(input$studies)
 
@@ -264,10 +268,9 @@ mod_dataquality_server <- function(id, rv){
         data_dq[observations.observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
         data_dq[, x:=as.numeric(x)]
         data_dq[, y:=as.numeric(y)]
-
         g2 <- ggplot(
           data_dq[!(observations.observationDbId %in% rv$excluded_obs)],
-          aes(x = x, y = y)
+          aes(x = positionCoordinateX, y = positionCoordinateY)
         ) +
           geom_point( # fixes shaky tile selection via plotly
             aes(
