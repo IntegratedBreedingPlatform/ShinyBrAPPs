@@ -1,67 +1,76 @@
 #' @export
 mod_get_studydata_ui <- function(id){
   ns <- NS(id)
-
-  tagList(
-    ## UI for study selection (if no GET parameters)
-    div(
-      id = ns("get_studydata_ui"),
-      style = "display:none",
-      bsCollapse(
-        id = ns("dataImportCollapse"),
-        open = "Data import",
-        # style = "",
-        bsCollapsePanel(
-          "Data import",
-          fluidRow(
-            column(
-              6,id = ns("select_trialDbId_UI"),style = "display:block",
-              textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://brapi.bms-uat-test.net:80/bmsapi", value = "https://brapi.bms-uat-test.net:80/bmsapi", width = "100%"),
-              textInput(ns("token"), "Token", placeholder = "Enter Token", width = "100%"),
-              textInput(ns("cropDb"), "CropDb", value = "wheat", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
-              selectizeInput(
-                ns("trials"), label = "Study", choices = NULL, multiple = FALSE, width = "100%",
-                options = list(
-                  placeholder = '',
-                  onInitialize = I('function() { this.setValue(""); }')
-                )
+  div(
+    id = ns("get_studydata"),
+    tagList(
+      ## UI for study selection (if no GET parameters)
+      div(
+        id = ns("get_studydata_by_ui"),
+        style = "display:none",
+        bsCollapse(
+          id = ns("dataImportCollapse"),
+          open = "Data import",
+          # style = "",
+          bsCollapsePanel(
+            "Data import",
+            fluidRow(
+              column(
+                6,id = ns("select_trialDbId_UI"),style = "display:block",
+                textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://brapi.bms-uat-test.net:80/bmsapi", value = "https://brapi.bms-uat-test.net:80/bmsapi", width = "100%"),
+                textInput(ns("token"), "Token", placeholder = "Enter Token", width = "100%"),
+                textInput(ns("cropDb"), "CropDb", value = "wheat", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
+                selectizeInput(
+                  ns("trials"), label = "Study", choices = NULL, multiple = FALSE, width = "100%",
+                  options = list(
+                    placeholder = '',
+                    onInitialize = I('function() { this.setValue(""); }')
+                  )
+                ),
+                shiny::actionButton(ns("go_trial_metadata"), "Show study metadata")
+                # bsModal(ns("modal_trial_metadata"), "Study Metadata", ns("go_trial_metadata"), size = "large",
+                #         dataTableOutput(ns("table_trial_metadata")))
               ),
-              shiny::actionButton(ns("go_trial_metadata"), "Show study metadata"),
-              bsModal(ns("modal_trial_metadata"), "Study Metadata", ns("go_trial_metadata"), size = "large",
-                      dataTableOutput(ns("table_trial_metadata")))
-            ),
-            column(
-              3,
-              prettyCheckboxGroup(
-                inputId = ns("environments"),
-                label = "Available environments",
-                choices = NULL,
-                icon = icon("check-square-o"),
-                status = "primary",
-                outline = TRUE,
-                width = "100%",
-                animation = "jelly"
+              column(
+                3,
+                prettyCheckboxGroup(
+                  inputId = ns("environments"),
+                  label = "Available environments",
+                  choices = NULL,
+                  icon = icon("check-square-o"),
+                  status = "primary",
+                  outline = TRUE,
+                  width = "100%",
+                  animation = "jelly"
+                ),
+                shiny::actionButton(
+                  inputId = ns("load_env"),
+                  label = "Load Selected"
+                ),
+                shiny::actionButton(
+                  inputId = ns("load_all_env"),
+                  label = "Load All"
+                ),
+                shiny::actionButton(ns("go_study_metadata_ui"), "Show Environment Metadata")
+                # bsModal(ns("modal_study_metadata"), "Environment Metadata", ns("go_study_metadata"), size = "large",
+                #         dataTableOutput(ns("table_study_metadata")))
               ),
-              shiny::actionButton(
-                inputId = ns("load_env"),
-                label = "Load Selected"
-              ),
-              shiny::actionButton(
-                inputId = ns("load_all_env"),
-                label = "Load All"
-              ),
-              shiny::actionButton(ns("go_study_metadata"), "Show Environment Metadata"),
-              bsModal(ns("modal_study_metadata"), "Environment Metadata", ns("go_study_metadata"), size = "large",
-                      dataTableOutput(ns("table_study_metadata")))
-            ),
-            column(
-              3,
-              "Loaded Environments",
-              uiOutput(ns("loaded_env"))
+              column(
+                3,
+                "Loaded Environments",
+                uiOutput(ns("loaded_env"))
+              )
             )
           )
         )
+      ),
+      div(
+        id = ns("get_studydata_by_url"), style = "float:right",
+        shiny::actionButton(ns("go_study_metadata_url"), "Show Environment Metadata")
       )
+    ),
+    bsModal(ns("modal_study_metadata"), "Environment Metadata", ns("go_study_metadata_ui"), size = "large",
+            dataTableOutput(ns("table_study_metadata"))
     )
   )
 }
@@ -131,8 +140,8 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           }else{
 
             #### UI MODE
-
-            shinyjs::show(id = "get_studydata_ui")
+            shinyjs::show(id = "get_studydata_by_ui")
+            shinyjs::hide(id = "get_studydata_by_url")
 
             ### BrAPI GET trials
             observeEvent(c(input$apiURL, input$token, input$cropDb),{
@@ -307,6 +316,10 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             scrollCollapse = T,
             dom = 't'
           ))
+      })
+
+      observeEvent(input$go_study_metadata_url, {
+        toggleModal(session, "modal_study_metadata", toggle = "open")
       })
 
       output$table_study_metadata <- renderDT({
