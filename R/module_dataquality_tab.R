@@ -68,8 +68,16 @@ mod_dataquality_ui <- function(id){
             fluidRow(
               column(
                 width = 6,
-                plotlyOutput(ns("distribution_viz"),height = "400px")),
-              column(width = 6, plotlyOutput(ns("layout_viz")))
+                plotlyOutput(ns("distribution_viz"),height = "400px")
+              ),
+              column(
+                width = 5,
+                plotlyOutput(ns("layout_viz"))
+              ),
+              column(
+                width = 1,
+                plotOutput(ns("layout_legend"))
+              )
             )
           ),
           tabPanel(
@@ -103,6 +111,8 @@ mod_dataquality_server <- function(id, rv){
   moduleServer(
     id,
     function(input, output, session){
+
+      rv_dq <- reactiveValues()
 
       observe({
 
@@ -294,12 +304,15 @@ mod_dataquality_server <- function(id, rv){
           ) +
           #coord_equal() +
           facet_wrap(study_name_BMS~., ncol = 1) +
-          scale_fill_gradientn(colours = topo.colors(100)) +
+          scale_fill_gradientn(
+            name=input$trait,
+            colours = topo.colors(100)
+          ) +
           scale_color_discrete(guide = "none") +
           scale_alpha(guide = "none") +
           # scale_linetype(guide = "none") +
           theme_minimal() +
-          theme(legend.position="none",panel.margin = unit(0, "lines"), panel.grid = element_blank(), axis.line = element_blank(), axis.text = element_blank(), axis.title = element_blank())
+          theme(panel.margin = unit(0, "lines"), panel.grid = element_blank(), axis.line = element_blank(), axis.text = element_blank(), axis.title = element_blank())
 
         ## drawing a vertical and horizontal lines for replicates
         repBords <- rbindlist(lapply(input$studies, function(tr){
@@ -353,12 +366,21 @@ mod_dataquality_server <- function(id, rv){
                                   data = data_dq[is.selected==T], size = 1, alpha = 1, color = "red")
         }
 
+        ## extract legend
+        rv_dq$layout_legend <- get_legend(g2)
+        g2 <- g2 + theme(legend.position="none")
+
         ggplotly(height=length(input$studies)*400,
                  g2,
                  dynamicTicks = "TRUE", source = "A", originalData = T,
                  tooltip = c("germplasmName", "observations.value", "key", "plotNumber", "blockNumber", "replicate", "positionCoordinateX", "positionCoordinateY", "entryType")) %>%
           style(hoverlabel = list(bgcolor = "white")) %>%
           layout(dragmode = "select")
+      })
+
+      output$layout_legend <- renderPlot({
+        req(rv_dq$layout_legend)
+        as_ggplot(rv_dq$layout_legend)
       })
 
       observeEvent(c(event_data("plotly_click", source = "A"),event_data("plotly_selected", source = "A")),{
