@@ -132,6 +132,9 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               showNotification("Could not get environment metadata", type = "error", duration = notification_duration)
             }))
 
+            req(exists("study_metadata"))
+            req(study_metadata[,.N]>0)
+
             ## set environments to load
             env_to_load(study_metadata[,unique(studyDbId)])
 
