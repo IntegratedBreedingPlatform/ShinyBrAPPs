@@ -31,5 +31,6 @@ Depends:
 	shinyWidgets,
 	shinysky,
 	shinyBS,
-	varhandle
+	varhandle,
+	ggpubr
 RoxygenNote: 7.1.1

@@ -30,6 +30,7 @@ RUN R -e "install.packages('shinyWidgets', dependencies=TRUE, repos='http://cran
 RUN R -e "remotes::install_github('AnalytixWare/ShinySky')"
 RUN R -e "install.packages('shinyBS', dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('varhandle', dependencies=TRUE, repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('ggpubr', dependencies=TRUE, repos='http://cran.rstudio.com/')"
 
 ## Install shinybrapps
 # Note: presently the image is constructed from within the package directory because the repo "IntegratedBreedingPlatform/ShinyBrAPPs" is private. If it becomes public, it will be possible to construct the image from anywhere via "install_gihub()"
