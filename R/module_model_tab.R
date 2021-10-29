@@ -238,16 +238,38 @@ mod_model_server <- function(id, rv){
           value.var = "observations.value"
         )
 
-        TD <- createTD(
-          data = data_filtered_casted,
-          genotype = "genotype",
-          trial = "trial",
-          loc = "loc", # XXX
-          repId = "repId",
-          subBlock = "subBlock",
-          rowCoord = "rowCoord",
-          colCoord = "colCoord"
-        )
+        if(data_filtered[,!all(is.na(blockNumber))] & data_filtered[,all(is.na(blockNumber))]){
+          TD <- createTD(
+            data = data_filtered_casted,
+            genotype = "genotype",
+            trial = "trial",
+            loc = "loc",
+            subBlock = "subBlock",
+            rowCoord = "rowCoord",
+            colCoord = "colCoord"
+          )
+        }else if(data_filtered[,all(is.na(blockNumber))] & !data_filtered[,all(is.na(blockNumber))]){
+          TD <- createTD(
+            data = data_filtered_casted,
+            genotype = "genotype",
+            trial = "trial",
+            loc = "loc",
+            repId = "repId",
+            rowCoord = "rowCoord",
+            colCoord = "colCoord"
+          )
+        }else{
+          TD <- createTD(
+            data = data_filtered_casted,
+            genotype = "genotype",
+            trial = "trial",
+            loc = "loc",
+            repId = "repId",
+            subBlock = "subBlock",
+            rowCoord = "rowCoord",
+            colCoord = "colCoord"
+          )
+        }
 
         ### run the model
         a <- tryCatch(
