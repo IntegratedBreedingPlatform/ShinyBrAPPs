@@ -174,6 +174,21 @@ mod_model_server <- function(id, rv){
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
+
+        ## initialization
+        updatePickerInput(
+          session, "select_environment_fit",
+          choices = ""
+        )
+        updatePickerInput(
+          session, "select_trait_fit",
+          choices = ""
+        )
+        updatePickerInput(
+          session, "select_trait_outliers",
+          choices = ""
+        )
+        rv$fit <- NULL
       })
 
       observeEvent(input$select_traits,{
@@ -220,6 +235,8 @@ mod_model_server <- function(id, rv){
       })
 
       observeEvent(input$go_fit_model,{
+
+        rv$fit <- NULL
 
         ###  create TD without the excluded observations
 
