@@ -60,10 +60,10 @@ parse_api_url <- function(url){
   brapi_protocol <- gsub("(^http://|^https://)(.*)$", "\\1",url)
   brapi_protocol <- ifelse(brapi_protocol == url, "https://", brapi_protocol)
 
-  ## get base url and port (default = 80)
+  ## get base url and port (default = 443)
   db_split <- strsplit(gsub("([^/]*).*", "\\1",protocolless_url), ":")
   brapi_db <- db_split[[1]][1]
-  brapi_port <- ifelse(is.na(db_split[[1]][2]),80,as.numeric(db_split[[1]][2]))
+  brapi_port <- ifelse(is.na(db_split[[1]][2]),443,as.numeric(db_split[[1]][2]))
 
   ## brapi api path (default = "/")
   brapi_apipath <- ifelse(grepl("/.*",protocolless_url),gsub("[^/]*/(.*)", "\\1", protocolless_url),"/")

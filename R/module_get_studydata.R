@@ -17,7 +17,7 @@ mod_get_studydata_ui <- function(id){
             fluidRow(
               column(
                 6,id = ns("select_trialDbId_UI"),style = "display:block",
-                textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://brapi.bms-uat-test.net:80/bmsapi", value = "https://brapi.bms-uat-test.net:80/bmsapi", width = "100%"),
+                textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://brapi.bms-uat-test.net/bmsapi", value = "https://brapi.bms-uat-test.net/bmsapi", width = "100%"),
                 textInput(ns("token"), "Token", placeholder = "Enter Token", width = "100%"),
                 textInput(ns("cropDb"), "CropDb", value = "wheat", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
                 selectizeInput(
