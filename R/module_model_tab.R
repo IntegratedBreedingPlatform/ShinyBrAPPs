@@ -7,13 +7,13 @@ mod_model_ui <- function(id){
       column(
         3,
         pickerInput(
-          ns("select_traits"), label = "Select Traits", multiple = TRUE, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
+          ns("select_environments"), "Select Environments", multiple = TRUE, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
         )
       ),
       column(
         3,
         pickerInput(
-          ns("select_environments"), "Select Environments", multiple = TRUE, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
+          ns("select_traits"), label = "Select Traits", multiple = TRUE, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
         )
       ),
       column(
@@ -61,13 +61,13 @@ mod_model_ui <- function(id){
               column(
                 3,
                 pickerInput(
-                  ns("select_trait_fit"),"Trait", multiple = F, choices = NULL, width = "100%"
+                  ns("select_environment_fit"),"Environments", multiple = T, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
                 )
               ),
               column(
                 3,
                 pickerInput(
-                  ns("select_environment_fit"),"Environments", multiple = T, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
+                  ns("select_trait_fit"),"Trait", multiple = F, choices = NULL, width = "100%"
                 )
               )
             ),
@@ -186,8 +186,13 @@ mod_model_server <- function(id, rv){
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
+      })
 
-        choices_traits <- rv$data[,unique(observations.observationVariableName)]
+      observeEvent(input$select_environments,{
+        ## only traits found in all environments can be selected
+        trait_by_studyDbIds <- rv$data[study_name_app %in% input$select_environments,.(trait = unique(observations.observationVariableName)), .(studyDbId)]
+        choices_traits <- trait_by_studyDbIds[,.N,trait][N==length(trait_by_studyDbIds[,unique(studyDbId)]), trait]
+
         updatePickerInput(
           session,"select_traits",
           choices = choices_traits,
@@ -197,7 +202,6 @@ mod_model_server <- function(id, rv){
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
-
       })
 
       observeEvent(input$select_traits,{
