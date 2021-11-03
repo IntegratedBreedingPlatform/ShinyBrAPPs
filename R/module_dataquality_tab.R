@@ -493,9 +493,7 @@ mod_dataquality_server <- function(id, rv){
         sumtable[,"%cov":=`Variance`/`Mean`]
         sumtable[,"%Standard error of skewness":=`Skewness`/sqrt(`No. of observations`)]
         sumtable[,"%Standard error of kurtosis":=`Kurtosis`/sqrt(`No. of observations`)]
-
-        rownames(sumtable) <- sumtable[,study_name_app]
-        sumtable[,study_name_app:=NULL]
+        rownames_sumtable <- sumtable[,study_name_app]
         columns <- c(
           "No. of values",
           "No. of observations",
@@ -520,9 +518,10 @@ mod_dataquality_server <- function(id, rv){
           "Kurtosis",
           "%Standard error of kurtosis"
         )
-        # sumtable <- t(sumtable)
+        sumtable <- sumtable[,columns, with = F]
+        rownames(sumtable) <- rownames_sumtable
         datatable(
-          sumtable[,columns, with = F],
+          sumtable,
           options = list(
             paging = F,
             scrollX = T,
