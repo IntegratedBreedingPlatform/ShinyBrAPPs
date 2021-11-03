@@ -151,6 +151,29 @@ mod_model_server <- function(id, rv){
     id,
     function(input, output, session){
       observe({
+        ## initialization
+        updatePickerInput(
+          session,"select_environments",
+          choices = ""
+        )
+        updatePickerInput(
+          session,"select_traits",
+          choices = ""
+        )
+        updatePickerInput(
+          session, "select_environment_fit",
+          choices = ""
+        )
+        updatePickerInput(
+          session, "select_trait_fit",
+          choices = ""
+        )
+        updatePickerInput(
+          session, "select_trait_outliers",
+          choices = ""
+        )
+        rv$fit <- NULL
+
         req(rv$data)
         req("observations.observationVariableName"%in%names(rv$data))
         choices_env <- rv$data[,unique(study_name_app)]
@@ -175,20 +198,6 @@ mod_model_server <- function(id, rv){
           )
         )
 
-        ## initialization
-        updatePickerInput(
-          session, "select_environment_fit",
-          choices = ""
-        )
-        updatePickerInput(
-          session, "select_trait_fit",
-          choices = ""
-        )
-        updatePickerInput(
-          session, "select_trait_outliers",
-          choices = ""
-        )
-        rv$fit <- NULL
       })
 
       observeEvent(input$select_traits,{
