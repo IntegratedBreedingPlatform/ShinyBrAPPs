@@ -230,7 +230,8 @@ mod_model_server <- function(id, rv){
         data_filtered_casted <- dcast(
           data = data_filtered[,.(
             genotype = germplasmName, trial = study_name_app, loc = studyLocationDbId,
-            repId = replicate, subBlock = observationUnitDbId,
+            repId = replicate, subBlock = blockNumber,
+            # repId = replicate, subBlock = observationUnitDbId,
             rowCoord = positionCoordinateY, colCoord = positionCoordinateX,
             observations.observationVariableName, observations.value
           )],
@@ -238,7 +239,7 @@ mod_model_server <- function(id, rv){
           value.var = "observations.value"
         )
 
-        if(data_filtered[,!all(is.na(blockNumber))] & data_filtered[,all(is.na(blockNumber))]){
+        if(data_filtered[,!all(is.na(blockNumber))] & data_filtered[,all(is.na(replicate))]){
           TD <- createTD(
             data = data_filtered_casted,
             genotype = "genotype",
@@ -248,7 +249,7 @@ mod_model_server <- function(id, rv){
             rowCoord = "rowCoord",
             colCoord = "colCoord"
           )
-        }else if(data_filtered[,all(is.na(blockNumber))] & !data_filtered[,all(is.na(blockNumber))]){
+        }else if(data_filtered[,all(is.na(blockNumber))] & data_filtered[,!all(is.na(replicate))]){
           TD <- createTD(
             data = data_filtered_casted,
             genotype = "genotype",
