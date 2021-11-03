@@ -173,7 +173,11 @@ mod_dataquality_server <- function(id, rv){
         req(input$trait)
         req(input$studies)
         req(rv$data)
-        rv$data_dq <- rv$data[observations.observationVariableName == input$trait & studyDbId %in% input$studies]
+        if("observations.observationVariableName"%in%names(rv$data)){
+          rv$data_dq <- rv$data[observations.observationVariableName == input$trait & studyDbId %in% input$studies]
+        }else{
+          rv$data_dq <- NULL
+        }
       })
 
       observeEvent(input$select_variable,{
@@ -379,6 +383,7 @@ mod_dataquality_server <- function(id, rv){
       })
 
       output$layout_legend <- renderPlot({
+        req(rv$data_dq)
         req(rv_dq$layout_legend)
         as_ggplot(rv_dq$layout_legend)
       })
