@@ -207,8 +207,8 @@ mod_dataquality_server <- function(id, rv){
       })
 
       output$distribution_viz <- renderPlotly({
-
-        req(rv$data_dq)
+        req(rv$data_dq[,.N]>0)
+        req(input$trait)
         req(input$studies)
 
         input$set_excluded_obs
@@ -270,8 +270,10 @@ mod_dataquality_server <- function(id, rv){
 
 
       output$layout_viz <- renderPlotly({
-        req(rv$data_dq)
+        req(rv$data_dq[,.N>0])
         req(input$studies)
+        req(all(input$studies%in%rv$data_dq[,unique(studyDbId)]))
+        req(input$trait)
 
         input$set_excluded_obs
         input$set_non_excluded_obs
@@ -383,7 +385,9 @@ mod_dataquality_server <- function(id, rv){
       })
 
       output$layout_legend <- renderPlot({
-        req(rv$data_dq)
+        req(rv$data_dq[,.N]>0)
+        req(input$studies)
+        req(input$trait)
         req(rv_dq$layout_legend)
         as_ggplot(rv_dq$layout_legend)
       })
