@@ -110,7 +110,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             #### URL MODE
 
             ### set up connection
-            parsed_url <- parse_api_url(input$apiURL)
+            parsed_url <- parse_api_url(parse_GET_param()$apiURL)
             rv$con <- brapirv2::brapi_connect(
               secure = TRUE,
               protocol = parsed_url$brapi_protocol,
