@@ -152,6 +152,14 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               req(input$token)
               req(input$cropDb)
 
+              updateSelectizeInput(
+                session = session, inputId = "trials", choices = "",
+                options = list(
+                  placeholder = '',
+                  onInitialize = I('function() { this.setValue(""); }')
+                )
+              )
+
               ## set up connection
               parsed_url <- parse_api_url(input$apiURL)
               rv$con <- brapirv2::brapi_connect(
