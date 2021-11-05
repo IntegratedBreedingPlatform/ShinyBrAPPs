@@ -236,7 +236,7 @@ mod_model_server <- function(id, rv){
         )
 
         ## restrict the design choices to the available column in the environment datasets
-        # based in the following rules
+        # based in the following rules (https://biometris.github.io/statgenSTA/articles/statgenSTA.html#modeling-1)
         # - ibd 		    => 	subBlocks are defined
         # - res.ibd 	  => 	subBlocks and repIds are defined
         # - rcbd		    =>	repIds are defined
