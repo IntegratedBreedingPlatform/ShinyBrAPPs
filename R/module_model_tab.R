@@ -246,15 +246,10 @@ mod_model_server <- function(id, rv){
         # NB: choices_model_design is defined in inst/apps/stabrap/config.R
         # For the following code to work, the item order in choices_model_design has to be: "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"
 
-        has_subBlocks <- !rv$data[
-          !(observations.observationDbId %in% rv$excluded_observations) & (study_name_app %in% input$select_environments),
-          all(is.na(blockNumber))]
-        has_repIds <- !rv$data[
-          !(observations.observationDbId %in% rv$excluded_observations) & (study_name_app %in% input$select_environments),
-          all(is.na(replicate))]
-        has_coords <- !rv$data[
-          !(observations.observationDbId %in% rv$excluded_observations) & (study_name_app %in% input$select_environments),
-          all(c(all(is.na(positionCoordinateX)),all(is.na(positionCoordinateY))))]
+        data_filt <- rv$data[!(observations.observationDbId %in% rv$excluded_observations) & (study_name_app %in% input$select_environments)]
+        has_subBlocks <- data_filt[,.N,.(blockNumber)][,.N]>1
+        has_repIds <- data_filt[,.N,.(replicate)][,.N]>1
+        has_coords <- data_filt[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1
 
         possible_designs <- choices_model_design[c(
           has_subBlocks, # matches "ibd",
@@ -262,7 +257,7 @@ mod_model_server <- function(id, rv){
           has_repIds, # matches  "rcbd"
           has_coords, # matches "rowcol"
           has_coords & has_repIds # matches "res.rowcol"
-          )]
+        )]
 
         updatePickerInput(
           session,"model_design",
