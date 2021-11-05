@@ -19,7 +19,7 @@ mod_model_ui <- function(id){
       column(
         3,
         pickerInput(ns("model_design"), "Select Model Design",
-                    choices = choices_model_design,
+                    choices = NULL,
                     selected = NULL, multiple = F,
                     options = list(
                       title = "Select Model Design",
@@ -150,6 +150,9 @@ mod_model_server <- function(id, rv){
   moduleServer(
     id,
     function(input, output, session){
+
+      rv_mod <- reactiveValues()
+
       observe({
         ## initialization
         updatePickerInput(
@@ -186,6 +189,35 @@ mod_model_server <- function(id, rv){
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
+
+        ###  create TD without the excluded observations
+
+        ## exclude observations
+        data_filtered <- rv$data[!(observations.observationDbId %in% rv$excluded_observations)]
+
+        ## make 1 column per trait
+        data_filtered_casted <- dcast(
+          data = data_filtered[,.(
+            genotype = germplasmName, trial = study_name_app, loc = studyLocationDbId,
+            repId = replicate, subBlock = blockNumber,
+            # repId = replicate, subBlock = observationUnitDbId,
+            rowCoord = positionCoordinateY, colCoord = positionCoordinateX,
+            observations.observationVariableName, observations.value
+          )],
+          formula = "genotype + trial + loc + repId + subBlock + rowCoord + colCoord ~ observations.observationVariableName",
+          value.var = "observations.value"
+        )
+
+        rv_mod$TD <- createTD(
+          data = data_filtered_casted,
+          genotype = "genotype",
+          trial = "trial",
+          loc = "loc",
+          repId = "repId",
+          subBlock = "subBlock",
+          rowCoord = "rowCoord",
+          colCoord = "colCoord"
+        )
       })
 
       observeEvent(input$select_environments,{
@@ -202,6 +234,46 @@ mod_model_server <- function(id, rv){
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
+
+        ## restrict the design choices to the available column in the environment datasets
+        # based in the following rules
+        # - ibd 		    => 	subBlocks are defined
+        # - res.ibd 	  => 	subBlocks and repIds are defined
+        # - rcbd		    =>	repIds are defined
+        # - rowcol		  =>	rowId and colId are defined
+        # - res.rowcol	=>	repIds, rowId and colId are defined
+        #
+        # NB: choices_model_design is defined in inst/apps/stabrap/config.R
+        # For the following code to work, the item order in choices_model_design has to be: "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"
+
+        has_subBlocks <- !rv$data[
+          !(observations.observationDbId %in% rv$excluded_observations) & (study_name_app %in% input$select_environments),
+          all(is.na(blockNumber))]
+        has_repIds <- !rv$data[
+          !(observations.observationDbId %in% rv$excluded_observations) & (study_name_app %in% input$select_environments),
+          all(is.na(replicate))]
+        has_coords <- !rv$data[
+          !(observations.observationDbId %in% rv$excluded_observations) & (study_name_app %in% input$select_environments),
+          all(c(all(is.na(positionCoordinateX)),all(is.na(positionCoordinateY))))]
+
+        possible_designs <- choices_model_design[c(
+          has_subBlocks, # matches "ibd",
+          has_subBlocks & has_repIds, # matches "res.ibd"
+          has_repIds, # matches  "rcbd"
+          has_coords, # matches "rowcol"
+          has_coords & has_repIds # matches "res.rowcol"
+          )]
+
+        updatePickerInput(
+          session,"model_design",
+          choices = possible_designs,
+          selected = possible_designs[1],
+          options = list(
+            placeholder = 'Select 1 or more traits',
+            onInitialize = I('function() { this.setValue(""); }')
+          )
+        )
+
       })
 
       observeEvent(input$select_traits,{
@@ -248,64 +320,13 @@ mod_model_server <- function(id, rv){
       })
 
       observeEvent(input$go_fit_model,{
-
+        req(rv_mod$TD)
         rv$fit <- NULL
-
-        ###  create TD without the excluded observations
-
-        ## exclude observations
-        data_filtered <- rv$data[!(observations.observationDbId %in% rv$excluded_observations)]
-
-        ## make 1 column per trait
-        data_filtered_casted <- dcast(
-          data = data_filtered[,.(
-            genotype = germplasmName, trial = study_name_app, loc = studyLocationDbId,
-            repId = replicate, subBlock = blockNumber,
-            # repId = replicate, subBlock = observationUnitDbId,
-            rowCoord = positionCoordinateY, colCoord = positionCoordinateX,
-            observations.observationVariableName, observations.value
-          )],
-          formula = "genotype + trial + loc + repId + subBlock + rowCoord + colCoord ~ observations.observationVariableName",
-          value.var = "observations.value"
-        )
-
-        if(data_filtered[,!all(is.na(blockNumber))] & data_filtered[,all(is.na(replicate))]){
-          TD <- createTD(
-            data = data_filtered_casted,
-            genotype = "genotype",
-            trial = "trial",
-            loc = "loc",
-            subBlock = "subBlock",
-            rowCoord = "rowCoord",
-            colCoord = "colCoord"
-          )
-        }else if(data_filtered[,all(is.na(blockNumber))] & data_filtered[,!all(is.na(replicate))]){
-          TD <- createTD(
-            data = data_filtered_casted,
-            genotype = "genotype",
-            trial = "trial",
-            loc = "loc",
-            repId = "repId",
-            rowCoord = "rowCoord",
-            colCoord = "colCoord"
-          )
-        }else{
-          TD <- createTD(
-            data = data_filtered_casted,
-            genotype = "genotype",
-            trial = "trial",
-            loc = "loc",
-            repId = "repId",
-            subBlock = "subBlock",
-            rowCoord = "rowCoord",
-            colCoord = "colCoord"
-          )
-        }
 
         ### run the model
         a <- tryCatch(
           rv$fit <- fitTD(
-            TD = TD,
+            TD = rv_mod$TD,
             trials = input$select_environments,
             design = input$model_design,
             traits = input$select_traits,
@@ -325,7 +346,6 @@ mod_model_server <- function(id, rv){
         req(rv$fit)
 
         ## update selectors
-
         updatePickerInput(
           session, "select_environment_fit",
           choices = input$select_environments,

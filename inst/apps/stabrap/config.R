@@ -27,14 +27,14 @@ visible_columns_selected_obs <- c(
 ## correspondence of experimental designs
 exp_designs_corresp <- data.table(
   StatGenSTA_code = c(
-    "rowcol", "ibd","res.ibd","rcbd", "res.rowcol"
+    "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"
   ),
   statGenSTA = c(
-    "row column design",
-    "incomplete block design",
-    "resolvable incomplete block design",
-    "randomized complete block design",
-    "resolvable row column design"
+    "incomplete block",
+    "resolvable incomplete block",
+    "randomized complete block",
+    "row column",
+    "resolvable row column"
     ),
   BMS_pui = c(
     NA, NA, "10130", "10110", "10145"
