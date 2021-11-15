@@ -190,35 +190,6 @@ mod_model_server <- function(id, rv){
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
-
-        ###  create TD without the excluded observations
-
-        ## exclude observations
-        data_filtered <- rv$data[!(observations.observationDbId %in% rv$excluded_observations)]
-
-        ## make 1 column per trait
-        data_filtered_casted <- dcast(
-          data = data_filtered[,.(
-            genotype = germplasmName, trial = study_name_app, loc = studyLocationDbId,
-            repId = replicate, subBlock = blockNumber,
-            # repId = replicate, subBlock = observationUnitDbId,
-            rowCoord = positionCoordinateY, colCoord = positionCoordinateX,
-            observations.observationVariableName, observations.value
-          )],
-          formula = "genotype + trial + loc + repId + subBlock + rowCoord + colCoord ~ observations.observationVariableName",
-          value.var = "observations.value"
-        )
-
-        rv_mod$TD <- createTD(
-          data = data_filtered_casted,
-          genotype = "genotype",
-          trial = "trial",
-          loc = "loc",
-          repId = "repId",
-          subBlock = "subBlock",
-          rowCoord = "rowCoord",
-          colCoord = "colCoord"
-        )
       })
 
       observeEvent(input$select_environments,{
@@ -270,6 +241,11 @@ mod_model_server <- function(id, rv){
           )
         )
 
+        rv_mod$data_checks <- list(
+          has_subBlocks = has_subBlocks,
+          has_repIds = has_repIds,
+          has_coords = has_coords
+        )
       })
 
       observeEvent(input$select_traits,{
@@ -316,10 +292,60 @@ mod_model_server <- function(id, rv){
       })
 
       observeEvent(input$go_fit_model,{
-        req(rv_mod$TD)
+        req(rv_mod$data_checks)
         rv$fit <- NULL
 
-        ### run the model
+        ###  create TD without the excluded observations
+
+        ## exclude observations
+        data_filtered <- rv$data[!(observations.observationDbId %in% rv$excluded_observations)]
+
+        ## make 1 column per trait
+        data_filtered_casted <- dcast(
+          data = data_filtered[,.(
+            genotype = germplasmName, trial = study_name_app, loc = studyLocationDbId,
+            repId = replicate,
+            subBlock = blockNumber,
+            rowCoord = positionCoordinateY, colCoord = positionCoordinateX,
+            observations.observationVariableName, observations.value
+          )],
+          formula = "genotype + trial + loc + repId + subBlock + rowCoord + colCoord ~ observations.observationVariableName",
+          value.var = "observations.value"
+        )
+
+        ## parametrization
+        createTD_args <- list(
+          genotype = "genotype",
+          trial = "trial",
+          loc = "loc",
+          repId = "repId",
+          subBlock = "subBlock",
+          rowCoord = "rowCoord",
+          colCoord = "colCoord"
+        )
+        if(!rv_mod$data_checks$has_subBlocks){
+          data_filtered_casted[,subBlock:=NULL]
+          createTD_args$subBlock <- NULL
+        }
+        if(!rv_mod$data_checks$has_repIds){
+          data_filtered_casted[,repId:=NULL]
+          createTD_args$repId <- NULL
+        }
+        if(!rv_mod$data_checks$has_coords){
+          data_filtered_casted[,rowCoord:=NULL]
+          data_filtered_casted[,colCoord:=NULL]
+          createTD_args$rowCoord <- NULL
+          createTD_args$colCoord <- NULL
+        }
+        createTD_args <- c(
+          list(data = data_filtered_casted),
+          createTD_args
+        )
+
+        ## create TD
+        rv_mod$TD <- do.call(what = createTD, args = createTD_args)
+
+        ### fit TD
         a <- tryCatch(
           rv$fit <- fitTD(
             TD = rv_mod$TD,
