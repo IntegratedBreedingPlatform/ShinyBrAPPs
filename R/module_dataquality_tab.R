@@ -271,6 +271,7 @@ mod_dataquality_server <- function(id, rv){
 
       output$layout_viz <- renderPlotly({
         req(rv$data_dq[,.N>0])
+        req(rv$data_dq[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1)
         req(input$studies)
         req(all(input$studies%in%rv$data_dq[,unique(studyDbId)]))
         req(input$trait)
@@ -282,8 +283,13 @@ mod_dataquality_server <- function(id, rv){
 
         data_dq[,is.selected:=F]
         data_dq[observations.observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
-        data_dq[, x:=as.numeric(x)]
-        data_dq[, y:=as.numeric(y)]
+        data_dq[, positionCoordinateX:=as.numeric(positionCoordinateX)]
+        data_dq[, positionCoordinateY:=as.numeric(positionCoordinateY)]
+
+        plot_text <- data_dq[,.N,.(positionCoordinateX, positionCoordinateY, study_name_BMS)][,.N,.(study_name_BMS)]
+        plot_text[,x:=1]
+        plot_text[,y:=1]
+        plot_text[N<=1,label:="No layout"]
         g2 <- ggplot(
           data_dq[!(observations.observationDbId %in% rv$excluded_obs)],
           aes(x = positionCoordinateX, y = positionCoordinateY)
@@ -308,6 +314,7 @@ mod_dataquality_server <- function(id, rv){
               entryType = entryType
             )
           ) +
+          geom_text(data = plot_text, aes(x = x, y = y, label = label), hjust = 1) +
           #coord_equal() +
           facet_wrap(study_name_BMS~., ncol = 1) +
           scale_fill_gradientn(
@@ -386,6 +393,7 @@ mod_dataquality_server <- function(id, rv){
 
       output$layout_legend <- renderPlot({
         req(rv$data_dq[,.N]>0)
+        req(rv$data_dq[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1)
         req(input$studies)
         req(input$trait)
         req(rv_dq$layout_legend)
