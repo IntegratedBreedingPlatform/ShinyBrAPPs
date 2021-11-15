@@ -263,7 +263,7 @@ mod_dataquality_server <- function(id, rv){
         ggplotly(height=length(input$studies)*400,
                  g1,
                  dynamicTicks = "TRUE", source = "A", originalData = T,
-                 tooltip = c("germplasmName", "observations.value", "key", "plotNumber", "blockNumber", "replicate", "positionCoordinateX", "positionCoordinateY", "entryType")) %>%
+                 tooltip = c("germplasmName", "observations.value", "key", "plotNumber", "blockNumber", "replicate", "entryType")) %>%
           style(hoverlabel = list(bgcolor = "white")) %>%
           layout(dragmode = "select")
       })
