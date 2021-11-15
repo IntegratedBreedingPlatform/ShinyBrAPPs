@@ -30,7 +30,8 @@ mod_model_ui <- function(id){
       column(
         2,
         pickerInput(ns("model_engine"), "Select Modelling Engine",
-                    choices = c("SpATS", "lme4", "asreml"),
+                    choices = c("SpATS", "lme4"),
+                    # choices = c("SpATS", "lme4", "asreml"),
                     selected = "SpATS",
                     width = "100%")
       ),
