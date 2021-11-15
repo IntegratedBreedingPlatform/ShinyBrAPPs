@@ -359,7 +359,6 @@ mod_model_server <- function(id, rv){
             # control = NULL
             # what = c("fixed", "random"),
           ),
-          warning=function(w) { w },
           error=function(e){ e })
         mess <- a$message
         if(!is.null(mess)){
