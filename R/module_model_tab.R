@@ -454,6 +454,8 @@ mod_model_server <- function(id, rv){
         )
 
         output$fit_spatial <- renderPlot({
+          req(rv_mod$data_checks$has_coords,cancelOutput = T)
+
           plots_envs <- lapply(input$select_environment_fit, function(trial){
             plot(
               rv$fit,
