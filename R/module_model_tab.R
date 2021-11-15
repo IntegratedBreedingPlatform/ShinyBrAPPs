@@ -47,7 +47,8 @@ mod_model_ui <- function(id){
           open = NULL,
           bsCollapsePanel(
             title = "Advanced fitting options",
-            pickerInput(ns("covariates"),label = "covariates", choices = NULL, multiple = T)
+            pickerInput(ns("covariates"),label = "Covariates", choices = NULL, multiple = T),
+            checkboxGroupInput(ns("what"),label = "Genotype effect (what)", choices = c("random", "fixed"), selected = c("random", "fixed"), inline = T)
           )
         )
       )
@@ -353,11 +354,11 @@ mod_model_server <- function(id, rv){
             design = input$model_design,
             traits = input$select_traits,
             engine = input$model_engine,
-            covariates = input$covariates
+            covariates = input$covariates,
+            what = input$what
             # useCheckId = FALSE,
             # spatial = FALSE,
             # control = NULL
-            # what = c("fixed", "random"),
           ),
           error=function(e){ e })
         mess <- a$message
