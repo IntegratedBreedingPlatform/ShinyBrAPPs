@@ -27,9 +27,9 @@ mod_get_studydata_ui <- function(id){
                     onInitialize = I('function() { this.setValue(""); }')
                   )
                 ),
-                shiny::actionButton(ns("go_trial_metadata"), "Show study metadata")
-                # bsModal(ns("modal_trial_metadata"), "Study Metadata", ns("go_trial_metadata"), size = "large",
-                #         dataTableOutput(ns("table_trial_metadata")))
+                shiny::actionButton(ns("go_trial_metadata"), "Show study metadata"),
+                bsModal(ns("modal_trial_metadata"), "Study Metadata", ns("go_trial_metadata"), size = "large",
+                        dataTableOutput(ns("table_trial_metadata")))
               ),
               column(
                 3,
@@ -354,7 +354,6 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         dtable$dependencies <- c(dtable$dependencies, list(dep))
         dtable
       })
-
       return(rv)
     }
   )
