@@ -32,8 +32,8 @@ exp_designs_corresp <- data.table(
   statGenSTA = c(
     "incomplete block",
     "resolvable incomplete block",
-    "randomized complete block",
     "row column",
+    "randomized complete block",
     "resolvable row column"
     ),
   BMS_pui = c(
