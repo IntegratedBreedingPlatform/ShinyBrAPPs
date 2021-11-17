@@ -417,11 +417,11 @@ mod_model_server <- function(id, rv){
         req(rv$fit)
 
         output$fit_summary <- renderPrint({
-          s_all <- summary(
-            rv$fit,
-            trait = input$select_trait_fit,
-            trials = input$select_environment_fit
-          )
+          # s_all <- summary(
+          #   rv$fit,
+          #   trait = input$select_trait_fit,
+          #   trials = input$select_environment_fit
+          # )
           s <- lapply(input$select_environment_fit, function(env){
             summary(
               rv$fit,
@@ -430,7 +430,7 @@ mod_model_server <- function(id, rv){
             )
           })
           names(s) <- input$select_environment_fit
-          s["all environments"] <- s_all
+          # s["all environments"] <- s_all
           s
         })
 
