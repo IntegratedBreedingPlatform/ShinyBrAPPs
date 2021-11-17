@@ -31,8 +31,8 @@ exp_designs_corresp <- data.table(
   ),
   statGenSTA = c(
     "incomplete block",
-    "resolvable incomplete block",
     "row column",
+    "resolvable incomplete block",
     "randomized complete block",
     "resolvable row column"
     ),
