@@ -18,7 +18,8 @@ mod_model_ui <- function(id){
       ),
       column(
         3,
-        pickerInput(ns("model_design"), "Select Model Design",
+        pickerInput(ns("model_design"),
+                    label = "Select Model Design",
                     choices = NULL,
                     selected = NULL, multiple = F,
                     options = list(
@@ -32,7 +33,7 @@ mod_model_ui <- function(id){
         pickerInput(ns("model_engine"), "Select Modelling Engine",
                     choices = c("SpATS", "lme4"),
                     # choices = c("SpATS", "lme4", "asreml"),
-                    selected = "SpATS",
+                    selected = "lme4",
                     width = "100%")
       ),
       column(
@@ -175,6 +176,10 @@ mod_model_server <- function(id, rv){
         )
         updatePickerInput(
           session, "select_trait_outliers",
+          choices = ""
+        )
+        updatePickerInput(
+          session, "select_environment_metrics",
           choices = ""
         )
         rv$fit <- NULL
@@ -409,6 +414,7 @@ mod_model_server <- function(id, rv){
       observeEvent(c(input$select_environment_fit, input$select_trait_fit),{
         req(input$select_environment_fit)
         req(input$select_trait_fit)
+        req(rv$fit)
 
         output$fit_summary <- renderPrint({
           s_all <- summary(
@@ -429,6 +435,8 @@ mod_model_server <- function(id, rv){
         })
 
         output$fit_residuals <- renderPlot({
+          req(rv$fit)
+          req(input$select_environment_fit)
           plots_envs <- lapply(input$select_environment_fit, function(trial){
             plot(
               rv$fit,
@@ -455,7 +463,9 @@ mod_model_server <- function(id, rv){
         )
 
         output$fit_spatial <- renderPlot({
-          req(rv_mod$data_checks$has_coords,cancelOutput = T)
+          req(rv$fit)
+          req(rv_mod$data_checks$has_coords)
+          req(input$select_environment_fit)
 
           plots_envs <- lapply(input$select_environment_fit, function(trial){
             plot(
@@ -486,6 +496,7 @@ mod_model_server <- function(id, rv){
 
       ### Outliers
       observeEvent(input$select_trait_outliers,{
+        req(rv$fit)
         req(input$select_trait_outliers)
         stdResR <- as.data.table(extractSTA(STA = rv$fit, traits = input$select_trait_outliers, what = "stdResR"))
         res_q <- quantile(abs(stdResR[[input$select_trait_outliers]]), probs = seq(0,1,0.01))
@@ -496,6 +507,7 @@ mod_model_server <- function(id, rv){
         )
       })
       output$table_outliers <- renderDataTable({
+        req(rv$fit)
         req(input$select_trait_outliers)
         req(input$limit_residual>0)
         outliersSTA <- outlierSTA(
@@ -522,8 +534,10 @@ mod_model_server <- function(id, rv){
       })
 
       ### Metrics
-      metrics_A_table <- eventReactive(input$select_metrics_A,{
-        req(input$select_metrics_A)
+      output$metrics_A_table <- renderDT({
+        input$select_environment_metrics
+        req(rv$fit)
+        req(input$select_environment_metrics)
         if(input$select_metrics_A == "wald"){
           metrics_wald <- extractSTA(STA = rv$fit, what = "wald")
           wald <- rbindlist(lapply(names(metrics_wald), function(env){
@@ -537,20 +551,8 @@ mod_model_server <- function(id, rv){
               }))
             )
           }))
-          metrics_table <- wald
-        }else{
-          metrics_table <- as.data.table(extractSTA(STA = rv$fit, what = input$select_metrics_A))
-          setnames(metrics_table, "trial", "environment")
-        }
-        return(metrics_table)
-      })
-
-      output$metrics_A_table <- renderDT({
-        req(metrics_A_table())
-        req(input$select_environment_metrics)
-        if(input$select_metrics_A=="wald"){
           metrics <- data.table::transpose(
-            metrics_A_table()[environment == input$select_environment_metrics, -c("environment"), with = F],
+            wald[environment == input$select_environment_metrics, -c("environment"), with = F],
             make.names = "trait", keep.names ="wald"
           )
           row_names <- metrics$wald
@@ -558,9 +560,11 @@ mod_model_server <- function(id, rv){
           rownames(metrics) <- row_names
           show_row_names <- T
         }else{
-          metrics <- metrics_A_table()
+          metrics <- as.data.table(extractSTA(STA = rv$fit, what = input$select_metrics_A))
+          setnames(metrics, "trial", "environment")
           show_row_names <- F
         }
+
         datatable(
           metrics,
           rownames = show_row_names,
@@ -573,21 +577,20 @@ mod_model_server <- function(id, rv){
           ))
       })
 
-      metrics_B_table <- eventReactive(input$select_metrics_B,{
+      output$metrics_B_table <- renderDataTable({
+        req(rv$fit)
         req(input$select_metrics_B)
+        req(input$select_environment_metrics)
+
         metrics_table <- as.data.table(extractSTA(STA = rv$fit, what = input$select_metrics_B))
         entry_types <- unique(rv$data[,.(genotype=germplasmName, entryType)])
         setkey(metrics_table, genotype)
         setkey(entry_types, genotype)
         metrics_table <- entry_types[metrics_table]
         setnames(metrics_table, "trial", "environment")
-        return(metrics_table)
-      })
 
-      output$metrics_B_table <- renderDataTable({
-        req(input$select_metrics_B)
-        req(input$select_environment_metrics)
-        metrics_table_filt <- metrics_B_table()[environment==input$select_environment_metrics, -c("environment"), with = F]
+        metrics_table_filt <- metrics_table[environment==input$select_environment_metrics, -c("environment"), with = F]
+
         datatable(
           metrics_table_filt,
           rownames = F,
