@@ -19,14 +19,18 @@ mod_model_ui <- function(id){
       column(
         3,
         pickerInput(ns("model_design"),
-                    label = "Select Model Design",
+                    label = actionLink(ns("model_design_metadata_button"),"Select Model Design", style ="color:inherit", icon = icon("info-circle", style = "float:right; font-size:large;margin-left:10px")),
                     choices = NULL,
                     selected = NULL, multiple = F,
                     options = list(
                       title = "Select Model Design",
                       onInitialize = I('function() { this.setValue(""); }')
                     ),
-                    width = "100%")
+                    width = "100%"),
+        bsModal(
+          ns("modal_model_design"), title = "Metadata for model designs", trigger = ns("model_design_metadata_button"), size = "large",
+          dataTableOutput(ns("table_model_design_metadata"))
+        )
       ),
       column(
         2,
@@ -279,8 +283,9 @@ mod_model_server <- function(id, rv){
       observeEvent(input$select_environments, {
         ## update experimental design
         design_pui <- rv$study_metadata[study_name_app %in% input$select_environments,unique(experimentalDesign.pui)]
-        StatGenSTA_code <- exp_designs_corresp[BMS_pui == design_pui, StatGenSTA_code]
-        if(length(StatGenSTA_code)==1 & length(StatGenSTA_code)>0){
+        StatGenSTA_code <- exp_designs_corresp[BMS_pui %in% design_pui, StatGenSTA_code]
+
+        if(length(StatGenSTA_code)==1){
           updatePickerInput(
             session, "model_design",
             selected = StatGenSTA_code
@@ -295,6 +300,28 @@ mod_model_server <- function(id, rv){
             )
           )
         }
+      })
+
+      output$table_model_design_metadata <- renderDT({
+        req(input$select_environments)
+        req(rv$study_metadata)
+        if("experimentalDesign.pui"%in%names(rv$study_metadata)){
+          designs <- rv$study_metadata[study_name_app%in%input$select_environments,.(experimentalDesign.pui = unique(experimentalDesign.pui), experimentalDesign.description = unique(experimentalDesign.description)),study_name_app]
+        }else{
+          designs <- rv$study_metadata[study_name_app%in%input$select_environments,.(unique(study_name_app))]
+          designs[,experimentalDesign.pui:=NA]
+          designs[,experimentalDesign.description:=NA]
+        }
+        datatable(
+          designs,
+          rownames = F,
+          options = list(
+            paging = F,
+            scrollX = T,
+            # scrollY = "500px",
+            scrollCollapse = T,
+            dom = 't'
+          ))
       })
 
       observeEvent(input$go_fit_model,{
