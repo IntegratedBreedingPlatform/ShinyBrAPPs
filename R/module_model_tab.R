@@ -53,8 +53,10 @@ mod_model_ui <- function(id){
           bsCollapsePanel(
             title = "Advanced fitting options",
             pickerInput(ns("covariates"),label = "Covariates", choices = NULL, multiple = T),
-            materialSwitch(ns("spatial_opt"),label = "Spatial", value = T),
-            checkboxGroupInput(ns("what"),label = "Genotype effect (what)", choices = c("random", "fixed"), selected = c("random", "fixed"), inline = T)
+            checkboxGroupInput(ns("what"),label = "Genotype effect (what)", choices = c("random", "fixed"), selected = c("random", "fixed"), inline = T),
+            prettySwitch(ns("spatial_opt"),label = "Spatial", value = T),
+            prettySwitch(ns("display_psanova_opt"),label = "Set up PSANOVA", value = F),
+            uiOutput(ns("psanova_opt"))
           )
         )
       )
@@ -149,6 +151,8 @@ mod_model_server <- function(id, rv){
   moduleServer(
     id,
     function(input, output, session){
+
+      ns <- session$ns
 
       rv_mod <- reactiveValues()
 
@@ -247,14 +251,90 @@ mod_model_server <- function(id, rv){
           has_repIds = has_repIds,
           has_coords = has_coords
         )
+
+        ###  create TD without the excluded observations
+
+        ## exclude observations
+        data_filtered <- rv$data[!(observations.observationDbId %in% rv$excluded_observations)]
+
+        ## make 1 column per trait
+        data_filtered_casted <- dcast(
+          data = data_filtered[,.(
+            genotype = germplasmName, trial = study_name_app, loc = studyLocationDbId,
+            repId = replicate,
+            subBlock = blockNumber,
+            rowCoord = positionCoordinateY, colCoord = positionCoordinateX,
+            observations.observationVariableName, observations.value
+          )],
+          formula = "genotype + trial + loc + repId + subBlock + rowCoord + colCoord ~ observations.observationVariableName",
+          value.var = "observations.value"
+        )
+
+        ## parametrization
+        createTD_args <- list(
+          genotype = "genotype",
+          trial = "trial",
+          loc = "loc",
+          repId = "repId",
+          subBlock = "subBlock",
+          rowCoord = "rowCoord",
+          colCoord = "colCoord"
+        )
+        if(!rv_mod$data_checks$has_subBlocks){
+          data_filtered_casted[,subBlock:=NULL]
+          createTD_args$subBlock <- NULL
+        }
+        if(!rv_mod$data_checks$has_repIds){
+          data_filtered_casted[,repId:=NULL]
+          createTD_args$repId <- NULL
+        }
+        if(!rv_mod$data_checks$has_coords){
+          data_filtered_casted[,rowCoord:=NULL]
+          data_filtered_casted[,colCoord:=NULL]
+          createTD_args$rowCoord <- NULL
+          createTD_args$colCoord <- NULL
+        }
+        createTD_args <- c(
+          list(data = data_filtered_casted),
+          createTD_args
+        )
+
+        ## create TD
+        rv_mod$TD <- do.call(what = createTD, args = createTD_args)
+
       })
 
       observeEvent(input$model_engine,{
         if(input$model_engine=="SpATS"){
           shinyjs::show("spatial_opt")
+          shinyjs::show("display_psanova_opt")
         }else{
           shinyjs::hide("spatial_opt")
+          shinyjs::hide("display_psanova_opt")
         }
+      })
+
+      output$psanova_opt <- renderUI({ ## based on RAPWeb code
+        req(input$select_environments, rv_mod$TD, input$model_engine == "SpATS", input$display_psanova_opt==T)
+
+        ## Variable selection. Cov vars have to be a factor column.
+        nRows <- min(sapply(X = input$select_environments, FUN = function(trial) {
+          nlevels(droplevels(rv_mod$TD[[trial]]$rowId))
+        }))
+        nCols <- min(sapply(X = input$select_environments, FUN = function(trial) {
+          nlevels(droplevels(rv_mod$TD[[trial]]$colId))
+        }))
+        tagList(
+          sliderInput(inputId = ns("spRowSeg"),
+                      label = "Number of row segments in PSANOVA",
+                      value = floor(nRows / 2), min = 1, max = nRows, step = 1),
+          sliderInput(inputId = ns("spColSeg"),
+                      label = "Number of column segments in PSANOVA",
+                      value = floor(nCols / 2), min = 1, max = nCols, step = 1),
+          sliderInput(inputId = ns("spNestDiv"),
+                      label = "Divisor of segments in PSANOVA",
+                      value = 2, min = 1, max = 5, step = 1)
+        )
       })
 
       observeEvent(input$select_traits,{
@@ -327,55 +407,12 @@ mod_model_server <- function(id, rv){
         req(rv_mod$data_checks)
         rv$fit <- NULL
 
-        ###  create TD without the excluded observations
-
-        ## exclude observations
-        data_filtered <- rv$data[!(observations.observationDbId %in% rv$excluded_observations)]
-
-        ## make 1 column per trait
-        data_filtered_casted <- dcast(
-          data = data_filtered[,.(
-            genotype = germplasmName, trial = study_name_app, loc = studyLocationDbId,
-            repId = replicate,
-            subBlock = blockNumber,
-            rowCoord = positionCoordinateY, colCoord = positionCoordinateX,
-            observations.observationVariableName, observations.value
-          )],
-          formula = "genotype + trial + loc + repId + subBlock + rowCoord + colCoord ~ observations.observationVariableName",
-          value.var = "observations.value"
-        )
-
-        ## parametrization
-        createTD_args <- list(
-          genotype = "genotype",
-          trial = "trial",
-          loc = "loc",
-          repId = "repId",
-          subBlock = "subBlock",
-          rowCoord = "rowCoord",
-          colCoord = "colCoord"
-        )
-        if(!rv_mod$data_checks$has_subBlocks){
-          data_filtered_casted[,subBlock:=NULL]
-          createTD_args$subBlock <- NULL
+        if (input$model_engine == "SpATS" && input$display_psanova_opt==T) {
+          cntrl <- list(nSeg = c(input$spColSeg, input$spRowSeg),
+                        nestDiv = input$spNestDiv)
+        } else {
+          cntrl <- NULL
         }
-        if(!rv_mod$data_checks$has_repIds){
-          data_filtered_casted[,repId:=NULL]
-          createTD_args$repId <- NULL
-        }
-        if(!rv_mod$data_checks$has_coords){
-          data_filtered_casted[,rowCoord:=NULL]
-          data_filtered_casted[,colCoord:=NULL]
-          createTD_args$rowCoord <- NULL
-          createTD_args$colCoord <- NULL
-        }
-        createTD_args <- c(
-          list(data = data_filtered_casted),
-          createTD_args
-        )
-
-        ## create TD
-        rv_mod$TD <- do.call(what = createTD, args = createTD_args)
 
         ### fit TD
         a <- tryCatch(
@@ -388,8 +425,8 @@ mod_model_server <- function(id, rv){
             covariates = input$covariates,
             what = input$what,
             # useCheckId = FALSE,
-            spatial = ifelse(input$model_engine=="SpATS", input$spatial_opt, F)
-            # control = NULL
+            spatial = ifelse(input$model_engine=="SpATS", input$spatial_opt, F),
+            control = cntrl
           ),
           error=function(e){ e })
         mess <- a$message
