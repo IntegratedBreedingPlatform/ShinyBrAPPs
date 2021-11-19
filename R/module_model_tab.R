@@ -225,7 +225,7 @@ mod_model_server <- function(id, rv){
         # - rowcol		  =>	rowId and colId are defined
         # - res.rowcol	=>	repIds, rowId and colId are defined
         #
-        # NB: choices_model_design is defined in inst/apps/stabrap/config.R
+        # NB: choices_model_design is defined in inst/apps/stabrapp/config.R
         # For the following code to work, the item order in choices_model_design has to be: "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"
 
         data_filt <- rv$data[!(observations.observationDbId %in% rv$excluded_observations) & (study_name_app %in% input$select_environments)]

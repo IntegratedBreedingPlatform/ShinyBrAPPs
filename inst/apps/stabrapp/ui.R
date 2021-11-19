@@ -10,8 +10,11 @@ ui <- fluidPage(
   shinyjs::useShinyjs(),
   shinysky::busyIndicator(wait = 200, text = NULL, img = "img/loading-animation.gif"),
 
+  # mod_debug_ui("debug"),
   mod_get_studydata_ui("get_studydata"),
-  tabsetPanel(id = "tabsetPanel_main", selected = "Data Quality",
+  tabsetPanel(id = "tabsetPanel_main",
+              # selected = "Model",
+              selected = "Data Quality",
     tabPanel(
       "Data Quality",
       mod_dataquality_ui("dataquality")
@@ -20,5 +23,5 @@ ui <- fluidPage(
       "Model",
       mod_model_ui('model')
     )
-  )
+  ),
 )

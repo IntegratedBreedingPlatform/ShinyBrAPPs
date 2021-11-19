@@ -11,4 +11,5 @@ server <- function(input, output, session){
   # rv <- mod_get_studydata_server("get_studydata", rv, dataset_4_dev = foo)
   rv <- mod_dataquality_server("dataquality", rv)
   mod_model_server("model", rv)
+  # mod_debug_server("debug", rv)
 }

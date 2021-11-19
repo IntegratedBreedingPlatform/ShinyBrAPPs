@@ -14,8 +14,8 @@ proxy:
     container-network: shinyproxy-network
   - id: stabrapp
     display-name: stabrapp
-    description: "sprint 7 (as of 17/11/21)"
-    container-cmd: ["R", "-e", "shinybrapps::run_stabrap()"]
+    description: "sprint 7 (as of 19/11/21)"
+    container-cmd: ["R", "-e", "shinybrapps::run_stabrapp()"]
     container-image: shinybrapps
     container-network: shinyproxy-network
 
