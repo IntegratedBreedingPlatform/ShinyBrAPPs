@@ -53,6 +53,7 @@ mod_model_ui <- function(id){
           bsCollapsePanel(
             title = "Advanced fitting options",
             pickerInput(ns("covariates"),label = "Covariates", choices = NULL, multiple = T),
+            materialSwitch(ns("spatial_opt"),label = "Spatial", value = T),
             checkboxGroupInput(ns("what"),label = "Genotype effect (what)", choices = c("random", "fixed"), selected = c("random", "fixed"), inline = T)
           )
         )
@@ -248,6 +249,14 @@ mod_model_server <- function(id, rv){
         )
       })
 
+      observeEvent(input$model_engine,{
+        if(input$model_engine=="SpATS"){
+          shinyjs::show("spatial_opt")
+        }else{
+          shinyjs::hide("spatial_opt")
+        }
+      })
+
       observeEvent(input$select_traits,{
         # req(input$select_traits)
         ## the possible covariates
@@ -377,9 +386,9 @@ mod_model_server <- function(id, rv){
             traits = input$select_traits,
             engine = input$model_engine,
             covariates = input$covariates,
-            what = input$what
+            what = input$what,
             # useCheckId = FALSE,
-            # spatial = FALSE,
+            spatial = ifelse(input$model_engine=="SpATS", input$spatial_opt, F)
             # control = NULL
           ),
           error=function(e){ e })
