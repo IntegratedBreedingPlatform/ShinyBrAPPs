@@ -121,27 +121,21 @@ mod_model_ui <- function(id){
                 12,
                 style = "text-align: center",
                 downloadButton(ns("export_metrics"), "CSV Export"),
-                shiny::actionButton(ns("push_metrics_to_BMS"), "Push metrics to BMS", icon = icon("leaf"))
-              )
-            ),
-            fluidRow(
-              column(
-                12,
-                pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL, width = "50%", inline = T),
+                shiny::actionButton(ns("push_metrics_to_BMS"), "Push to BMS", icon = icon("leaf"))
               )
             ),
             fluidRow(
               column(
                 6,
-                tags$h4("Metrics ~ Environment x Trait"),
-                pickerInput(ns("select_metrics_A"), "Metric", multiple = F, choices = NULL, width = "40%", inline = T),
+                # tags$h4("Metrics ~ Environment x Trait"),
+                # pickerInput(ns("select_metrics_A"), "Statistics", multiple = F, choices = NULL, width = "40%", inline = T),
                 dataTableOutput(ns("metrics_A_table"))
               ),
               column(
                 6,
-                tags$h4("Metrics ~ Environment x Trait x Genotype"),
-                pickerInput(ns("select_metrics_B"), "Metric", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs"), width = "40%", inline = T),
-                # pickerInput(ns("select_trait_metrics"), label = "Trait", multiple = F, choices = NULL, width = "50%"),
+                # tags$h4("Metrics ~ Environment x Trait x Genotype"),
+                pickerInput(ns("select_metrics_B"), "BLUPs/BLUEs", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs"), width = "40%", inline = T),
+                pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL, width = "40%", inline = T),
                 dataTableOutput(ns("metrics_B_table"))
               )
             )
@@ -415,15 +409,15 @@ mod_model_server <- function(id, rv){
           selected = input$select_traits[1]
         )
 
-        if(input$model_engine%in%c("lme4")){
-          choices_metrics_A <- c("Wald"="wald", "Heritability"="heritability", "CV"="CV")
-        }else{
-          choices_metrics_A <- c("Heritability"="heritability")
-        }
-        updatePickerInput(
-          session, "select_metrics_A",
-          choices = choices_metrics_A
-        )
+        # if(input$model_engine%in%c("lme4")){
+        #   choices_metrics_A <- c("Wald"="wald", "Heritability"="heritability", "CV"="CV")
+        # }else{
+        #   choices_metrics_A <- c("Heritability"="heritability")
+        # }
+        # updatePickerInput(
+        #   session, "select_metrics_A",
+        #   choices = choices_metrics_A
+        # )
 
         updatePickerInput(
           session,"select_trait_metrics",
@@ -561,39 +555,43 @@ mod_model_server <- function(id, rv){
 
       ### Metrics
       output$metrics_A_table <- renderDT({
-        input$select_environment_metrics
         req(rv$fit)
-        req(input$select_environment_metrics)
-        if(input$select_metrics_A == "wald"){
-          metrics_wald <- extractSTA(STA = rv$fit, what = "wald")
-          wald <- rbindlist(lapply(names(metrics_wald), function(env){
+
+        ## heritability
+        heritability <- as.data.table(extractSTA(STA = rv$fit, what = "heritability"))
+
+        if(input$model_engine%in%c("lme4")){
+          ## CV
+          cv <- as.data.table(extractSTA(STA = rv$fit, what = "CV"))
+
+          ## wald test
+          wald_raw <- extractSTA(STA = rv$fit, what = "wald")
+          wald <- rbindlist(lapply(names(wald_raw), function(env){
             data.table(
               environment = env,
-              rbindlist(lapply(names(metrics_wald[[env]]$wald), function(trait){
+              rbindlist(lapply(names(wald_raw[[env]]$wald), function(trait){
                 data.table(
                   trait = trait,
-                  metrics_wald[[env]]$wald[[trait]]
+                  wald_raw[[env]]$wald[[trait]]
                 )
               }))
             )
           }))
-          metrics <- data.table::transpose(
-            wald[environment == input$select_environment_metrics, -c("environment"), with = F],
-            make.names = "trait", keep.names ="wald"
-          )
-          row_names <- metrics$wald
-          metrics <- metrics[,-c("wald"), with = F]
-          rownames(metrics) <- row_names
-          show_row_names <- T
+
+          cv_melt <- melt(cv, id.vars = "trial", variable.name = "trait", value.name = "CV")
+          heritability_melt <- melt(heritability, id.vars = "trial", variable.name = "trait", value.name = "Heritability")
+
+          metrics <- heritability_melt[cv_melt, on = .(trial, trait)][wald[,.(trial, trait, "Wald p.value" = p.value)], on = .(trial, trait)]
+
         }else{
-          metrics <- as.data.table(extractSTA(STA = rv$fit, what = input$select_metrics_A))
-          setnames(metrics, "trial", "environment")
-          show_row_names <- F
+          metrics <- melt(heritability, id.vars = "trial", variable.name = "trait", value.name = "Heritability")
         }
+        setnames(metrics, "trial", "Envrionment")
+        setnames(metrics, "trait", "Trait")
 
         datatable(
           metrics,
-          rownames = show_row_names,
+          rownames = F,
           options = list(
             paging = F,
             scrollX = T,
