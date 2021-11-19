@@ -568,7 +568,7 @@ mod_model_server <- function(id, rv){
           wald_raw <- extractSTA(STA = rv$fit, what = "wald")
           wald <- rbindlist(lapply(names(wald_raw), function(env){
             data.table(
-              environment = env,
+              trial = env,
               rbindlist(lapply(names(wald_raw[[env]]$wald), function(trait){
                 data.table(
                   trait = trait,
