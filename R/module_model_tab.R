@@ -118,22 +118,19 @@ mod_model_ui <- function(id){
             "Results",
             fluidRow(
               column(
-                12,
-                style = "text-align: center",
-                downloadButton(ns("export_metrics"), "CSV Export"),
-                shiny::actionButton(ns("push_metrics_to_BMS"), "Push to BMS", icon = icon("leaf"))
-              )
-            ),
-            fluidRow(
-              column(
                 6,
                 # tags$h4("Metrics ~ Environment x Trait"),
                 # pickerInput(ns("select_metrics_A"), "Statistics", multiple = F, choices = NULL, width = "40%", inline = T),
+                downloadButton(ns("export_metrics_A"), "CSV Export", style = "float:right; margin:5px"),
+                shiny::actionButton(ns("push_metrics_to_BMS_A"), "Push to BMS", icon = icon("leaf"), style = "float:right; margin:5px"),
                 dataTableOutput(ns("metrics_A_table"))
               ),
               column(
                 6,
                 # tags$h4("Metrics ~ Environment x Trait x Genotype"),
+                downloadButton(ns("export_metrics_B"), "CSV Export", style = "float:right; margin:5px"),
+                shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push to BMS", icon = icon("leaf"), style = "float:right; margin:5px"),
+                tags$br(),
                 pickerInput(ns("select_metrics_B"), "BLUPs/BLUEs", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs"), width = "40%", inline = T),
                 pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL, width = "40%", inline = T),
                 dataTableOutput(ns("metrics_B_table"))
@@ -589,8 +586,10 @@ mod_model_server <- function(id, rv){
         }else{
           metrics <- melt(heritability, id.vars = "trial", variable.name = "trait", value.name = "Heritability")
         }
-        setnames(metrics, "trial", "Envrionment")
+        setnames(metrics, "trial", "Environment")
         setnames(metrics, "trait", "Trait")
+
+        rv_mod$metrics_A <- metrics
 
         datatable(
           metrics,
@@ -630,61 +629,38 @@ mod_model_server <- function(id, rv){
           ))
       })
 
-      output$export_metrics <- downloadHandler(
-        filename = function() {"metrics.csv"},
+      output$export_metrics_A <- downloadHandler(
+        filename = function() {"statistics.csv"},
+        content = function(file) {
+          req(rv_mod$metrics_A)
+          metrics <- melt(rv_mod$metrics_A, id.vars = c("Environment", "Trait"), variable.name = "statistics")
+          setnames(metrics, "Environment", "environment")
+          setnames(metrics, "Trait", "trait")
+          write.csv(metrics, file, row.names = FALSE)
+        }
+      )
+
+      output$export_metrics_B <- downloadHandler(
+        filename = function() {"BLUPs_and_BLUEs.csv"},
         content = function(file) {
           req(rv$fit)
-          table_herit <- as.data.table(extractSTA(STA = rv$fit, what = "heritability"))
-          table_herit[,metrics:="heritability"]
           table_BLUPs <- as.data.table(extractSTA(STA = rv$fit, what = c("BLUPs")))
-          table_BLUPs[,metrics:="BLUPs"]
+          table_BLUPs[,result:="BLUPs"]
           table_seBLUPs <- as.data.table(extractSTA(STA = rv$fit, what = c("seBLUPs")))
-          table_seBLUPs[,metrics:="seBLUPs"]
+          table_seBLUPs[,result:="seBLUPs"]
           table_BLUEs <- as.data.table(extractSTA(STA = rv$fit, what = c("BLUEs")))
-          table_BLUEs[,metrics:="BLUEs"]
+          table_BLUEs[,result:="BLUEs"]
           table_seBLUEs <- as.data.table(extractSTA(STA = rv$fit, what = c("seBLUEs")))
-          table_seBLUEs[,metrics:="seBLUEs"]
+          table_seBLUEs[,result:="seBLUEs"]
 
-          table_metrics <- rbindlist(l = list(table_herit, table_BLUPs,table_seBLUPs,table_BLUEs,table_seBLUEs), use.names = T, fill = T)
+          table_metrics <- rbindlist(l = list(table_BLUPs,table_seBLUPs,table_BLUEs,table_seBLUEs), use.names = T, fill = T)
           table_metrics <- melt(
             data = table_metrics,
-            measure.vars = names(table_metrics)[!(names(table_metrics)%in%c("genotype","trial","metrics"))],
+            measure.vars = names(table_metrics)[!(names(table_metrics)%in%c("genotype","trial","result"))],
             variable.name = "trait"
           )
           setnames(table_metrics, "trial", "environment")
-          setcolorder(table_metrics, c("environment", "genotype", "trait", "metrics", "value"))
-
-
-          if(rv_mod$model_engine%in%c("lme4")){
-            metrics_wald <- extractSTA(STA = rv$fit, what = "wald")
-            table_wald <- rbindlist(lapply(names(metrics_wald), function(env){
-              data.table(
-                environment = env,
-                rbindlist(lapply(names(metrics_wald[[env]]$wald), function(trait){
-                  data.table(
-                    trait = trait,
-                    metrics_wald[[env]]$wald[[trait]]
-                  )
-                }))
-              )
-            }))
-            table_wald_csv <- melt(
-              data = table_wald,
-              measure.vars = names(table_wald)[!(names(table_wald)%in%c("trait", "environment"))],
-              variable.name = "submetrics"
-            )
-            table_wald_csv[,metrics:="wald"]
-            metrics_CV <- as.data.table(extractSTA(STA = rv$fit, what = "CV"))
-            table_CV <- melt(
-              data = metrics_CV,
-              measure.vars = names(metrics_CV)[!(names(metrics_CV)%in%c("genotype","trial","metrics"))],
-              variable.name = "trait"
-            )
-            table_CV[,metrics:="CV"]
-            setnames(table_CV, "trial", "environment")
-            table_metrics <- rbindlist(l = list(table_wald_csv,table_CV,table_metrics), use.names = T, fill = T)
-            setcolorder(table_metrics, c("environment", "genotype", "trait", "metrics", "submetrics", "value"))
-          }
+          setcolorder(table_metrics, c("environment", "genotype", "trait", "result", "value"))
 
           write.csv(table_metrics, file, row.names = FALSE)
         }
