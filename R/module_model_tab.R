@@ -428,6 +428,9 @@ mod_model_server <- function(id, rv){
           session, "select_environment_metrics",
           choices = input$select_environments
         )
+
+        # assign input$model_engine to a reactive variable (isolated in the "observeEvent-go fit model") to prevent the app from changing model results unless "go fit model" is clicked
+        rv_mod$model_engine <- input$model_engine
       })
 
       ## show fitted models per trait and environments
@@ -560,7 +563,7 @@ mod_model_server <- function(id, rv){
         ## heritability
         heritability <- as.data.table(extractSTA(STA = rv$fit, what = "heritability"))
 
-        if(input$model_engine%in%c("lme4")){
+        if(rv_mod$model_engine%in%c("lme4")){
           ## CV
           cv <- as.data.table(extractSTA(STA = rv$fit, what = "CV"))
 
@@ -652,7 +655,7 @@ mod_model_server <- function(id, rv){
           setcolorder(table_metrics, c("environment", "genotype", "trait", "metrics", "value"))
 
 
-          if(input$model_engine%in%c("lme4")){
+          if(rv_mod$model_engine%in%c("lme4")){
             metrics_wald <- extractSTA(STA = rv$fit, what = "wald")
             table_wald <- rbindlist(lapply(names(metrics_wald), function(env){
               data.table(
