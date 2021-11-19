@@ -591,7 +591,8 @@ mod_model_server <- function(id, rv){
 
         rv_mod$metrics_A <- metrics
 
-        datatable(
+        setkey(metrics, "Environment")
+        dtable <- datatable(
           metrics,
           rownames = F,
           options = list(
@@ -599,8 +600,16 @@ mod_model_server <- function(id, rv){
             scrollX = T,
             scrollY = "500px",
             scrollCollapse = T,
-            dom = 't'
+            dom = 't',
+            rowsGroup = as.list(c(0))
           ))
+        path <- "www/js/datatables-rowsgroup/"
+        dep <- htmltools::htmlDependency(
+          "RowsGroup", "2.0.0",
+          path, script = "dataTables.rowsGroup.js"
+        )
+        dtable$dependencies <- c(dtable$dependencies, list(dep))
+        dtable
       })
 
       output$metrics_B_table <- renderDataTable({
