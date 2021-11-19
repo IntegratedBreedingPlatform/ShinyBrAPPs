@@ -244,7 +244,6 @@ mod_model_server <- function(id, rv){
         updatePickerInput(
           session,"model_design",
           choices = possible_designs,
-          selected = possible_designs[1],
           options = list(
             placeholder = 'Select 1 or more traits',
             onInitialize = I('function() { this.setValue(""); }')
