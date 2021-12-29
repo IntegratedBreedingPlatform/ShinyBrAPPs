@@ -18,6 +18,12 @@ proxy:
     container-cmd: ["R", "-e", "shinybrapps::run_stabrapp()"]
     container-image: shinybrapps
     container-network: shinyproxy-network
+  - id: decision_support
+    display-name: Decision support tool
+    description: "sprint 1 (as of 29/12/21)"
+    container-cmd: ["R", "-e", "shinybrapps::run_decision()"]
+    container-image: shinybrapps
+    container-network: shinyproxy-network
 
 logging:
   file:
