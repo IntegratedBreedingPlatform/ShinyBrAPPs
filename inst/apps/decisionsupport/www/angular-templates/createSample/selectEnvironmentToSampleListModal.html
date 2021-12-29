@@ -1,0 +1,37 @@
+<div class="modal-body">
+	<div class="row form-group">
+		<div class="col-xs-11 col-md-11">
+			<label class="modal-title fbk-modal-title" id="heading-modal">Create genotyping samples</label>
+		</div>
+		<div class="col-xs-1 col-md-1">
+			<button id="closeAdvanceTrialModal" type="button" class="close  pull-right glyphicon glyphicon-remove"
+					ng-click="cancel()" aria-hidden="true"/>
+		</div>
+	</div>
+
+	<div class="row form-group">
+		<div id="page-advance-modal-message"></div>
+	</div>
+	<div class="separator"></div>
+	<p></p>
+	<div class="row form-group">
+		<div class="col-xs-12 col-md-12">
+			<br></br>
+			<label class=""> Select the locations you would like to sample:</label>
+		</div>
+	</div>
+	<br/>
+	<div id="location-selection-createSample">
+		<instances-table instances="instances" selected-instances="selectedInstances" instance-id-property="instanceNumber" is-empty-selection="isEmptySelection"></instances-table>
+	</div>
+</div> <!-- Modal Body -->
+<div class="modal-footer">
+	<button type="button" class="btn btn-default" ng-click="cancel()" aria-hidden="true">
+		Cancel
+	</button>
+	<button type="button" class="btn btn-primary" ng-disabled="isEmptySelection"
+			ng-click="continueCreatingSampleList()" >
+		Continue
+	</button>
+</div>
+

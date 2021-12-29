@@ -1,0 +1,2550 @@
+@import url('fonts/font.css');
+/*Added to style properly*/
+body {
+    font-family: 'Open Sans', 'Segoe UI','Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    margin: 0 !important;
+}
+
+body.modal-open {
+    overflow: hidden;
+}
+
+.heading{vertical-align: middle; color:#333;font-family:'Open Sans','Segoe UI','Helvetica Neue',Arial,sans-serif;letter-spacing:normal;font-weight:500;margin-bottom:5px;margin-left:0;margin-right:0;margin-top:10px;box-sizing:border-box;font-size:18px;height:18px;line-height:18px;font-weight:600;}
+h1,h2,h3,h4,h5,h6,
+.h1,.h2,.h2_no_transform,.h3,.h3_no_transform,.h4,.h5,.h6{display:block;color:#333;font-family:'Open Sans','Segoe UI','Helvetica Neue',Arial,sans-serif;letter-spacing:normal;font-weight:500;margin-bottom:5px;margin-left:0;margin-right:0;margin-top:10px;box-sizing:border-box}
+h4,h5,h6,
+.h4,.h5,.h6{margin-top:5px}
+h1,.h1{font-size:26px;font-weight:500;height:26px;line-height:26px;text-transform:uppercase}
+h2,.h2{font-size:18px;height:18px;line-height:18px;font-weight:600;text-transform:uppercase}
+.h2_no_transform{font-size:18px;height:18px;line-height:18px;font-weight:600;}
+h2.light,.h2.light{font-weight: 300; color:#999;}
+h3,.h3{font-size:16px;line-height:16px;font-weight:600;text-transform:uppercase}
+.h3_no_transform{font-size:16px;line-height:16px;font-weight:600;}
+h4,.h4{font-size:15.5px;line-height:15px;font-weight:500}
+h5,.h5{font-size:15px;font-weight:500;line-height:15px;text-transform:uppercase}
+h6,.h6{font-size:13px;font-weight:500;line-height:13px}
+
+.scrollbar-measure {
+    width: 1px;
+    height: 1px;
+    overflow: scroll;
+    position: absolute;
+    top: -9999px;
+}
+
+.sub-heading {
+    font-size:16.5px;height:16.5px;line-height:16.5px;font-weight:600;text-transform:uppercase;
+margin-bottom:5px;margin-left:0;margin-right:0;margin-top:10px;box-sizing:border-box;
+}
+.sub-content-heading{
+    font-size:14px;height:14px;line-height:14px;font-weight:500;
+margin-bottom:5px;margin-left:0;margin-right:0;margin-top:10px;box-sizing:border-box;
+}
+
+label{
+    font-weight: normal;
+    word-wrap: break-word;
+}
+label#list-notes {
+  width: 300px;
+}
+
+.btn-primary {
+    color: #ffffff;
+    background-color: #ff8109;
+    border-color:  #ff8109;
+}
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary.active,
+.open .dropdown-toggle.btn-primary {
+    color: #ffffff;
+    background-color: #ff8109;
+    border-color:  #ff8109;
+    opacity: 0.7
+}
+.btn-default {
+    color: #ffffff;
+    background-color: #828282;
+    border-color: #828282;
+}
+.btn-default:hover,
+.btn-default:focus,
+.btn-default:active,
+.btn-default.active,
+.open .dropdown-toggle.btn-default {
+    color: #ffffff;
+    background-color: #828282;
+    border-color: #828282;
+    opacity: 0.7
+}
+.btn-default.disabled.focus,
+.btn-default.disabled:focus,
+.btn-default.disabled:hover,
+.btn-default[disabled].focus,
+.btn-default[disabled]:focus,
+.btn-default[disabled]:hover
+ {
+    background-color: #828282;
+    border-color: #828282;
+}
+.btn-info {
+    color: #ffffff;
+    background-color: #1b95b2;
+    border-color: #1b95b2;
+}
+.btn-info:hover,
+.btn-info:focus,
+.btn-info:active,
+.btn-info.active,
+.open .dropdown-toggle.btn-info {
+    color: #ffffff;
+    background-color: #1b95b2;
+    border-color: #1b95b2;
+    opacity: 0.7
+}
+.btn {
+    font-size: 11px;
+}
+
+table > thead > tr > th, table .table-header{
+    background-color: #c8c6c6;
+}
+table .odd{
+    background-color: #e3e3e3;
+}
+table .even{
+    background-color: #f0eeee;
+}
+#treeTable td {
+    white-space: nowrap;
+}
+/*
+#studyTree tr:nth-child(even), #selectedTrials tr:nth-child(even), #catVarList tr:nth-child(even) {background-color: #DADADA}
+#studyTree tr:nth-child(odd), #selectedTrials tr:nth-child(odd), #catVarList tr:nth-child(odd) {background-color: #E9e9e9}
+*/
+
+.table-bordered > thead > tr > th, .table-bordered > tbody > tr > th, .table-bordered > tfoot > tr > th, .table-bordered > thead > tr > td, .table-bordered > tbody > tr > td, .table-bordered > tfoot > tr > td {
+    border: 1px solid #828282;
+}
+.table caption + thead tr:first-child th,
+.table colgroup + thead tr:first-child th,
+.table thead:first-child tr:first-child th,
+.table caption + thead tr:first-child td,
+.table colgroup + thead tr:first-child td,
+.table thead:first-child tr:first-child td {
+    border-top: none;
+}
+
+
+.table-bordered > thead > tr > th:first-child,
+.table-bordered > tbody > tr > th:first-child,
+.table-bordered > tfoot > tr > th:first-child,
+.table-bordered > thead > tr > td:first-child,
+.table-bordered > tbody > tr > td:first-child,
+.table-bordered > tfoot > tr > td:first-child {
+    border-left: none;
+}
+.table-bordered > thead > tr > th:last-child,
+.table-bordered > tbody > tr > th:last-child,
+.table-bordered > tfoot > tr > th:last-child,
+.table-bordered > thead > tr > td:last-child,
+.table-bordered > tbody > tr > td:last-child,
+.table-bordered > tfoot > tr > td:last-child {
+    border-right: none;
+}
+.table-bordered > thead > tr:last-child > th,
+.table-bordered > tbody > tr:last-child > th,
+.table-bordered > tfoot > tr:last-child > th,
+.table-bordered > thead > tr:last-child > td,
+.table-bordered > tbody > tr:last-child > td,
+.table-bordered > tfoot > tr:last-child > td {
+    border-bottom: none;
+}
+
+table.table-fit {
+    width: auto !important;
+    table-layout: auto !important;
+}
+table.table-fit thead th, table.table-fit tfoot th {
+    width: auto !important;
+}
+table.table-fit tbody td, table.table-fit tfoot td {
+    width: auto !important;
+}
+
+.table-no-wrap th {
+    white-space: nowrap;
+}
+
+.table-no-wrap td {
+    white-space: nowrap;
+}
+
+td.manually-edited-value {
+    background-color: #c5c6de;
+    color: black;
+}
+
+td.accepted-value {
+    background-color: #E6F5FF;
+    color: #3366CC;
+}
+
+td.out-of-sync-value {
+    background-color: #ffffcd;
+    color: black;
+}
+
+td.invalid-value {
+  background-color: #ffdfdf;
+  color: #7f484a;
+}
+
+table .highlight, table .field-map-highlight {
+}
+table .highlight td, table .field-map-highlight td, .tableSelect tr.selected td{
+    background-color: #BED6B2;
+}
+.tableSelect tr, .tableSelect td {
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-o-user-select: none;
+	user-select: none;
+	outline: medium none;
+}
+
+table.dataTable thead .sorting,
+table.dataTable thead .sorting_asc,
+table.dataTable thead .sorting_desc {
+    background : none;
+    background-color: #c8c6c6;
+}
+
+/** Add sorting back, when needed */
+table.dataTable.table-sorted thead th.sorting,
+table.dataTable.table-sorted thead th.sorting_asc,
+table.dataTable.table-sorted thead th.sorting_desc {
+    padding-right: 20px;
+}
+table.dataTable.table-sorted thead th.sorting {
+    background: #c8c6c6 url('../img/datatable/sort_both.png') no-repeat center right;
+}
+table.dataTable.table-sorted thead th.sorting_asc {
+    background: #c8c6c6 url('../img/datatable/sort_asc.png') no-repeat center right;
+}
+table.dataTable.table-sorted thead th.sorting_desc {
+    background: #c8c6c6 url('../img/datatable/sort_desc.png') no-repeat center right;
+}
+
+#subObservationTableContainer table.dataTable.table-sorted thead th.factors.sorting,
+#subObservationTableContainer table.dataTable.table-sorted thead th.factors.sorting_asc,
+#subObservationTableContainer table.dataTable.table-sorted thead th.factors.sorting_desc {
+    background-color: #a4a4a4;
+}
+
+
+.pagination {
+    font-size: 10px;
+}
+.pagination > li > a, .pagination > li > span {
+    padding: 6px 8px;
+}
+.pagination > li > a{
+    cursor: pointer; cursor: hand;
+}
+
+/* FIXME upgrade datatables? standardize? */
+.dataTables_paginate.paging_full_numbers {
+    font-size: 10px;
+}
+.dataTables_paginate.paging_full_numbers .paginate_button,
+.dataTables_paginate.paging_full_numbers .ellipsis
+{
+    cursor: pointer;
+    position: relative;
+    padding: 6px 12px;
+    margin-left: -1px;
+    line-height: 1.42857143;
+    color: #337ab7;
+    text-decoration: none;
+    background-color: #fff;
+    border: 1px solid #ddd;
+
+}
+.dataTables_paginate.paging_full_numbers .paginate_button.current,
+.dataTables_paginate.paging_full_numbers .paginate_button.current:hover {
+    z-index: 3;
+    color: #fff;
+    cursor: default;
+    background-color: #337ab7;
+    border-color: #337ab7;
+}
+.dataTables_paginate.paging_full_numbers .paginate_button.disabled,
+.dataTables_paginate.paging_full_numbers .paginate_button.disabled:hover,
+.dataTables_paginate.paging_full_numbers .paginate_button.disabled:active {
+    cursor: default;
+    color: #666 !important;
+    background: transparent;
+    box-shadow: none;
+}
+.dataTables_paginate.paging_full_numbers .paginate_button:hover {
+    z-index: 2;
+    color: #23527c;
+    background-color: #eee;
+    border-color: #ddd;
+}
+
+.dropdown-menu {
+    font-size: 12px;
+}
+.required{
+    color: #990000;
+}
+
+.nav-tabs > li > a,
+.nav-tabs > li > a:hover,
+.nav-tabs > li > a:focus{
+    color: #333333;
+    background-color: #eeeeee;
+}
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:hover,
+.nav-tabs > li.active > a:focus{
+    color: #333333;
+    background-color: #f6f6f6;
+    border-color: #e4e4e4;
+}
+
+.nav-tabs > li:not(.active) > a,
+.nav-tabs > li:not(.active) > a:hover,
+.nav-tabs > li:not(.active) > a:focus{    
+    background-color: #CECECE;
+}
+
+.nav-tabs > li > a {
+    border: #e4e4e4;
+}
+.nav > li > a {
+    display: block;
+    padding: 5px 10px;
+    position: relative;
+}
+#ontology-tabs {
+    background-color: #f6f6f6;
+    border: 1px solid #e4e4e4;
+    min-height: 400px;
+    border-top: 0px;
+}
+
+#nursery-tabs{
+    background-color: #f6f6f6;
+    border:1px solid #e4e4e4;
+    min-height: 650px;
+    border-top: 0px;
+}
+
+/* needs !important since data-tables css has overriden table css in important tags also */
+#nursery-settings .form-group table {
+    margin-top: 8pt !important; margin-bottom: 8pt !important;
+}
+
+
+.fbk-study-heading, .fbk-study-heading span {
+    vertical-align: bottom;
+}
+
+.fbk-study-heading-btns {
+    display: inline-block;
+    margin-left: 40pt;
+    position: relative;
+    top: 5pt;
+}
+
+.fbk-study-heading-right {
+    position: relative;
+    top: 5pt;
+}
+
+.fbk-delete-sign {
+    cursor: pointer;
+    color: #CE453C;
+    font-size: 16px;
+    width: 25px;
+}
+
+.fbk-add-sign {
+    cursor: pointer;
+    color: green;
+    font-size: 25px;
+}
+
+.fbk-table-delete-link {
+    width: 25px;
+}
+
+
+#studyTree, .study-field-map-tree{
+    height:350px;
+    overflow:auto;
+    padding-left: 15px;
+    padding-right: 10px;
+    padding-top: 10px;
+}
+
+.table-curved {
+    border-collapse: separate;
+    border: 1px solid #e4e4e4;
+    border-radius: 10px;
+}
+
+.table-curved > thead > tr > th:first-child { border-top-left-radius: 10px; }
+.table-curved > thead > tr > th:last-child { border-top-right-radius: 10px; }
+.table-curved > tbody > tr:last-child > td:first-child { border-bottom-left-radius: 10px; }
+.table-curved > tbody > tr:last-child > td:last-child { border-bottom-right-radius: 10px; }
+.table-curved > thead > tr > th { border-bottom: 1px solid #c2c3c4; }
+.table-curved > thead > tr > th, .table-curved > tbody > tr > td { border-right: 1px solid #c2c3c4; }
+.table-curved > thead > tr > th:last-child, .table-curved > tbody > tr > td:last-child { border-right: 0; }
+
+
+div.dataTables_scrollHead table.table-curved,
+div.dataTables_scrollBody table.table-curved,
+div.DTFC_LeftWrapper table.table-curved,
+div.DTFC_RightWrapper table.table-curved {
+    border-radius: 0;
+    border: none;
+    margin-top: 0 !important;
+}
+
+div.DTFC_LeftWrapper table.table-curved,
+div.DTFC_RightWrapper table.table-curved {
+    table-layout: fixed;
+}
+
+.form-group {
+    margin-bottom: 6px;
+}
+.col-xs-12{
+    padding-left: 13px;
+}
+/*end*/
+.container{
+    min-width: 100%;
+    padding-left: 35px; margin-top: -20px; margin-left: 0px;
+}
+.move-left{
+    margin-left: -25px;
+}
+.panel-body{
+    background-color: #F6F6F6; /*#D4D4D4;*/
+    padding: 0px;
+}
+.manage-settings-panel-body{
+    padding: 15px;
+}
+.panel-body-modal{
+    padding: 15px;
+    background-color: #FFFFFF;
+}
+.tt-hint{
+    width: 100%;
+}
+.tt-query{
+    background-color: none;
+}
+/*For the spinner*/
+#spinner-wrap {
+    position:fixed;
+    z-index:999;
+    width:150px;
+    height:150px;
+    background:#e9e9e9;
+    opacity:1;
+    filter:alpha(opacity=80); /* For IE8 and earlier */
+    border-radius: 15px;
+    top:50%;
+    margin-left:-100px;
+    margin-top:-100px;
+    left:50%;
+}
+#spinner-wrap img{
+    padding-top: 45px;
+}
+#spinner-wrap-angular {
+    width:150px;
+    height:150px;
+    background:#e9e9e9;
+    opacity:1;
+    filter:alpha(opacity=80); /* For IE8 and earlier */
+    border-radius: 15px;
+    text-align: center;
+
+}
+#spinner-wrap-angular img {
+    padding-top: 45px;
+}
+.block-ui-message-custom {
+    display: inline-block;
+}
+/* legacy dialogs */
+.modal-autofit.modal-dialog {
+    width: 90%;
+}
+.modal-extra-large.modal-dialog {
+    width: 950px;
+}
+.modal-large.modal-dialog {
+    width: 800px;
+}
+.modal-extra-medium.modal-dialog {
+    width: 700px;
+}
+.modal-medium.modal-dialog {
+    width: 650px;
+}
+.modal-small.modal-dialog {
+    width: 500px;
+}
+.modal-extra-small.modal-dialog {
+    width: 400px;
+}
+/* angular modals / ui-bootstrap */
+.modal-autofit > .modal-dialog {
+    width: 90%;
+}
+.modal-extra-large > .modal-dialog {
+    width: 950px;
+}
+.modal-large > .modal-dialog {
+    width: 800px;
+}
+.modal-extra-medium > .modal-dialog {
+    width: 700px;
+}
+.modal-medium > .modal-dialog {
+    width: 650px;
+}
+.modal-small > .modal-dialog {
+    width: 500px;
+}
+.modal-extra-small > .modal-dialog {
+    width: 400px;
+}
+
+#studyTreeModal .modal-dialog{
+    width: 400px;
+}
+#addVariableModal .select2-choice{
+    max-width: 200px;
+    min-width: 200px;
+}
+
+
+
+div.scrollWrapper{
+    height:200px;
+    overflow-y:scroll;
+}
+
+td.validValueLabel, td.validValueDel {
+    width: 20%;
+}
+
+td.validValueDesc {
+    width: 60%;
+}
+
+.fieldmap-header{
+    height: auto;
+}
+#field-map {
+    table-layout: fixed;
+}
+
+#field-map td{
+    border: 1px solid;
+    text-align: center;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+#field-map td p{
+    margin-bottom: 0px;
+}
+
+#field-map td.plot{
+    text-align:center;
+    vertical-align: middle;
+    word-wrap: break-word;
+    cursor: pointer;
+}
+
+#field-map td.plot label {
+    padding: 3px;
+    margin-bottom: 0px;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+#field-map td.header-row-main{
+    background-color: #BEBEBA;
+    width: 64px;
+}
+#field-map td.header-row-data{
+    background-color: #BEBEBA;
+    width: 80px;
+}
+#field-map td.sub-header-row,
+#field-map td.sub-header-col{
+    background-color: #EEEEE9;
+    cursor: pointer;
+}
+
+
+.fieldmap-container {
+    padding:10px;
+    margin:20px;
+    border:1px dashed;
+    overflow:auto;
+    border-bottom:none;
+    max-width: 100%;
+}
+
+.availableFields,
+#leftSelectedFields,
+#rightSelectedFields,
+.non-pdf-selected-fields {
+    list-style-type: none;
+    min-height: 50px;
+    background: #eee;
+}
+
+#leftSelectedFields,
+#rightSelectedFields,
+.non-pdf-selected-fields {
+    margin: 0;
+    padding: 0;
+    float: left;
+    margin-right: 10px;
+    padding: 5px;
+    width: 100%;
+}
+
+#availableFields li,
+#leftSelectedFields li,
+#rightSelectedFields li,
+.non-pdf-selected-fields li {
+    margin: 5px;
+    padding: 5px;
+    font-size: 13px;
+}
+
+.field-group{
+    margin-bottom: 0px
+}
+.field-group .list-group-item{
+    padding: 5px 10px;
+    background-color: #c8c6c6;
+}
+tr.trialInstance {
+    background-color: #dff0d8;
+}
+
+.myDragClass {
+    background-color: #dff0d8;
+}
+.plot{
+    background-color: #ffffff;
+}
+
+.modal-header{
+    padding: 10px;
+}
+.modal-footer {
+    text-align: center;
+    padding: 10px;
+}
+.treegrid-indent{
+    height: 0px;
+}
+.page-header{
+    margin: 30px 0 0 -25px;
+    padding-left: 18px;
+
+}
+
+.page-header a {
+	cursor: pointer;
+	color: #5A5A59;
+}
+
+.page-header a:before {
+	font-size: 20px;
+	padding-left: 20px;
+}
+
+#trial-table{
+    table-layout: fixed;
+}
+#ontology-tab-headers{
+}
+#ontology-tab-headers  > li > a,
+#ontology-tab-headers  > li > a:hover,
+#ontology-tab-headers  > li > a:focus {
+
+    border-bottom: 1px solid #E4E4E4;
+
+}
+#ontology-tab-headers  > li.active > a,
+#ontology-tab-headers  > li.active > a:hover,
+#ontology-tab-headers  > li.active > a:focus {
+
+    border-bottom: 0px;
+
+}
+
+.page-header {
+    border-bottom: 0;
+}
+.tooltip-inner {
+    background-color: #5A5A5A;
+    max-width: 350px;
+    margin-top: 40px;
+    padding: 15px;
+    text-align: left;
+    text-transform: none;
+    word-wrap: break-word;
+}
+.tooltip.right .tooltip-arrow {
+    border-right-color: #5A5A5A;
+}
+.help-tooltip {
+    vertical-align: middle;
+}
+
+.help-tooltip-col {
+    margin-top: 7px;
+}
+.help-tooltip, .help-tooltip-study {
+    color: #7D7D7D;
+    font-size: 13pt;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.help-tooltip-study:hover {
+    color: #7D7D7D;
+    text-decoration: none;
+}
+
+.tooltip.medium .tooltip-inner {
+    width: 250px;
+}
+.help-tooltip-study-advance{
+    cursor: pointer;
+}
+.germplasm-list-table, .germplasm-measurement-list-table, .check-germplasm-list-table,
+.inventory-germplasm-list-table
+{
+    max-height: 400px;
+    overflow: auto;
+}
+
+.germplasm-tree-section {
+    padding-top: 10px;
+}
+
+.germplasm-measurement-list-table thead th, .germplasm-list-table thead th{
+    text-align: left;
+}
+.germplasm-measurement-list-table td  {
+    vertical-align: middle;
+}
+.germplasm-measurement-list-table td input {
+    font-size: 10px;
+}
+.variates{
+}
+.table-curved > thead > tr > th.factors{
+    background-color: #a4a4a4
+}
+.lead {
+    font-size: 10pt;
+}
+.btn-file, a.fileupload-exists{
+    padding: 8.5px 12px;
+}
+.fileupload-exists{
+    padding: 0px;
+}
+
+/* For appearance */
+.component {
+    line-height: 1.5em;
+    margin: 0 auto;
+    width: 90%;
+    max-width: 1000px;
+    overflow: hidden;
+    max-height: none;
+}
+table.make-sticky{
+    border-collapse: collapse;
+    width: 100%;
+    background: #fff;
+}
+.sticky-wrap td, th {
+    padding: 5px 5px;
+    text-align: left;
+}
+.make-sticky th {
+    white-space: nowrap;
+}
+.sticky-wrap th {
+    white-space: nowrap;
+}
+.sticky-wrap tbody th {
+}
+.sticky-wrap tbody tr:nth-child(2n-1) {
+    transition: all .125s ease-in-out;
+}
+.sticky-wrap tbody tr:hover {
+}
+/**/
+/* For appearance */
+.sticky-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    position: relative;
+    margin: 3em 0;
+    width: 100%;
+}
+.sticky-wrap .sticky-thead,
+.sticky-wrap .sticky-col,
+.sticky-wrap .sticky-intersect {
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transition: all .125s ease-in-out;
+    z-index: 50;
+    width: auto; /* Prevent table from stretching to full size */
+}
+.sticky-col{
+    z-index:9999;
+}
+.sticky-wrap .sticky-thead {
+    box-shadow: 0 0.25em 0.1em -0.1em rgba(0,0,0,.125);
+    z-index: 100;
+    width: 100%; /* Force stretch */
+}
+.sticky-wrap .sticky-intersect {
+    opacity: 1;
+    z-index: 150;
+
+}
+.sticky-wrap .sticky-intersect th {
+    background-color: #666;
+    color: #eee;
+}
+.sticky-wrap td,
+.sticky-wrap th {
+    box-sizing: border-box;
+}
+
+.sticky-col th{
+    background-color: #31bc86;
+}
+
+.sticky-col tbody th {
+    background-color: #2ea879;
+}
+
+/* Not needed for sticky header/column functionality */
+td.user-name {
+    text-transform: capitalize;
+}
+.sticky-wrap.overflow-y {
+    overflow-y: auto;
+    max-height: 500px;
+}
+.datepicker th{
+    background-color: #FFFFFF;
+}
+.add_top_padding{
+    padding-top: 10px;
+}
+
+.add-top-padding-small {
+    padding-top: 5px;
+}
+
+.add-bottom-padding {
+    padding-bottom: 10px;
+}
+
+.add-top-bottom-padding {
+    padding-top: 10px; padding-bottom: 10px;
+}
+
+.add-border {
+    border: 1px solid #CECECE;
+}
+
+td.nurseryLevelVariableSetting {
+    vertical-align: top;
+    padding-top: 10px;
+}
+div.possibleValuesDiv{
+    padding-bottom: 5px;
+}
+#addVariablesSettingBody #ontology-values-tab-li, #addVariablesSettingBody #ontology-usage-tab-li {
+    display: none;
+}
+.select-variable{
+    display: none;
+}
+.variable-detail-info{
+    display: none;
+}
+
+.var-names {
+    word-wrap: break-word;
+    word-break: break-all;
+    vertical-align: middle;
+    padding: 0 !important;
+}
+
+#addVariablesSettingBody .select-variable
+{
+    display: block;
+}
+#ontologyBrowserTree{
+    height: 430px;
+}
+#addVariablesSettingBody{
+    padding-bottom: 0px;
+}
+.addVariable-footer{
+    margin-top: 0px;
+}
+.row{
+    margin-right: 0px;
+}
+.rowForNumberingAndChecks{
+    margin-right: 0px;
+    margin-bottom: 25px;
+}
+.select2-container {
+    width: 100%;
+}
+.selectcontainer5{width: 150px}
+.selectcontainer5 input{width: 150px !important;}
+.fb-build-options .select2-container{
+	width: 260px;
+}
+
+.labelForNumberingAndChecks {
+    width: 60%;
+    float: left;
+    text-align: left;
+    padding-bottom: 12px;
+}
+
+#plotLevelSettings td, #baselineTraitSettings td{
+    word-wrap: break-word;
+}
+.label-bold{
+    font-weight: 600;
+}
+select{ border: 1px solid #ccc;
+    border-radius: 3px;
+    color: #808080;
+    display: inline-block;
+    font-size: 13px;
+    line-height: 18px;    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) inset;   padding: 4px;
+}
+
+.trialEnvironmentDiv{
+    max-height: 500px;
+    min-height: 0px;
+    max-width: 100%;
+    min-width: 100%;
+    overflow: auto;
+    overflow-x: auto;
+    padding: 0;
+    margin: 0;
+}
+table .even, div.DTFC_LeftHeadWrapper table, div.DTFC_LeftFootWrapper table, div.DTFC_RightHeadWrapper table, div.DTFC_RightFootWrapper table, table.DTFC_Cloned tr.even {
+    background-color: #f0eeee;
+}
+table tbody tr.germplasmSelectedRow, .germplasmSelectedRow td{
+    background-color: #BED6B2;
+}
+table tbody tr.checkGermplasmSelectedRow, .checkGermplasmSelectedRow td{
+    background-color: #BED6B2;
+}
+table.table-with-scroll, table.table-with-scroll-create, table.table-with-scroll-treatment, table.table-with-scroll-inventory  {
+    display: table;
+    width: 100%;
+}
+table.table-with-scroll thead, table.table-with-scroll tbody,
+table.table-with-scroll-create thead, table.table-with-scroll-create tbody,
+table.table-with-scroll-treatment thead, table.table-with-scroll-treatment tbody,
+table.table-with-scroll-inventory thead, table.table-with-scroll-inventory tbody{
+    float: left;
+    width: 100%;
+}
+table.table-with-scroll tbody, table.table-with-scroll-create tbody,
+table.table-with-scroll-treatment tbody{
+    overflow-y: auto;
+    max-height: 200px;
+}
+
+table.table-with-scroll-inventory tbody{
+    overflow-y: auto;
+    max-height: 500px;
+}
+
+table.table-with-scroll tr, table.table-with-scroll-create tr,
+table.table-with-scroll-treatment tr, table.table-with-scroll-inventory tr{
+    width: 100%;
+    display: table;
+}
+table.table-with-scroll thead tr th:first-child, table.table-with-scroll thead tr th:last-child {
+    width: 5%;
+}
+table.table-with-scroll tbody tr td:first-child, table.table-with-scroll tbody tr td:last-child {
+    width: 5%;
+}
+table.table-with-scroll-create thead tr th:first-child {
+    width: 1%;
+}
+table.table-with-scroll-create tbody tr td:last-child {
+    width: 10%;
+}
+table.table-with-scroll thead tr th:nth-child(2), table.table-with-scroll thead tr th:nth-child(3) {
+    width: 47%;
+}
+table.table-with-scroll tbody tr td:nth-child(2), table.table-with-scroll tbody tr td:nth-child(3) {
+    width: 46%;
+}
+table.table-with-scroll-create thead tr th:nth-child(2){
+    width: 8%;
+}
+table.table-with-scroll-create thead tr th:nth-child(3) {
+    width: 7%;
+}
+table.table-with-scroll-create tbody tr td:nth-child(2), table.table-with-scroll-create tbody tr td:nth-child(3) {
+    width: 37%;
+}
+table.table-with-scroll-inventory thead tr th:nth-child(1) {
+    width: 10%;
+}
+table.table-with-scroll-inventory thead tr th:nth-child(2) {
+    width: 12%;
+}
+table.table-with-scroll-inventory thead tr th:nth-child(3) {
+    width: 18%;
+}
+table.table-with-scroll-inventory thead tr th:nth-child(4) {
+    width: 15%;
+}
+table.table-with-scroll-inventory thead tr th:nth-child(5) {
+    width: 5%;
+}
+table.table-with-scroll-inventory thead tr th:nth-child(6) {
+    width: 16%;
+}
+table.table-with-scroll-inventory thead tr th:nth-child(7) {
+    width: 12%;
+}
+div.sectionContainer {
+    overflow-x: hidden;
+    padding-top: 6pt;
+}
+.variable-details{
+    max-height: 250px;
+    overflow-y: auto;
+}
+#specifyCheckSection .spinedit{
+    top: 5px;
+}
+.date-input{
+    width: 100px;
+}
+
+.dropdown-submenu{position:relative;}
+.dropdown-submenu>.dropdown-menu{top:0;left:100%;margin-top:-6px;margin-left:-1px;-webkit-border-radius:0 6px 6px 6px;-moz-border-radius:0 6px 6px 6px;border-radius:0 6px 6px 6px;}
+.dropdown-submenu:hover>.dropdown-menu{display:block;}
+.dropdown-submenu>a:after{display:block;content:" ";float:right;width:0;height:0;border-color:transparent;border-style:solid;border-width:5px 0 5px 5px;border-left-color:#cccccc;margin-top:5px;margin-right:-10px;}
+.dropdown-submenu:hover>a:after{border-left-color:#ffffff;}
+.dropdown-submenu.pull-left{float:none;}.dropdown-submenu.pull-left>.dropdown-menu{left:-100%;margin-left:10px;-webkit-border-radius:6px 0 6px 6px;-moz-border-radius:6px 0 6px 6px;border-radius:6px 0 6px 6px;}
+
+#inventory-germplasm-list {
+    min-height: 500px;
+}
+.table-with-scroll-inventory th, .table-with-scroll-inventory td{
+    text-align: center;
+}
+.image-padding{
+    padding-top:0px;
+}
+.browse-study-action, .browse-germplasm-action, .browse-sample-action{
+    padding-left: 4px;
+}
+.image-padding-with-text{
+    float: left;
+    padding-right: 5px;
+}
+.disable-image{
+    opacity: 0.5
+}
+#study-details{
+    padding-top: 10px;
+}
+#study-tabs{
+    min-height: 250px;
+    background-color: #f6f6f6;
+    border:1px solid #e4e4e4;
+    border-top: 0px;
+}
+#study-tab-headers  > li > a,
+#study-tab-headers  > li > a:hover,
+#study-tab-headers  > li > a:focus {
+
+    border-bottom: 1px solid #E4E4E4;
+
+}
+#study-tab-headers  > li.active > a,
+#study-tab-headers  > li.active > a:hover,
+#study-tab-headers  > li.active > a:focus {
+
+    border-bottom: 0px;
+
+}
+#study-tab-headers .close
+{
+    padding-left: 10px;
+    margin-top: -2px;
+}
+
+#manage-study-tabs {
+    min-height: 460px;
+    background-color: #f6f6f6;
+    border:1px solid #e4e4e4;
+    border-top: 0px;
+}
+
+#manage-study-tabs .form-control[type=number] {
+    display: inline;
+
+}
+
+#create-nursery-tab-headers  > li > a,
+#create-nursery-tab-headers  > li > a:hover,
+#create-nursery-tab-headers  > li > a:focus {
+
+    border-bottom: 1px solid #E4E4E4;
+
+}
+#create-nursery-tab-headers  > li.active > a,
+#create-nursery-tab-headers  > li.active > a:hover,
+#create-nursery-tab-headers > li.active > a:focus {
+
+    border-bottom: 0px;
+
+}
+
+.fb-tabs{
+    background-color: #f6f6f6;
+    border:1px solid #e4e4e4;
+    border-top: 0px;
+}
+.fb-tabs-headers  > li > a,
+.fb-tabs-headers  > li > a:hover,
+.fb-tabs-headers  > li > a:focus {
+
+    border-bottom: 1px solid #E4E4E4;
+
+}
+.fb-tabs-headers  > li.active > a,
+.fb-tabs-headers  > li.active > a:hover,
+.fb-tabs-headers > li.active > a:focus {
+
+    border-bottom: 0px;
+
+}
+
+#check-germplasm-list, #imported-germplasm-list {
+    min-height: 300px;
+}
+.btn{
+    font-weight: bold;
+}
+
+.control-label img,
+.control-label .sub-content-heading,
+.control-label [class^="bms-"],
+.control-label [class^="bms-"]:before
+{
+    vertical-align: middle;
+}
+
+.control-label .lbl-img {
+    display: inline-block;
+    margin-right: 3pt;
+}
+
+.control-label-bold{
+    font-weight: bold;
+}
+.control-label-italic{
+    font-style: italic;
+}
+/* transition to bootstrap 4 left align style */
+.form-horizontal .control-label.control-label-left {
+    text-align: left;
+}
+.list-notes-display{
+	overflow:hidden;
+	text-overflow:ellipsis;	
+	white-space: nowrap;
+	width: 200px;
+	position: absolute;
+	padding-left: 3px;
+}
+
+.delete-icon {
+    background:url(../img/delete-icon.png) left top;
+    width:18px;
+    height:18px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.delete-factor {
+   font-size: 16px; color: #666666;
+}
+
+.nav-tabs > li .close {
+    margin: -2px 0 0 10px;
+    font-size: 18px;
+    top: -5px;
+}
+
+.germplasm-measurement-list-table .select2-container .select2-choice {
+    height: 24px;
+}
+
+.germplasm-measurement-list-table .select2-container.form-control{
+    height: 24px;
+}
+.germplasm-measurement-list-table  .select2-chosen,
+.germplasm-measurement-list-table .select2-choice > span:first-child,
+.germplasm-measurement-list-table .select2-container .select2-choices .select2-search-field input {
+    padding: 2px 12px;
+}
+
+.dl-horizontal dt {
+    padding: 4px;
+}
+
+.dl-horizontal dd {
+    padding: 4px;
+}
+
+.fbk-mandatory {
+    padding-bottom: 15px;
+    position: relative;
+    bottom: 5px
+}
+
+.fbk-open-button-left-margin{
+    margin-left: 20px;
+}
+.fbk-save-button-left-margin{
+    margin-left: 50px;
+}
+
+.fbk-toggle-categorical-display {
+	padding-bottom: 0;
+}
+
+.nav-tabs li a{
+    font-weight: bold;
+}
+
+a.fbk-edit-experiment{
+    background-image: url('../img/edit.png');
+    display:block;
+    height:20px;
+    text-align: left;
+    background-repeat:no-repeat;
+    width: 25px;
+}
+.DTFC_LeftBodyLiner{
+    overflow-x: hidden;
+}
+.DTFC_LeftWrapper .table-curved  > *:first-child > *:first-child > *:last-child {
+    border-top-right-radius: 0px;
+}
+.modal-popover .popover{
+    min-width: 380px;
+}
+ .modal-popover .popover-label-padding, #openGermplasmListBody .label-padding{
+ 	display: inline-block;
+ 	min-width: 88px;
+ }
+.modal-popover .popover-title{
+    height: 30px;
+    background-color: #e9e9e9;
+    font-weight: bold;
+}
+.list-details{
+    display: none;
+}
+.list-details-show{
+    display: block;
+}
+.fbk-dropdown-select-highlight{
+    color: #000000;
+}
+.fbk-dropdown-select-fade{
+    opacity: 0.5;
+}
+.fbk-float-right{
+    float: right;
+}
+.fbk-float-left{
+    float: left;
+}
+.fbk-float-right-with-top-pos{
+    float: right;
+    position:relative;
+    top: -10px;
+}
+.fbk-close-tab, .fbk-close-dataset-tab{
+    padding-left: 10px;
+}
+
+/* Measurements Tab */
+
+.edit-measurements-panel .mdt-header,
+.import-preview-measurements-panel .mdt-header {
+    height: 75px;
+}
+
+.preview-measurements-panel .mdt-header {
+    height: 45px;
+}
+
+.mdt-header .dataTables_length,
+.dataTables_wrapper .dataTables_length,
+.fbk-datatable-panel-top > .dataTables_info,
+.mdt-header .dataTables_info,
+.dataTables_scrollHeadInner,
+.dataTables_scrollHead,
+.dataTables_scrollBody {
+    float: left;
+}
+
+.fbk-datatable-panel-top > .dt-buttons {
+    float: right;
+}
+
+.mdt-header .mdt-filtering,
+.mdt-header .mdt-columns {
+    float: right;
+}
+.mdt-filtering input.form-control{
+	float: right;
+}
+
+.mdt-header .mdt-filtering-label,
+.mdt-header .dataTables_info {
+    height: 30px;
+    line-height: 30px;
+    vertical-align: middle;
+}
+
+.mdt-header .dataTables_length,
+.dataTables_wrapper .dataTables_length,
+.mdt-header .mdt-filtering-label {
+    margin-right: 15px;
+}
+
+.mdt-header .dataTables_filter {
+    margin-right: 20px;
+}
+
+.dataTables_wrapper .dataTables_paginate, .fbk-page-div .dataTables_paginate {
+    margin-top: 16px;
+    margin-bottom: 10px;
+    float: left;
+    width: 100%;
+}
+.fbk-right-button-drop-down{
+    right: 0;
+    left: auto;
+}
+.fbk-label-overflow{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    width:100%;
+}
+.fbk-span-overflow{
+    overflow:hidden;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+}
+.fbk-import-upload-file{
+    margin-right: 20px;
+}
+
+.modal-backdrop.in {
+    opacity: 0.5;
+}
+
+.advance-study-list-table table {
+    width: 100%;
+}
+
+.advance-study-list-table table th, .advance-study-list-table table td{
+    text-align: left;
+    vertical-align: middle
+}
+table th.fbk-review-advance-check-box,table td.fbk-review-advance-check-box, .advance-study-list-table table td.fbk-advance-check-box,
+.advance-study-list-table table th.fbk-advance-check-box, .fbk-advance-check-box, .fbk-export-select-instance-check-box{
+    text-align: center;
+}
+.enable-pointer-events {
+    pointer-events: initial !important;
+}
+
+.study-details-variable {
+    word-wrap: break-word;
+    padding-left: 3pt; padding-right: 3pt; padding-bottom: 6pt;
+}
+.tooltip-arrow {
+    display: none;
+}
+.fbk-table-with-check td.fbk-delete-link{
+    padding: 5px 8px;
+}
+
+.fbk-selectall-chk {
+    padding: 0 8px;
+}
+
+.fbk-remove-link {
+    margin-left: 20px;
+}
+
+.modal-footer{
+    border-top: none;
+}
+.fbk-modal-title{
+    font-weight: 700;
+    font-size: 17px;
+}
+.fbk-study-tree-title{
+    padding-top: 7px;
+}
+.modal-body .close {
+    font-size: 16px;
+}
+.breeding-method-note{
+    margin-top: 7px;
+}
+.breeding-method-note span{
+    margin-left: 0;
+}
+
+.nopadding {
+    padding : 0 !important;
+    margin: 0 !important;
+}
+
+.nopadding-left {
+    padding-left: 0;
+}
+
+
+.nopadding-right {
+    padding-right: 0;
+}
+
+.drop-target {
+    background-color: #C8C6C6;
+}
+
+textarea {
+    resize: none;
+}
+input::-ms-clear {
+    width: 0;
+    height: 0;
+}
+.fbk-hide{
+    display: none;
+}
+
+.fbk-inline {
+	display: inline;
+}
+
+
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+    display: none !important;
+}
+
+.fbk-hide-opacity{
+    opacity: 0;
+}
+
+.fbk-font-icon:before {
+   font-size: 17pt;
+}
+.fbk-font-icon{
+    position: relative;
+    top: 8px;
+    display: inline-block;
+    margin-right: 4px;
+}
+
+.fbk-trial-summary-icons {
+    font-size: 20px;
+    display:inline-block;
+    margin-right: 5px;
+    margin-left: 5px
+}
+
+.fbk-trial-summary-exp-design-section tr td {
+    padding-bottom: 8px;
+}
+
+.bms-exp-design {
+    color: #9E8376;
+}
+
+.bms-environments {
+    color: #0074AC;
+}
+
+.bms-treatment-factors {
+    color: #C95B05;
+}
+
+.bms-variates {
+  color: #A9DD28;
+}
+
+.bms-mgt-details {
+  color: #263798;
+}
+
+.bms-factors {
+  color: #C4A01B;
+}
+
+.fbk-icon-header{
+    padding-bottom:5px;
+    padding-right: 10px;
+}
+
+[ng-multi-transclude-controller] [collapse] {
+    width: 100%;
+}
+
+.reduce-padding {
+    padding: 0 6px;
+}
+textarea.form-control {
+    font-size: 13px;
+    color: #333333;
+    padding: 4px;
+}
+
+.form-control.placeholder
+{
+    color: #777 !important;
+}
+
+/* SELECT 2 overrides */
+input[type="text"], input[type="password"], .ui-autocomplete-input, textarea, .uneditable-input,
+.select2-container .select2-choices .select2-search-field input, .select2-container .select2-choice, .select2-container .select2-choices {
+    color: #333333 !important;
+    font-size: 13px;
+    font-family: 'Open Sans', 'Segoe UI','Helvetica Neue', Arial, sans-serif;
+}
+input.inputForNumberingAndChecks {
+    display: inline-block;
+    padding: 4px;
+    font-size: 13px;
+    line-height: 18px;
+    color: #808080;
+    border: 1px solid #ccc;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;width: 70px;margin-left: 10px;
+    margin-bottom: 8px;
+    width: 25%;
+    text-align: left;
+}
+.select2-dropdown-open.select2-drop-above [class^="select2-choice"] {
+    border-bottom-right-radius: 4px !important;
+    border-bottom-left-radius: 4px !important;
+    background: white;
+}
+
+.select2-highlighted.ui-select-choices-row:hover {
+    background-color:  #428bca !important;
+}
+
+.s2-nosearch-icon .select2-input {
+    background: no-repeat 100% -22px, -webkit-gradient(linear, left bottom, left top, color-stop(0.85, #fff), color-stop(0.99, #eee))
+}
+
+.select2-default {
+    color: #333333 !important;
+}
+
+/* move the search icon to the fron and set the starting caret position after the icon */
+.select2-search input {
+    padding-left: 22px;
+
+    background: #fff url('lib/select2/img/select2.png') no-repeat -36px -22px;
+    background: url('lib/select2/img/select2.png') no-repeat -36px -22px, -webkit-gradient(linear, left bottom, left top, color-stop(0.85, #fff), color-stop(0.99, #eee));
+    background: url('lib/select2/img/select2.png') no-repeat -36px -22px, -webkit-linear-gradient(center bottom, #fff 85%, #eee 99%);
+    background: url('lib/select2/img/select2.png') no-repeat -36px -22px, -moz-linear-gradient(center bottom, #fff 85%, #eee 99%);
+    background: url('lib/select2/img/select2.png') no-repeat -36px -22px, linear-gradient(top, #fff 85%, #eee 99%);
+
+}
+
+@media only screen and (-webkit-min-device-pixel-ratio: 1.5), only screen and (min-resolution: 2dppx)  {
+   .select2-search input {
+       background-position: -36px -21px !important;
+   }
+}
+
+.s2-nosearch-icon input {
+    padding-left: 4px;
+    background: linear-gradient(top, #fff 85%, #eee 99%);
+    background-image: none;
+}
+
+/* -- */
+
+.section-toggle,
+label[data-toggle="collapse"],
+.delete-icon,
+.ui-draggable {
+    cursor: pointer;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.s2-nosearch-icon input {
+    padding-left: 4px;
+    background: linear-gradient(top, #fff 85%, #eee 99%);
+    background-image: none;
+}
+
+/* -- */
+
+.section-toggle,
+label[data-toggle="collapse"],
+.delete-icon,
+.ui-draggable {
+    cursor: pointer;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.fbk-basic-details.section-expanded {
+    margin-left: -5px; display: none;
+}
+
+.fbk-basic-details.section-collapsed {
+    margin-left: -2px; padding-right: 5px; padding-top: 4px; padding-bottom: 4px;
+}
+
+.fbk-basic-details-section-content {
+    padding-left: 17pt;
+}
+
+.input-group-btn > .btn {
+    font-size: 14px;
+}
+.fbk-import-upload-file .input-group-btn > .btn {
+	font-size: 12px;
+    padding-top: 8px;
+    padding-bottom: 7px
+}
+.fake-check-germplasm-list-items{
+	position: relative;
+	top: -6px;
+	width: 100%;
+}
+.fbk-show-hide-grid-column{
+	margin-top: 8px;
+	margin-right: 10px;
+}
+.add-top-margin {
+	margin-top: 6px;
+}
+.fbk-import-close-button{
+	float: right;
+	z-index:99999;
+	position: relative;
+	right: 20px;
+}
+.fbk-import-body{
+	height: 500px;
+}
+.editCheck .input-group-btn{
+	padding-left: 10px;
+}
+.fbk-advance-label-pos .sub-content-heading{
+	position: relative;
+	top: 2px;
+}
+.fbk-advance-label-pos .control-label{
+	position: relative;
+	top: 6px;
+}
+.fbk-advance-label-pos .advanced-list-label{
+	position: relative;
+	top: 10px;
+}
+
+.horizontal-level-item {
+    border-bottom: 1px solid gainsboro;
+    margin-top: 10pt;
+    margin-bottom: 10pt;
+    padding-bottom: 10pt;
+}
+
+.horizontal-level-item:last-child {
+    border-bottom: none;
+    margin-bottom: 10pt;
+    padding-bottom: 0;
+}
+/* ----- Variable Selection Dialog ----- */
+
+.vs-modal .modal-body {
+	height: 380px;
+	max-height: 380px;
+}
+
+.vs-modal ul {
+	padding: 0 15px;
+}
+
+.vs-modal li {
+	list-style-type: none;
+}
+
+.vs-class-name {
+	text-transform: capitalize;
+}
+
+/* Icon and icon button styling */
+
+.vs-modal .icon-btn {
+	color: black;
+	background-color: white;
+	border: none;
+	font-size: 13px;
+}
+
+.vs-modal .icon-btn:active {
+	-webkit-box-shadow: none;
+	-moz-box-shadow: none;
+	box-shadow: none;
+}
+
+.vs-modal .icon-btn:hover {
+	color: rgb(90, 90, 90);
+	background-color: white;
+	border: none;
+}
+
+.vs-modal .icon-btn-lg {
+	font-size: 18px;
+}
+
+.vs-modal .icon-btn-sm {
+	font-size: 11px;
+}
+
+.vs-icon {
+	width: 13px;
+	height: 13px;
+}
+
+.vs-icon-lg {
+	width: 18px;
+	height: 18px;
+}
+
+.vs-icon-sm {
+	width: 11px;
+	height: 11px;
+}
+
+a.dt-button.fbk-buttons-no-border,
+a.dt-button.fbk-buttons-no-border:hover:not(.disabled) {
+    border: none;
+    background-color: transparent;
+    background-image: none;
+}
+
+a.dt-button.fbk-buttons-link {
+    color: rgb(51, 122, 183);
+    font-size: 13px;
+}
+
+a.dt-button.fbk-colvis-button {
+    font-size: 13px;
+}
+
+a.dt-button.fbk-buttons-link:focus,
+a.dt-button.fbk-buttons-link:hover {
+    color: #23527c;
+    text-decoration: underline;
+}
+
+/* ----- Variable Selection Dialog: Property Select Dropdown ----- */
+
+.vs-modal .vs-ps-container {
+	height: 45px;
+}
+
+.select2-container .select2-choice .ps-item-property-info {
+	border-left: none;
+}
+
+.ps-results .ps-item-prop-name,
+.ps-results .ps-item-property-search-term {
+	font-weight: bold;
+}
+
+.ps-results .ps-item-class-name {
+	font-style: italic;
+}
+
+.ps-results .ps-item-variables {
+	font-size: 11px;
+	padding: 5px;
+}
+
+.ps-results li {
+	border-bottom: 1px solid #e5e5e5;
+}
+
+.ps-results li:last-child {
+	border-bottom: none;
+}
+
+.ps-item-property-info > span,
+.ps-item-variables > span {
+	vertical-align: middle;
+}
+
+.ps-item-attr {
+	display: inline-block;
+	padding-left: 5px;
+}
+
+.ps-item-variables .ps-item-attr {
+	padding-left: 8px;
+}
+
+
+/* ----- Variable Selection Dialog: Content ----- */
+.vs-modal .vs-content-container {
+	height: 320px;
+	overflow-y: auto;
+
+	/* Make room for the scroll bar */
+	margin-right: -15px;
+	margin-top: 5px;
+}
+
+.vs-title {
+	display: inline-block;
+	padding-left: 5px;
+	margin: 0;
+	vertical-align: middle;
+}
+
+/* ----- Variable Selection Dialog: Content - Variable List ----- */
+
+.vs-variable-list-container {
+	margin-top: 10px;
+}
+
+.vs-property-container .vs-variable {
+	padding-top: 5px;
+	padding-bottom: 10px;
+	border-bottom: 1px solid #e5e5e5;
+}
+
+.vs-property-container .vs-variable:last-child {
+	border-bottom: none;
+}
+
+.vs-variable p {
+	margin: 0;
+}
+
+.vs-variable .vs-variable-description {
+	font-size: 11px;
+	margin-top: -5px;
+}
+
+.vs-variable .vs-variable-description > span {
+	vertical-align: middle;
+}
+
+.vs-variable .vs-variable-description-scale {
+	padding-left: 15px;
+}
+
+.vs-variable-description-label {
+	font-weight: bold;
+	padding-right: 2px;
+}
+
+.vs-property-container .vs-variable-select-container {
+	height: 30px;
+	width: 100%;
+	display: inline-block;
+}
+
+.vs-property-container .vs-variable-name {
+	font-weight: bold;
+}
+
+.vs-property-container .vs-variable-select {
+	float: right;
+}
+
+.vs-property-container .vs-variable-button {
+	float: right;
+}
+
+.vs-variable-name-container .vs-alias-input {
+	padding: 2px;
+}
+
+.vs-variable-name {
+	vertical-align: middle;
+}
+
+/* ----- Variable Selection Dialog: Content - Related Property List ----- */
+
+.vs-related-props-container {
+	margin-top: 15px;
+}
+
+.vs-related-props-list {
+	padding-top: 10px;
+	display: table;
+	table-layout: fixed;
+	width: 100%
+}
+
+.vs-related-props-list .vs-related-prop {
+	display: table-cell;
+	width: 50%;
+}
+
+/* ----- Ontology Browser ----- */
+
+.ob-manage-variables-btn {
+	float: right;
+}
+
+table.dataTable th, table.dataTable td {
+    overflow: hidden;
+}
+.fbk-show-inline{
+    display: inline-block;
+}
+
+.label-error-bold{
+	color:#e08989; 
+	font-weight:bold;
+}
+.fbk-center{
+	text-align: center;
+}
+
+a[ng-click] {
+    cursor:pointer;
+}
+
+div.variable-details-popup {
+	width: 750px;
+}
+.fbk-use-previous-study{
+	padding-top: 4px;
+	padding-bottom: 4px;
+}
+
+/* hide the browse button when a file is selected */
+.fileupload-exists .btn-file {
+    display: none;
+}
+
+.fileupload-new .fileupload-preview-wrap {
+    display: none;
+}
+.fbk-export-advance-list-check-box{
+	text-align: center;
+}
+#chooseSettingsDiv .remove-indv-btn{
+	left: 9px; 
+	top: 2px; 
+	position:relative;
+} 
+#chooseSettingsDiv table .remove-indv-btn{
+	left: 0px; 	
+} 
+.remove-all-section .remove-btn{
+	left: -5px; 
+	top: 2px; 
+	position:relative;
+}
+.fb-delete-settings{
+	color: #000000;
+}
+.select2-results .select2-disabled{
+	background-color: #ffffff;
+}
+.fbk-left-padding{
+	padding-left: 10px;
+}
+.fbk-filter-header {
+	font-weight: bold;
+	padding-right: 1em;
+}
+
+.short-dropdown {
+    width:100px;
+}
+
+#fbk-lbl-printing-delete-preset-confirm .modal-dialog {
+    width: 40%;
+}
+
+.plotDupe, table .plotDupe {
+	background-color: #CCCCCC;
+}
+
+.pedigreeDupe, table .pedigreeDupe {
+	background-color: #E5D8DD;
+	color: #84324E;
+}
+
+.plotRecip, table .plotRecip {
+	background-color: #E0E4D7;
+	color: #4C5F07;
+}
+
+.pedigreeRecip, table .pedigreeRecip {
+	background-color: #DCE9F2;
+	color: #6A83C7;
+}
+input.review-select-all{
+	margin-left: 52px;
+}
+
+input.select-all-margin{
+    margin-right: 10px;
+    margin-top: 15px;
+    margin-left: 15px;
+}
+
+.vertical-spacer {
+    margin-bottom: 25px;
+}
+
+@media (min-width: 1135px) {
+    .modal-huge .modal-dialog {
+        width: 60%;
+    }
+}
+
+@media (min-width: 980px) {
+    .modal-huge .modal-dialog {
+        width: 75%;
+    }
+}
+
+@media (max-width: 980px) {
+    .modal-huge .modal-dialog {
+        width: 90%;
+    }
+}
+
+/* exp design remap css */
+.modal-very-huge .modal-dialog {
+    width: 90%;
+}
+
+.mapping-group .list-group, .unmapped.list-group {
+    min-height: 70pt;
+}
+
+.mapping-group .list-group-item .unmapped .list-group-item {
+    cursor: pointer;
+}
+
+.mapping-group .list-group-item:hover,
+.unmapped .list-group-item:hover {
+    cursor: pointer;
+    background: #BED6B2;
+}
+
+
+.help-box .modal-content {
+	background: url('/ibpworkbench/VAADIN/themes/vaadin-retro/images/login.png');
+	width: 640px;
+}
+
+.help-box #help_header {
+	margin: 18px 0;
+	font-weight: 600;
+}
+
+.help-box .modal-body {
+	height: 337px;
+	border: none;
+}
+
+.help-box .bootbox-body {
+	margin-top: 30px;
+}
+
+.help-box .modal-header {
+	border: none;
+}
+
+.help-box .modal-header .close {
+	color: white;
+	opacity: 1;
+	text-shadow: none;
+}
+
+.help-box .modal-title h1 {
+	color: white;
+	font-size: 2rem;
+	font-weight: 100;
+	margin-right: 50px;
+	margin-bottom: 0;
+	text-align: right;
+}
+
+.help-box .modal-title h2 {
+	color: white;
+	font-size: 1.3rem;
+	font-weight: 400;
+	text-align: right;
+	margin: 0 50px 0;
+}
+
+/* new throbber from the styleguide */
+
+.throbber {
+    width: 18px;
+    width: 1.5rem;
+    height: 18px;
+    height: 1.5rem;
+    border-radius: .75rem;
+    box-sizing: border-box;
+    border: 2px solid rgba(27,149,178,.2);
+    border-top-color: #1b95b2;
+    -webkit-animation: spin 1s infinite linear;
+    animation: spin 1s infinite linear;
+    transition: visibility .5s ease-in,opacity .5s ease-in;
+    visibility: visible;
+    display: inline-block;
+}
+
+.throbber-2x {
+    width: 30px;
+    width: 2.5rem;
+    height: 30px;
+    height: 2.5rem;
+    border-radius: 1.25rem;
+}
+
+@-webkit-keyframes spin {
+    100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes spin {
+    100% {
+        -webkit-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+
+.ontology-variable-range {
+    margin-left: 3%;
+    font-weight: bold;
+}
+.ontology-scale-range {
+    margin-left: 3%;
+    font-weight: bold;
+    margin-top: 10px;
+}
+.ontology-no-range {
+    margin-left: 5%;
+}
+#manage-study-tabs #germplasm-list-pagination {
+    opacity: 1 !important;
+}
+
+.import-crosses-from-file .go-back-to-import {
+    display: inline-block;
+}
+
+.import-crosses-from-file #crossingBreedingMethodText,
+.import-crosses-from-file #crossesSelectBreedingMethod,
+#crossesPreSelectedBreedingMethod {
+    display: block;
+}
+
+.go-back-to-import,
+#crossingBreedingMethodText,
+#crossesSelectBreedingMethod,
+.import-crosses-from-file #crossesPreSelectedBreedingMethod{
+    display: none;
+}
+
+.import-crosses-from-file #useBreedingInTheImportFile {
+    display: inline-block;
+}
+
+#useBreedingInTheImportFile {
+    display: none;
+}
+
+#preSelectedBreedingMethodDropdown {
+    width: 420px;
+}
+
+.fbk-mandatory-field {
+    color:red;
+    font-weight:bold
+}
+.fbk-std-padding-right {
+	padding-right: 10px;
+}
+
+/* Label Printing */
+.lblprnt-germplasm-list-details,
+.lblprnt-germplasm-list-choose-fields-label,
+.lblprnt-germplasm-choose-option-fields-label,
+.lblprnt-germplasm-list-details-label {
+	display: none;
+}
+
+.lblprnt-germplasm-list-inventory .lblprnt-germplasm-list-details,
+.lblprnt-germplasm-list-inventory .lblprnt-germplasm-list-choose-fields-label,
+.lblprnt-germplasm-list-inventory .lblprnt-germplasm-choose-option-fields-label,
+.lblprnt-germplasm-list-inventory .lblprnt-germplasm-list-details-label{
+	display: block;
+}
+.lblprnt-germplasm-list-inventory .lblprnt-study-details,
+.lblprnt-germplasm-list-inventory .lblprnt-study-choose-fields-label,
+.lblprnt-germplasm-list-inventory .lblprnt-study-details-fields,
+.lblprnt-germplasm-list-inventory .lblprnt-study-choose-option-fields-label,
+.lblprnt-germplasm-list-inventory .lblprnt-study-list-details-label {
+	display: none;
+}
+
+.lblprnt-germplasm-list-numbers-alignment {
+	padding-left: 13px;
+}
+
+.lblprnt-label-details hr {
+	margin: 0;
+}
+
+.remove-excess-padding[style] {
+    padding-left:0 !important;
+}
+
+/* Styles for Measurements data table */
+
+#mdt-environment-list-label.dataTables_info.fbk-std-padding-right {
+	padding-right: 10px;
+}
+
+.inline-select {
+	width: auto !important;
+}
+.inline-select.select2-container.form-control {
+	display: inline-block;
+	width: auto !important;
+}
+
+.mdt-table-length-selector.inline-select.select2-container.form-control {
+	margin-left: 10px;
+    top: -9px;
+}
+
+.mdt-length {
+	padding-left: 10px;
+}
+
+#measurement-table_wrapper > div.mdt-header > div.mdt-length {
+	padding-top: 7px;
+}
+
+/* Preview Measurements view */
+.preview-measurements-only .preview-measurements-header {
+	display: inline-block;
+}
+
+.preview-measurements-only .measurements-header {
+	display: none;
+}
+
+.preview-measurements-header {
+	display: none;
+}
+
+.measurements-header {
+	display: inline-block;
+}
+
+.no-measurements-table {
+	display:block;
+}
+
+.preview-measurements-only .no-measurements-table,
+.preview-measurements-panel,
+.edit-measurements-panel,
+.import-preview-measurements-panel {
+	display: none;
+}
+
+/* Editing measurements is not allowed for a new not saved trial */
+.msrmnt-study-not-saved .edit-measurements-panel {
+	display: none;
+}
+
+/* Editing measurements allowed for the saved trial */
+.msrmnt-existing-study .edit-measurements-panel {
+	display: block;
+}
+
+/* Editing measurements is not allowed for existing trial in preview mode */
+.preview-measurements-only .msrmnt-existing-study .edit-measurements-panel {
+	display: none;
+}
+
+.preview-measurements-only .preview-measurements-panel {
+	display: block;
+}
+
+.import-preview-measurements .import-preview-measurements-panel {
+	display: block;
+}
+
+/* Do not display Add Trait button in import preview measurements mode */
+.import-preview-measurements .nrm-md-variable-select {
+	display: none;
+}
+/* Do not display Remove Trait link in import preview measurements mode */
+.import-preview-measurements .fbk-remove-traits-link {
+	display: none;
+}
+
+.import-preview-measurements .edit-measurements-panel {
+	display: none;
+}
+
+/* FIXME for the existing study we need a proper check if the design was generated for that study or not previously before saving */
+.msrmnt-existing-study .no-measurements-table {
+	display: none;
+}
+
+.select2-result-label {
+    white-space: nowrap;
+}
+
+.separator {
+    border-top: 1px solid #e5e5e5;
+}
+
+.help-tooltip-crosses-flow {
+    color: #7D7D7D;
+    font-size: 18pt;
+    vertical-align: bottom;
+    cursor: pointer;
+}
+
+.trash-crosses-flow {
+    color: #7D7D7D;
+    font-size: 18pt;
+    vertical-align: bottom;
+    cursor: pointer;
+}
+
+.label-italic{
+    font-style: italic;
+}
+
+#variableDetailsTable {
+    width: 100%;
+}
+
+#variableDetailsTable tr {
+    height: 25px;
+}
+
+#variableDetailsTable td {
+    padding: 5px;
+    width: 50%;
+}
+
+table.dataTable thead .derived-trait-column-header {
+    background-color: #bdd9b4;
+}
+
+/* TODO not needed with colresize? */
+table.dataTable thead th.sorting,
+table.dataTable thead th.sorting_asc,
+table.dataTable thead th.sorting_desc
+{
+    cursor: pointer;
+}
+
+.dataset-options .ui-select-choices div {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#pending-btn-group .btn-inverse,
+#pending-btn-group .btn-default[disabled]
+{
+    background-color: #f6f6f6;
+}
+#pending-btn-group .btn-primary.btn-inverse:hover{
+    color: #1B95B2;
+    opacity: 0.7;
+}
+#pending-btn-group .btn-default[disabled] {
+    color: #828282;
+}
+#pending-btn-group .btn.selected {
+    box-shadow: 1px 1px 3px 0px rgba(0, 0, 0, 0.5);
+}
+
+.nav-tabs > li > a.pendingData,
+.nav-tabs > li > a.pendingData:focus,
+.nav-tabs > li > a.pendingData:hover {
+    -webkit-box-shadow: inset 0px -2px 0px 0px #ff8109;
+    -moz-box-shadow: inset 0px -2x 0px 0px #ff8109;
+    box-shadow: inset 0px -2px 0px 0px #ff8109;
+}
+
+.column-filter {
+    width: 200px;
+}
+.column-filter ul {
+    max-height: 190px;
+    overflow-y: auto;
+}
+.column-filter ul > li {
+    padding: 5px 10px;
+}
+.column-filter span.glyphicon {
+    font-size: 20px;
+}
+.glyphicon-filter.filtering-by {
+    color: #1b95b2;
+}
+
+/* Make uib-datepicker look like native bootstrap datepicker */
+.uib-datepicker-style-trasformer[uib-datepicker] .well,
+.uib-datepicker-style-trasformer [uib-datepicker] .well {
+    background: none;
+}
+.uib-datepicker-style-trasformer[uib-datepicker] table thead,
+.uib-datepicker-style-trasformer [uib-datepicker] table thead,
+.uib-datepicker-style-trasformer[uib-datepicker] table thead th,
+.uib-datepicker-style-trasformer [uib-datepicker] table thead th {
+    background: none;
+}
+.uib-datepicker-style-trasformer .uib-button-bar button,
+.uib-datepicker-style-trasformer[uib-datepicker] button,
+.uib-datepicker-style-trasformer [uib-datepicker] button,
+.uib-datepicker-style-trasformer[uib-datepicker] button.btn:hover,
+.uib-datepicker-style-trasformer [uib-datepicker] button.btn:hover {
+    background: none;
+    border: none;
+    padding: 2px;
+    color: inherit;
+}
+.uib-datepicker-style-trasformer[uib-datepicker] table button:hover,
+.uib-datepicker-style-trasformer [uib-datepicker] table button:hover {
+    background: #eee;
+}
+.uib-datepicker-style-trasformer[uib-datepicker] table button.active,
+.uib-datepicker-style-trasformer [uib-datepicker] table button.active {
+    background: #357ebd;
+    color: #fff;
+}
+/* current date */
+.uib-datepicker-style-trasformer[uib-datepicker] table button.active .text-info,
+.uib-datepicker-style-trasformer [uib-datepicker] table button.active .text-info {
+    color: #fff;
+}
+
+td[disabled] {
+    background-color: #ccc;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+}
+
+/* https://datatables.net/forums/discussion/comment/129194/#Comment_129194 */
+th.dt-head-nowrap {
+    white-space: nowrap
+}
+
+.paginate-float-center {
+    text-align: center;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.paginate-float-center .dataTables_paginate {
+    display: inline-block;
+    width: auto;
+    float: none;
+}
+
+div.dt-button-collection {
+    width: 180px !important;
+}

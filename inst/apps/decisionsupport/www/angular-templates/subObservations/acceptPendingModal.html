@@ -1,0 +1,32 @@
+<div class="modal-body">
+    <div class="row form-group">
+        <div class="col-xs-11 col-md-11">
+            <label class="modal-title fbk-modal-title">Accept pending data</label>
+        </div>
+        <div class="col-xs-1 col-md-1">
+            <button class="close pull-right glyphicon glyphicon-remove" ng-click="cancel()"/>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12 col-md-12">
+            Some of the data in you observation table fall outside the valid values defined
+            for the dataset variables.
+        </div>
+    </div>
+    <div class="row add_top_padding">
+        <div class="col-xs-6 col-md-6">
+			<strong>Please choose how you would like to proceed:</strong>
+        </div>
+        <div class="col-xs-6 col-md-6">
+            <select ng-model="selected" class="form-control">
+                <option value="1">Accept all data as-is</option>
+                <option value="2">Set all exceptions to missing</option>
+            </select>
+        </div>
+    </div>
+</div>
+<div class="modal-footer">
+    <button class="btn btn-default" ng-click="cancel()">Cancel</button>
+    <button class="btn btn-primary" ng-click="proceed()">Proceed</button>
+
+</div>

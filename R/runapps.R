@@ -17,3 +17,13 @@ run_stabrapp <- function() {
 
   shiny::runApp(appDir, display.mode = "normal",launch.browser = T)
 }
+
+#' @export
+run_decision <- function() {
+  appDir <- system.file("apps", "decisionsupport", package = "shinybrapps")
+  if (appDir == "") {
+    stop("Could not find app directory. Try re-installing `decisionsupport`.", call. = FALSE)
+  }
+
+  shiny::runApp(appDir, display.mode = "normal",launch.browser = T)
+}
