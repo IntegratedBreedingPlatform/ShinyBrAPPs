@@ -32,5 +32,6 @@ Depends:
 	shinysky,
 	shinyBS,
 	varhandle,
-	ggpubr
+	ggpubr,
+	ggExtra
 RoxygenNote: 7.1.1
