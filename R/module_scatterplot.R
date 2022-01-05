@@ -200,7 +200,14 @@ mod_scatterplot_server <- function(id, rv){
       )
 
       observe({
+        rv$data_plot_aggr <- NULL
         group_by_cols <- unlist(aggregate_col_def[aggregate_by == input$aggregate_by,cols])
+        req(rv$data_plot)
+        req(input$picker_X %in% names(rv$data_plot))
+        req(input$picker_Y %in% names(rv$data_plot))
+        req(input$picker_COLOUR %in% names(rv$data_plot))
+        req(input$picker_SIZE %in% names(rv$data_plot))
+        req(input$picker_SHAPE %in% names(rv$data_plot))
         req(input$aggreg_fun_COLOUR)
         req(aggreg_functions[fun == input$aggreg_fun_COLOUR, for_num] == rv$column_datasource[cols == input$picker_COLOUR, is_num])
         data_plot_aggr <- rv$data_plot[
