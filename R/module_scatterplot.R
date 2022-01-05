@@ -17,16 +17,16 @@ mod_scatterplot_ui <- function(id){
             onInitialize = I('function() { this.setValue(""); }')
           )
         ),
-        pickerInput(ns("aggregate_by"), "Aggregate by", choices = c("environment", "plot"), multiple = F),
+        pickerInput(ns("aggregate_by"), "Aggregate by", choices =  c("environment", "plot", "germplasm"), multiple = F),
         tags$label("X", style = "display:block"),
         pickerInput(ns("picker_X"), "Variable", choices = NULL, inline = T),
         pickerInput(ns("aggreg_fun_X"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T),
-        div(radioButtons(ns("express_X_as"), "Show values", choices = c("as they are", "as ranks", "relatively to genotype"), inline = T), style = "display:inline-block"),
+        div(radioButtons(ns("express_X_as"), "Show values", choices = "", inline = T), style = "display:inline-block"),
         div(id = ns("div_ref_genotype_X"), pickerInput(ns("ref_genotype_X"), "", choices = NULL, inline = T), style = "display:inline-block"),
         tags$label("Y", style = "display:block"),
         pickerInput(ns("picker_Y"), "Variable", choices = NULL, inline = T),
         pickerInput(ns("aggreg_fun_Y"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T),
-        div(radioButtons(ns("express_Y_as"), "Show values", choices = c("as they are", "as ranks", "relatively to genotype"), inline = T), style = "display:inline-block"),
+        div(radioButtons(ns("express_Y_as"), "Show values", choices = "", inline = T), style = "display:inline-block"),
         div(id = ns("div_ref_genotype_Y"), pickerInput(ns("ref_genotype_Y"), "", choices = NULL, inline = T), style = "display:inline-block"),
         materialSwitch(inputId = ns("switch_SHAPE"), label = "Shape", value = F),
         div(
@@ -130,14 +130,43 @@ mod_scatterplot_server <- function(id, rv){
           session = session, inputId = "picker_SIZE",
           choices = setNames(num_var_choices[,cols], num_var_choices[,source])
         )
-        updatePickerInput(
-          session = session, inputId = "picker_COLOUR",
-          choices = setNames(var_choices_all[,cols], var_choices_all[,source])
+        updatePickerInput(          session = session, inputId = "picker_COLOUR",
+                                    choices = setNames(var_choices_all[,cols], var_choices_all[,source])
         )
         updatePickerInput(
           session = session, inputId = "picker_SHAPE",
           choices = setNames(non_num_var_choices[,cols], non_num_var_choices[,source])
         )
+
+        ## update list of germplasms
+        germplasmNames <- rv$data_plot[,.(germplasmNames = list(unique(germplasmName))), .(entryType)][order(entryType)]
+        updatePickerInput(
+          session = session, inputId = "ref_genotype_X",
+          choices = setNames(germplasmNames[,germplasmNames], germplasmNames[,entryType]),
+          options = list(
+            title = "Select reference germplasm",
+            `live-search` = TRUE
+          )
+        )
+        updatePickerInput(
+          session = session, inputId = "ref_genotype_Y",
+          choices = setNames(germplasmNames[,germplasmNames], germplasmNames[,entryType]),
+          options = list(
+            title = "Select reference germplasm",
+            `live-search` = TRUE
+          )
+        )
+      })
+
+      ## disable "express relatively to genotype" if aggregation by plot
+      observeEvent(input$aggregate_by, {
+        if(input$aggregate_by %in% c("environment", "germplasm")){
+          updateRadioButtons(session, "express_X_as", choices = c("as they are", "as ranks", "relatively to genotype"), inline = T)
+          updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks", "relatively to genotype"), inline = T)
+        }else  if(input$aggregate_by %in% c("plot")){
+          updateRadioButtons(session, "express_X_as", choices = c("as they are", "as ranks"), inline = T)
+          updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks"), inline = T)
+        }
       })
 
       ## update colour aggreg functions (colour can be num or categorical)
@@ -162,17 +191,19 @@ mod_scatterplot_server <- function(id, rv){
 
 
       ## aggreg dataset
-      observe({
-        req(input$env)
-        if(input$aggregate_by=="plot"){
-          group_by_cols <- c("studyName", "germplasmName","observationUnitName")
-        }else if(input$aggregate_by=="environment"){
-          group_by_cols <- c("studyName", "germplasmName")
-        }
+      aggregate_col_def <- data.table(
+        aggregate_by = c("plot", "environment","germplasm"),
+        cols = c(list(c("studyName", "germplasmName","observationUnitName")),
+                 list(c("studyName", "germplasmName")),
+                 list(c("germplasmName"))
+        )
+      )
 
+      observe({
+        group_by_cols <- unlist(aggregate_col_def[aggregate_by == input$aggregate_by,cols])
         req(input$aggreg_fun_COLOUR)
         req(aggreg_functions[fun == input$aggreg_fun_COLOUR, for_num] == rv$column_datasource[cols == input$picker_COLOUR, is_num])
-        rv$data_plot_aggr <- rv$data_plot[
+        data_plot_aggr <- rv$data_plot[
           studyDbId %in% input$env,
           .(
             N_obs = .N,
@@ -190,20 +221,86 @@ mod_scatterplot_server <- function(id, rv){
           ),
           by = group_by_cols
         ]
+
+        ## transform X variable
+        # - no transformation (default)
+        data_plot_aggr[,VAR_X_PLOT:=VAR_X]
+        if(input$express_X_as=="as ranks"){
+          # - ranking
+          data_plot_aggr[, VAR_X_PLOT := base::rank(x = VAR_X, na.last = T, ties.method = "min")]
+        }else if(input$express_X_as=="relatively to genotype" & !(input$aggregate_by %in% c("plot"))){
+          # - variation to genotype
+          req(input$ref_genotype_X)
+          group_by_cols <- unlist(aggregate_col_def[aggregate_by == input$aggregate_by,cols])
+          if(input$aggregate_by=="germplasm"){
+            ref_val <- data_plot_aggr[germplasmName == input$ref_genotype_X, VAR_X]
+            data_plot_aggr[,reference_value:=ref_val]
+          }else if(input$aggregate_by=="environment"){
+            ref_val <- data_plot_aggr[germplasmName == input$ref_genotype_X, .(reference_value = VAR_X), by = group_by_cols]
+            setkeyv(ref_val, group_by_cols)
+            setkeyv(data_plot_aggr, group_by_cols)
+            data_plot_aggr <- ref_val[,-c("germplasmName"), with = F][data_plot_aggr]
+          }
+          data_plot_aggr[,VAR_X_PLOT := 1 + (reference_value - VAR_X)/reference_value]
+        }
+        ## transform Y variable
+        # - no transformation (default)
+        data_plot_aggr[,VAR_Y_PLOT:=VAR_Y]
+        if(input$express_Y_as=="as ranks"){
+          # - ranking
+          data_plot_aggr[, VAR_Y_PLOT := base::rank(x = VAR_Y, na.last = T, ties.method = "min")]
+        }else if(input$express_Y_as=="relatively to genotype" & !(input$aggregate_by %in% c("plot"))){
+          # - variation to genotype
+          req(input$ref_genotype_Y)
+          group_by_cols <- unlist(aggregate_col_def[aggregate_by == input$aggregate_by,cols])
+          if(input$aggregate_by=="germplasm"){
+            ref_val <- data_plot_aggr[germplasmName == input$ref_genotype_Y, VAR_Y]
+            data_plot_aggr[,reference_value:=ref_val]
+          }else if(input$aggregate_by=="environment"){
+            ref_val <- data_plot_aggr[germplasmName == input$ref_genotype_Y, .(reference_value = VAR_Y), by = group_by_cols]
+            setkeyv(ref_val, group_by_cols)
+            setkeyv(data_plot_aggr, group_by_cols)
+            data_plot_aggr <- ref_val[,-c("germplasmName"), with = F][data_plot_aggr]
+          }
+          data_plot_aggr[,VAR_Y_PLOT := 1 + (reference_value - VAR_Y)/reference_value]
+        }
+
+        rv$data_plot_aggr <- data_plot_aggr
       })
 
-      output$scatterplot <- renderPlot({
-        req(rv$data_plot_aggr)
 
+      output$scatterplot <- renderPlot({
+        req(rv$data_plot_aggr$VAR_X_PLOT)
+        req(rv$data_plot_aggr$VAR_Y_PLOT)
         p <- ggplot(rv$data_plot_aggr, aes(
-          x = VAR_X, y = VAR_Y,
+          x = VAR_X_PLOT, y = VAR_Y_PLOT,
           colour = if(input$switch_COLOUR == T) VAR_COLOUR else NULL,
           shape = if(input$switch_SHAPE == T) VAR_SHAPE else NULL,
           size = if(input$switch_SIZE == T) VAR_SIZE else NULL
         )) +
-          xlab(input$picker_X) +
-          ylab(input$picker_Y) +
           geom_point(alpha = 0.5) +
+          scale_x_continuous(
+            labels = if(input$express_X_as=="relatively to genotype" & isTruthy(input$ref_genotype_X)){scales::percent}else{waiver()},
+            trans = if(input$express_X_as=="as ranks"){"reverse"}else{"identity"},
+            name = if(input$express_X_as=="as ranks"){
+              paste(input$picker_X, "(ranks)")
+            }else if(input$express_X_as=="relatively to genotype" & isTruthy(input$ref_genotype_X)){
+              paste0(input$picker_X, " (relative to ", input$ref_genotype_X, ")")
+            }else{
+              input$picker_X
+            }
+          ) +
+          scale_y_continuous(
+            labels = if(input$express_Y_as=="relatively to genotype" & isTruthy(input$ref_genotype_Y)){scales::percent}else{waiver()},
+            trans = if(input$express_Y_as=="as ranks"){"reverse"}else{"identity"},
+            name = if(input$express_Y_as=="as ranks"){
+              paste(input$picker_Y, "(ranks)")
+            }else if(input$express_Y_as=="relatively to genotype" & isTruthy(input$ref_genotype_Y)){
+              paste0(input$picker_Y, " (relative to ", input$ref_genotype_Y, ")")
+            }else{
+              input$picker_Y
+            }
+          ) +
           scale_shape(name = input$picker_SHAPE) +
           scale_size(name = input$picker_SIZE) +
           scale_color_custom(
@@ -218,13 +315,15 @@ mod_scatterplot_server <- function(id, rv){
       })
 
       output$debug <- renderPrint({
+        rv$data_plot_aggr$VAR_Y_PLOT
+        rv$data_plot_aggr$VAR_X_PLOT
         list(
-          # input$picker_Y,
-          # rv$data_plot_filt,
-          # rv$column_datasource
-          # input$scatterplot_hover,
+          # rv$column_datasource,
           # input$scatterplot_click,
-          # input$scatterplot_brush,
+          # nearPoints(rv$data_plot_aggr, input$scatterplot_click, xvar = "VAR_X_PLOT", yvar = "VAR_Y_PLOT"),
+          # nearPoints(rv$data_plot_aggr, input$scatterplot_hover, xvar = "VAR_X_PLOT", yvar = "VAR_Y_PLOT"),
+          # nearPoints(rv$data_plot_aggr, input$scatterplot_brush, xvar = "VAR_X_PLOT", yvar = "VAR_Y_PLOT"),
+          # rv$data_plot_aggr[,.N,germplasmName][N>1],
           rv$data_plot_aggr
         )
       })
