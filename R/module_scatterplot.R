@@ -207,8 +207,12 @@ mod_scatterplot_server <- function(id, rv){
           studyDbId %in% input$env,
           .(
             N_obs = .N,
-            VAR_X = do.call(what = input$aggreg_fun_X, args = list(x = eval(as.name(input$picker_X)), na.rm = T)),
-            VAR_Y = do.call(what = input$aggreg_fun_Y, args = list(x = eval(as.name(input$picker_Y)), na.rm = T)),
+            VAR_X = do.call(what = input$aggreg_fun_X, args = list(
+              x = if(isTruthy(input$picker_X)) eval(as.name(input$picker_X)) else NA,
+              na.rm = T)),
+            VAR_Y = do.call(what = input$aggreg_fun_Y, args = list(
+              x = if(isTruthy(input$picker_Y)) eval(as.name(input$picker_Y)) else NA,
+              na.rm = T)),
             VAR_SHAPE = do.call(what = input$aggreg_fun_SHAPE, args = list(
               x = if(input$switch_SHAPE) eval(as.name(input$picker_SHAPE)) else NA,
               na.rm = T)),
@@ -270,8 +274,7 @@ mod_scatterplot_server <- function(id, rv){
 
 
       output$scatterplot <- renderPlot({
-        req(rv$data_plot_aggr$VAR_X_PLOT)
-        req(rv$data_plot_aggr$VAR_Y_PLOT)
+        req(rv$data_plot_aggr)
         p <- ggplot(rv$data_plot_aggr, aes(
           x = VAR_X_PLOT, y = VAR_Y_PLOT,
           colour = if(input$switch_COLOUR == T) VAR_COLOUR else NULL,
