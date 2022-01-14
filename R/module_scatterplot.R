@@ -17,34 +17,52 @@ mod_scatterplot_ui <- function(id){
             onInitialize = I('function() { this.setValue(""); }')
           )
         ),
-        pickerInput(ns("aggregate_by"), "Aggregate by", choices =  c("environment", "plot", "germplasm"), multiple = F),
+        materialSwitch(inputId = ns("switch_aggregate"), label = "Aggregate observations", value = F, inline = T),
+        div(class = ns("ui_aggregate"),
+            pickerInput(ns("aggregate_by"), "Aggregate by", choices =  c("germplasm and environment", "germplasm"), selected = "germplasm", multiple = F)
+        ),
         tags$label("X", style = "display:block"),
         pickerInput(ns("picker_X"), "Variable", choices = NULL, inline = T),
-        pickerInput(ns("aggreg_fun_X"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T),
+        div(
+          class = ns("ui_aggregate"), style = "display:inline-block",
+          pickerInput(ns("aggreg_fun_X"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
+        ),
         div(radioButtons(ns("express_X_as"), "Show values", choices = "", inline = T), style = "display:inline-block"),
         div(id = ns("div_ref_genotype_X"), pickerInput(ns("ref_genotype_X"), "", choices = NULL, inline = T), style = "display:inline-block"),
         tags$label("Y", style = "display:block"),
         pickerInput(ns("picker_Y"), "Variable", choices = NULL, inline = T),
-        pickerInput(ns("aggreg_fun_Y"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T),
+        div(
+          class = ns("ui_aggregate"), style = "display:inline-block",
+          pickerInput(ns("aggreg_fun_Y"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
+        ),
         div(radioButtons(ns("express_Y_as"), "Show values", choices = "", inline = T), style = "display:inline-block"),
         div(id = ns("div_ref_genotype_Y"), pickerInput(ns("ref_genotype_Y"), "", choices = NULL, inline = T), style = "display:inline-block"),
         materialSwitch(inputId = ns("switch_SHAPE"), label = "Shape", value = F),
         div(
           id = ns("ui_SHAPE"),
           pickerInput(ns("picker_SHAPE"), "Variable", choices = NULL, inline = T),
-          pickerInput(ns("aggreg_fun_SHAPE"), "Aggregation function", choices = c("concatenate unique values"="unique_values"), inline = T)
+          div(
+            class = ns("ui_aggregate"), style = "display:inline-block",
+            pickerInput(ns("aggreg_fun_SHAPE"), "Aggregation function", choices = c("concatenate unique values"="unique_values"), inline = T)
+          )
         ),
         materialSwitch(inputId = ns("switch_COLOUR"), label = "Colour", value = F),
         div(
           id = ns("ui_COLOUR"),
           pickerInput(ns("picker_COLOUR"), "Variable", choices = NULL, inline = T),
-          pickerInput(ns("aggreg_fun_COLOUR"), "Aggregation function", choices = NULL, inline = T)
+          div(
+            class = ns("ui_aggregate"), style = "display:inline-block",
+            pickerInput(ns("aggreg_fun_COLOUR"), "Aggregation function", choices = NULL, inline = T)
+          )
         ),
         materialSwitch(inputId = ns("switch_SIZE"), label = "Size", value = F),
         div(
           id = ns("ui_SIZE"),
           pickerInput(ns("picker_SIZE"), "Variable", choices = NULL, inline = T),
-          pickerInput(ns("aggreg_fun_SIZE"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
+          div(
+            class = ns("ui_aggregate"), style = "display:inline-block",
+            pickerInput(ns("aggreg_fun_SIZE"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
+          )
         )
       )
     ),
@@ -130,8 +148,9 @@ mod_scatterplot_server <- function(id, rv){
           session = session, inputId = "picker_SIZE",
           choices = setNames(num_var_choices[,cols], num_var_choices[,source])
         )
-        updatePickerInput(          session = session, inputId = "picker_COLOUR",
-                                    choices = setNames(var_choices_all[,cols], var_choices_all[,source])
+        updatePickerInput(
+          session = session, inputId = "picker_COLOUR",
+          choices = setNames(var_choices_all[,cols], var_choices_all[,source])
         )
         updatePickerInput(
           session = session, inputId = "picker_SHAPE",
@@ -159,11 +178,11 @@ mod_scatterplot_server <- function(id, rv){
       })
 
       ## disable "express relatively to genotype" if aggregation by plot
-      observeEvent(input$aggregate_by, {
-        if(input$aggregate_by %in% c("environment", "germplasm")){
+      observeEvent(input$switch_aggregate, {
+        if(input$switch_aggregate == T){
           updateRadioButtons(session, "express_X_as", choices = c("as they are", "as ranks", "relatively to genotype"), inline = T)
           updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks", "relatively to genotype"), inline = T)
-        }else  if(input$aggregate_by %in% c("plot")){
+        }else{
           updateRadioButtons(session, "express_X_as", choices = c("as they are", "as ranks"), inline = T)
           updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks"), inline = T)
         }
@@ -185,24 +204,25 @@ mod_scatterplot_server <- function(id, rv){
       observe({shinyjs::toggle("div_ref_genotype_X", condition = input$express_X_as=="relatively to genotype")})
       observe({shinyjs::toggle("div_ref_genotype_Y", condition = input$express_Y_as=="relatively to genotype")})
       ## toggle aes UI
+      observe({shinyjs::toggle(selector = paste0(".",ns("ui_aggregate")), condition = input$switch_aggregate==T)})
       observe({shinyjs::toggle("ui_SHAPE", condition = input$switch_SHAPE==T)})
       observe({shinyjs::toggle("ui_COLOUR", condition = input$switch_COLOUR==T)})
       observe({shinyjs::toggle("ui_SIZE", condition = input$switch_SIZE==T)})
 
 
       ## aggreg dataset
-      aggregate_col_def <- data.table(
-        aggregate_by = c("plot", "environment","germplasm"),
-        cols = c(list(c("studyName", "germplasmName","observationUnitName")),
-                 list(c("studyName", "germplasmName")),
-                 list(c("germplasmName"))
-        )
-      )
-
       observe({
         rv$data_plot_aggr <- NULL
-        group_by_cols <- unlist(aggregate_col_def[aggregate_by == input$aggregate_by,cols])
         req(rv$data_plot)
+        if(input$switch_aggregate== T){
+          if(input$aggregate_by == "germplasm and environment"){
+            group_by_cols <- c("studyName", "germplasmName")
+          }else if(input$aggregate_by == "germplasm"){
+            group_by_cols <- c("germplasmName")
+          }
+        }else{
+          group_by_cols <- names(rv$data_plot)[grep("Id$",names(rv$data_plot))]
+        }
         req(input$picker_X %in% names(rv$data_plot))
         req(input$picker_Y %in% names(rv$data_plot))
         req(input$picker_COLOUR %in% names(rv$data_plot))
@@ -242,11 +262,12 @@ mod_scatterplot_server <- function(id, rv){
         }else if(input$express_X_as=="relatively to genotype" & !(input$aggregate_by %in% c("plot"))){
           # - variation to genotype
           req(input$ref_genotype_X)
-          group_by_cols <- unlist(aggregate_col_def[aggregate_by == input$aggregate_by,cols])
           if(input$aggregate_by=="germplasm"){
+            group_by_cols <- c("germplasmName")
             ref_val <- data_plot_aggr[germplasmName == input$ref_genotype_X, VAR_X]
             data_plot_aggr[,reference_value:=ref_val]
-          }else if(input$aggregate_by=="environment"){
+          }else if(input$aggregate_by=="germplasm and environment"){
+            group_by_cols <- c("studyName", "germplasmName")
             ref_val <- data_plot_aggr[germplasmName == input$ref_genotype_X, .(reference_value = VAR_X), by = group_by_cols]
             setkeyv(ref_val, group_by_cols)
             setkeyv(data_plot_aggr, group_by_cols)
@@ -263,11 +284,12 @@ mod_scatterplot_server <- function(id, rv){
         }else if(input$express_Y_as=="relatively to genotype" & !(input$aggregate_by %in% c("plot"))){
           # - variation to genotype
           req(input$ref_genotype_Y)
-          group_by_cols <- unlist(aggregate_col_def[aggregate_by == input$aggregate_by,cols])
           if(input$aggregate_by=="germplasm"){
+            group_by_cols <- c("germplasmName")
             ref_val <- data_plot_aggr[germplasmName == input$ref_genotype_Y, VAR_Y]
             data_plot_aggr[,reference_value:=ref_val]
-          }else if(input$aggregate_by=="environment"){
+          }else if(input$aggregate_by=="germplasm and environment"){
+            group_by_cols <- c("studyName", "germplasmName")
             ref_val <- data_plot_aggr[germplasmName == input$ref_genotype_Y, .(reference_value = VAR_Y), by = group_by_cols]
             setkeyv(ref_val, group_by_cols)
             setkeyv(data_plot_aggr, group_by_cols)
