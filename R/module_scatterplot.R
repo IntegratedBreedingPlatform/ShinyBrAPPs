@@ -180,22 +180,36 @@ mod_scatterplot_server <- function(id, rv){
         )
       })
 
-      ## disable "express relatively to genotype" if aggregation by plot
-      observeEvent(input$switch_aggregate, {
-        # XXX
-          # non_num_var_choices <- rv$column_datasource[type != "Numerical",.(cols = list(cols)), source]
-          # print(non_num_var_choices)
+      ## if aggregation by plot
+      # - disable "express relatively to genotype"
+      # - disable the categorical variables that would need to be aggregated
+      observeEvent(c(input$switch_aggregate, input$aggregate_by), {
+        req(rv$column_datasource)
+        num_var_choices <- rv$column_datasource[type == "Numerical",.(cols = list(cols)), source]
         if(input$switch_aggregate == T){
           updateRadioButtons(session, "express_X_as", choices = c("as they are", "as ranks", "relatively to genotype"), inline = T)
           updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks", "relatively to genotype"), inline = T)
+          if(input$aggregate_by == "germplasm and environment"){
+            var_choices_SHAPE <- rv$column_datasource[type != "Numerical" & !(source %in% "plot"),.(cols = list(cols)), source]
+            var_choices_COLOUR <- rv$column_datasource[type == "Numerical" | !(source %in% c("plot")),.(cols = list(cols)), source]
+          }else if(input$aggregate_by == "germplasm"){
+            var_choices_SHAPE <- rv$column_datasource[type != "Numerical" & !(source %in% c("plot", "environment")),.(cols = list(cols)), source]
+            var_choices_COLOUR <- rv$column_datasource[type == "Numerical" | !(source %in% c("plot", "environment")),.(cols = list(cols)), source]
+          }
         }else{
           updateRadioButtons(session, "express_X_as", choices = c("as they are", "as ranks"), inline = T)
           updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks"), inline = T)
-          # updatePickerInput(
-          #   session = session, inputId = "picker_SHAPE",
-          #   choices = setNames(non_num_var_choices[,cols], non_num_var_choices[,source])
-          # )
+          var_choices_SHAPE <- rv$column_datasource[type != "Numerical",.(cols = list(cols)), source]
+          var_choices_COLOUR <- rv$column_datasource[,.(cols = list(cols)), source]
         }
+        updatePickerInput(
+          session = session, inputId = "picker_SHAPE",
+          choices = setNames(var_choices_SHAPE[,cols], var_choices_SHAPE[,source])
+        )
+        updatePickerInput(
+          session = session, inputId = "picker_COLOUR",
+          choices = setNames(var_choices_COLOUR[,cols], var_choices_COLOUR[,source])
+        )
       })
 
       ## update colour aggreg functions (colour can be num or categorical)

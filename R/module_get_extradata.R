@@ -69,6 +69,7 @@ mod_get_extradata_server <- function(id, rv){
 
         ## environment
         column_datasource[cols %in% names(environmentParameters_casted) & cols != "studyDbId", source := "environment"]
+        column_datasource[grep("study|location|trial",cols), source := "environment"]
 
         ## germplasm
         column_datasource[grepl("germplasm", cols), source := "germplasm"]
