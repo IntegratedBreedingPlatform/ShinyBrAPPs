@@ -67,11 +67,14 @@ mod_get_extradata_server <- function(id, rv){
         traits <- data_tmp[, unique(observations.observationVariableName)]
         column_datasource[cols %in% traits, source := "GxE"]
 
-        # environment
+        ## environment
         column_datasource[cols %in% names(environmentParameters_casted) & cols != "studyDbId", source := "environment"]
 
         ## germplasm
         column_datasource[grepl("germplasm", cols), source := "germplasm"]
+
+        ## assign column types
+        column_datasource <- merge.data.table(column_datasource, column_types[,.(column, type)], by.x = "cols", by.y = "column", all.x = T)
 
         rv$data_plot <- data_tmp_2
         rv$column_datasource <- column_datasource

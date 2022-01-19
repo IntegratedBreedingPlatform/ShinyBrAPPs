@@ -107,10 +107,21 @@ mod_scatterplot_server <- function(id, rv){
         }
       }
 
+
       observe({
         req(rv$data_plot)
         req(rv$column_datasource)
+
+        ## turn numeric variables that should not be numeric into text
+        for(col in names(rv$data_plot)[
+          rv$data_plot[, lapply(.SD, is.numeric)]==T &
+          names(rv$data_plot) %in% rv$column_datasource[type != "Numerical", cols]
+        ]){
+            rv$data_plot[, c(col) := list(as.character(eval(as.name(col))))]
+        }
+
         column_datasource <- rv$column_datasource
+
         ## update environments
         envs <- unique(rv$data_plot[,.(studyDbId, studyName)])
         env_choices <- envs[,studyDbId]
@@ -120,20 +131,12 @@ mod_scatterplot_server <- function(id, rv){
           choices = env_choices, selected = env_choices
         )
 
-        ## which variables can be numerical
-        # XXX
-        are_num <- rv$data_plot[,lapply(.SD, is.numeric)]
-        numeric_variables <- names(are_num)[are_num==T]
-        non_numeric_variables <- names(are_num)[are_num==F]
-        column_datasource[,is_num:=F]
-        column_datasource[cols %in% numeric_variables,is_num:=T]
-
         ## update variable selectors
-        num_var_choices <- column_datasource[is_num==T,.(cols = list(cols)), source]
-        non_num_var_choices <- column_datasource[is_num==F,.(cols = list(cols)), source]
-        var_choices_all <- column_datasource[,.(cols = list(cols)), source]
-        default_X <- column_datasource[is_num == T & source == "GxE"][1, cols]
-        default_Y <- column_datasource[is_num == T & source == "GxE"][2, cols]
+        num_var_choices <- rv$column_datasource[type == "Numerical",.(cols = list(cols)), source]
+        non_num_var_choices <- rv$column_datasource[type != "Numerical",.(cols = list(cols)), source]
+        var_choices_all <- rv$column_datasource[,.(cols = list(cols)), source]
+        default_X <- rv$column_datasource[type == "Numerical" & source == "GxE"][1, cols]
+        default_Y <- rv$column_datasource[type == "Numerical" & source == "GxE"][2, cols]
         updatePickerInput(
           session = session, inputId = "picker_X",
           choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
@@ -179,19 +182,26 @@ mod_scatterplot_server <- function(id, rv){
 
       ## disable "express relatively to genotype" if aggregation by plot
       observeEvent(input$switch_aggregate, {
+        # XXX
+          # non_num_var_choices <- rv$column_datasource[type != "Numerical",.(cols = list(cols)), source]
+          # print(non_num_var_choices)
         if(input$switch_aggregate == T){
           updateRadioButtons(session, "express_X_as", choices = c("as they are", "as ranks", "relatively to genotype"), inline = T)
           updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks", "relatively to genotype"), inline = T)
         }else{
           updateRadioButtons(session, "express_X_as", choices = c("as they are", "as ranks"), inline = T)
           updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks"), inline = T)
+          # updatePickerInput(
+          #   session = session, inputId = "picker_SHAPE",
+          #   choices = setNames(non_num_var_choices[,cols], non_num_var_choices[,source])
+          # )
         }
       })
 
       ## update colour aggreg functions (colour can be num or categorical)
       observeEvent(input$picker_COLOUR, {
         req(input$picker_COLOUR)
-        COLOUR_is_num <- rv$column_datasource[cols == input$picker_COLOUR, is_num]
+        COLOUR_is_num <- rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"]
         choices_fun <- aggreg_functions[for_num == COLOUR_is_num, fun]
         names(choices_fun) <- aggreg_functions[for_num == COLOUR_is_num, label]
         updatePickerInput(
@@ -229,7 +239,7 @@ mod_scatterplot_server <- function(id, rv){
         req(input$picker_SIZE %in% names(rv$data_plot))
         req(input$picker_SHAPE %in% names(rv$data_plot))
         req(input$aggreg_fun_COLOUR)
-        req(aggreg_functions[fun == input$aggreg_fun_COLOUR, for_num] == rv$column_datasource[cols == input$picker_COLOUR, is_num])
+        req(aggreg_functions[fun == input$aggreg_fun_COLOUR, for_num] == rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"])
         data_plot_aggr <- rv$data_plot[
           studyDbId %in% input$env,
           .(
@@ -336,7 +346,7 @@ mod_scatterplot_server <- function(id, rv){
           scale_shape(name = input$picker_SHAPE) +
           scale_size(name = input$picker_SIZE) +
           scale_color_custom(
-            is_num = rv$column_datasource[cols == isolate(input$picker_COLOUR), is_num],
+            is_num = rv$column_datasource[cols == isolate(input$picker_COLOUR), type == "Numerical"],
             name = isolate(input$picker_COLOUR)
           ) +
           theme_minimal() +
