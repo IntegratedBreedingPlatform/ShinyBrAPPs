@@ -5,7 +5,7 @@ mod_model_ui <- function(id){
     12,
     fluidRow(
       column(
-        3,
+        4,
         pickerInput(
           ns("select_environments"), "Select Environments", multiple = TRUE, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
         )
@@ -39,10 +39,6 @@ mod_model_ui <- function(id){
                     # choices = c("SpATS", "lme4", "asreml"),
                     selected = "lme4",
                     width = "100%")
-      ),
-      column(
-        1,
-        shiny::actionButton(ns("go_fit_model"), "Fit model")
       )
     ),
     fluidRow(
@@ -61,6 +57,7 @@ mod_model_ui <- function(id){
         )
       )
     ),
+    fluidRow(column(12,shiny::actionButton(ns("go_fit_model"), "Fit model"))),
     fluidRow(
       column(
         12,
