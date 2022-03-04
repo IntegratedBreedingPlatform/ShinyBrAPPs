@@ -329,15 +329,17 @@ mod_dataquality_server <- function(id, rv){
 
         ## drawing a vertical and horizontal lines for replicates
         repBords <- rbindlist(lapply(input$studies, function(tr){
-          repBord <- calcPlotBorders(as.data.frame(data_dq[studyDbId==tr, .(
-            rowCoord = as.numeric(positionCoordinateY),
-            colCoord = as.numeric(positionCoordinateX),
-            repId = as.numeric(replicate))]), bordVar = "repId")
-          repBord$horW$W <- "horW"
-          repBord$vertW$W <- "vertW"
-          repBordBind <- rbindlist(repBord, use.names = T, fill = T)
-          repBordBind[,study_name_BMS := data_dq[studyDbId==tr, unique(study_name_BMS)]]
-          repBordBind
+          if(rv$data_dq[studyDbId==tr, any(!is.na(positionCoordinateY))]){
+            repBord <- calcPlotBorders(as.data.frame(data_dq[studyDbId==tr, .(
+              rowCoord = as.numeric(positionCoordinateY),
+              colCoord = as.numeric(positionCoordinateX),
+              repId = as.numeric(replicate))]), bordVar = "repId")
+            repBord$horW$W <- "horW"
+            repBord$vertW$W <- "vertW"
+            repBordBind <- rbindlist(repBord, use.names = T, fill = T)
+            repBordBind[,study_name_BMS := data_dq[studyDbId==tr, unique(study_name_BMS)]]
+            repBordBind
+          }
         }), use.names = T, fill = T)
         g2 <- g2 +
           ggplot2::geom_segment(ggplot2::aes_string(x = "x - 0.5",
