@@ -361,7 +361,10 @@ mod_model_server <- function(id, rv){
 
       observeEvent(input$select_environments, {
         ## update experimental design
-        design_pui <- rv$study_metadata[study_name_app %in% input$select_environments,unique(experimentalDesign.pui)]
+        design_pui <- NA
+        if("experimentalDesign.pui"%in%names(rv$study_metadata)){
+          design_pui <- rv$study_metadata[study_name_app %in% input$select_environments,unique(experimentalDesign.pui)]
+        }
         StatGenSTA_code <- exp_designs_corresp[BMS_pui %in% design_pui, StatGenSTA_code]
 
         if(length(StatGenSTA_code)==1){
