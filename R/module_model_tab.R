@@ -195,7 +195,7 @@ mod_model_server <- function(id, rv){
         )
       })
 
-      observeEvent(input$select_environments,{
+      observeEvent(c(input$select_environments, rv$excluded_obs),{
         ## only traits found in all environments can be selected
         trait_by_studyDbIds <- rv$data[study_name_app %in% input$select_environments,.(trait = unique(observations.observationVariableName)), .(studyDbId)]
         choices_traits <- trait_by_studyDbIds[,.N,trait][N==length(trait_by_studyDbIds[,unique(studyDbId)]), trait]
@@ -221,7 +221,7 @@ mod_model_server <- function(id, rv){
         # NB: choices_model_design is defined in inst/apps/stabrapp/config.R
         # For the following code to work, the item order in choices_model_design has to be: "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"
 
-        data_filt <- rv$data[!(observations.observationDbId %in% rv$excluded_observations) & (study_name_app %in% input$select_environments)]
+        data_filt <- rv$data[!(observations.observationDbId %in% rv$excluded_obs) & (study_name_app %in% input$select_environments)]
         has_subBlocks <- data_filt[,.N,.(blockNumber)][,.N]>1
         has_repIds <- data_filt[,.N,.(replicate)][,.N]>1
         has_coords <- data_filt[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1
@@ -234,14 +234,29 @@ mod_model_server <- function(id, rv){
           has_coords & has_repIds # matches "res.rowcol"
         )]
 
-        updatePickerInput(
-          session,"model_design",
-          choices = possible_designs,
-          options = list(
-            placeholder = 'Select 1 or more traits',
-            onInitialize = I('function() { this.setValue(""); }')
+        ## set default experimental design
+        design_pui <- NA
+        if("experimentalDesign.pui"%in%names(rv$study_metadata)){
+          design_pui <- rv$study_metadata[study_name_app %in% input$select_environments,unique(experimentalDesign.pui)]
+        }
+        StatGenSTA_code <- exp_designs_corresp[BMS_pui %in% design_pui, StatGenSTA_code]
+        if(length(StatGenSTA_code)==1){
+          updatePickerInput(
+            session, "model_design",
+            choices = possible_designs,
+            selected = StatGenSTA_code
           )
-        )
+        }else{
+          updatePickerInput(
+            session, "model_design",
+            choices = possible_designs,
+            selected = "",
+            options = list(
+              title = "Select Model Design",
+              onInitialize = I('function() { this.setValue(""); }')
+            )
+          )
+        }
 
         rv_mod$data_checks <- list(
           has_subBlocks = has_subBlocks,
@@ -252,8 +267,7 @@ mod_model_server <- function(id, rv){
         ###  create TD without the excluded observations
 
         ## exclude observations
-        data_filtered <- rv$data[!(observations.observationDbId %in% rv$excluded_observations)]
-
+        data_filtered <- rv$data[!(observations.observationDbId %in% rv$excluded_obs)]
         ## make 1 column per trait
         data_filtered_casted <- dcast(
           data = data_filtered[,.(
@@ -354,31 +368,6 @@ mod_model_server <- function(id, rv){
         updatePickerInput(
           session, "covariates", choices = choices_cov, selected = NULL
         )
-      })
-
-      observeEvent(input$select_environments, {
-        ## update experimental design
-        design_pui <- NA
-        if("experimentalDesign.pui"%in%names(rv$study_metadata)){
-          design_pui <- rv$study_metadata[study_name_app %in% input$select_environments,unique(experimentalDesign.pui)]
-        }
-        StatGenSTA_code <- exp_designs_corresp[BMS_pui %in% design_pui, StatGenSTA_code]
-
-        if(length(StatGenSTA_code)==1){
-          updatePickerInput(
-            session, "model_design",
-            selected = StatGenSTA_code
-          )
-        }else{
-          updatePickerInput(
-            session, "model_design",
-            selected = "",
-            options = list(
-              title = "Select Model Design",
-              onInitialize = I('function() { this.setValue(""); }')
-            )
-          )
-        }
       })
 
       output$table_model_design_metadata <- renderDT({
@@ -565,7 +554,7 @@ mod_model_server <- function(id, rv){
         req(rv$fit)
         req(input$select_trait_outliers)
         stdResR <- as.data.table(extractSTA(STA = rv$fit, traits = input$select_trait_outliers, what = "stdResR"))
-        res_q <- quantile(abs(stdResR[[input$select_trait_outliers]]), probs = seq(0,1,0.01))
+        res_q <- quantile(abs(stdResR[[input$select_trait_outliers]]), probs = seq(0,1,0.01), na.rm = T)
         updateSliderInput(
           session = session, "limit_residual",
           max = as.numeric(res_q[101]),
