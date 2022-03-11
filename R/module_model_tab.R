@@ -507,7 +507,7 @@ mod_model_server <- function(id, rv){
                       plots_envs[[k]][[input$select_environment_fit[k]]][[input$select_trait_fit]],
                       ncol=2,
                       top = paste0("Trial: ", input$select_environment_fit[k],
-                                   " Trait: ", input$select_trait_fit)
+                                   "\nTrait: ", input$select_trait_fit)
                     )
             )
           })
@@ -519,26 +519,30 @@ mod_model_server <- function(id, rv){
 
         output$fit_spatial <- renderPlot({
           req(rv$fit)
-          req(rv_mod$data_checks$has_coords)
+          isolate(req(rv_mod$data_checks$has_coords))
           req(input$select_environment_fit)
-
           plots_envs <- lapply(input$select_environment_fit, function(trial){
-            plot(
-              rv$fit,
-              plotType = "spatial",
-              trait = input$select_trait_fit,
-              trials = trial,
-              output = F
-            )
+            if(rv$data[observations.observationVariableName == input$select_trait_fit & study_name_app == trial,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
+              plot(
+                rv$fit,
+                plotType = "spatial",
+                trait = input$select_trait_fit,
+                trials = trial,
+                output = F
+              )
+            }else{
+              a_STATgen_like_list <- list()
+              a_STATgen_like_list[[trial]][[input$select_trait_fit]][["p1"]] <- ggplot() + geom_text(aes(x = 0, y = 0), label = "no spatial data") + theme_void()
+              a_STATgen_like_list
+            }
           })
-
           plot_envs <- lapply(1:length(input$select_environment_fit), function(k){
             do.call("arrangeGrob",
                     c(
                       plots_envs[[k]][[input$select_environment_fit[k]]][[input$select_trait_fit]],
                       ncol=2,
                       top = paste0("Trial: ", input$select_environment_fit[k],
-                                   " Trait: ", input$select_trait_fit)
+                                   "\nTrait: ", input$select_trait_fit)
                     )
             )
           })
