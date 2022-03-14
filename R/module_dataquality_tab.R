@@ -309,8 +309,6 @@ mod_dataquality_server <- function(id, rv){
               replicate = replicate,
               plotNumber = plotNumber,
               blockNumber = blockNumber,
-              positionCoordinateX = positionCoordinateX,
-              positionCoordinateY = positionCoordinateY,
               entryType = entryType
             )
           ) +
@@ -325,7 +323,7 @@ mod_dataquality_server <- function(id, rv){
           scale_alpha(guide = "none") +
           # scale_linetype(guide = "none") +
           theme_minimal() +
-          theme(panel.margin = unit(0, "lines"), panel.grid = element_blank(), axis.line = element_blank(), axis.text = element_blank(), axis.title = element_blank())
+          theme(panel.spacing = unit(0, "lines"), panel.grid = element_blank(), axis.line = element_blank(), axis.text = element_blank(), axis.title = element_blank())
 
         ## drawing a vertical and horizontal lines for replicates
         repBords <- rbindlist(lapply(input$studies, function(tr){
