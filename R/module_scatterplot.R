@@ -4,7 +4,7 @@ mod_scatterplot_ui <- function(id){
   tagList(
     fluidRow(
       column(
-        12,
+        4,
         pickerInput(
           inputId = ns("env"),
           label = "Environments",
@@ -64,16 +64,52 @@ mod_scatterplot_ui <- function(id){
             pickerInput(ns("aggreg_fun_SIZE"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
           )
         )
+      ),
+      column(8,
+             plotlyOutput(
+               ns("scatterplot"), width = "100%", height = "600px"
+               # click = ns("scatterplot_click"),
+               # hover = ns("scatterplot_hover"),
+               # brush = ns("scatterplot_brush")
+             ),
+             actionButton(ns("go_clusters"), "Clusters (NOT IMPLEMENTED)"),
+             actionButton(ns("go_regressions"), "Regressions (NOT IMPLEMENTED"),
+             span(class = ns("ui_create_group"), style = "display: none;",
+                  actionButton(ns("go_create_group"), "Create selection group")
+             ),
+             bsModal(ns("modal_create_group"), "Create group", NULL, size = "small",
+                     uiOutput(ns("modal_create_group_ui")))
+      )
+    ),
+    fluidRow(
+      column(10,uiOutput(ns("ui_groups"))),
+      column(2,
+             div(
+               class = ns("group_actions"), style = "display: none",
+               div(
+                 tags$label("Visualize groups"),
+                 actionButton(ns("action_groups_plot"),label = "Plot", block = T),
+                 div(
+                   tags$label("Create new group"),
+                   div(
+                     class = ns("create_new_groups_from_1+_groups"), style = "display: none",
+                     actionButton(ns("action_groups_union"),label = "Union", block = T),
+                     actionButton(ns("action_groups_intersect"),label = "Intersect", block = T),
+                   ),
+                   div(
+                     actionButton(ns("action_groups_complement"),label = "Complement", block = T)
+                   )
+                 ),
+                 div(
+                   tags$label("Export groups"),
+                   actionButton(ns("action_groups_export"),label = "Export", block = T),
+                 )
+               )
+             ),
       )
     ),
     fluidRow(
       column(12,
-             plotOutput(
-               ns("scatterplot"), width = "100%", height = "600px",
-               click = ns("scatterplot_click"),
-               hover = ns("scatterplot_hover"),
-               brush = ns("scatterplot_brush")
-             ),
              verbatimTextOutput(ns("debug"))
       )
     )
@@ -89,6 +125,9 @@ mod_scatterplot_server <- function(id, rv){
       ns <- session$ns
       rv_plot <- reactiveValues()
 
+      rv_plot$groups <- data.table()
+      rv_plot$plot_groups <- F # switch that tells ggplot to color the graph based on selected groups (default is F => plot colors by input$picker_COLOUR)
+
       ## function for data aggregation
       aggreg_functions <- data.table(
         fun = c("mean", "max", "min", "sum", "unique_values"),
@@ -96,7 +135,11 @@ mod_scatterplot_server <- function(id, rv){
         for_num = c(T,T,T,T,F)
       )
       unique_values <- function(x, ...){
-        paste(unique(x), collapse = ", ")
+        xx <- unique(x)
+        if(any(!is.na(xx))){
+          xx <- xx[!is.na(xx)]
+        }
+        paste(unique(xx), collapse = ", ")
       }
       ## util for the scatterplot
       scale_color_custom <- function(is_num, name, ...){
@@ -117,7 +160,7 @@ mod_scatterplot_server <- function(id, rv){
           rv$data_plot[, lapply(.SD, is.numeric)]==T &
           names(rv$data_plot) %in% rv$column_datasource[type != "Numerical", cols]
         ]){
-            rv$data_plot[, c(col) := list(as.character(eval(as.name(col))))]
+          rv$data_plot[, c(col) := list(as.character(eval(as.name(col))))]
         }
 
         column_datasource <- rv$column_datasource
@@ -236,16 +279,15 @@ mod_scatterplot_server <- function(id, rv){
 
       ## aggreg dataset
       observe({
-        rv$data_plot_aggr <- NULL
         req(rv$data_plot)
         if(input$switch_aggregate== T){
           if(input$aggregate_by == "germplasm and environment"){
-            group_by_cols <- c("studyName", "germplasmName")
-          }else if(input$aggregate_by == "germplasm"){
-            group_by_cols <- c("germplasmName")
+            group_by_cols <- c("studyName", "germplasmName", "germplasmDbId")
+          }else if(input$aggregate_by == c("germplasm")){
+            group_by_cols <- c("germplasmName", "germplasmDbId")
           }
         }else{
-          group_by_cols <- names(rv$data_plot)[grep("Id$",names(rv$data_plot))]
+          group_by_cols <- names(rv$data_plot)[grep("Id$|germplasmName",names(rv$data_plot))]
         }
         req(input$picker_X %in% names(rv$data_plot))
         req(input$picker_Y %in% names(rv$data_plot))
@@ -253,11 +295,16 @@ mod_scatterplot_server <- function(id, rv){
         req(input$picker_SIZE %in% names(rv$data_plot))
         req(input$picker_SHAPE %in% names(rv$data_plot))
         req(input$aggreg_fun_COLOUR)
-        req(aggreg_functions[fun == input$aggreg_fun_COLOUR, for_num] == rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"])
+        if(rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"]==T){
+          req(input$aggreg_fun_COLOUR)
+          req(aggreg_functions[fun == input$aggreg_fun_COLOUR, for_num] == rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"])
+        }
         data_plot_aggr <- rv$data_plot[
           studyDbId %in% input$env,
           .(
             N_obs = .N,
+            # observationDbIds = list(), ## XXX
+            # germplasm = paste(germplasmName, collapse = ", "),
             VAR_X = do.call(what = input$aggreg_fun_X, args = list(
               x = if(isTruthy(input$picker_X)) eval(as.name(input$picker_X)) else NA,
               na.rm = T)),
@@ -334,17 +381,38 @@ mod_scatterplot_server <- function(id, rv){
           }
         }
 
+        isolate({
+          rv_plot$plot_groups <- F # switch that tells ggplot to colour the graph based on selected groups (default is F => plot colours by input$picker_COLOUR)
+        })
         rv$data_plot_aggr <- data_plot_aggr
       })
 
 
-      output$scatterplot <- renderPlot({
+      output$scatterplot <- renderPlotly({
+        input$action_groups_plot
         req(rv$data_plot_aggr)
-        p <- ggplot(rv$data_plot_aggr, aes(
+        req(rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"] == is.numeric(rv$data_plot_aggr[,VAR_COLOUR]))
+        d <- rv$data_plot_aggr
+        d[, "Germplasm Name" := germplasmName] # workaround for the plotly tooltip
+        d[, "X value" := VAR_X_PLOT] # workaround for the plotly tooltip
+        d[, "Y value" := VAR_Y_PLOT] # workaround for the plotly tooltip
+        # d[, eval(input$picker_Y) := VAR_Y_PLOT]
+        d[, "Shape scale" := if(input$switch_SHAPE == T) VAR_SHAPE else NA] # workaround for the plotly tooltip
+        d[, "Colour scale" := if(input$switch_COLOUR == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
+        d[, "Size scale" := if(input$switch_SIZE == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
+        # p <- ggplot(rv$data_plot_aggr, aes(
+        p <- ggplot(d, aes(
           x = VAR_X_PLOT, y = VAR_Y_PLOT,
-          colour = if(input$switch_COLOUR == T) VAR_COLOUR else NULL,
+          colour = if(input$switch_COLOUR == T | rv_plot$plot_groups == T) VAR_COLOUR else NULL,
           shape = if(input$switch_SHAPE == T) VAR_SHAPE else NULL,
-          size = if(input$switch_SIZE == T) VAR_SIZE else NULL
+          size = if(input$switch_SIZE == T) VAR_SIZE else NULL,
+          key = germplasmDbId,
+          germplasmName = `Germplasm Name`,
+          x_val = `X value`, # workaround for the plotly tooltip
+          y_val = `Y value`, # workaround for the plotly tooltip
+          Shape = `Shape scale`, # workaround for the plotly tooltip
+          Size = `Size scale`, # workaround for the plotly tooltip
+          Colour = `Colour scale` # workaround for the plotly tooltip
         )) +
           geom_point(alpha = 0.5) +
           scale_x_continuous(
@@ -372,14 +440,207 @@ mod_scatterplot_server <- function(id, rv){
           scale_shape(name = input$picker_SHAPE) +
           scale_size(name = input$picker_SIZE) +
           scale_color_custom(
-            is_num = rv$column_datasource[cols == isolate(input$picker_COLOUR), type == "Numerical"],
-            name = isolate(input$picker_COLOUR)
+            is_num = if(rv_plot$plot_groups==T) F else rv$column_datasource[cols == isolate(input$picker_COLOUR), type == "Numerical"],
+            name = if(rv_plot$plot_groups==T) "Selected groups of genotypes" else isolate(input$picker_COLOUR)
           ) +
-          theme_minimal() +
-          theme(legend.position = "bottom")
+          theme_minimal() #+
+        # theme(legend.position = "bottom") # uneffective with plotyly
 
-        pp <- ggMarginal(p, type = "density", fill =  "black", alpha = 0.05)
-        pp
+        # pp <- ggMarginal(p, type = "density", fill =  "black", alpha = 0.05)
+        # pp
+
+        ggplotly(#height=length(input$studies)*400,
+          p,
+          dynamicTicks = "TRUE", source = "A", originalData = T,
+          tooltip = c("germplasmName", "x_val", "y_val", "Shape", "Colour", "Size")) %>%
+          style(hoverlabel = list(bgcolor = grey(0.3))) %>%
+          layout(dragmode = "lasso")
+      })
+
+      observeEvent(c(event_data("plotly_click", source = "A"),event_data("plotly_selected", source = "A")),{
+        # observeEvent(c(event_data("plotly_click", source = "A"),event_data("plotly_selected", source = "A")),{
+        selection <- rbindlist(list(
+          event_data("plotly_click", source = "A"),
+          event_data("plotly_selected", source = "A")
+        ), use.names = T, fill = T)
+        shinyjs::toggle(selector = paste0(".",ns("ui_create_group")), condition = selection[,.N]>0)
+        req(dim(selection)[1]>0)
+        germplasms <- unique(rv$data[germplasmDbId %in% selection[,unique(key)], .(germplasmDbId, germplasmName)])
+        group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
+        selection_data <- data.table(
+          group_id = group_id,
+          N = germplasms[,.N],
+          germplasmDbIds = list(germplasms$germplasmDbId),
+          germplasmNames = list(germplasms$germplasmName)
+        )
+        selection_data[,germplasmNames_label := if(N>6){
+          paste(
+            paste(unlist(germplasmNames)[1:5], collapse = ", "),
+            paste("and", N - 5, "others")
+          )
+        }else{
+          paste(unlist(germplasmNames), collapse = ", ")
+        }]
+        rv_plot$selection <- selection_data
+      })
+
+      observeEvent(input$go_create_group,{
+        # selection <- rbindlist(list(
+        #   # event_data("plotly_click", source = "A"),
+        #   event_data("plotly_selected", source = "A")
+        # ), use.names = T, fill = T)
+        if(rv_plot$selection[,.N]>0){
+          toggleModal(session, "modal_create_group")
+          # germplasms <- unique(rv$data[germplasmDbId %in% rv$selection[,germplasmDbId], .(germplasmDbId, germplasmName)])
+          # group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
+          output$modal_create_group_ui <- renderUI({
+            tagList(
+              tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
+              tags$p(rv_plot$selection[,germplasmNames_label]),
+              textInput(ns("modal_create_group_text_input_label"), label = "Group label", value = paste("group", rv_plot$selection[,group_id]), placeholder = "group label"),
+              textAreaInput(ns("modal_create_group_text_input_descr"), label = "Group description", placeholder = "group description", resize = "vertical",
+                            value = paste0(
+                              "Visualization at group creation:\nX=",input$picker_X,", \nY=",input$picker_Y,
+                              if(input$switch_COLOUR==T) paste(", \nColour=", input$picker_COLOUR),
+                              if(input$switch_SHAPE==T) paste(", \nShape=", input$picker_SHAPE),
+                              if(input$switch_SIZE==T) paste(", \nSize=", input$picker_SIZE)
+                            )
+              ),
+              actionButton(ns("modal_create_group_go"), label = "Create")
+            )
+          })
+        }
+      })
+
+      observeEvent(input$modal_create_group_go, {
+        rv_plot$selection[, group_name := input$modal_create_group_text_input_label]
+        rv_plot$selection[, group_desc := input$modal_create_group_text_input_descr]
+        rv_plot$groups <- rbindlist(list(
+          rv_plot$groups,
+          rv_plot$selection
+        ))
+        # ), fill = T, use.names = T)
+        toggleModal(session, "modal_create_group", toggle = "close")
+      })
+
+      observeEvent(rv_plot$groups$group_id,{
+        req(rv_plot$groups)
+        output$ui_groups <- renderUI({
+          group_selector(input_id = ns("group_sel_input"), group_table = rv_plot$groups)
+        })
+      })
+
+      observe({
+        shinyjs::toggle(selector = paste0(".",ns("group_actions")), condition = length(input$group_sel_input)>0)
+        shinyjs::toggle(selector = paste0(".",ns("create_new_groups_from_1+_groups")), condition = length(input$group_sel_input)>1)
+      })
+
+      ## Create new groups
+      observeEvent(input$action_groups_union,{
+        toggleModal(session, "modal_create_group")
+        union_germplasms_id <- rv_plot$groups[group_id %in% input$group_sel_input, unlist(germplasmDbIds)]
+        germplasms <- unique(rv$data[germplasmDbId %in% union_germplasms_id, .(germplasmDbId, germplasmName)])
+        group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
+        selection_data <- data.table(
+          group_id = group_id,
+          N = germplasms[,.N],
+          germplasmDbIds = list(germplasms$germplasmDbId),
+          germplasmNames = list(germplasms$germplasmName)
+        )
+        selection_data[,germplasmNames_label := if(N>6){
+          paste(
+            paste(unlist(germplasmNames)[1:5], collapse = ", "),
+            paste("and", N - 5, "others")
+          )
+        }else{
+          paste(unlist(germplasmNames), collapse = ", ")
+        }]
+        rv_plot$selection <- selection_data
+
+        output$modal_create_group_ui <- renderUI({
+          tagList(
+            tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
+            tags$p(rv_plot$selection[,germplasmNames_label]),
+            textInput(ns("modal_create_group_text_input_label"), label = "Group label", value = paste("group", rv_plot$selection[,group_id]), placeholder = "group label"),
+            textAreaInput(ns("modal_create_group_text_input_descr"), label = "Group description", placeholder = "group description", resize = "vertical",
+                          value = paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∪ ")),
+            actionButton(ns("modal_create_group_go"), label = "Create")
+          )
+        })
+      })
+      observeEvent(input$action_groups_intersect,{
+        toggleModal(session, "modal_create_group")
+        intersect_germplasms_id <- Reduce(intersect, rv_plot$groups[group_id %in% input$group_sel_input, germplasmDbIds])
+        germplasms <- unique(rv$data[germplasmDbId %in% intersect_germplasms_id, .(germplasmDbId, germplasmName)])
+        group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
+        selection_data <- data.table(
+          group_id = group_id,
+          N = germplasms[,.N],
+          germplasmDbIds = list(germplasms$germplasmDbId),
+          germplasmNames = list(germplasms$germplasmName)
+        )
+        selection_data[,germplasmNames_label := if(N>6){
+          paste(
+            paste(unlist(germplasmNames)[1:5], collapse = ", "),
+            paste("and", N - 5, "others")
+          )
+        }else{
+          paste(unlist(germplasmNames), collapse = ", ")
+        }]
+        rv_plot$selection <- selection_data
+
+        output$modal_create_group_ui <- renderUI({
+          tagList(
+            tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
+            tags$p(rv_plot$selection[,germplasmNames_label]),
+            textInput(ns("modal_create_group_text_input_label"), label = "Group label", value = paste("group", rv_plot$selection[,group_id]), placeholder = "group label"),
+            textAreaInput(ns("modal_create_group_text_input_descr"), label = "Group description", placeholder = "group description", resize = "vertical",
+                          value = paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∩ ")),
+            actionButton(ns("modal_create_group_go"), label = "Create")
+          )
+        })
+      })
+      observeEvent(input$action_groups_complement,{
+        toggleModal(session, "modal_create_group")
+        union_germplasms_id <- rv_plot$groups[group_id %in% input$group_sel_input, unlist(germplasmDbIds)]
+        germplasms <- unique(rv$data[!(germplasmDbId %in% union_germplasms_id), .(germplasmDbId, germplasmName)])
+        group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
+        selection_data <- data.table(
+          group_id = group_id,
+          N = germplasms[,.N],
+          germplasmDbIds = list(germplasms$germplasmDbId),
+          germplasmNames = list(germplasms$germplasmName)
+        )
+        selection_data[,germplasmNames_label := if(N>6){
+          paste(
+            paste(unlist(germplasmNames)[1:5], collapse = ", "),
+            paste("and", N - 5, "others")
+          )
+        }else{
+          paste(unlist(germplasmNames), collapse = ", ")
+        }]
+        rv_plot$selection <- selection_data
+
+        output$modal_create_group_ui <- renderUI({
+          tagList(
+            tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
+            tags$p(rv_plot$selection[,germplasmNames_label]),
+            textInput(ns("modal_create_group_text_input_label"), label = "Group label", value = paste("group", rv_plot$selection[,group_id]), placeholder = "group label"),
+            textAreaInput(ns("modal_create_group_text_input_descr"), label = "Group description", placeholder = "group description", resize = "vertical",
+                          value = paste("Complement of (", paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∪ "), ")")),
+            actionButton(ns("modal_create_group_go"), label = "Create")
+          )
+        })
+      })
+
+      observeEvent(input$action_groups_plot,{
+        rv$data_plot_aggr[,
+                          VAR_COLOUR:=ifelse(germplasmDbId %in% unique(rv_plot$groups[group_id %in% input$group_sel_input,unlist(germplasmDbIds)]),
+                                             paste("genotypes from",
+                                                   paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = ", ")),
+                                             "other genotypes")
+        ]
+        rv_plot$plot_groups <- T # switch that tells ggplot to colour the graph based on selected groups (default is to plot colours by input$picker_COLOUR)
       })
 
       output$debug <- renderPrint({
