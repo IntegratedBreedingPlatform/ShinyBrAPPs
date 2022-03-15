@@ -14,13 +14,13 @@ proxy:
     container-network: shinyproxy-network
   - id: stabrapp
     display-name: stabrapp
-    description: "sprint 7 and minor bug fixes after team demo (as of 04/03/22)"
+    description: "sprint 7 and minor bug fixes (as of 15/03/22)"
     container-cmd: ["R", "-e", "shinybrapps::run_stabrapp()"]
     container-image: shinybrapps
     container-network: shinyproxy-network
   - id: decision_support
     display-name: Decision support tool
-    description: "sprint 1 (as of 29/12/21)"
+    description: "sprint 3 (as of 15/03/22)"
     container-cmd: ["R", "-e", "shinybrapps::run_decision()"]
     container-image: shinybrapps
     container-network: shinyproxy-network
