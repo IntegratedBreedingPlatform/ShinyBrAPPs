@@ -180,6 +180,23 @@ mod_scatterplot_server <- function(id, rv){
         var_choices_all <- rv$column_datasource[,.(cols = list(cols)), source]
         default_X <- rv$column_datasource[type == "Numerical" & source == "GxE"][1, cols]
         default_Y <- rv$column_datasource[type == "Numerical" & source == "GxE"][2, cols]
+
+        # work around for pickerInputs with option groups that have only one option.
+        # The default behaviour is to display only the group name.
+        # Fix: naming the group by the singleton element
+        for(k in 1:num_var_choices[,.N]){
+          cols <- num_var_choices[k,cols][[1]]
+          if(length(cols)==1){
+            num_var_choices[k, source := cols]
+          }
+        }
+        for(k in 1:non_num_var_choices[,.N]){
+          cols <- non_num_var_choices[k,cols][[1]]
+          if(length(cols)==1){
+            non_num_var_choices[k, source := cols]
+          }
+        }
+
         updatePickerInput(
           session = session, inputId = "picker_X",
           choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
