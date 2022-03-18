@@ -6,12 +6,6 @@ proxy:
   docker:
       internal-networking: true
   specs:
-  - id: test
-    display-name: test app
-    description: displays hello world
-    container-cmd: ["R", "-e", "shinybrapps::run_test()"]
-    container-image: shinybrapps
-    container-network: shinyproxy-network
   - id: stabrapp
     display-name: stabrapp
     description: "sprint 7 and minor bug fixes (as of 15/03/22)"
@@ -20,8 +14,14 @@ proxy:
     container-network: shinyproxy-network
   - id: decision_support
     display-name: Decision support tool
-    description: "sprint 3 (as of 15/03/22)"
+    description: "sprint 3 (as of 18/03/22)"
     container-cmd: ["R", "-e", "shinybrapps::run_decision()"]
+    container-image: shinybrapps
+    container-network: shinyproxy-network
+  - id: test
+    display-name: test app
+    description: displays hello world
+    container-cmd: ["R", "-e", "shinybrapps::run_test()"]
     container-image: shinybrapps
     container-network: shinyproxy-network
 
