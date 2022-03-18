@@ -179,7 +179,11 @@ mod_scatterplot_server <- function(id, rv){
         non_num_var_choices <- rv$column_datasource[type != "Numerical",.(cols = list(cols)), source]
         var_choices_all <- rv$column_datasource[,.(cols = list(cols)), source]
         default_X <- rv$column_datasource[type == "Numerical" & source == "GxE"][1, cols]
-        default_Y <- rv$column_datasource[type == "Numerical" & source == "GxE"][2, cols]
+        if(rv$column_datasource[type == "Numerical" & source == "GxE"][,.N]>1){
+          default_Y <- rv$column_datasource[type == "Numerical" & source == "GxE"][2, cols]
+        }else{
+          default_Y <- default_X
+        }
 
         # work around for pickerInputs with option groups that have only one option.
         # The default behaviour is to display only the group name.
