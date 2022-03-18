@@ -85,16 +85,15 @@ mod_get_extradata_server <- function(id, rv){
           # - to all columns except observationVariableNames
           # - to observationVariableNames
 
-          studies <- rv$study_metadata[,unique(studyDbId)]
+          studyIds <- rv$data[,unique(studyDbId)]
           withProgress(message = "GET brapi/v2/variables?studyDbId", value = 0, {
-            k <- 0
-            ontology_variables <- rbindlist(l = lapply(studies, function(id){
+            ontology_variables <- rbindlist(l = lapply(studyIds, function(studyId){
               incProgress(
-                k/length(studies),
-                detail = paste0("studyDbId=", id)
+                1/length(studyIds),
+                detail = paste0("studyDbId=", studyId)
               )
               tryCatch({
-                brapirv2::brapi_get_variables(con = rv$con, studyDbId = id)
+                brapirv2::brapi_get_variables(con = rv$con, studyDbId = as.character(studyId))
               }, error = function(e)({
                 showNotification("Could not get ontology data", type = "error", duration = notification_duration)
               }))
