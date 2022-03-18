@@ -9,7 +9,6 @@ mod_get_extradata_ui <- function(id){
   )
 }
 
-
 #' @export
 mod_get_extradata_server <- function(id, rv){
   moduleServer(
@@ -18,8 +17,8 @@ mod_get_extradata_server <- function(id, rv){
 
       observe({
         req(rv$data)
-
         req(rv$study_metadata)
+
         if(!isTruthy("observations.observationVariableName"%in%names(rv$data))){
           showNotification("Data set without observations", type = "warning", duration = notification_duration)
           req(F)
@@ -100,9 +99,8 @@ mod_get_extradata_server <- function(id, rv){
             }), use.names = T, fill = T)
           })
 
-          column_types2 <- rbindlist(list(column_types[origin_dataset == "NON-CROP",.(column, type)], unique(ontology_variables[,.(column = observationVariableName, type = scale.dataType)])), fill = T)
+          column_types2 <- rbindlist(list(column_types[,.(column, type)], unique(ontology_variables[,.(column = observationVariableName, type = scale.dataType)])), fill = T)
           column_datasource <- merge.data.table(column_datasource, column_types2[,.(column, type)], by.x = "cols", by.y = "column", all.x = T)
-
 
           ##
           # s <-  brapirv2::brapi_post_search_variables(con = rv$con) #studyDbId = rv$study_metadata[,unique(studyDbId)])
