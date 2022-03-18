@@ -107,11 +107,6 @@ mod_scatterplot_ui <- function(id){
                )
              ),
       )
-    ),
-    fluidRow(
-      column(12,
-             verbatimTextOutput(ns("debug"))
-      )
     )
   )
 }
@@ -662,20 +657,6 @@ mod_scatterplot_server <- function(id, rv){
                                              "other genotypes")
         ]
         rv_plot$plot_groups <- T # switch that tells ggplot to colour the graph based on selected groups (default is to plot colours by input$picker_COLOUR)
-      })
-
-      output$debug <- renderPrint({
-        rv$data_plot_aggr$VAR_Y_PLOT
-        rv$data_plot_aggr$VAR_X_PLOT
-        list(
-          # rv$column_datasource,
-          # input$scatterplot_click,
-          # nearPoints(rv$data_plot_aggr, input$scatterplot_click, xvar = "VAR_X_PLOT", yvar = "VAR_Y_PLOT"),
-          # nearPoints(rv$data_plot_aggr, input$scatterplot_hover, xvar = "VAR_X_PLOT", yvar = "VAR_Y_PLOT"),
-          # nearPoints(rv$data_plot_aggr, input$scatterplot_brush, xvar = "VAR_X_PLOT", yvar = "VAR_Y_PLOT"),
-          # rv$data_plot_aggr[,.N,germplasmName][N>1],
-          rv$data_plot_aggr
-        )
       })
     }
   )
