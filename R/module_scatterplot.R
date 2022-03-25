@@ -92,7 +92,7 @@ mod_scatterplot_ui <- function(id){
                  div(
                    tags$label("Create new group"),
                    div(
-                     class = ns("create_new_groups_from_1+_groups"), style = "display: none",
+                     class = ns("create_new_groups_from_groups"), style = "display: none",
                      actionButton(ns("action_groups_union"),label = "Union", block = T),
                      actionButton(ns("action_groups_intersect"),label = "Intersect", block = T),
                    ),
@@ -548,7 +548,7 @@ mod_scatterplot_server <- function(id, rv){
 
       observe({
         shinyjs::toggle(selector = paste0(".",ns("group_actions")), condition = length(input$group_sel_input)>0)
-        shinyjs::toggle(selector = paste0(".",ns("create_new_groups_from_1+_groups")), condition = length(input$group_sel_input)>1)
+        shinyjs::toggle(selector = paste0(".",ns("create_new_groups_from_groups")), condition = length(input$group_sel_input)>1)
       })
 
       ## Create new groups
