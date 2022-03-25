@@ -407,7 +407,9 @@ mod_scatterplot_server <- function(id, rv){
       output$scatterplot <- renderPlotly({
         input$action_groups_plot
         req(rv$data_plot_aggr)
-        req(rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"] == is.numeric(rv$data_plot_aggr[,VAR_COLOUR]))
+        if(rv_plot$plot_groups == F){
+          req(rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"] == is.numeric(rv$data_plot_aggr[,VAR_COLOUR]))
+        }
         d <- rv$data_plot_aggr
         d[, "Germplasm Name" := germplasmName] # workaround for the plotly tooltip
         d[, "X value" := VAR_X_PLOT] # workaround for the plotly tooltip
