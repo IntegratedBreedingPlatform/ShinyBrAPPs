@@ -608,14 +608,18 @@ mod_scatterplot_server <- function(id, rv){
         rv_plot$selection <- selection_data
 
         output$modal_create_group_ui <- renderUI({
-          tagList(
-            tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
-            tags$p(rv_plot$selection[,germplasmNames_label]),
-            textInput(ns("modal_create_group_text_input_label"), label = "Group label", value = paste("group", rv_plot$selection[,group_id]), placeholder = "group label"),
-            textAreaInput(ns("modal_create_group_text_input_descr"), label = "Group description", placeholder = "group description", resize = "vertical",
-                          value = paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∩ ")),
-            actionButton(ns("modal_create_group_go"), label = "Create")
-          )
+          if(rv_plot$selection[1,N>0]){
+            tagList(
+              tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
+              tags$p(rv_plot$selection[,germplasmNames_label]),
+              textInput(ns("modal_create_group_text_input_label"), label = "Group label", value = paste("group", rv_plot$selection[,group_id]), placeholder = "group label"),
+              textAreaInput(ns("modal_create_group_text_input_descr"), label = "Group description", placeholder = "group description", resize = "vertical",
+                            value = paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∩ ")),
+              actionButton(ns("modal_create_group_go"), label = "Create")
+            )
+          }else{
+            tags$label("This intersection results in an empty group.")
+          }
         })
       })
       observeEvent(input$action_groups_complement,{
