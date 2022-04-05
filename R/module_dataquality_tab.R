@@ -265,7 +265,7 @@ mod_dataquality_server <- function(id, rv){
                  dynamicTicks = "TRUE", source = "A", originalData = T,
                  tooltip = c("germplasmName", "observations.value", "key", "plotNumber", "blockNumber", "replicate", "entryType")) %>%
           style(hoverlabel = list(bgcolor = "white")) %>%
-          layout(dragmode = "select")
+          layout(dragmode = "lasso")
       })
 
 
@@ -388,7 +388,7 @@ mod_dataquality_server <- function(id, rv){
                  dynamicTicks = "TRUE", source = "A", originalData = T,
                  tooltip = c("germplasmName", "observations.value", "key", "plotNumber", "blockNumber", "replicate", "positionCoordinateX", "positionCoordinateY", "entryType")) %>%
           style(hoverlabel = list(bgcolor = "white")) %>%
-          layout(dragmode = "select")
+          layout(dragmode = "lasso")
       })
 
       output$layout_legend <- renderPlot({
