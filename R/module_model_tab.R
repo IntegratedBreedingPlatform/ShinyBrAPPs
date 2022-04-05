@@ -57,7 +57,7 @@ mod_model_ui <- function(id){
         )
       )
     ),
-    fluidRow(column(12,shiny::actionButton(ns("go_fit_model"), "Fit model"))),
+    fluidRow(column(12,shiny::actionButton(ns("go_fit_model"), "Fit model", class = "btn btn-info"))),
     fluidRow(
       column(
         12,
@@ -121,15 +121,15 @@ mod_model_ui <- function(id){
                 6,
                 # tags$h4("Metrics ~ Environment x Trait"),
                 # pickerInput(ns("select_metrics_A"), "Statistics", multiple = F, choices = NULL, width = "40%", inline = T),
-                downloadButton(ns("export_metrics_A"), "CSV Export", style = "float:right; margin:5px"),
-                shiny::actionButton(ns("push_metrics_to_BMS_A"), "Push to BMS", icon = icon("leaf"), style = "float:right; margin:5px"),
+                downloadButton(ns("export_metrics_A"), "CSV Export", class = "btn btn-info", style = "float:right; margin:5px"),
+                shiny::actionButton(ns("push_metrics_to_BMS_A"), "Push to BMS", icon = icon("leaf"), class = "btn btn-primary", style = "float:right; margin:5px"),
                 dataTableOutput(ns("metrics_A_table"))
               ),
               column(
                 6,
                 # tags$h4("Metrics ~ Environment x Trait x Genotype"),
-                downloadButton(ns("export_metrics_B"), "CSV Export", style = "float:right; margin:5px"),
-                shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push to BMS", icon = icon("leaf"), style = "float:right; margin:5px"),
+                downloadButton(ns("export_metrics_B"), "CSV Export", class = "btn btn-info", style = "float:right; margin:5px"),
+                shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push to BMS", icon = icon("leaf"), class="btn btn-primary", style = "float:right; margin:5px"),
                 tags$br(),
                 pickerInput(ns("select_metrics_B"), "BLUPs/BLUEs", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs"), width = "40%", inline = T),
                 pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL, width = "40%", inline = T),

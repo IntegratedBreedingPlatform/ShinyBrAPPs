@@ -96,11 +96,11 @@ mod_dataquality_ui <- function(id){
         # verbatimTextOutput(ns("debug")),
         h2("Selected observations", class = "display_if_selection", style = "display: none"),
         dataTableOutput(ns("selected_obs_table")),
-        shiny::actionButton(ns("set_excluded_obs"), "Set selected row(s) as excluded observation(s)", class = "display_if_selection", style = "display: none"),
-        shiny::actionButton(ns("unselect_obs"), "Reset selection", class = "display_if_selection", style = "display: none"),
+        shiny::actionButton(ns("set_excluded_obs"), "Set selected row(s) as excluded observation(s)", class = "btn btn-info display_if_selection", style = "display: none"),
+        shiny::actionButton(ns("unselect_obs"), "Reset selection", class = "btn btn-info display_if_selection", style = "display: none"),
         h2("Excluded observations", class = "display_if_exclusion", style = "display: none"),
         dataTableOutput(ns("excluded_obs_table")),
-        shiny::actionButton(ns("set_non_excluded_obs"), "Set selected row(s) as non-excluded observation(s)", class = "display_if_exclusion", style = "display: none"),
+        shiny::actionButton(ns("set_non_excluded_obs"), "Set selected row(s) as non-excluded observation(s)", class = "btn btn-info display_if_exclusion", style = "display: none"),
       )
     )
   )

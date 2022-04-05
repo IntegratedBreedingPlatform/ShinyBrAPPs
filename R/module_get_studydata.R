@@ -27,7 +27,7 @@ mod_get_studydata_ui <- function(id){
                     onInitialize = I('function() { this.setValue(""); }')
                   )
                 ),
-                shiny::actionButton(ns("go_trial_metadata"), "Show study metadata"),
+                actionButton(ns("go_trial_metadata"), "Show study metadata", css.class = "btn btn-info"),
                 bsModal(ns("modal_trial_metadata"), "Study Metadata", ns("go_trial_metadata"), size = "large",
                         dataTableOutput(ns("table_trial_metadata")))
               ),
@@ -43,15 +43,17 @@ mod_get_studydata_ui <- function(id){
                   width = "100%",
                   animation = "jelly"
                 ),
-                shiny::actionButton(
+                actionButton(
                   inputId = ns("load_env"),
-                  label = "Load Selected"
+                  label = "Load Selected",
+                  css.class = "btn btn-primary"
                 ),
-                shiny::actionButton(
+                actionButton(
                   inputId = ns("load_all_env"),
-                  label = "Load All"
+                  label = "Load All",
+                  css.class = "btn btn-primary"
                 ),
-                shiny::actionButton(ns("go_study_metadata_ui"), "Show Environment Metadata")
+                actionButton(ns("go_study_metadata_ui"), "Show Environment Metadata", css.class = "btn btn-info")
                 # bsModal(ns("modal_study_metadata"), "Environment Metadata", ns("go_study_metadata"), size = "large",
                 #         dataTableOutput(ns("table_study_metadata")))
               ),
