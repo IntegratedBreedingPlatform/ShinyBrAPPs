@@ -1756,7 +1756,8 @@ output {
  font-size:13px;
  line-height:1.5;
  color:#333;
- display:block
+ display:block;
+ position:static; /* custom tweak to avoid hidden overflows in selectInput */
 }
 input[type=file] {
  display:block
