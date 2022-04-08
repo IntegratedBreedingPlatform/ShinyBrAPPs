@@ -421,7 +421,19 @@ mod_model_server <- function(id, rv){
         if(!is.null(mess)){
           showNotification(mess, type = "error", duration = notification_duration)
         }
+
         req(rv$fit)
+
+        ## SPATs does not make prediction when genotypes are in the fixed part of the model
+        # It causes the summary.TD and plot.TD functions to throw error when trying to compute the predictions
+        # temporary fix: if there is no "fixed" modelling, then this list item is removed from the fitTD object
+        # example: ?cropDb=rice&token=jhjlkj&apiURL=https://www.bms-uat-test.net/bmsapi&studyDbIds=2705,2706
+        for(trial in names(rv$fit)){
+          if(all(unlist(lapply(rv$fit[[trial]]$mFix, is.null)))){
+            rv$fit[[trial]][["mFix"]] <- NULL
+            showNotification(paste0(trial,':\nno modelling for what=fixed'), type = "default", duration = notification_duration)
+          }
+        }
 
         ## update selectors
         updatePickerInput(
@@ -497,6 +509,11 @@ mod_model_server <- function(id, rv){
               trait = input$select_trait_fit,
               trials = trial,
               output = F
+              # output = F,
+              # what = c("random","fixed")[c(
+              #   !is.null(rv$fit[[trial]]$mRand),
+              #   !is.null(rv$fit[[trial]]$mFixed)
+              # )]
             )
           })
 
@@ -528,6 +545,11 @@ mod_model_server <- function(id, rv){
                 trait = input$select_trait_fit,
                 trials = trial,
                 output = F
+                # output = F,
+                # what = c("random","fixed")[c(
+                #   !is.null(rv$fit[[trial]]$mRand),
+                #   !is.null(rv$fit[[trial]]$mFixed)
+                # )]
               )
               p
             }else{

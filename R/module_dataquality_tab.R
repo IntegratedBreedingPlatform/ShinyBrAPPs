@@ -44,6 +44,7 @@ mod_dataquality_ui <- function(id){
                        choices = NULL, multiple = F, width = "100%",
                        options = list(
                          title = 'Load Environments First',
+                         `live-search` = TRUE,
                          onInitialize = I('function() { this.setValue(""); }')
                        )
                      )
@@ -54,6 +55,7 @@ mod_dataquality_ui <- function(id){
                   ns("select_variable_value"),label = HTML("<br/>"), choices = NULL, multiple = T, width = "100%",
                   options = list(
                     title = 'Load Environments First',
+                    `live-search` = TRUE,
                     onInitialize = I('function() { this.setValue(""); }')
                   )
                 )
