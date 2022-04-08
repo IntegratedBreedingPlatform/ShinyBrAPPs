@@ -580,7 +580,7 @@ mod_dataquality_server <- function(id, rv){
             buttons = I('colvis')
           )
         ) %>%
-          formatStyle(0, target= 'row', lineHeight='50%')
+          formatStyle(0, target= 'row', lineHeight='90%')
       })
 
       observeEvent(input$unselect_obs, {
@@ -629,7 +629,7 @@ mod_dataquality_server <- function(id, rv){
             buttons = I('colvis')
           )
         ) %>%
-          formatStyle(0, target= 'row', lineHeight='50%')
+          formatStyle(0, target= 'row', lineHeight='90%')
       })
 
       observeEvent(input$set_non_excluded_obs,{
