@@ -135,6 +135,7 @@ mod_dataquality_server <- function(id, rv){
 
         are_num <- rv$data[,lapply(.SD, is.numeric)]
         non_numeric_variables <- names(are_num)[are_num==F]
+        non_numeric_variables <- non_numeric_variables[!non_numeric_variables%in%hidden_col_names]
         updatePickerInput(
           session = session,
           inputId = "select_variable",

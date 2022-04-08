@@ -46,6 +46,7 @@ names(choices_model_design) <- exp_designs_corresp$statGenSTA
 
 notification_duration = 10 # in seconds
 
-
+## columns to hide in widgets/table (columns created by the app)
+hidden_col_names <- c("study_name_BMS", "study_name_app", "study_name_abbrev_app", "location_abbrev", "location_name")
 
 
