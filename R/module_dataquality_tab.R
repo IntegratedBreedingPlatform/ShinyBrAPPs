@@ -121,16 +121,18 @@ mod_dataquality_server <- function(id, rv){
         if(rv$data[observationLevel!="PLOT", .N]>0){
           showNotification(
           paste0("Taking away the level(s) of observation: ",
-                foodata[observationLevel!="PLOT", paste(unique(observationLevel), collapse = ", ")],
-                "\n(",foodata[observationLevel!="PLOT", .N], " values)",
+                rv$data[observationLevel!="PLOT", paste(unique(observationLevel), collapse = ", ")],
+                "\n(",rv$data[observationLevel!="PLOT", .N], " values)",
           "\n\n(Only the PLOT observation level is considered for STA)"
           ), type = "default", duration = notification_duration)
         }
 
-        if(!("observations.observationVariableName"%in%names(rv$data[observationLevel=="PLOT"]))){
+        rv$data_dq <- rv$data[observationLevel == "PLOT"]
+
+        if(!("observations.observationVariableName"%in%names(rv$data_dq))){
           showNotification("No trait data", type = "error", duration = notification_duration)
         }
-        req("observations.observationVariableName"%in%names(rv$data[observationLevel=="PLOT"]))
+        req("observations.observationVariableName"%in%names(rv$data_dq))
 
         env_choices <- rv$study_metadata[loaded==T,unique(studyDbId)]
         names(env_choices) <- rv$study_metadata[loaded==T,unique(study_name_app)]
@@ -143,7 +145,7 @@ mod_dataquality_server <- function(id, rv){
           )
         )
 
-        are_num <- rv$data[observationLevel=="PLOT",lapply(.SD, is.numeric)]
+        are_num <- rv$data_dq[,lapply(.SD, is.numeric)]
         non_numeric_variables <- names(are_num)[are_num==F]
         non_numeric_variables <- non_numeric_variables[!non_numeric_variables%in%hidden_col_names]
         updatePickerInput(
@@ -167,7 +169,7 @@ mod_dataquality_server <- function(id, rv){
 
       observeEvent(input$studies,{
         ## only traits found in all environments can be selected
-        trait_by_studyDbIds <- rv$data[observationLevel=="PLOT" & studyDbId %in% input$studies,.(trait = unique(observations.observationVariableName)), .(studyDbId)]
+        trait_by_studyDbIds <- rv$data_dq[studyDbId %in% input$studies,.(trait = unique(observations.observationVariableName)), .(studyDbId)]
         trait_choices <- trait_by_studyDbIds[,.N,trait][N==length(trait_by_studyDbIds[,unique(studyDbId)]), trait]
         updatePickerInput(
           inputId = "trait", session = session,
@@ -183,17 +185,17 @@ mod_dataquality_server <- function(id, rv){
       observe({
         req(input$trait)
         req(input$studies)
-        req(rv$data)
-        if("observations.observationVariableName"%in%names(rv$data[observationLevel=="PLOT"])){
-          rv$data_dq <- rv$data[observations.observationVariableName == input$trait & studyDbId %in% input$studies & observationLevel == "PLOT"]
+        req(rv$data_dq)
+        if("observations.observationVariableName"%in%names(rv$data_dq)){
+          rv$data_dq_viz <- rv$data[observations.observationVariableName == input$trait & studyDbId %in% input$studies]
         }else{
-          rv$data_dq <- NULL
+          rv$data_dq_viz <- NULL
         }
       })
 
       observeEvent(input$select_variable,{
         req(input$select_variable)
-        values <- unique(rv$data_dq[,input$select_variable, with = F])
+        values <- unique(rv$data_dq_viz[,input$select_variable, with = F])
         if(values[,.N]==1){
           values <- unname(values)
         }
@@ -210,7 +212,7 @@ mod_dataquality_server <- function(id, rv){
       })
 
       observeEvent(input$select_variable_value,{
-        sel_observationDbIds <- rv$data_dq[
+        sel_observationDbIds <- rv$data_dq_viz[
           eval(as.name(input$select_variable)) %in% input$select_variable_value,
           observations.observationDbId
         ]
@@ -218,14 +220,14 @@ mod_dataquality_server <- function(id, rv){
       })
 
       output$distribution_viz <- renderPlotly({
-        req(rv$data_dq[,.N]>0)
+        req(rv$data_dq_viz[,.N]>0)
         req(input$trait)
         req(input$studies)
 
         input$set_excluded_obs
         input$set_non_excluded_obs
 
-        data_dq <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
+        data_dq <- rv$data_dq_viz[!(observations.observationDbId %in% rv$excluded_obs)]
 
         data_dq[, is.selected:=F]
         data_dq[observations.observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
@@ -281,16 +283,16 @@ mod_dataquality_server <- function(id, rv){
 
 
       output$layout_viz <- renderPlotly({
-        req(rv$data_dq[,.N>0])
-        req(rv$data_dq[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1)
+        req(rv$data_dq_viz[,.N>0])
+        req(rv$data_dq_viz[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1)
         req(input$studies)
-        req(all(input$studies%in%rv$data_dq[,unique(studyDbId)]))
+        req(all(input$studies%in%rv$data_dq_viz[,unique(studyDbId)]))
         req(input$trait)
 
         input$set_excluded_obs
         input$set_non_excluded_obs
 
-        data_dq <- rv$data_dq
+        data_dq <- rv$data_dq_viz
 
         data_dq[,is.selected:=F]
         data_dq[observations.observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
@@ -339,7 +341,7 @@ mod_dataquality_server <- function(id, rv){
         ## drawing a vertical and horizontal lines for replicates
         if(data_dq[!is.na(replicate), .N]>0){
           repBords <- rbindlist(lapply(input$studies, function(tr){
-            if(rv$data_dq[studyDbId==tr, any(!is.na(positionCoordinateY))]){
+            if(rv$data_dq_viz[studyDbId==tr, any(!is.na(positionCoordinateY))]){
               repBord <- calcPlotBorders(as.data.frame(data_dq[studyDbId==tr, .(
                 rowCoord = as.numeric(positionCoordinateY),
                 colCoord = as.numeric(positionCoordinateX),
@@ -405,8 +407,8 @@ mod_dataquality_server <- function(id, rv){
       })
 
       output$layout_legend <- renderPlot({
-        req(rv$data_dq[,.N]>0)
-        req(rv$data_dq[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1)
+        req(rv$data_dq_viz[,.N]>0)
+        req(rv$data_dq_viz[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1)
         req(input$studies)
         req(input$trait)
         req(rv_dq$layout_legend)
@@ -450,7 +452,7 @@ mod_dataquality_server <- function(id, rv){
 
       output$correlationPlot <- renderPlotly({
         data_dq_casted <- dcast(
-          rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs) & studyDbId %in% input$studies],
+          rv$data_dq_viz[!(observations.observationDbId %in% rv$excluded_obs) & studyDbId %in% input$studies],
           germplasmDbId + studyDbId + studyLocationDbId + study_name_app + germplasmName +
             replicate + observationUnitDbId + positionCoordinateY +
             positionCoordinateX ~ observations.observationVariableName,
@@ -474,9 +476,9 @@ mod_dataquality_server <- function(id, rv){
 
       ## summary statistics
       output$sumstats_table <- renderDataTable({
-        req(rv$data_dq)
-        data_dq <- rv$data_dq
-        data_dq_notexcl <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
+        req(rv$data_dq_viz)
+        data_dq <- rv$data_dq_viz
+        data_dq_notexcl <- rv$data_dq_viz[!(observations.observationDbId %in% rv$excluded_obs)]
 
         sumtable_all <- data_dq[
           ,
@@ -570,7 +572,7 @@ mod_dataquality_server <- function(id, rv){
 
         input$set_excluded_obs
         input$set_non_excluded_obs
-        selected_obs <- rv$data_dq[observations.observationDbId %in% rv$sel_observationDbIds & !(observations.observationDbId %in% rv$excluded_obs)]
+        selected_obs <- rv$data_dq_viz[observations.observationDbId %in% rv$sel_observationDbIds & !(observations.observationDbId %in% rv$excluded_obs)]
         setcolorder(selected_obs, visible_columns_selected_obs)
         datatable(
           selected_obs,
@@ -600,7 +602,7 @@ mod_dataquality_server <- function(id, rv){
 
       observeEvent(input$set_excluded_obs,{
 
-        new_excluded_obs <- rv$data_dq[
+        new_excluded_obs <- rv$data_dq_viz[
           observations.observationDbId %in% rv$sel_observationDbIds
         ][
           input$selected_obs_table_rows_selected, observations.observationDbId
@@ -612,14 +614,14 @@ mod_dataquality_server <- function(id, rv){
 
       output$excluded_obs_table <- renderDT({
         shinyjs::hide(selector = ".display_if_exclusion")
-        req(rv$data_dq)
-        rv$data_dq
+        req(rv$data_dq_viz)
+        rv$data_dq_viz
         input$set_excluded_obs
         input$set_non_excluded_obs
-        req(rv$data_dq[observations.observationDbId %in% rv$excluded_obs,.N]>0)
+        req(rv$data_dq_viz[observations.observationDbId %in% rv$excluded_obs,.N]>0)
         shinyjs::show(selector = ".display_if_exclusion")
 
-        selected_excl_obs <- rv$data_dq[observations.observationDbId %in% rv$excluded_obs]
+        selected_excl_obs <- rv$data_dq_viz[observations.observationDbId %in% rv$excluded_obs]
         setcolorder(selected_excl_obs, visible_columns_selected_obs)
         datatable(
           selected_excl_obs,
@@ -644,7 +646,7 @@ mod_dataquality_server <- function(id, rv){
       })
 
       observeEvent(input$set_non_excluded_obs,{
-        non_excluded_obs <- rv$data_dq[observations.observationDbId %in% rv$excluded_obs][
+        non_excluded_obs <- rv$data_dq_viz[observations.observationDbId %in% rv$excluded_obs][
           input$excluded_obs_table_rows_selected, observations.observationDbId]
 
         rv$excluded_obs <- setdiff(rv$excluded_obs, non_excluded_obs)

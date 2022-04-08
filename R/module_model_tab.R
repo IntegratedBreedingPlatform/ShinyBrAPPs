@@ -181,9 +181,9 @@ mod_model_server <- function(id, rv){
         )
         rv$fit <- NULL
 
-        req(rv$data)
-        req("observations.observationVariableName"%in%names(rv$data))
-        choices_env <- rv$data[,unique(study_name_app)]
+        req(rv$data_dq)
+        req("observations.observationVariableName"%in%names(rv$data_dq))
+        choices_env <- rv$data_dq[,unique(study_name_app)]
         updatePickerInput(
           session,"select_environments",
           choices = choices_env,
@@ -197,9 +197,8 @@ mod_model_server <- function(id, rv){
 
       observeEvent(c(input$select_environments, rv$excluded_obs),{
         ## only traits found in all environments can be selected
-        trait_by_studyDbIds <- rv$data[study_name_app %in% input$select_environments,.(trait = unique(observations.observationVariableName)), .(studyDbId)]
+        trait_by_studyDbIds <- rv$data_dq[study_name_app %in% input$select_environments,.(trait = unique(observations.observationVariableName)), .(studyDbId)]
         choices_traits <- trait_by_studyDbIds[,.N,trait][N==length(trait_by_studyDbIds[,unique(studyDbId)]), trait]
-
         updatePickerInput(
           session,"select_traits",
           choices = choices_traits,
@@ -221,7 +220,7 @@ mod_model_server <- function(id, rv){
         # NB: choices_model_design is defined in inst/apps/stabrapp/config.R
         # For the following code to work, the item order in choices_model_design has to be: "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"
 
-        data_filt <- rv$data[!(observations.observationDbId %in% rv$excluded_obs) & (study_name_app %in% input$select_environments)]
+        data_filt <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs) & (study_name_app %in% input$select_environments)]
         has_subBlocks <- data_filt[,.N,.(blockNumber)][,.N]>1
         has_repIds <- data_filt[,.N,.(replicate)][,.N]>1
         has_coords <- data_filt[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1
@@ -266,7 +265,7 @@ mod_model_server <- function(id, rv){
 
         ###  create TD without the excluded observations
         ## exclude observations
-        data_filtered <- rv$data[!(observations.observationDbId %in% rv$excluded_obs)]
+        data_filtered <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
         ## make 1 column per trait
         data_filtered_casted <- dcast(
           data = data_filtered[,.(
@@ -354,9 +353,9 @@ mod_model_server <- function(id, rv){
         # - have to be numerical
         # - must not be some columns (like ids)
         # - can be traits
-        all_traits <- rv$data[,unique(observations.observationVariableName)]
+        all_traits <- rv$data_dq[,unique(observations.observationVariableName)]
         remaining_traits <- setdiff(all_traits, input$select_traits)
-        choices_cov <- c(names(rv$data)[unlist(rv$data[,lapply(.SD, is.numeric)])], remaining_traits)
+        choices_cov <- c(names(rv$data_dq)[unlist(rv$data_dq[,lapply(.SD, is.numeric)])], remaining_traits)
         not_cov <- c(
           "studyDbId", "trialDbId","observations.observationDbId",
           "environment_number",
@@ -522,14 +521,15 @@ mod_model_server <- function(id, rv){
           isolate(req(rv_mod$data_checks$has_coords))
           req(input$select_environment_fit)
           plots_envs <- lapply(input$select_environment_fit, function(trial){
-            if(rv$data[observations.observationVariableName == input$select_trait_fit & study_name_app == trial,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
-              plot(
+            if(rv$data_dq[observations.observationVariableName == input$select_trait_fit & study_name_app == trial,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
+              p <- plot(
                 rv$fit,
                 plotType = "spatial",
                 trait = input$select_trait_fit,
                 trials = trial,
                 output = F
               )
+              p
             }else{
               a_STATgen_like_list <- list()
               a_STATgen_like_list[[trial]][[input$select_trait_fit]][["p1"]] <- ggplot() + geom_text(aes(x = 0, y = 0), label = "no spatial data") + theme_void()
@@ -657,7 +657,7 @@ mod_model_server <- function(id, rv){
         req(input$select_environment_metrics)
 
         metrics_table <- as.data.table(extractSTA(STA = rv$fit, what = input$select_metrics_B))
-        entry_types <- unique(rv$data[,.(genotype=germplasmName, entryType)])
+        entry_types <- unique(rv$data_dq[,.(genotype=germplasmName, entryType)])
         setkey(metrics_table, genotype)
         setkey(entry_types, genotype)
         metrics_table <- entry_types[metrics_table]
