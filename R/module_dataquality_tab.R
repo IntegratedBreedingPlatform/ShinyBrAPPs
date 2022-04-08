@@ -232,7 +232,7 @@ mod_dataquality_server <- function(id, rv){
           ) +
           # geom_point(
           geom_jitter(
-            width = 0.1,
+            width = 0.05,
             height = 0,
             shape = 21,
             alpha = 0.5,
@@ -250,12 +250,12 @@ mod_dataquality_server <- function(id, rv){
               color = is.selected,
               key = observations.observationDbId
             ),
-            size = 4
+            size = 3
           ) +
           scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black"), guide = "none") +
           scale_alpha(guide = "none") + coord_flip() +
           theme_minimal() +
-          xlab(input$trait) +
+          ylab(input$trait) +
           theme(
             legend.position = "none",
             #axis.text.y = element_text(angle = 60),
