@@ -600,7 +600,9 @@ mod_model_server <- function(id, rv){
           verbose = F
         )
         outliers <- as.data.table(outliersSTA$outliers)
-        setnames(outliers, "trial", "environment")
+        if(outliers[,.N]>0){
+          setnames(outliers, "trial", "environment")
+        }
         datatable(
           outliers,
           rownames = F,
