@@ -117,10 +117,20 @@ mod_dataquality_server <- function(id, rv){
       observe({
 
         req(rv$data)
-        if(!("observations.observationVariableName"%in%names(rv$data))){
+
+        if(rv$data[observationLevel!="PLOT", .N]>0){
+          showNotification(
+          paste0("Taking away the level(s) of observation: ",
+                foodata[observationLevel!="PLOT", paste(unique(observationLevel), collapse = ", ")],
+                "\n(",foodata[observationLevel!="PLOT", .N], " values)",
+          "\n\n(Only the PLOT observation level is considered for STA)"
+          ), type = "default", duration = notification_duration)
+        }
+
+        if(!("observations.observationVariableName"%in%names(rv$data[observationLevel=="PLOT"]))){
           showNotification("No trait data", type = "error", duration = notification_duration)
         }
-        req("observations.observationVariableName"%in%names(rv$data))
+        req("observations.observationVariableName"%in%names(rv$data[observationLevel=="PLOT"]))
 
         env_choices <- rv$study_metadata[loaded==T,unique(studyDbId)]
         names(env_choices) <- rv$study_metadata[loaded==T,unique(study_name_app)]
@@ -133,7 +143,7 @@ mod_dataquality_server <- function(id, rv){
           )
         )
 
-        are_num <- rv$data[,lapply(.SD, is.numeric)]
+        are_num <- rv$data[observationLevel=="PLOT",lapply(.SD, is.numeric)]
         non_numeric_variables <- names(are_num)[are_num==F]
         non_numeric_variables <- non_numeric_variables[!non_numeric_variables%in%hidden_col_names]
         updatePickerInput(
@@ -157,7 +167,7 @@ mod_dataquality_server <- function(id, rv){
 
       observeEvent(input$studies,{
         ## only traits found in all environments can be selected
-        trait_by_studyDbIds <- rv$data[studyDbId %in% input$studies,.(trait = unique(observations.observationVariableName)), .(studyDbId)]
+        trait_by_studyDbIds <- rv$data[observationLevel=="PLOT" & studyDbId %in% input$studies,.(trait = unique(observations.observationVariableName)), .(studyDbId)]
         trait_choices <- trait_by_studyDbIds[,.N,trait][N==length(trait_by_studyDbIds[,unique(studyDbId)]), trait]
         updatePickerInput(
           inputId = "trait", session = session,
@@ -174,8 +184,8 @@ mod_dataquality_server <- function(id, rv){
         req(input$trait)
         req(input$studies)
         req(rv$data)
-        if("observations.observationVariableName"%in%names(rv$data)){
-          rv$data_dq <- rv$data[observations.observationVariableName == input$trait & studyDbId %in% input$studies]
+        if("observations.observationVariableName"%in%names(rv$data[observationLevel=="PLOT"])){
+          rv$data_dq <- rv$data[observations.observationVariableName == input$trait & studyDbId %in% input$studies & observationLevel == "PLOT"]
         }else{
           rv$data_dq <- NULL
         }
@@ -183,7 +193,7 @@ mod_dataquality_server <- function(id, rv){
 
       observeEvent(input$select_variable,{
         req(input$select_variable)
-        values <- unique(rv$data[,input$select_variable, with = F])
+        values <- unique(rv$data_dq[,input$select_variable, with = F])
         if(values[,.N]==1){
           values <- unname(values)
         }
@@ -200,7 +210,7 @@ mod_dataquality_server <- function(id, rv){
       })
 
       observeEvent(input$select_variable_value,{
-        sel_observationDbIds <- rv$data[
+        sel_observationDbIds <- rv$data_dq[
           eval(as.name(input$select_variable)) %in% input$select_variable_value,
           observations.observationDbId
         ]

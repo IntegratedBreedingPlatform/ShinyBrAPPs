@@ -265,19 +265,19 @@ mod_model_server <- function(id, rv){
         )
 
         ###  create TD without the excluded observations
-
         ## exclude observations
         data_filtered <- rv$data[!(observations.observationDbId %in% rv$excluded_obs)]
         ## make 1 column per trait
         data_filtered_casted <- dcast(
           data = data_filtered[,.(
+            observationUnitDbId,
             genotype = germplasmName, trial = study_name_app, loc = studyLocationDbId,
             repId = replicate,
             subBlock = blockNumber,
             rowCoord = positionCoordinateY, colCoord = positionCoordinateX,
             observations.observationVariableName, observations.value
           )],
-          formula = "genotype + trial + loc + repId + subBlock + rowCoord + colCoord ~ observations.observationVariableName",
+          formula = "observationUnitDbId + genotype + trial + loc + repId + subBlock + rowCoord + colCoord ~ observations.observationVariableName",
           value.var = "observations.value"
         )
 
