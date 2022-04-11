@@ -72,10 +72,10 @@ mod_scatterplot_ui <- function(id){
                # hover = ns("scatterplot_hover"),
                # brush = ns("scatterplot_brush")
              ),
-             actionButton(ns("go_clusters"), "Clusters (NOT IMPLEMENTED)"),
-             actionButton(ns("go_regressions"), "Regressions (NOT IMPLEMENTED"),
+             actionButton(ns("go_clusters"), "Clusters (NOT IMPLEMENTED)", css.class = "btn btn-info"),
+             actionButton(ns("go_regressions"), "Regressions (NOT IMPLEMENTED", css.class = "btn btn-info"),
              span(class = ns("ui_create_group"), style = "display: none;",
-                  actionButton(ns("go_create_group"), "Create selection group")
+                  actionButton(ns("go_create_group"), "Create selection group", css.class = "btn btn-info")
              ),
              bsModal(ns("modal_create_group"), "Create group", NULL, size = "small",
                      uiOutput(ns("modal_create_group_ui")))
@@ -524,7 +524,7 @@ mod_scatterplot_server <- function(id, rv){
                               if(input$switch_SIZE==T) paste(", \nSize=", input$picker_SIZE)
                             )
               ),
-              actionButton(ns("modal_create_group_go"), label = "Create")
+              actionButton(ns("modal_create_group_go"), label = "Create", css.class = "btn btn-info")
             )
           })
         }
