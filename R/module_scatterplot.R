@@ -512,6 +512,7 @@ mod_scatterplot_server <- function(id, rv){
           # germplasms <- unique(rv$data[germplasmDbId %in% rv$selection[,germplasmDbId], .(germplasmDbId, germplasmName)])
           # list_id <- ifelse(is.null(rv_plot$lists$list_id), 1, max(rv_plot$lists$list_id) + 1)
           output$modal_create_list_ui <- renderUI({
+            req(rv_plot$selection[,.N]>0)
             tagList(
               tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
               tags$p(rv_plot$selection[,germplasmNames_label]),
@@ -538,6 +539,7 @@ mod_scatterplot_server <- function(id, rv){
           rv_plot$selection
         ))
         # ), fill = T, use.names = T)
+        rv_plot$selection <- data.table()
         toggleModal(session, "modal_create_list", toggle = "close")
       })
 
