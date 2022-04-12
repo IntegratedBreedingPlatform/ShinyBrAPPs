@@ -10,7 +10,7 @@ $.extend(binding, {
     var checkIds = [];
     $(el).find(".list_checkbox").each(function(){
       if ($(this).prop("checked") == true) {
-        checkIds.push(this.id)
+        checkIds.push($(this).attr("list_id"));
       }
     });
     return checkIds;

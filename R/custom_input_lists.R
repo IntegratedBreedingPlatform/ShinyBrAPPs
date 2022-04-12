@@ -9,11 +9,12 @@
 #'
 #' @export
 list_selector <- function(input_id, list_table, ...) {
+  ns <- NS(input_id)
   shinyhtml <- tagList(
     singleton(
       tags$head(
         # tags$link(rel="stylesheet", type="text/css", href="list_selector"),
-        tags$script(src="js/custom_inputs/list_selector.js")
+        tags$script(src="js/custom_inputs/InputBinding_list_checkbox.js")
       )
     ),
     div(id=input_id, class = "my_selector",
@@ -32,7 +33,7 @@ list_selector <- function(input_id, list_table, ...) {
                      )
               ),
               column(1,
-                     tags$input(id = id, type = "checkbox", class = "list_checkbox", value = id)
+                     tags$input(id = ns(id), type = "checkbox", class = "list_checkbox", list_id = id, value = id)
               )
             )
           })
