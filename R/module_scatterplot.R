@@ -88,22 +88,25 @@ mod_scatterplot_ui <- function(id){
                class = ns("list_actions"), style = "display: none",
                div(
                  tags$label("Visualize lists"),
-                 actionButton(ns("action_lists_plot"),label = "Plot", block = T),
+                 actionButton(ns("action_lists_plot"),label = "Plot", block = T, css.class = "btn btn-info"),
                  div(
                    tags$label("Create new list"),
                    div(
                      class = ns("create_new_lists_from_lists"), style = "display: none",
-                     actionButton(ns("action_lists_union"),label = "Union", block = T),
-                     actionButton(ns("action_lists_intersect"),label = "Intersect", block = T),
+                     actionButton(ns("action_lists_union"),label = "Union", block = T, css.class = "btn btn-info"),
+                     actionButton(ns("action_lists_intersect"),label = "Intersect", block = T, css.class = "btn btn-info"),
                    ),
                    div(
-                     actionButton(ns("action_lists_complement"),label = "Complement", block = T)
+                     actionButton(ns("action_lists_complement"),label = "Complement", block = T, css.class = "btn btn-info")
                    )
                  ),
                  div(
+                   class = ns("export_list"), style = "display: none",
                    tags$label("Export lists"),
-                   actionButton(ns("action_lists_export"),label = "Export", block = T),
-                 )
+                   actionButton(ns("action_lists_export"),label = "Export", block = T, css.class = "btn btn-primary")
+                 ),
+                 bsModal(ns("modal_export_list"), "Export list", NULL, size = "large",
+                         uiOutput(ns("modal_export_list_ui")))
                )
              ),
       )
@@ -553,6 +556,7 @@ mod_scatterplot_server <- function(id, rv){
       observe({
         shinyjs::toggle(selector = paste0(".",ns("list_actions")), condition = length(input$list_sel_input)>0)
         shinyjs::toggle(selector = paste0(".",ns("create_new_lists_from_lists")), condition = length(input$list_sel_input)>1)
+        shinyjs::toggle(selector = paste0(".",ns("export_list")), condition = length(input$list_sel_input)==1)
       })
 
       ## Create new lists
@@ -667,6 +671,36 @@ mod_scatterplot_server <- function(id, rv){
         rv_plot$plot_lists <- T # switch that tells ggplot to colour the graph based on selected lists (default is to plot colours by input$picker_COLOUR)
       })
 
+      observeEvent(input$action_lists_export,{
+        toggleModal(session, "modal_export_list", toggle = "open")
+        output$modal_export_list_ui <- renderUI(
+          tagList(
+            textInput(
+              ns("listName"),
+              label = "List Name",
+              value = rv_plot$lists[list_id == input$list_sel_input, list_name],
+              placeholder = "Human readable name of a List",
+              width = "100%"
+            ),
+            textAreaInput(
+              ns("listDescription"),
+              label = "List description",
+              value = rv_plot$lists[list_id == input$list_sel_input, list_desc],
+              placeholder = "Description of a List",
+              width = "100%"
+            ),
+            uiOutput(ns("go_create_list_ui"))
+          )
+        )
+      })
+
+      observeEvent(c(input$listDescription, input$listName), {
+        if(input$listName != "" & input$listDescription != ""){
+          output$go_create_list_ui <- renderUI({actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-primary")})
+        }else{
+          output$go_create_list_ui <- renderUI({actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-primary", disabled = "")})
+        }
+      })
     }
   )
 }
