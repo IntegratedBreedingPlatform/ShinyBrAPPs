@@ -8,9 +8,9 @@ $.extend(binding, {
 
   getValue: function(el) {
     var checkIds = [];
-    $(el).find(".list_checkbox").each(function(){
+    $(el).find(".group_checkbox").each(function(){
       if ($(this).prop("checked") == true) {
-        checkIds.push($(this).attr("list_id"));
+        checkIds.push($(this).attr("group_id"));
       }
     });
     return checkIds;
