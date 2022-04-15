@@ -1,7 +1,11 @@
-.shinysky-busy-indicator{
+.shinysky-busy-indicator {
 	z-index: 9999
 }
 
-#tabsetPanel_main li{
+#tabsetPanel_main li {
   font-size: large;
+}
+
+.indent-left {
+ padding-left: 25px;
 }

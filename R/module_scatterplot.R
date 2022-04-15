@@ -5,63 +5,128 @@ mod_scatterplot_ui <- function(id){
     fluidRow(
       column(
         4,
-        pickerInput(
-          inputId = ns("env"),
-          label = "Environments",
-          choices = NULL,
-          width = "100%",
-          multiple = T,
-          options = list(
-            `actions-box` = TRUE,
-            title = 'Load Environments First',
-            onInitialize = I('function() { this.setValue(""); }')
+        fluidRow(
+          column(12,
+                 pickerInput(
+                   inputId = ns("env"),
+                   label = "Environments",
+                   choices = NULL,
+                   width = "100%",
+                   multiple = T,
+                   options = list(
+                     `actions-box` = TRUE,
+                     title = 'Load Environments First',
+                     onInitialize = I('function() { this.setValue(""); }')
+                   )
+                 ),
+                 materialSwitch(inputId = ns("switch_aggregate"), label = "Aggregate observations", value = F, inline = T, status = "info"),
+                 div(class = ns("ui_aggregate"),
+                     pickerInput(ns("aggregate_by"), "Aggregate by", choices =  c("germplasm and environment", "germplasm"), selected = "germplasm", multiple = F)
+                 )
           )
         ),
-        materialSwitch(inputId = ns("switch_aggregate"), label = "Aggregate observations", value = F, inline = T),
-        div(class = ns("ui_aggregate"),
-            pickerInput(ns("aggregate_by"), "Aggregate by", choices =  c("germplasm and environment", "germplasm"), selected = "germplasm", multiple = F)
-        ),
-        tags$label("X", style = "display:block"),
-        pickerInput(ns("picker_X"), "Variable", choices = NULL, inline = T),
-        div(
-          class = ns("ui_aggregate"), style = "display:inline-block",
-          pickerInput(ns("aggreg_fun_X"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
-        ),
-        div(radioButtons(ns("express_X_as"), "Show values", choices = "", inline = T), style = "display:inline-block"),
-        div(id = ns("div_ref_genotype_X"), pickerInput(ns("ref_genotype_X"), "", choices = NULL, inline = T), style = "display:inline-block"),
-        tags$label("Y", style = "display:block"),
-        pickerInput(ns("picker_Y"), "Variable", choices = NULL, inline = T),
-        div(
-          class = ns("ui_aggregate"), style = "display:inline-block",
-          pickerInput(ns("aggreg_fun_Y"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
-        ),
-        div(radioButtons(ns("express_Y_as"), "Show values", choices = "", inline = T), style = "display:inline-block"),
-        div(id = ns("div_ref_genotype_Y"), pickerInput(ns("ref_genotype_Y"), "", choices = NULL, inline = T), style = "display:inline-block"),
-        materialSwitch(inputId = ns("switch_SHAPE"), label = "Shape", value = F),
-        div(
-          id = ns("ui_SHAPE"),
-          pickerInput(ns("picker_SHAPE"), "Variable", choices = NULL, inline = T),
-          div(
-            class = ns("ui_aggregate"), style = "display:inline-block",
-            pickerInput(ns("aggreg_fun_SHAPE"), "Aggregation function", choices = c("concatenate unique values"="unique_values"), inline = T)
+        fluidRow(
+          column(
+            12,
+            tags$h4("X")
           )
         ),
-        materialSwitch(inputId = ns("switch_COLOUR"), label = "Colour", value = F),
-        div(
-          id = ns("ui_COLOUR"),
-          pickerInput(ns("picker_COLOUR"), "Variable", choices = NULL, inline = T),
-          div(
-            class = ns("ui_aggregate"), style = "display:inline-block",
-            pickerInput(ns("aggreg_fun_COLOUR"), "Aggregation function", choices = NULL, inline = T)
+        fluidRow(
+          column(
+            12,
+            div(class = "indent-left",
+                pickerInput(ns("picker_X"), "Variable", choices = NULL, inline = T),
+                div(
+                  class = ns("ui_aggregate"), style = "display:inline-block",
+                  pickerInput(ns("aggreg_fun_X"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
+                ),
+                div(radioButtons(ns("express_X_as"), "Show values", choices = "", inline = T), style = "display:inline-block"),
+                div(id = ns("div_ref_genotype_X"), pickerInput(ns("ref_genotype_X"), "", choices = NULL, inline = T), style = "display:inline-block")
+            )
           )
         ),
-        materialSwitch(inputId = ns("switch_SIZE"), label = "Size", value = F),
-        div(
-          id = ns("ui_SIZE"),
-          pickerInput(ns("picker_SIZE"), "Variable", choices = NULL, inline = T),
-          div(
-            class = ns("ui_aggregate"), style = "display:inline-block",
-            pickerInput(ns("aggreg_fun_SIZE"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
+        fluidRow(
+          column(
+            12,
+            tags$h4("Y")
+          )
+        ),
+        fluidRow(
+          column(
+            12,
+            div(
+              class = "indent-left",
+              pickerInput(ns("picker_Y"), "Variable", choices = NULL, inline = T),
+              div(
+                class = ns("ui_aggregate"), style = "display:inline-block",
+                pickerInput(ns("aggreg_fun_Y"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
+              ),
+              div(radioButtons(ns("express_Y_as"), "Show values", choices = "", inline = T), style = "display:inline-block"),
+              div(id = ns("div_ref_genotype_Y"), pickerInput(ns("ref_genotype_Y"), "", choices = NULL, inline = T), style = "display:inline-block"),
+            )
+          )
+        ),
+        fluidRow(
+          column(
+            12,
+            tags$h4("Shape", style = "display:inline"),
+            materialSwitch(inputId = ns("switch_SHAPE"), label = "", value = F, inline = T, status = "info"),
+          )
+        ),
+        fluidRow(
+          column(
+            12,
+            div(
+              id = ns("ui_SHAPE"),
+              class = "indent-left",
+              pickerInput(ns("picker_SHAPE"), "Variable", choices = NULL, inline = T),
+              div(
+                class = ns("ui_aggregate"), style = "display:inline-block",
+                pickerInput(ns("aggreg_fun_SHAPE"), "Aggregation function", choices = c("concatenate unique values"="unique_values"), inline = T)
+              )
+            )
+          )
+        ),
+        fluidRow(
+          column(
+            12,
+            tags$h4("Colour", style = "display:inline"),
+            materialSwitch(inputId = ns("switch_COLOUR"), label = "", value = F, inline = T, status = "info")
+          )
+        ),
+        fluidRow(
+          column(
+            12,
+            div(
+              id = ns("ui_COLOUR"),
+              class = "indent-left",
+              pickerInput(ns("picker_COLOUR"), "Variable", choices = NULL, inline = T),
+              div(
+                class = ns("ui_aggregate"), style = "display:inline-block",
+                pickerInput(ns("aggreg_fun_COLOUR"), "Aggregation function", choices = NULL, inline = T)
+              )
+            )
+          )
+        ),
+        fluidRow(
+          column(
+            12,
+            tags$h4("Size", style = "display:inline"),
+            materialSwitch(inputId = ns("switch_SIZE"), label = "", value = F, inline = T, status = "info")
+          )
+        ),
+        fluidRow(
+          column(
+            12,
+            div(
+              id = ns("ui_SIZE"),
+              class = "indent-left",
+              pickerInput(ns("picker_SIZE"), "Variable", choices = NULL, inline = T),
+              div(
+                class = ns("ui_aggregate"), style = "display:inline-block",
+                pickerInput(ns("aggreg_fun_SIZE"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
+              )
+            )
           )
         )
       ),
