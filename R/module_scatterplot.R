@@ -142,6 +142,7 @@ mod_scatterplot_ui <- function(id){
                # hover = ns("scatterplot_hover"),
                # brush = ns("scatterplot_brush")
              ),
+             bsTooltip(ns("scatterplot"), title = "Tip: press the shift key for multiple mouse selection", placement = "left"),
              actionButton(ns("go_clusters"), "Clusters (NOT IMPLEMENTED)", css.class = "btn btn-info"),
              actionButton(ns("go_regressions"), "Regressions (NOT IMPLEMENTED", css.class = "btn btn-info"),
              span(class = ns("ui_create_group"), style = "display: none;",
