@@ -701,6 +701,29 @@ mod_scatterplot_server <- function(id, rv){
           output$go_create_list_ui <- renderUI({actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-primary", disabled = "")})
         }
       })
+
+      observeEvent(input$go_create_list,{
+        toggleModal(session, "modal_export_group_as_list", toggle = "close")
+        req(length(input$group_sel_input)==1)
+        tryCatch({
+          brapirv2::brapi_post_lists(
+            con = rv$con,
+            data = rv_plot$groups[group_id == input$group_sel_input, germplasmDbIds][[1]],
+            listSize = rv_plot$groups[group_id == input$group_sel_input, N],
+            dateCreated = as.character(Sys.Date()), # XXX
+            dateModified = as.character(Sys.Date()), # XXX
+            listName = input$listName,
+            listDescription= input$listDescription,
+            listOwnerName = "Admin Admin", # XXX
+            listOwnerPersonDbId = "1", # XXX
+            listSource = "test", # XXX
+            listType = "germplasm"
+          )
+          showNotification("List posted", type = "message", duration = notification_duration)
+        }, error = function(e)({
+          showNotification("Could not post list", type = "error", duration = notification_duration)
+        }))
+      })
     }
   )
 }
