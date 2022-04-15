@@ -34,14 +34,17 @@ mod_scatterplot_ui <- function(id){
         fluidRow(
           column(
             12,
-            div(class = "indent-left",
-                pickerInput(ns("picker_X"), "Variable", choices = NULL, inline = T),
-                div(
-                  class = ns("ui_aggregate"), style = "display:inline-block",
-                  pickerInput(ns("aggreg_fun_X"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
-                ),
-                div(radioButtons(ns("express_X_as"), "Show values", choices = "", inline = T), style = "display:inline-block"),
-                div(id = ns("div_ref_genotype_X"), pickerInput(ns("ref_genotype_X"), "", choices = NULL, inline = T), style = "display:inline-block")
+            div(
+              class = "indent-left",
+              pickerInput(ns("picker_X"), "Variable", choices = NULL, inline = T),
+              div(
+                class = ns("ui_aggregate"), style = "display:inline-block",
+                pickerInput(ns("aggreg_fun_X"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
+              ),
+              div(radioButtons(ns("express_X_as"), "Show values", choices = "", inline = T), style = "display:inline-block"),
+              div(id = ns("div_ref_genotype_X"), pickerInput(ns("ref_genotype_X"), "", choices = NULL, inline = T), style = "display:inline-block"),
+              div(id = ns("div_reverse_ranking_X"), checkboxInput(ns("reverse_ranking_X"), label = "reverse", value = F), style = "display:inline-block"),
+              bsTooltip(ns("div_reverse_ranking_X"), title = "Default:<br/>the highest X values get the highest ranks", placement = "bottom")
             )
           )
         ),
@@ -63,6 +66,8 @@ mod_scatterplot_ui <- function(id){
               ),
               div(radioButtons(ns("express_Y_as"), "Show values", choices = "", inline = T), style = "display:inline-block"),
               div(id = ns("div_ref_genotype_Y"), pickerInput(ns("ref_genotype_Y"), "", choices = NULL, inline = T), style = "display:inline-block"),
+              div(id = ns("div_reverse_ranking_Y"), checkboxInput(ns("reverse_ranking_Y"), label = "reverse", value = F), style = "display:inline-block"),
+              bsTooltip(ns("div_reverse_ranking_Y"), title = "Default:<br/>the highest Y values get the highest ranks", placement = "bottom")
             )
           )
         ),
@@ -351,6 +356,9 @@ mod_scatterplot_server <- function(id, rv){
         )
       })
 
+      ## toggle randing order UI
+      observe({shinyjs::toggle("div_reverse_ranking_X", condition = input$express_X_as=="as ranks")})
+      observe({shinyjs::toggle("div_reverse_ranking_Y", condition = input$express_Y_as=="as ranks")})
       ## toggle genotype reference UI
       observe({shinyjs::toggle("div_ref_genotype_X", condition = input$express_X_as=="relatively to genotype")})
       observe({shinyjs::toggle("div_ref_genotype_Y", condition = input$express_Y_as=="relatively to genotype")})
@@ -413,7 +421,11 @@ mod_scatterplot_server <- function(id, rv){
         data_plot_aggr[,VAR_X_PLOT:=VAR_X]
         if(input$express_X_as=="as ranks"){
           # - ranking
-          data_plot_aggr[, VAR_X_PLOT := base::rank(x = VAR_X, na.last = T, ties.method = "min")]
+          if(input$reverse_ranking_X){
+            data_plot_aggr[, VAR_X_PLOT := base::rank(x = -VAR_X, na.last = T, ties.method = "min")]
+          }else{
+            data_plot_aggr[, VAR_X_PLOT := base::rank(x = VAR_X, na.last = T, ties.method = "min")]
+          }
         }else if(input$express_X_as=="relatively to genotype" & !(input$aggregate_by %in% c("plot"))){
           # - variation to genotype
           req(input$ref_genotype_X)
@@ -435,7 +447,11 @@ mod_scatterplot_server <- function(id, rv){
         data_plot_aggr[,VAR_Y_PLOT:=VAR_Y]
         if(input$express_Y_as=="as ranks"){
           # - ranking
-          data_plot_aggr[, VAR_Y_PLOT := base::rank(x = VAR_Y, na.last = T, ties.method = "min")]
+          if(input$reverse_ranking_Y){
+            data_plot_aggr[, VAR_Y_PLOT := base::rank(x = -VAR_Y, na.last = T, ties.method = "min")]
+          }else{
+            data_plot_aggr[, VAR_Y_PLOT := base::rank(x = VAR_Y, na.last = T, ties.method = "min")]
+          }
         }else if(input$express_Y_as=="relatively to genotype" & !(input$aggregate_by %in% c("plot"))){
           # - variation to genotype
           req(input$ref_genotype_Y)
@@ -486,7 +502,6 @@ mod_scatterplot_server <- function(id, rv){
         d[, "Shape scale" := if(input$switch_SHAPE == T) VAR_SHAPE else NA] # workaround for the plotly tooltip
         d[, "Colour scale" := if(input$switch_COLOUR == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
         d[, "Size scale" := if(input$switch_SIZE == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
-        # p <- ggplot(rv$data_plot_aggr, aes(
         p <- ggplot(d, aes(
           x = VAR_X_PLOT, y = VAR_Y_PLOT,
           colour = if(input$switch_COLOUR == T | rv_plot$plot_groups == T) VAR_COLOUR else NULL,
@@ -504,6 +519,7 @@ mod_scatterplot_server <- function(id, rv){
           scale_x_continuous(
             labels = if(input$express_X_as=="relatively to genotype" & isTruthy(input$ref_genotype_X)){scales::percent}else{waiver()},
             trans = if(input$express_X_as=="as ranks"){"reverse"}else{"identity"},
+            breaks = if(input$express_X_as=="as ranks"){as.numeric(floor(quantile(d$VAR_X_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
             name = if(input$express_X_as=="as ranks"){
               paste(input$picker_X, "(ranks)")
             }else if(input$express_X_as=="relatively to genotype" & isTruthy(input$ref_genotype_X)){
@@ -515,6 +531,7 @@ mod_scatterplot_server <- function(id, rv){
           scale_y_continuous(
             labels = if(input$express_Y_as=="relatively to genotype" & isTruthy(input$ref_genotype_Y)){scales::percent}else{waiver()},
             trans = if(input$express_Y_as=="as ranks"){"reverse"}else{"identity"},
+            breaks = if(input$express_Y_as=="as ranks"){as.numeric(floor(quantile(d$VAR_Y_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
             name = if(input$express_Y_as=="as ranks"){
               paste(input$picker_Y, "(ranks)")
             }else if(input$express_Y_as=="relatively to genotype" & isTruthy(input$ref_genotype_Y)){
