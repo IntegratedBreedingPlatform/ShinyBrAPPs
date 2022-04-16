@@ -235,9 +235,9 @@ mod_scatterplot_server <- function(id, rv){
         column_datasource <- rv$column_datasource
 
         ## update environments
-        envs <- unique(rv$data_plot[,.(studyDbId, studyName)])
+        envs <- unique(rv$data_plot[,.(studyDbId, study_name_app)])
         env_choices <- envs[,studyDbId]
-        names(env_choices) <- envs[,studyName]
+        names(env_choices) <- envs[,study_name_app]
         updatePickerInput(
           session, "env",
           choices = env_choices, selected = env_choices
