@@ -528,6 +528,7 @@ mod_scatterplot_server <- function(id, rv){
         d[, "Shape scale" := if(input$switch_SHAPE == T) VAR_SHAPE else NA] # workaround for the plotly tooltip
         d[, "Colour scale" := if(input$switch_COLOUR == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
         d[, "Size scale" := if(input$switch_SIZE == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
+        d <- highlight_key(d)
         p <- ggplot(d, aes(
           x = VAR_X_PLOT, y = VAR_Y_PLOT,
           colour = if(input$switch_COLOUR == T | rv_plot$plot_groups == T) VAR_COLOUR else NULL,
@@ -583,7 +584,8 @@ mod_scatterplot_server <- function(id, rv){
           dynamicTicks = "TRUE", source = "A", originalData = T,
           tooltip = c("germplasmName", "x_val", "y_val", "Shape", "Colour", "Size")) %>%
           style(hoverlabel = list(bgcolor = grey(0.3))) %>%
-          layout(dragmode = "lasso")
+          layout(dragmode = "lasso") %>%
+          highlight(on = "plotly_selected", off = "plotly_deselect")
       })
 
       observeEvent(c(event_data("plotly_click", source = "A"),event_data("plotly_selected", source = "A")),{
