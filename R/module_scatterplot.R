@@ -6,23 +6,43 @@ mod_scatterplot_ui <- function(id){
       column(
         4,
         fluidRow(
-          column(12,
-                 pickerInput(
-                   inputId = ns("env"),
-                   label = "Environments",
-                   choices = NULL,
-                   width = "100%",
-                   multiple = T,
-                   options = list(
-                     `actions-box` = TRUE,
-                     title = 'Load Environments First',
-                     onInitialize = I('function() { this.setValue(""); }')
-                   )
-                 ),
-                 materialSwitch(inputId = ns("switch_aggregate"), label = "Aggregate observations", value = F, inline = T, status = "info"),
-                 div(class = ns("ui_aggregate"),
-                     pickerInput(ns("aggregate_by"), "Aggregate by", choices =  c("germplasm and environment", "germplasm"), selected = "germplasm", multiple = F)
-                 )
+          column(
+            12,
+            tags$h4("Environments")
+          )
+        ),
+        fluidRow(
+          column(
+            12,
+            class = "space-left space-bottom",
+            pickerInput(
+              inputId = ns("env"),
+              label = "",
+              choices = NULL,
+              width = "100%",
+              multiple = T,
+              options = list(
+                `actions-box` = TRUE,
+                title = 'Load Environments First',
+                onInitialize = I('function() { this.setValue(""); }')
+              )
+            )
+          )
+        ),
+        fluidRow(
+          column(
+            12,
+            tags$h4("Aggregate observations", style = "display:inline", class = "space-right"),
+            materialSwitch(inputId = ns("switch_aggregate"), label = "", value = F, inline = T, status = "info"),
+          )
+        ),
+        fluidRow(
+          column(
+            12,
+            class = "space-left space-bottom",
+            div(class = ns("ui_aggregate"),
+                pickerInput(ns("aggregate_by"), "Aggregate by", choices =  c("germplasm and environment", "germplasm"), selected = "germplasm", multiple = F)
+            )
           )
         ),
         fluidRow(
@@ -34,8 +54,8 @@ mod_scatterplot_ui <- function(id){
         fluidRow(
           column(
             12,
+            class = "space-left space-bottom",
             div(
-              class = "indent-left",
               pickerInput(ns("picker_X"), "Variable", choices = NULL, inline = T),
               div(
                 class = ns("ui_aggregate"), style = "display:inline-block",
@@ -57,8 +77,8 @@ mod_scatterplot_ui <- function(id){
         fluidRow(
           column(
             12,
+            class = "space-left space-bottom",
             div(
-              class = "indent-left",
               pickerInput(ns("picker_Y"), "Variable", choices = NULL, inline = T),
               div(
                 class = ns("ui_aggregate"), style = "display:inline-block",
@@ -74,16 +94,16 @@ mod_scatterplot_ui <- function(id){
         fluidRow(
           column(
             12,
-            tags$h4("Shape", style = "display:inline"),
+            tags$h4("Shape", style = "display:inline", class = "space-right"),
             materialSwitch(inputId = ns("switch_SHAPE"), label = "", value = F, inline = T, status = "info"),
           )
         ),
         fluidRow(
           column(
             12,
+            class = "space-left space-bottom",
             div(
               id = ns("ui_SHAPE"),
-              class = "indent-left",
               pickerInput(ns("picker_SHAPE"), "Variable", choices = NULL, inline = T),
               div(
                 class = ns("ui_aggregate"), style = "display:inline-block",
@@ -95,16 +115,16 @@ mod_scatterplot_ui <- function(id){
         fluidRow(
           column(
             12,
-            tags$h4("Colour", style = "display:inline"),
+            tags$h4("Colour", style = "display:inline", class = "space-right"),
             materialSwitch(inputId = ns("switch_COLOUR"), label = "", value = F, inline = T, status = "info")
           )
         ),
         fluidRow(
           column(
             12,
+            class = "space-left space-bottom",
             div(
               id = ns("ui_COLOUR"),
-              class = "indent-left",
               pickerInput(ns("picker_COLOUR"), "Variable", choices = NULL, inline = T),
               div(
                 class = ns("ui_aggregate"), style = "display:inline-block",
@@ -116,16 +136,16 @@ mod_scatterplot_ui <- function(id){
         fluidRow(
           column(
             12,
-            tags$h4("Size", style = "display:inline"),
+            tags$h4("Size", style = "display:inline", class = "space-right"),
             materialSwitch(inputId = ns("switch_SIZE"), label = "", value = F, inline = T, status = "info")
           )
         ),
         fluidRow(
           column(
             12,
+            class = "space-left space-bottom",
             div(
               id = ns("ui_SIZE"),
-              class = "indent-left",
               pickerInput(ns("picker_SIZE"), "Variable", choices = NULL, inline = T),
               div(
                 class = ns("ui_aggregate"), style = "display:inline-block",
