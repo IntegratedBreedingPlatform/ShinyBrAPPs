@@ -335,7 +335,6 @@ mod_scatterplot_server <- function(id, rv){
       # - disable "express relatively to genotype"
       # - disable the categorical variables that would need to be aggregated
       observeEvent(c(input$switch_aggregate, input$aggregate_by, rv_plot$trigger_update_selectors), {
-        req(input$switch_aggregate==T)
         req(rv$column_datasource)
         num_var_choices <- rv$column_datasource[type == "Numerical",.(cols = list(cols)), source]
 
@@ -654,8 +653,8 @@ mod_scatterplot_server <- function(id, rv){
 
         ## update selectors (shape, colour)
         data_plot <- copy(rv$data_plot) # to avoid issues related to assignment by reference
-        data_plot[germplasmDbId %in% rv_plot$selection[,unlist(germplasmDbIds)], eval(input$modal_create_group_text_input_label) := "Inside group"]
-        data_plot[!(germplasmDbId %in% rv_plot$selection[,unlist(germplasmDbIds)]), eval(input$modal_create_group_text_input_label) := "outside group"]
+        data_plot[germplasmDbId %in% rv_plot$selection[,unlist(germplasmDbIds)], eval(input$modal_create_group_text_input_label) := paste0('In "', input$modal_create_group_text_input_label,'"')]
+        data_plot[!(germplasmDbId %in% rv_plot$selection[,unlist(germplasmDbIds)]), eval(input$modal_create_group_text_input_label) := paste0('Not in "', input$modal_create_group_text_input_label,'"')]
         rv$column_datasource <- rbindlist(
           list(
             rv$column_datasource,
