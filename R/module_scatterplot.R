@@ -209,7 +209,7 @@ mod_scatterplot_server <- function(id, rv){
 
       rv_plot$groups <- data.table()
       rv_plot$plot_groups <- F # switch that tells ggplot to color the graph based on selected groups (default is F => plot colors by input$picker_COLOUR)
-
+      rv_plot$trigger_update_selectors <- 1
       ## function for data aggregation
       aggreg_functions <- data.table(
         fun = c("mean", "max", "min", "sum", "unique_values"),
@@ -245,7 +245,6 @@ mod_scatterplot_server <- function(id, rv){
           rv$data_plot[, c(col) := list(as.character(eval(as.name(col))))]
         }
 
-        column_datasource <- rv$column_datasource
 
         ## update environments
         envs <- unique(rv$data_plot[,.(studyDbId, study_name_app)])
@@ -255,6 +254,12 @@ mod_scatterplot_server <- function(id, rv){
           session, "env",
           choices = env_choices, selected = env_choices
         )
+      })
+
+      observeEvent(c(rv_plot$trigger_update_selectors, input$switch_aggregate), {
+        req(rv$data_plot)
+        req(rv$column_datasource)
+        req(input$switch_aggregate==F)
 
         ## update variable selectors
         num_var_choices <- rv$column_datasource[type == "Numerical",.(cols = list(cols)), source]
@@ -267,20 +272,20 @@ mod_scatterplot_server <- function(id, rv){
           default_Y <- default_X
         }
 
-        # work around for pickerInputs with option groups that have only one option.
+        # Work around for pickerInputs with option groups that have only one option.
         # The default behaviour is to display only the group name.
-        # Fix: naming the group by the singleton element
+        # Work around: naming the group by the singleton element
         for(k in 1:num_var_choices[,.N]){
           cols <- num_var_choices[k,cols][[1]]
-          if(length(cols)==1){
-            num_var_choices[k, source := cols]
-          }
+          if(length(cols)==1){num_var_choices[k, source := cols]}
         }
         for(k in 1:non_num_var_choices[,.N]){
           cols <- non_num_var_choices[k,cols][[1]]
-          if(length(cols)==1){
-            non_num_var_choices[k, source := cols]
-          }
+          if(length(cols)==1){non_num_var_choices[k, source := cols]}
+        }
+        for(k in 1:var_choices_all[,.N]){
+          cols <- var_choices_all[k,cols][[1]]
+          if(length(cols)==1){var_choices_all[k, source := cols]}
         }
 
         updatePickerInput(
@@ -329,9 +334,11 @@ mod_scatterplot_server <- function(id, rv){
       ## if aggregation by plot
       # - disable "express relatively to genotype"
       # - disable the categorical variables that would need to be aggregated
-      observeEvent(c(input$switch_aggregate, input$aggregate_by), {
+      observeEvent(c(input$switch_aggregate, input$aggregate_by, rv_plot$trigger_update_selectors), {
+        req(input$switch_aggregate==T)
         req(rv$column_datasource)
         num_var_choices <- rv$column_datasource[type == "Numerical",.(cols = list(cols)), source]
+
         if(input$switch_aggregate == T){
           updateRadioButtons(session, "express_X_as", choices = c("as they are", "as ranks", "relatively to genotype"), inline = T)
           updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks", "relatively to genotype"), inline = T)
@@ -347,6 +354,14 @@ mod_scatterplot_server <- function(id, rv){
           updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks"), inline = T)
           var_choices_SHAPE <- rv$column_datasource[type != "Numerical",.(cols = list(cols)), source]
           var_choices_COLOUR <- rv$column_datasource[,.(cols = list(cols)), source]
+        }
+        for(k in 1:var_choices_SHAPE[,.N]){
+          cols <- var_choices_SHAPE[k,cols][[1]]
+          if(length(cols)==1){var_choices_SHAPE[k, source := cols]}
+        }
+        for(k in 1:var_choices_COLOUR[,.N]){
+          cols <- var_choices_COLOUR[k,cols][[1]]
+          if(length(cols)==1){var_choices_COLOUR[k, source := cols]}
         }
         updatePickerInput(
           session = session, inputId = "picker_SHAPE",
@@ -401,10 +416,8 @@ mod_scatterplot_server <- function(id, rv){
         req(input$picker_SIZE %in% names(rv$data_plot))
         req(input$picker_SHAPE %in% names(rv$data_plot))
         req(input$aggreg_fun_COLOUR)
-        if(rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"]==T){
-          req(input$aggreg_fun_COLOUR)
-          req(aggreg_functions[fun == input$aggreg_fun_COLOUR, for_num] == rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"])
-        }
+        req(aggreg_functions[fun == input$aggreg_fun_COLOUR, for_num] == rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"])
+
         data_plot_aggr <- rv$data_plot[
           studyDbId %in% input$env,
           .(
@@ -638,10 +651,24 @@ mod_scatterplot_server <- function(id, rv){
           rv_plot$selection
         ))
         # ), fill = T, use.names = T)
+
+        ## update selectors (shape, colour)
+        data_plot <- copy(rv$data_plot) # to avoid issues related to assignment by reference
+        data_plot[germplasmDbId %in% rv_plot$selection[,unlist(germplasmDbIds)], eval(input$modal_create_group_text_input_label) := "Inside group"]
+        data_plot[!(germplasmDbId %in% rv_plot$selection[,unlist(germplasmDbIds)]), eval(input$modal_create_group_text_input_label) := "outside group"]
+        rv$column_datasource <- rbindlist(
+          list(
+            rv$column_datasource,
+          data.table(cols = input$modal_create_group_text_input_label, source = "group", type = "Text")
+          )
+        )
+        rv$data_plot <- data_plot
+
         rv_plot$selection <- data.table()
         toggleModal(session, "modal_create_group", toggle = "close")
-      })
 
+        rv_plot$trigger_update_selectors <- rv_plot$trigger_update_selectors + 1
+      })
       observeEvent(rv_plot$groups$group_id,{
         req(rv_plot$groups)
         output$ui_groups <- renderUI({
@@ -768,6 +795,15 @@ mod_scatterplot_server <- function(id, rv){
       })
 
       observeEvent(input$action_groups_delete,{
+
+        ## update selectors (shape, colour)
+        for(k in input$group_sel_input){
+          rv$data_plot[,eval(rv_plot$groups[group_id == k, group_name]) := NULL]
+        }
+        rv$column_datasource <- rv$column_datasource[!(cols %in% rv_plot$groups[group_id %in% input$group_sel_input, group_name])]
+        rv_plot$trigger_update_selectors <- rv_plot$trigger_update_selectors + 1
+
+        ## delete groups
         rv_plot$groups <- rv_plot$groups[!(group_id %in% input$group_sel_input)]
       })
 
