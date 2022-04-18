@@ -177,29 +177,22 @@ mod_scatterplot_ui <- function(id){
       column(2,
              div(
                class = ns("group_actions"), style = "display: none",
+               tags$label("Visualize Groups"),
+               actionButton(ns("action_groups_plot"),label = "Plot", block = T, css.class = "btn btn-info"),
+               tags$label("Create new group"),
+               actionButton(ns("action_groups_union"),label = "Union", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
+               actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
+               actionButton(ns("action_groups_complement"),label = "Complement", block = T, css.class = "btn btn-info"),
+               tags$label("Delete Groups"),
+               actionButton(ns("action_groups_delete"),label = "Delete", block = T, css.class = "btn btn-info"),
                div(
-                 tags$label("Visualize Groups"),
-                 actionButton(ns("action_groups_plot"),label = "Plot", block = T, css.class = "btn btn-info"),
-                 div(
-                   tags$label("Create new group"),
-                   div(
-                     class = ns("create_new_groups_from_groups"), style = "display: none",
-                     actionButton(ns("action_groups_union"),label = "Union", block = T, css.class = "btn btn-info"),
-                     actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, css.class = "btn btn-info"),
-                   ),
-                   div(
-                     actionButton(ns("action_groups_complement"),label = "Complement", block = T, css.class = "btn btn-info")
-                   )
-                 ),
-                 div(
-                   class = ns("export_group"), style = "display: none",
-                   tags$label("Export Group"),
-                   actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary")
-                 ),
-                 bsModal(ns("modal_export_group_as_list"), "Export Group as List", NULL, size = "large",
-                         uiOutput(ns("modal_export_group_as_list_ui")))
-               )
-             ),
+                 class = ns("export_group"), style = "display: none",
+                 tags$label("Export Group"),
+                 actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary")
+               ),
+               bsModal(ns("modal_export_group_as_list"), "Export Group as List", NULL, size = "large",
+                       uiOutput(ns("modal_export_group_as_list_ui")))
+             )
       )
     )
   )
@@ -773,6 +766,11 @@ mod_scatterplot_server <- function(id, rv){
         ]
         rv_plot$plot_groups <- T # switch that tells ggplot to colour the graph based on selected groups (default is to plot colours by input$picker_COLOUR)
       })
+
+      observeEvent(input$action_groups_delete,{
+        rv_plot$groups <- rv_plot$groups[!(group_id %in% input$group_sel_input)]
+      })
+
 
       observeEvent(input$action_groups_export_as_list,{
         toggleModal(session, "modal_export_group_as_list", toggle = "open")
