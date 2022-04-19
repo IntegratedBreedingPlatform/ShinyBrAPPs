@@ -177,8 +177,8 @@ mod_scatterplot_ui <- function(id){
       column(2,
              div(
                class = ns("group_actions"), style = "display: none",
-               tags$label("Visualize Groups"),
-               actionButton(ns("action_groups_plot"),label = "Plot", block = T, css.class = "btn btn-info"),
+               # tags$label("Visualize Groups"),
+               # actionButton(ns("action_groups_plot"),label = "Plot", block = T, css.class = "btn btn-info"),
                tags$label("Create new group"),
                actionButton(ns("action_groups_union"),label = "Union", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
                actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
