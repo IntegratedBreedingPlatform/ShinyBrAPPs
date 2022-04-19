@@ -587,15 +587,16 @@ mod_scatterplot_server <- function(id, rv){
           highlight(on = "plotly_selected", off = "plotly_deselect")
       })
 
-      observeEvent(c(event_data("plotly_click", source = "A"),event_data("plotly_selected", source = "A")),{
-        # observeEvent(c(event_data("plotly_click", source = "A"),event_data("plotly_selected", source = "A")),{
-        selection <- rbindlist(list(
-          event_data("plotly_click", source = "A"),
-          event_data("plotly_selected", source = "A")
-        ), use.names = T, fill = T)
-        shinyjs::toggle(selector = paste0(".",ns("ui_create_group")), condition = selection[,.N]>0)
-        req(dim(selection)[1]>0)
-        germplasms <- unique(rv$data[germplasmDbId %in% selection[,unique(key)], .(germplasmDbId, germplasmName)])
+      observeEvent(event_data("plotly_click", source = "A"),{
+        rv_plot$plot_selection <- as.data.table(event_data("plotly_click", source = "A"))
+      })
+      observeEvent(event_data("plotly_selected", source = "A"),{
+        rv_plot$plot_selection <- as.data.table(event_data("plotly_selected", source = "A"))
+      })
+      observeEvent(rv_plot$plot_selection[,.N],{
+        shinyjs::toggle(selector = paste0(".",ns("ui_create_group")), condition = rv_plot$plot_selection[,.N]>0)
+        req(dim(rv_plot$plot_selection)[1]>0)
+        germplasms <- unique(rv$data[germplasmDbId %in% rv_plot$plot_selection[,unique(key)], .(germplasmDbId, germplasmName)])
         group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
         selection_data <- data.table(
           group_id = group_id,
@@ -659,15 +660,15 @@ mod_scatterplot_server <- function(id, rv){
         rv$column_datasource <- rbindlist(
           list(
             rv$column_datasource,
-          data.table(cols = input$modal_create_group_text_input_label, source = "group", type = "Text")
+            data.table(cols = input$modal_create_group_text_input_label, source = "group", type = "Text")
           )
         )
         rv$data_plot <- data_plot
 
         rv_plot$selection <- data.table()
-        toggleModal(session, "modal_create_group", toggle = "close")
+        rv_plot$plot_selection <- data.table()
 
-        rv_plot$trigger_update_selectors <- rv_plot$trigger_update_selectors + 1
+        toggleModal(session, "modal_create_group", toggle = "close")
       })
       observeEvent(rv_plot$groups$group_id,{
         req(rv_plot$groups)
