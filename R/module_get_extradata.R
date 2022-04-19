@@ -4,7 +4,8 @@ mod_get_extradata_ui <- function(id){
   tagList(
     actionButton(
       inputId = ns("load_germplasm_data"),
-      label = "Load germplasm data"
+      label = "Load germplasm data",
+      css.class = "btn btn-primary"
     )
   )
 }
@@ -107,7 +108,7 @@ mod_get_extradata_server <- function(id, rv){
           # study_ontology <- brapirv2::brapi_get_search_variables_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(s))
 
           # for observationVariableNames that are not typed (e.g. not in the ontology) assign type manually
-          # check if the variable can be safely converted to num and the convert. Assign type "Text" otherwise
+          # check if the variable can be safely converted to num and then convert. Assign type "Text" otherwise
           nothing <- lapply(column_datasource[is.na(type), cols], function(col){
             if(all(check.numeric(data_plot[,eval(as.name(col))]))){
               data_plot[,eval(col) := as.numeric(eval(as.name(col)))]
@@ -115,6 +116,12 @@ mod_get_extradata_server <- function(id, rv){
             }else{
               column_datasource[cols == col, type := "Text"]
             }
+          })
+
+          ## force numerical variables to be numerical
+          # (it is not the case for environmentParameters)
+          nothing <- lapply(column_datasource[type=="Numerical", cols], function(col){
+            data_plot[,eval(col) := as.numeric(eval(as.name(col)))]
           })
 
           rv$environmentParameters <- environmentParameters
