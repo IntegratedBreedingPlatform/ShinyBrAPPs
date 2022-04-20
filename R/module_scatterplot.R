@@ -545,7 +545,7 @@ mod_scatterplot_server <- function(id, rv){
           scale_x_continuous(
             labels = if(input$express_X_as=="relatively to genotype" & isTruthy(input$ref_genotype_X)){scales::percent}else{waiver()},
             trans = if(input$express_X_as=="as ranks"){"reverse"}else{"identity"},
-            breaks = if(input$express_X_as=="as ranks"){as.numeric(floor(quantile(d$VAR_X_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
+            breaks = if(input$express_X_as=="as ranks"){as.numeric(floor(quantile(rv$data_plot_aggr$VAR_X_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
             name = if(input$express_X_as=="as ranks"){
               paste(input$picker_X, "(ranks)")
             }else if(input$express_X_as=="relatively to genotype" & isTruthy(input$ref_genotype_X)){
@@ -557,7 +557,7 @@ mod_scatterplot_server <- function(id, rv){
           scale_y_continuous(
             labels = if(input$express_Y_as=="relatively to genotype" & isTruthy(input$ref_genotype_Y)){scales::percent}else{waiver()},
             trans = if(input$express_Y_as=="as ranks"){"reverse"}else{"identity"},
-            breaks = if(input$express_Y_as=="as ranks"){as.numeric(floor(quantile(d$VAR_Y_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
+            breaks = if(input$express_Y_as=="as ranks"){as.numeric(floor(quantile(rv$data_plot_aggr$VAR_Y_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
             name = if(input$express_Y_as=="as ranks"){
               paste(input$picker_Y, "(ranks)")
             }else if(input$express_Y_as=="relatively to genotype" & isTruthy(input$ref_genotype_Y)){
