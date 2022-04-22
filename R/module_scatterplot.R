@@ -177,8 +177,12 @@ mod_scatterplot_ui <- function(id){
       column(2,
              div(
                class = ns("group_actions"), style = "display: none",
-               # tags$label("Visualize Groups"),
-               # actionButton(ns("action_groups_plot"),label = "Plot", block = T, css.class = "btn btn-info"),
+               tags$label("Vizualize"),
+               div(
+                 class = ns("one_group_selected"), style = "display: none",
+                 actionButton(ns("action_groups_plot_creation_params"),label = "Like at Group Creation", block = T, css.class = "btn btn-info")
+               ),
+               bsTooltip(ns("action_groups_plot_creation_params"), title = "Set the plot parameters as they were at group creation", placement = "left"),
                tags$label("Create new group"),
                actionButton(ns("action_groups_union"),label = "Union", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
                actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
@@ -186,7 +190,7 @@ mod_scatterplot_ui <- function(id){
                tags$label("Delete Groups"),
                actionButton(ns("action_groups_delete"),label = "Delete", block = T, css.class = "btn btn-info"),
                div(
-                 class = ns("export_group"), style = "display: none",
+                 class = ns("one_group_selected"), style = "display: none",
                  tags$label("Export Group"),
                  actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary")
                ),
@@ -208,7 +212,6 @@ mod_scatterplot_server <- function(id, rv){
       rv_plot <- reactiveValues()
 
       rv_plot$groups <- data.table()
-      rv_plot$plot_groups <- F # switch that tells ggplot to color the graph based on selected groups (default is F => plot colors by input$picker_COLOUR)
 
       ## function for data aggregation
       aggreg_functions <- data.table(
@@ -506,31 +509,27 @@ mod_scatterplot_server <- function(id, rv){
           }
         }
 
-        isolate({
-          rv_plot$plot_groups <- F # switch that tells ggplot to colour the graph based on selected groups (default is F => plot colours by input$picker_COLOUR)
-        })
         rv$data_plot_aggr <- data_plot_aggr
       })
 
 
       output$scatterplot <- renderPlotly({
-        input$action_groups_plot
         req(rv$data_plot_aggr)
-        if(rv_plot$plot_groups == F){
-          req(rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"] == is.numeric(rv$data_plot_aggr[,VAR_COLOUR]))
-        }
+        req(rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"] == is.numeric(rv$data_plot_aggr[,VAR_COLOUR]))
+
         d <- rv$data_plot_aggr
+
         d[, "Germplasm Name" := germplasmName] # workaround for the plotly tooltip
         d[, "X value" := VAR_X_PLOT] # workaround for the plotly tooltip
         d[, "Y value" := VAR_Y_PLOT] # workaround for the plotly tooltip
-        # d[, eval(input$picker_Y) := VAR_Y_PLOT]
         d[, "Shape scale" := if(input$switch_SHAPE == T) VAR_SHAPE else NA] # workaround for the plotly tooltip
         d[, "Colour scale" := if(input$switch_COLOUR == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
         d[, "Size scale" := if(input$switch_SIZE == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
+
         d <- highlight_key(d)
         p <- ggplot(d, aes(
           x = VAR_X_PLOT, y = VAR_Y_PLOT,
-          colour = if(input$switch_COLOUR == T | rv_plot$plot_groups == T) VAR_COLOUR else NULL,
+          colour = if(input$switch_COLOUR == T) VAR_COLOUR else NULL,
           shape = if(input$switch_SHAPE == T) VAR_SHAPE else NULL,
           size = if(input$switch_SIZE == T) VAR_SIZE else NULL,
           key = germplasmDbId,
@@ -569,8 +568,8 @@ mod_scatterplot_server <- function(id, rv){
           scale_shape(name = input$picker_SHAPE) +
           scale_size(name = input$picker_SIZE) +
           scale_color_custom(
-            is_num = if(rv_plot$plot_groups==T) F else rv$column_datasource[cols == isolate(input$picker_COLOUR), type == "Numerical"],
-            name = if(rv_plot$plot_groups==T) "Selected groups of genotypes" else isolate(input$picker_COLOUR)
+            is_num = rv$column_datasource[cols == isolate(input$picker_COLOUR), type == "Numerical"],
+            name = isolate(input$picker_COLOUR)
           ) +
           theme_minimal() #+
         # theme(legend.position = "bottom") # uneffective with plotyly
@@ -596,13 +595,38 @@ mod_scatterplot_server <- function(id, rv){
       observeEvent(rv_plot$plot_selection[,.N],{
         shinyjs::toggle(selector = paste0(".",ns("ui_create_group")), condition = rv_plot$plot_selection[,.N]>0)
         req(dim(rv_plot$plot_selection)[1]>0)
-        germplasms <- unique(rv$data[germplasmDbId %in% rv_plot$plot_selection[,unique(key)], .(germplasmDbId, germplasmName)])
+        germplasms <- unique(rv$data_plot[germplasmDbId %in% rv_plot$plot_selection[,unique(key)], .(germplasmDbId, germplasmName)])
         group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
         selection_data <- data.table(
           group_id = group_id,
           N = germplasms[,.N],
           germplasmDbIds = list(germplasms$germplasmDbId),
-          germplasmNames = list(germplasms$germplasmName)
+          germplasmNames = list(germplasms$germplasmName),
+          plot_params = list(
+            list(
+              switch_aggregate = input$switch_aggregate,
+              aggregate_by = input$aggregate_by,
+              picker_X = input$picker_X,
+              aggreg_fun_X = input$aggreg_fun_X,
+              express_X_as = input$express_X_as,
+              ref_genotype_X = input$ref_genotype_X,
+              reverse_ranking_X = input$reverse_ranking_X,
+              picker_Y = input$picker_Y,
+              aggreg_fun_ = input$aggreg_fun_Y,
+              express_Y_as = input$express_Y_as,
+              ref_genotype_Y = input$ref_genotype_Y,
+              reverse_ranking_Y = input$reverse_ranking_Y,
+              switch_SHAPE = input$switch_SHAPE,
+              picker_SHAPE = input$picker_SHAPE,
+              aggreg_fun_SHAPE = input$aggreg_fun_SHAPE,
+              switch_COLOUR = input$switch_COLOUR,
+              picker_COLOUR = input$picker_COLOUR,
+              aggreg_fun_COLOUR = input$aggreg_fun_COLOUR,
+              switch_SIZE = input$switch_SIZE,
+              picker_SIZE = input$picker_SIZE,
+              aggreg_fun_SIZE = input$aggreg_fun_SIZE
+            )
+          )
         )
         selection_data[,germplasmNames_label := if(N>6){
           paste(
@@ -650,8 +674,7 @@ mod_scatterplot_server <- function(id, rv){
         rv_plot$groups <- rbindlist(list(
           rv_plot$groups,
           rv_plot$selection
-        ))
-        # ), fill = T, use.names = T)
+        ), fill = T, use.names = T)
 
         ## update selectors (shape, colour)
         data_plot <- copy(rv$data_plot) # to avoid issues related to assignment by reference
@@ -680,7 +703,7 @@ mod_scatterplot_server <- function(id, rv){
       observe({
         shinyjs::toggle(selector = paste0(".",ns("group_actions")), condition = length(input$group_sel_input)>0)
         shinyjs::toggle(selector = paste0(".",ns("create_new_groups_from_groups")), condition = length(input$group_sel_input)>1)
-        shinyjs::toggle(selector = paste0(".",ns("export_group")), condition = length(input$group_sel_input)==1)
+        shinyjs::toggle(selector = paste0(".",ns("one_group_selected")), condition = length(input$group_sel_input)==1)
       })
 
       ## Create new groups
@@ -785,14 +808,35 @@ mod_scatterplot_server <- function(id, rv){
         })
       })
 
-      observeEvent(input$action_groups_plot,{
-        rv$data_plot_aggr[,
-                          VAR_COLOUR:=ifelse(germplasmDbId %in% unique(rv_plot$groups[group_id %in% input$group_sel_input,unlist(germplasmDbIds)]),
-                                             paste("genotypes from",
-                                                   paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = ", ")),
-                                             "other genotypes")
-        ]
-        rv_plot$plot_groups <- T # switch that tells ggplot to colour the graph based on selected groups (default is to plot colours by input$picker_COLOUR)
+      observeEvent(input$action_groups_plot_creation_params,{
+        plot_params <- rv_plot$groups[group_id == input$group_sel_input,plot_params][[1]]
+
+        updateMaterialSwitch(session, "switch_aggregate", value = plot_params$switch_aggregate)
+        updatePickerInput(session, "aggregate_by", selected = plot_params$aggregate_by)
+
+        updatePickerInput(session, "picker_X", selected = plot_params$picker_X)
+        updatePickerInput(session, "aggreg_fun_X", selected = plot_params$aggreg_fun_X)
+        updateRadioButtons(session, "express_X_as", selected = plot_params$express_X_as)
+        updatePickerInput(session, "ref_genotype_X", selected = plot_params$ref_genotype_X)
+        updateCheckboxInput(session, "reverse_ranking_X", value = plot_params$reverse_ranking_X)
+
+        updatePickerInput(session, "picker_Y", selected = plot_params$picker_Y)
+        updatePickerInput(session, "aggreg_fun_Y", selected = plot_params$aggreg_fun_Y)
+        updateRadioButtons(session, "express_Y_as", selected = plot_params$express_Y_as)
+        updatePickerInput(session, "ref_genotype_Y", selected = plot_params$ref_genotype_Y)
+        updateCheckboxInput(session, "reverse_ranking_Y", value = plot_params$reverse_ranking_Y)
+
+        updateMaterialSwitch(session, "switch_SHAPE", value = plot_params$switch_SHAPE)
+        updatePickerInput(session, "picker_SHAPE", selected = plot_params$picker_SHAPE)
+        updatePickerInput(session, "aggreg_fun_SHAPE", selected = plot_params$aggreg_fun_SHAPE)
+
+        updateMaterialSwitch(session, "switch_COLOUR", value = plot_params$switch_COLOUR)
+        updatePickerInput(session, "picker_COLOUR", selected = plot_params$picker_COLOUR)
+        updatePickerInput(session, "aggreg_fun_COLOUR", selected = plot_params$aggreg_fun_COLOUR)
+
+        updateMaterialSwitch(session, "switch_SIZE", value = plot_params$switch_SIZE)
+        updatePickerInput(session, "picker_SIZE", selected = plot_params$picker_SIZE)
+        updatePickerInput(session, "aggreg_fun_SIZE", selected = plot_params$aggreg_fun_SIZE)
       })
 
       observeEvent(input$action_groups_delete,{
