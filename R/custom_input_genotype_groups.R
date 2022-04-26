@@ -19,7 +19,7 @@ group_selector <- function(input_id, group_table, column_datasource, data_plot, 
       tags$h3("Groups of Genotypes"),
       lapply(group_table[,group_id], function(id){
         group_detail <- unique(data_plot[
-          germplasmDbId %in% unlist(foogroups[group_id==id, germplasmDbIds]),
+          germplasmDbId %in% unlist(group_table[group_id==id, germplasmDbIds]),
           .SD, .SD = column_datasource[source == "germplasm", cols]
         ])
         setcolorder(group_detail, c("germplasmDbId", "germplasmName"))
