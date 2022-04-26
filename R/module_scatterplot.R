@@ -696,7 +696,7 @@ mod_scatterplot_server <- function(id, rv){
       observeEvent(rv_plot$groups$group_id,{
         req(rv_plot$groups)
         output$ui_groups <- renderUI({
-          group_selector(input_id = ns("group_sel_input"), group_table = rv_plot$groups)
+          group_selector(input_id = ns("group_sel_input"), group_table = rv_plot$groups, column_datasource = rv$column_datasource, data_plot = rv$data_plot, panel_style = "info")
         })
       })
 
