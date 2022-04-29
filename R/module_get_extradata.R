@@ -141,30 +141,30 @@ mod_get_extradata_server <- function(id, rv){
         germplasms <- data_plot[,unique(germplasmDbId)]
 
         withProgress(message = "GET /brapi/v1/germplasm/{germplasmDbID}/attribute", value = 0, {
-          n_germplasms <- length(germplasms)
-          k <- 0
           # get study_metadata
           tryCatch({
-            germplasm_data <- rbindlist(l = lapply(1:length(germplasms), function(k){
-              incProgress(
-                1/n_germplasms,
-                detail = paste(k, "/", n_germplasms, "\n", data_plot[germplasmDbId == germplasms[k], unique(germplasmName)])
-              )
-              brapirv1::brapi_get_germplasm_germplasmDbId_attributes(con = rv$con, germplasmDbId = germplasms[k])
-              # brapirv1::brapi_get_germplasm(con = rv$con, germplasmDbId = germplasms[k])
-            }), use.names = T, fill = T)
+            incProgress(
+              1/2,
+              detail = paste("POST brapi/v2/search/attributevalues/ of", length(germplasms), "genotypes")
+            )
+            searchResultsDbId <- brapirv2::brapi_post_search_attributevalues(con = rv$con, germplasmDbIds = germplasms)
+            incProgress(
+              2/2,
+              detail = paste0("GET brapi/v2/search/attributevalues/", searchResultsDbId)
+            )
+            germplasm_data <- as.data.table(brapirv2::brapi_get_search_attributevalues_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId)))
           }, error = function(e)({
             showNotification("Could not get germplasm data", type = "error", duration = notification_duration)
           }))
         })
 
         req(germplasm_data)
-        germplasm_data_2 <- dcast(germplasm_data, "germplasmDbId ~ attributeCode", value.var = "value")
+        req("attributeName" %in% names(germplasm_data))
+        germplasm_data_2 <- dcast(germplasm_data, "germplasmDbId ~ attributeName", value.var = "value")
         if(!any(duplicated(germplasm_data_2))){
           data_plot <- merge.data.table(
             data_plot,
             germplasm_data_2,
-            # germplasm_data[,-setdiff(intersect(names(data_tmp), names(germplasm_data)), "germplasmDbId"), with = F], # remove columns that are already in data_tmp (e.g. germplasmName) but not germplasmDbId
             by = "germplasmDbId")
         }
 
