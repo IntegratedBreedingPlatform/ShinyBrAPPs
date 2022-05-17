@@ -155,21 +155,33 @@ mod_scatterplot_ui <- function(id){
           )
         )
       ),
-      column(8,
-             plotlyOutput(
-               ns("scatterplot"), width = "100%", height = "600px"
-               # click = ns("scatterplot_click"),
-               # hover = ns("scatterplot_hover"),
-               # brush = ns("scatterplot_brush")
-             ),
-             bsTooltip(ns("scatterplot"), title = "Tip: press the shift key for multiple mouse selection", placement = "left"),
-             actionButton(ns("go_clusters"), "Clusters (NOT IMPLEMENTED)", css.class = "btn btn-info"),
-             actionButton(ns("go_regressions"), "Regressions (NOT IMPLEMENTED", css.class = "btn btn-info"),
-             span(class = ns("ui_create_group"), style = "display: none;",
-                  actionButton(ns("go_create_group"), "Create Group", css.class = "btn btn-info")
-             ),
-             bsModal(ns("modal_create_group"), "Create Group", NULL, size = "small",
-                     uiOutput(ns("modal_create_group_ui")))
+      column(
+        8,
+        plotlyOutput(
+          ns("scatterplot"), width = "100%", height = "600px"
+          # click = ns("scatterplot_click"),
+          # hover = ns("scatterplot_hover"),
+          # brush = ns("scatterplot_brush")
+        ),
+        bsTooltip(ns("scatterplot"), title = "Tip: press the shift key for multiple mouse selection", placement = "left"),
+        fluidRow(
+          column(
+            12,
+            actionButton(ns("go_regression"), "Draw Regression", css.class = "btn btn-info", `aria-pressed`="true", icon = "box"),
+            actionButton(ns("go_clusters"), "Clusters (NOT IMPLEMENTED)", css.class = "btn btn-info"),
+            span(class = ns("ui_create_group"), style = "display: none;",
+                 actionButton(ns("go_create_group"), "Create Group", css.class = "btn btn-info")
+            ),
+            bsModal(ns("modal_create_group"), "Create Group", NULL, size = "small",
+                    uiOutput(ns("modal_create_group_ui")))
+          )
+        ),
+        fluidRow(
+          column(
+            12,
+            uiOutput(ns("regression_output"))
+          )
+        )
       )
     ),
     fluidRow(
@@ -212,6 +224,7 @@ mod_scatterplot_server <- function(id, rv){
       rv_plot <- reactiveValues()
 
       rv_plot$groups <- data.table()
+      rv_plot$draw_regression <- F
 
       ## function for data aggregation
       aggreg_functions <- data.table(
@@ -512,10 +525,39 @@ mod_scatterplot_server <- function(id, rv){
         rv$data_plot_aggr <- data_plot_aggr
       })
 
+      observeEvent(input$go_regression, {
+        rv_plot$draw_regression <- !rv_plot$draw_regression
+      })
 
       output$scatterplot <- renderPlotly({
         req(rv$data_plot_aggr)
+        req(input$picker_COLOUR)
         req(rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"] == is.numeric(rv$data_plot_aggr[,VAR_COLOUR]))
+
+        rv_plot$draw_regression
+
+        reg <- NULL
+        if(rv_plot$draw_regression==T){
+          try({
+            reg <- lm(formula = VAR_Y_PLOT ~ VAR_X_PLOT, data = rv$data_plot_aggr, na.action = na.exclude)
+          })
+          shinyjs::addClass(id = "go_regression", class = "active")
+          updateActionButton(session, "go_regression", icon = icon("check"))
+          output$regression_output <- renderUI({
+            tags$p(
+              tags$b("Y"),"=",signif(reg$coefficients[2], digits = 2),tags$b("X"),
+              ifelse(sign(reg$coefficients[1])<0,"","+"), signif(reg$coefficients[1],digits = 2),
+              tags$br(),
+              tags$b("P-value"), "=", signif(summary(reg)$coefficients[,"Pr(>|t|)"][2], digits = 2),
+              tags$br(),
+              tags$b("R-squared"), "=", signif(summary(reg)$r.squared, digits = 1)
+            )
+          })
+        }else{
+          updateActionButton(session, "go_regression", icon = icon(NULL))
+          shinyjs::removeClass(id = "go_regression", class = "active")
+          output$regression_output <- renderUI("")
+        }
 
         d <- rv$data_plot_aggr
 
@@ -539,8 +581,19 @@ mod_scatterplot_server <- function(id, rv){
           Shape = `Shape scale`, # workaround for the plotly tooltip
           Size = `Size scale`, # workaround for the plotly tooltip
           Colour = `Colour scale` # workaround for the plotly tooltip
-        )) +
-          geom_point(alpha = 0.5) +
+        ))
+
+        if(isTruthy(reg)){
+          p <- p + geom_abline(
+            slope = reg$coefficients[2],
+            intercept = reg$coefficients[1],
+            colour = "#269abc",
+            alpha = 0.8,
+            size = 1
+          )
+        }
+
+        p <- p + geom_point(alpha = 0.5) +
           scale_x_continuous(
             labels = if(input$express_X_as=="relatively to genotype" & isTruthy(input$ref_genotype_X)){scales::percent}else{waiver()},
             trans = if(input$express_X_as=="as ranks"){"reverse"}else{"identity"},
