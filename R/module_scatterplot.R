@@ -204,10 +204,13 @@ mod_scatterplot_ui <- function(id){
                div(
                  class = ns("one_group_selected"), style = "display: none",
                  tags$label("Export Group"),
-                 actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary")
+                 actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary"),
+                 actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, css.class = "btn btn-primary")
                ),
                bsModal(ns("modal_export_group_as_list"), "Export Group as List", NULL, size = "large",
-                       uiOutput(ns("modal_export_group_as_list_ui")))
+                       uiOutput(ns("modal_export_group_as_list_ui"))),
+               bsModal(ns("modal_export_group_mark_as_selection"), "Mark as Selection", NULL, size = "large",
+                       uiOutput(ns("modal_export_group_mark_as_selection_ui")))
              )
       )
     )
@@ -957,6 +960,144 @@ mod_scatterplot_server <- function(id, rv){
         }, error = function(e)({
           showNotification("Could not post list", type = "error", duration = notification_duration)
         }))
+      })
+
+
+      observeEvent(input$action_groups_mark_as_selection,{
+        req(length(input$group_sel_input)==1)
+        toggleModal(session, "modal_export_group_mark_as_selection", toggle = "open")
+        output$modal_export_group_mark_as_selection_ui <- renderUI({
+
+          envs <- unique(rv$data_plot[,.(studyDbId, study_name_app)])
+          env_choices <- envs[,studyDbId]
+          names(env_choices) <- envs[,study_name_app]
+
+          trait_classes <- rv$ontology_variables[,unique(trait.traitClass)]
+
+          tagList(
+            checkboxGroupInput(
+              inputId = ns("mark_as_sel_envs"),
+              label = "Environments",
+              choices = env_choices,
+              selected = env_choices,
+              width = "100%"
+            ),
+            pickerInput(
+              inputId = ns("mark_as_sel_var_to_use"),
+              label = "Variable to use",
+              choices = NULL,
+              inline = T
+            ),
+            pickerInput(
+              inputId = ns("mark_as_sel_trait_classes"),
+              label = "Filter Variable by Trait Class",
+              choices = trait_classes,
+              inline = T
+            ),
+            checkboxInput(
+              ns("mark_as_sel_all_plots_boolean"),
+              label = "Mark all plots where germplasm is present",
+              value = F
+            ),
+            uiOutput(ns("mark_as_sel_info")),
+            actionButton(
+              ns("action_groups_mark_as_selection_go"),
+              "OK", style = "primary"
+            )
+          )
+        })
+      })
+
+      observeEvent(input$mark_as_sel_trait_classes,{
+        req(input$mark_as_sel_trait_classes)
+        vars <- unique(rv$ontology_variables[trait.traitClass == input$mark_as_sel_trait_classes,.(observationVariableDbId, observationVariableName)])
+
+        choices_vars <- vars[,observationVariableDbId]
+        names(choices_vars) <- vars[,observationVariableName]
+
+        updatePickerInput(
+          session, "mark_as_sel_var_to_use",
+          choices = choices_vars
+        )
+      })
+
+      observeEvent(c(input$mark_as_sel_var_to_use, input$mark_as_sel_all_plots_boolean, input$mark_as_sel_envs), {
+        rv_plot$as_sel_data <- NULL
+        output$mark_as_sel_info <- renderUI("")
+
+        req(input$mark_as_sel_var_to_use)
+        req(input$mark_as_sel_envs)
+
+        as_sel_data <- rv$data[
+          observationLevel == "PLOT" & studyDbId %in% input$mark_as_sel_envs &
+            germplasmDbId %in% rv_plot$groups[group_id == input$group_sel_input, germplasmDbIds][[1]]
+        ]
+        if(input$mark_as_sel_all_plots_boolean==F & as_sel_data[replicate=="1",.N]>0){
+          as_sel_data <- as_sel_data[replicate == "1"]
+        }
+        as_sel_data <- unique(as_sel_data[,.(germplasmDbId, observationUnitDbId, studyDbId)])
+
+        as_sel_data[,observationVariableDbId := input$mark_as_sel_var_to_use]
+        as_sel_data[,observations.value := "1"]
+
+        output$mark_as_sel_info <- renderUI({
+          tagList(
+            div(
+              class = "panel panel-info", style = "width: 50%",
+              div(
+                class = "panel-heading",
+                icon("info", style="font-size: 2em; float:left; margin-right:15px;"),
+                p("You've selected", tags$b(as_sel_data[,.N,germplasmDbId][,.N]) ,"germplasms.", tags$br(),
+                  "The selection will impact", tags$b(as_sel_data[,.N,observationUnitDbId][,.N]), "plots.")
+              )
+            )
+          )
+        })
+
+        rv_plot$as_sel_data <- as_sel_data
+      })
+
+      observeEvent(input$action_groups_mark_as_selection_go,{
+        req(rv_plot$as_sel_data[,.N]>0)
+        withProgress(message = "POST brapi/v2/observations", value = 0, {
+          lapply(rownames(rv_plot$as_sel_data), function(x){
+            row_id <- as.numeric(x)
+            incProgress(1/length(rownames(rv_plot$as_sel_data)))
+            data_post <- list(
+              studyDbId = rv_plot$as_sel_data[row_id, studyDbId],
+              germplasmDbId = rv_plot$as_sel_data[row_id, germplasmDbId],
+              observationUnitDbId = rv_plot$as_sel_data[row_id, observationUnitDbId],
+              observationVariableDbId = rv_plot$as_sel_data[row_id, observationVariableDbId],
+              observations.value = rv_plot$as_sel_data[row_id, observations.value]
+            )
+            tryCatch({
+              brapirv2::brapi_post_observations(
+                con = rv$con,
+                studyDbId = as.character(rv_plot$as_sel_data[row_id, studyDbId]),
+                germplasmDbId = as.character(rv_plot$as_sel_data[row_id, germplasmDbId]),
+                observationUnitDbId = as.character(rv_plot$as_sel_data[row_id, observationUnitDbId]),
+                observationVariableDbId = as.character(rv_plot$as_sel_data[row_id, observationVariableDbId]),
+                observations.value = as.character(rv_plot$as_sel_data[row_id, observations.value])
+              )
+            }, error = function(e)({
+              showNotification(
+                ui =
+                  tagList(
+                    tags$p("Could not post observation"),
+                    tags$code(paste0(
+                      '{ "studyDbId":"', as.character(rv_plot$as_sel_data[row_id, studyDbId]),'",',
+                      '"germplasmDbId":"', as.character(rv_plot$as_sel_data[row_id, germplasmDbId]),'",',
+                      '"observationUnitDbId":"', as.character(rv_plot$as_sel_data[row_id, observationUnitDbId]),'",',
+                      '"observationVariableDbId":"', as.character(rv_plot$as_sel_data[row_id, observationVariableDbId]),'",',
+                      '"observations.value":"', as.character(rv_plot$as_sel_data[row_id, observations.value]),'"'
+                    ))
+                  ),
+                type = "error", duration = notification_duration
+              )            }))
+          })
+        })
+        toggleModal(session, "modal_export_group_mark_as_selection", toggle = "open")
+        rv_plot$as_sel_data <- NULL
       })
     }
   )
