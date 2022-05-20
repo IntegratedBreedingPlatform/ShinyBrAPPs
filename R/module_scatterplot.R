@@ -1063,23 +1063,21 @@ mod_scatterplot_server <- function(id, rv){
           lapply(rownames(rv_plot$as_sel_data), function(x){
             row_id <- as.numeric(x)
             incProgress(1/length(rownames(rv_plot$as_sel_data)))
-            data_post <- list(
-              studyDbId = rv_plot$as_sel_data[row_id, studyDbId],
-              germplasmDbId = rv_plot$as_sel_data[row_id, germplasmDbId],
-              observationUnitDbId = rv_plot$as_sel_data[row_id, observationUnitDbId],
-              observationVariableDbId = rv_plot$as_sel_data[row_id, observationVariableDbId],
-              observations.value = rv_plot$as_sel_data[row_id, observations.value]
-            )
-            tryCatch({
+            a <- tryCatch({
               brapirv2::brapi_post_observations(
                 con = rv$con,
                 studyDbId = as.character(rv_plot$as_sel_data[row_id, studyDbId]),
                 germplasmDbId = as.character(rv_plot$as_sel_data[row_id, germplasmDbId]),
                 observationUnitDbId = as.character(rv_plot$as_sel_data[row_id, observationUnitDbId]),
                 observationVariableDbId = as.character(rv_plot$as_sel_data[row_id, observationVariableDbId]),
-                observations.value = as.character(rv_plot$as_sel_data[row_id, observations.value])
+                value = as.character(rv_plot$as_sel_data[row_id, observations.value]),
+                additionalInfo = list() # otherwise error message: "Argument: \"additionalInfo\" should be provided as a list, see the help page on how the list should be constructed."
               )
-            }, error = function(e)({
+            }, error = function(e)({e})
+            )
+            mess <- a$message
+            if(!is.null(mess)){
+              print(mess)
               showNotification(
                 ui =
                   tagList(
@@ -1089,11 +1087,13 @@ mod_scatterplot_server <- function(id, rv){
                       '"germplasmDbId":"', as.character(rv_plot$as_sel_data[row_id, germplasmDbId]),'",',
                       '"observationUnitDbId":"', as.character(rv_plot$as_sel_data[row_id, observationUnitDbId]),'",',
                       '"observationVariableDbId":"', as.character(rv_plot$as_sel_data[row_id, observationVariableDbId]),'",',
-                      '"observations.value":"', as.character(rv_plot$as_sel_data[row_id, observations.value]),'"'
-                    ))
+                      '"value":"', as.character(rv_plot$as_sel_data[row_id, observations.value]),'"'
+                    )),
+                    tags$code(mess)
                   ),
                 type = "error", duration = notification_duration
-              )            }))
+              )
+            }
           })
         })
         toggleModal(session, "modal_export_group_mark_as_selection", toggle = "open")
