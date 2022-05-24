@@ -128,6 +128,7 @@ mod_get_extradata_server <- function(id, rv){
           rv$data_plot <- data_plot
 
           rv$column_datasource <- column_datasource
+          rv$ontology_variables <- ontology_variables
         })
       })
 
