@@ -497,7 +497,7 @@ mod_scatterplot_server <- function(id, rv){
           }else{
             data_plot_aggr[, VAR_Y_PLOT := base::rank(x = VAR_Y, na.last = T, ties.method = "min")]
           }
-        }else if(input$express_Y_as=="relatively to genotype" & !(input$aggregate_by %in% c("plot"))){
+        }else if(input$switch_aggregate==T & input$express_Y_as=="relatively to genotype" & !(input$aggregate_by %in% c("plot"))){
           # - variation to genotype
           req(input$ref_genotype_Y)
           if(input$aggregate_by=="germplasm"){
@@ -608,7 +608,7 @@ mod_scatterplot_server <- function(id, rv){
         p <- p + geom_point(alpha = 0.5) +
           scale_x_continuous(
             labels = if(input$express_X_as=="relatively to genotype" & isTruthy(input$ref_genotype_X)){scales::percent}else{waiver()},
-            trans = if(input$express_X_as=="as ranks"){"reverse"}else{"identity"},
+            # trans = if(input$express_X_as=="as ranks"){"reverse"}else{"identity"}, # disabled to make regression computation and drawing more simple
             breaks = if(input$express_X_as=="as ranks"){as.numeric(floor(quantile(rv$data_plot_aggr$VAR_X_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
             name = if(input$express_X_as=="as ranks"){
               paste(input$picker_X, "(ranks)")
@@ -620,7 +620,7 @@ mod_scatterplot_server <- function(id, rv){
           ) +
           scale_y_continuous(
             labels = if(input$express_Y_as=="relatively to genotype" & isTruthy(input$ref_genotype_Y)){scales::percent}else{waiver()},
-            trans = if(input$express_Y_as=="as ranks"){"reverse"}else{"identity"},
+            # trans = if(input$express_Y_as=="as ranks"){"reverse"}else{"identity"}, # disabled to make regression computation and drawing more simple
             breaks = if(input$express_Y_as=="as ranks"){as.numeric(floor(quantile(rv$data_plot_aggr$VAR_Y_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
             name = if(input$express_Y_as=="as ranks"){
               paste(input$picker_Y, "(ranks)")
