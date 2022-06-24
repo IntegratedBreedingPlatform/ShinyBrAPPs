@@ -168,7 +168,7 @@ mod_scatterplot_ui <- function(id){
           column(
             12,
             actionButton(ns("go_regression"), "Draw Regression", css.class = "btn btn-info", `aria-pressed`="true", icon = "box"),
-            actionButton(ns("go_clusters"), "Clusters (NOT IMPLEMENTED)", css.class = "btn btn-info"),
+            uiOutput(ns("ui_clusters"), inline = T),
             span(class = ns("ui_create_group"), style = "display: none;",
                  actionButton(ns("go_create_group"), "Create Group", css.class = "btn btn-info")
             ),
@@ -228,6 +228,7 @@ mod_scatterplot_server <- function(id, rv){
 
       rv_plot$groups <- data.table()
       rv_plot$draw_regression <- F
+      rv_plot$draw_clusters <- F
 
       ## function for data aggregation
       aggreg_functions <- data.table(
@@ -538,11 +539,20 @@ mod_scatterplot_server <- function(id, rv){
         req(rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"] == is.numeric(rv$data_plot_aggr[,VAR_COLOUR]))
 
         rv_plot$draw_regression
+        rv_plot$draw_clusters
+
+        d <- rv$data_plot_aggr
+
+        if(rv_plot$draw_clusters==T){
+          if("cluster" %in% names(d)){d[,cluster := NULL]}
+          d <- merge.data.table(x = d, y = rv_plot$clusters, by = "germplasmName")
+          d[,VAR_COLOUR:=as.factor(cluster)]
+        }
 
         reg <- NULL
         if(rv_plot$draw_regression==T){
           try({
-            reg <- lm(formula = VAR_Y_PLOT ~ VAR_X_PLOT, data = rv$data_plot_aggr, na.action = na.exclude)
+            reg <- lm(formula = VAR_Y_PLOT ~ VAR_X_PLOT, data = d, na.action = na.exclude)
           })
           shinyjs::addClass(id = "go_regression", class = "active")
           updateActionButton(session, "go_regression", icon = icon("check"))
@@ -562,19 +572,18 @@ mod_scatterplot_server <- function(id, rv){
           output$regression_output <- renderUI("")
         }
 
-        d <- rv$data_plot_aggr
 
         d[, "Germplasm Name" := germplasmName] # workaround for the plotly tooltip
         d[, "X value" := VAR_X_PLOT] # workaround for the plotly tooltip
         d[, "Y value" := VAR_Y_PLOT] # workaround for the plotly tooltip
         d[, "Shape scale" := if(input$switch_SHAPE == T) VAR_SHAPE else NA] # workaround for the plotly tooltip
-        d[, "Colour scale" := if(input$switch_COLOUR == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
+        d[, "Colour scale" := if(input$switch_COLOUR == T | rv_plot$draw_clusters == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
         d[, "Size scale" := if(input$switch_SIZE == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
 
         d <- highlight_key(d)
         p <- ggplot(d, aes(
           x = VAR_X_PLOT, y = VAR_Y_PLOT,
-          colour = if(input$switch_COLOUR == T) VAR_COLOUR else NULL,
+          colour = if(input$switch_COLOUR == T | rv_plot$draw_clusters == T) VAR_COLOUR else NULL,
           shape = if(input$switch_SHAPE == T) VAR_SHAPE else NULL,
           size = if(input$switch_SIZE == T) VAR_SIZE else NULL,
           key = germplasmDbId,
@@ -624,8 +633,8 @@ mod_scatterplot_server <- function(id, rv){
           scale_shape(name = input$picker_SHAPE) +
           scale_size(name = input$picker_SIZE) +
           scale_color_custom(
-            is_num = rv$column_datasource[cols == isolate(input$picker_COLOUR), type == "Numerical"],
-            name = isolate(input$picker_COLOUR)
+            is_num = if(rv_plot$draw_clusters == T){F}else{rv$column_datasource[cols == isolate(input$picker_COLOUR), type == "Numerical"]},
+            name = if(rv_plot$draw_clusters == T){"cluster"}else{isolate(input$picker_COLOUR)}
           ) +
           theme_minimal() #+
         # theme(legend.position = "bottom") # uneffective with plotyly
@@ -1098,6 +1107,129 @@ mod_scatterplot_server <- function(id, rv){
         })
         toggleModal(session, "modal_export_group_mark_as_selection", toggle = "open")
         rv_plot$as_sel_data <- NULL
+      })
+
+      output$ui_clusters <- renderUI({
+        if(input$aggregate_by == "germplasm" & input$switch_aggregate == T){
+          req(rv$data_plot_aggr)
+          max_k <- rv$data_plot_aggr[,.N,germplasmName][,.N]
+          dropdownButton(
+            label = "Cluster germplasms", status = "info", circle = F, inline = T, up = F, width = "500px",
+            radioGroupButtons(ns("cluster_algo"), "Alogrithm", choiceNames = c("K-means", "HCA with Ward distance"), choiceValues = c("kmeans", "hca")),
+            numericInput(ns("n_clusters"), label = "Number of clusters", min = 1, max = max_k, step = 1, value = min(3, max_k)),
+            actionButton(ns("go_clustering"), "Cluster", css.class = "btn btn-primary"),
+            uiOutput(ns("cluster_results"))
+          )
+        }else{
+          span()
+        }
+      })
+
+      observeEvent(input$go_clustering,{
+        req(rv$data_plot_aggr)
+        req(input$n_clusters)
+        max_k <- rv$data_plot_aggr[,.N,germplasmName][,.N]
+        n_clusters <- input$n_clusters
+        if(input$n_clusters > max_k){
+          updateNumericInput(session, "n_clusters", value = max_k)
+          n_clusters <- max_k
+        }else if(input$n_clusters <= 0){
+          updateNumericInput(session, "n_clusters", value = 1)
+          n_clusters <- 1
+        }
+        d <- rv$data_plot_aggr[, .(scale(VAR_X, center = T, scale = T), scale(VAR_Y, center = T, scale = T))]
+        if(input$cluster_algo=="hca"){
+          mat_dist <- dist(d, method = "euclidean")
+          dend <- hclust(d = mat_dist, method = "ward.D2")
+          clus <- cutree(dend, k = n_clusters)
+          desc_clust <- tagList(
+            tags$ul(
+              tags$li("Clustering method:", tags$b("HCA")),
+              tags$li("Dissimilarity structure measure:", tags$b("euclidean"), "distance."),
+              tags$li("Agglomeration method:", tags$b("Ward"), tags$small(tags$em("Murtagh, Fionn and Legendre, Pierre (2014). Ward's hierarchical agglomerative clustering method: which algorithms implement Ward's criterion? Journal of Classification, 31, 274–295. doi: 10.1007/s00357-014-9161-z."))),
+              tags$li("Number of clusters: ", tags$b(n_clusters))
+            )
+          )
+        }else{
+          kmeans_res <- kmeans(x = d, algorithm = "Forgy", centers = n_clusters)
+          clus <- kmeans_res$cluster
+          desc_clust <- tagList(
+            tags$ul(
+              tags$li("Clustering method:", tags$b("K-means")),
+              tags$li("Algorithm:", tags$b("Forgy"), tags$small(tags$em("Forgy, E. W. (1965). Cluster analysis of multivariate data: efficiency vs interpretability of classifications. Biometrics, 21, 768–769."))),
+              tags$li("Number of iterations:", kmeans_res$iter),
+              tags$li("Number of clusters: ", tags$b(n_clusters))
+            )
+          )
+        }
+        rv_plot$clusters <- data.table(germplasmName = rv$data_plot_aggr[,germplasmName], cluster = clus)
+        output$cluster_results <- renderUI({
+          tagList(
+            tags$hr(),
+            tags$h3("Results", style = "text-align: center;"),
+            tags$label("Clusters"),
+            renderDT(datatable(
+              rv_plot$clusters,
+              rownames = F,
+              options = list(
+                paging = F,
+                scrollX = T,
+                scrollY = "250px",
+                scrollCollapse = T,
+                dom = 't'
+              ))),
+            downloadButton(ns("download_clusters"), "Download", class = "btn btn-info"),
+            if(rv_plot$draw_clusters == T){
+              shiny::actionButton(ns("draw_clusters"), "Draw", icon = icon("check"), class = "btn btn-info active")
+            }else{
+              shiny::actionButton(ns("draw_clusters"), "Draw", icon = icon(NULL), class = "btn btn-info")
+            },
+            tags$br(),
+            tags$label("Number of germplasms per cluster"),
+            renderDT(datatable(
+              t(rv_plot$clusters[,.N,cluster]),
+              rownames = T, colnames = NULL,
+              options = list(
+                ordering = F,
+                paging = F,
+                scrollX = T,
+                scrollY = "250px",
+                scrollCollapse = T,
+                dom = 't'
+              ))),
+            tags$label("Clustering info"),
+            desc_clust
+          )
+        })
+      })
+
+      output$download_clusters <- downloadHandler(
+        filename = function() {
+          paste0("clusters_", Sys.Date(), ".csv")
+        },
+        content = function(file) {
+          write.csv(rv_plot$clusters, file, row.names = F)
+        }
+      )
+
+      observeEvent(input$draw_clusters, {
+        rv_plot$draw_clusters <- !rv_plot$draw_clusters
+      })
+
+      observeEvent(rv_plot$draw_clusters, {
+        if(rv_plot$draw_clusters == T){
+          updateActionButton(session, "draw_clusters", icon = icon("check"))
+          shinyjs::addClass(id = "draw_clusters", class = "active")
+          updateSwitchInput(session, "switch_COLOUR", value = F)
+        }else{
+          updateActionButton(session, "draw_clusters", icon = icon(NULL))
+          shinyjs::removeClass(id = "draw_clusters", class = "active")
+        }
+      })
+      observeEvent(input$switch_COLOUR, {
+        if(input$switch_COLOUR == T){
+          rv_plot$draw_clusters <- F
+        }
       })
     }
   )
