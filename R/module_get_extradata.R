@@ -1,14 +1,5 @@
 #' @export
-mod_get_extradata_ui <- function(id){
-  ns <- NS(id)
-  tagList(
-    actionButton(
-      inputId = ns("load_germplasm_data"),
-      label = "Load germplasm data",
-      css.class = "btn btn-primary"
-    )
-  )
-}
+mod_get_extradata_ui <- function(id){}
 
 #' @export
 mod_get_extradata_server <- function(id, rv){
@@ -48,8 +39,8 @@ mod_get_extradata_server <- function(id, rv){
           ## extract envrionment parameters from rv$study_metadata
           if(length(grep("environmentParameters", names(rv$study_metadata)))){
             environmentParameters <- dcast(data = unique(rv$study_metadata[,grep("environmentParameters|studyDbId", names(rv$study_metadata)), with = F]),
-                                                  formula = "studyDbId ~ environmentParameters.parameterName",
-                                                  value.var = "environmentParameters.value")
+                                           formula = "studyDbId ~ environmentParameters.parameterName",
+                                           value.var = "environmentParameters.value")
             environmentParameters[,studyDbId:=as.numeric(studyDbId)]
             data_plot <- merge(data_plot, environmentParameters, by = "studyDbId")
           }else{
@@ -103,6 +94,48 @@ mod_get_extradata_server <- function(id, rv){
           column_types2 <- rbindlist(list(column_types[,.(column, type)], unique(ontology_variables[,.(column = observationVariableName, type = scale.dataType)])), fill = T)
           column_datasource <- merge.data.table(column_datasource, column_types2[,.(column, type)], by.x = "cols", by.y = "column", all.x = T)
 
+          ### data source 3: GET /brapi/v1/germplasm
+
+          ## add germplasm info
+          germplasms <- data_plot[,unique(germplasmDbId)]
+          withProgress(message = "GET /brapi/v1/germplasm/{germplasmDbID}/attribute", value = 0, {
+            # get study_metadata
+            tryCatch({
+              incProgress(
+                1/2,
+                detail = paste("POST brapi/v2/search/attributevalues/ of", length(germplasms), "genotypes")
+              )
+              searchResultsDbId <- brapirv2::brapi_post_search_attributevalues(con = rv$con, germplasmDbIds = germplasms)
+              incProgress(
+                2/2,
+                detail = paste0("GET brapi/v2/search/attributevalues/", searchResultsDbId)
+              )
+              # res <- brapirv2::brapi_get_search_attributevalues_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(1344))
+              # # res <- brapirv2::brapi_get_search_attributevalues_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId))
+              germplasm_data <- as.data.table(brapirv2::brapi_get_search_attributevalues_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId)))
+            }, error = function(e)({
+              showNotification("Could not get germplasm data", type = "error", duration = notification_duration)
+            }))
+          })
+
+          if(exists("germplasm_data")){
+            req("attributeName" %in% names(germplasm_data))
+            germplasm_data_2 <- dcast(germplasm_data, "germplasmDbId ~ attributeName", value.var = "value")
+            if(!any(duplicated(germplasm_data_2))){
+              data_plot <- merge.data.table(
+                data_plot,
+                germplasm_data_2,
+                by = "germplasmDbId")
+            }
+
+            ## update rv$column_datasource with new column names
+            newcols <- data.table(
+              cols = germplasm_data_2[, names(germplasm_data_2)[!names(germplasm_data_2)%in% column_datasource[, unique(cols)] ]],
+              source = "germplasm"
+            )
+            column_datasource <- rbindlist(list(column_datasource, newcols), use.names = T, fill = T)
+          }
+
           ##
           # s <-  brapirv2::brapi_post_search_variables(con = rv$con) #studyDbId = rv$study_metadata[,unique(studyDbId)])
           # study_ontology <- brapirv2::brapi_get_search_variables_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(s))
@@ -130,64 +163,6 @@ mod_get_extradata_server <- function(id, rv){
           rv$column_datasource <- column_datasource
           rv$ontology_variables <- ontology_variables
         })
-      })
-
-
-      observeEvent(input$load_germplasm_data, {
-        req(rv$data_plot)
-        data_plot <- rv$data_plot
-        ### data source 3: GET /brapi/v1/germplasm
-
-        ## add germplasm info
-        germplasms <- data_plot[,unique(germplasmDbId)]
-
-        withProgress(message = "GET /brapi/v1/germplasm/{germplasmDbID}/attribute", value = 0, {
-          # get study_metadata
-          tryCatch({
-            incProgress(
-              1/2,
-              detail = paste("POST brapi/v2/search/attributevalues/ of", length(germplasms), "genotypes")
-            )
-            searchResultsDbId <- brapirv2::brapi_post_search_attributevalues(con = rv$con, germplasmDbIds = germplasms)
-            incProgress(
-              2/2,
-              detail = paste0("GET brapi/v2/search/attributevalues/", searchResultsDbId)
-            )
-            germplasm_data <- as.data.table(brapirv2::brapi_get_search_attributevalues_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId)))
-          }, error = function(e)({
-            showNotification("Could not get germplasm data", type = "error", duration = notification_duration)
-          }))
-        })
-
-        req(germplasm_data)
-        req("attributeName" %in% names(germplasm_data))
-        germplasm_data_2 <- dcast(germplasm_data, "germplasmDbId ~ attributeName", value.var = "value")
-        if(!any(duplicated(germplasm_data_2))){
-          data_plot <- merge.data.table(
-            data_plot,
-            germplasm_data_2,
-            by = "germplasmDbId")
-        }
-
-
-        ## update rv$column_datasource with new column names
-        newcols <- data.table(
-          cols = germplasm_data_2[, names(germplasm_data_2)[!names(germplasm_data_2)%in% rv$column_datasource[, unique(cols)] ]],
-          source = "germplasm"
-        )
-        rv$column_datasource <- rbindlist(list(rv$column_datasource, newcols), use.names = T, fill = T)
-
-        # check if the variable can be safely converted to num and the convert. Assign type "Text" otherwise
-        nothing <- lapply(rv$column_datasource[is.na(type), cols], function(col){
-          if(all(check.numeric(data_plot[,eval(as.name(col))])) & any(!is.na(data_plot[,eval(as.name(col))]))){
-            data_plot[,eval(col) := as.numeric(eval(as.name(col)))]
-            rv$column_datasource[cols == col, type := "Numerical"]
-          }else{
-            rv$column_datasource[cols == col, type := "Text"]
-          }
-        })
-
-        rv$data_plot <- data_plot
       })
 
       return(rv)
