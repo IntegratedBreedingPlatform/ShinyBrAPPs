@@ -204,8 +204,9 @@ mod_scatterplot_ui <- function(id){
                div(
                  class = ns("one_group_selected"), style = "display: none",
                  tags$label("Export Group"),
-                 actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary"),
-                 actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, css.class = "btn btn-primary")
+                 downloadButton(ns("action_groups_export_group_details"),label = "Export Group Details", class = "btn-block btn-primary"),
+                 actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome"),
+                 actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome")
                ),
                bsModal(ns("modal_export_group_as_list"), "Export Group as List", NULL, size = "large",
                        uiOutput(ns("modal_export_group_as_list_ui"))),
@@ -1017,6 +1018,21 @@ mod_scatterplot_server <- function(id, rv){
         })
       })
 
+
+
+      output$action_groups_export_group_details <- downloadHandler(
+        filename = function() {
+          paste0("group_", input$group_sel_input, ".csv")
+        },
+        content = function(file) {
+          group_detail <- unique(rv$data_plot[
+            germplasmDbId %in% unlist(rv_plot$groups[group_id%in%input$group_sel_input, germplasmDbIds]),
+            .SD, .SD = rv$column_datasource[source == "germplasm", cols]
+          ])
+          write.csv(group_detail, file, row.names = F)
+        }
+      )
+
       observeEvent(input$mark_as_sel_trait_classes,{
         req(input$mark_as_sel_trait_classes)
         vars <- unique(rv$ontology_variables[trait.traitClass == input$mark_as_sel_trait_classes,.(observationVariableDbId, observationVariableName)])
@@ -1086,7 +1102,6 @@ mod_scatterplot_server <- function(id, rv){
             )
             mess <- a$message
             if(!is.null(mess)){
-              print(mess)
               showNotification(
                 ui =
                   tagList(
