@@ -63,8 +63,7 @@ mod_scatterplot_ui <- function(id){
               ),
               div(radioButtons(ns("express_X_as"), "Show values", choices = "", inline = T), style = "display:inline-block"),
               div(id = ns("div_ref_genotype_X"), pickerInput(ns("ref_genotype_X"), "", choices = NULL, inline = T), style = "display:inline-block"),
-              div(id = ns("div_reverse_ranking_X"), checkboxInput(ns("reverse_ranking_X"), label = "reverse", value = F), style = "display:inline-block"),
-              bsTooltip(ns("div_reverse_ranking_X"), title = "Default:<br/>the highest X values get the highest ranks", placement = "bottom")
+              div(id = ns("div_ranking_order_X"), radioButtons(ns("ranking_order_X"), label = "", choices = c("ascending", "descending"), selected = "descending"), style = "display:inline-block")
             )
           )
         ),
@@ -86,8 +85,7 @@ mod_scatterplot_ui <- function(id){
               ),
               div(radioButtons(ns("express_Y_as"), "Show values", choices = "", inline = T), style = "display:inline-block"),
               div(id = ns("div_ref_genotype_Y"), pickerInput(ns("ref_genotype_Y"), "", choices = NULL, inline = T), style = "display:inline-block"),
-              div(id = ns("div_reverse_ranking_Y"), checkboxInput(ns("reverse_ranking_Y"), label = "reverse", value = F), style = "display:inline-block"),
-              bsTooltip(ns("div_reverse_ranking_Y"), title = "Default:<br/>the highest Y values get the highest ranks", placement = "bottom")
+              div(id = ns("div_ranking_order_Y"), radioButtons(ns("ranking_order_Y"), label = "", choices = c("ascending", "descending"), selected = "descending"), style = "display:inline-block")
             )
           )
         ),
@@ -405,8 +403,8 @@ mod_scatterplot_server <- function(id, rv){
       })
 
       ## toggle randing order UI
-      observe({shinyjs::toggle("div_reverse_ranking_X", condition = input$express_X_as=="as ranks")})
-      observe({shinyjs::toggle("div_reverse_ranking_Y", condition = input$express_Y_as=="as ranks")})
+      observe({shinyjs::toggle("div_ranking_order_X", condition = input$express_X_as=="as ranks")})
+      observe({shinyjs::toggle("div_ranking_order_Y", condition = input$express_Y_as=="as ranks")})
       ## toggle genotype reference UI
       observe({shinyjs::toggle("div_ref_genotype_X", condition = input$express_X_as=="relatively to genotype")})
       observe({shinyjs::toggle("div_ref_genotype_Y", condition = input$express_Y_as=="relatively to genotype")})
@@ -467,7 +465,7 @@ mod_scatterplot_server <- function(id, rv){
         data_plot_aggr[,VAR_X_PLOT:=VAR_X]
         if(input$express_X_as=="as ranks"){
           # - ranking
-          if(input$reverse_ranking_X){
+          if(input$ranking_order_X == "descending"){
             data_plot_aggr[, VAR_X_PLOT := base::rank(x = -VAR_X, na.last = T, ties.method = "min")]
           }else{
             data_plot_aggr[, VAR_X_PLOT := base::rank(x = VAR_X, na.last = T, ties.method = "min")]
@@ -493,7 +491,7 @@ mod_scatterplot_server <- function(id, rv){
         data_plot_aggr[,VAR_Y_PLOT:=VAR_Y]
         if(input$express_Y_as=="as ranks"){
           # - ranking
-          if(input$reverse_ranking_Y){
+          if(input$ranking_order_Y == "descending"){
             data_plot_aggr[, VAR_Y_PLOT := base::rank(x = -VAR_Y, na.last = T, ties.method = "min")]
           }else{
             data_plot_aggr[, VAR_Y_PLOT := base::rank(x = VAR_Y, na.last = T, ties.method = "min")]
@@ -676,12 +674,12 @@ mod_scatterplot_server <- function(id, rv){
               aggreg_fun_X = input$aggreg_fun_X,
               express_X_as = input$express_X_as,
               ref_genotype_X = input$ref_genotype_X,
-              reverse_ranking_X = input$reverse_ranking_X,
+              ranking_order_X = input$ranking_order_X,
               picker_Y = input$picker_Y,
               aggreg_fun_ = input$aggreg_fun_Y,
               express_Y_as = input$express_Y_as,
               ref_genotype_Y = input$ref_genotype_Y,
-              reverse_ranking_Y = input$reverse_ranking_Y,
+              ranking_order_Y = input$ranking_order_Y,
               switch_SHAPE = input$switch_SHAPE,
               picker_SHAPE = input$picker_SHAPE,
               aggreg_fun_SHAPE = input$aggreg_fun_SHAPE,
@@ -884,13 +882,13 @@ mod_scatterplot_server <- function(id, rv){
         updatePickerInput(session, "aggreg_fun_X", selected = plot_params$aggreg_fun_X)
         updateRadioButtons(session, "express_X_as", selected = plot_params$express_X_as)
         updatePickerInput(session, "ref_genotype_X", selected = plot_params$ref_genotype_X)
-        updateCheckboxInput(session, "reverse_ranking_X", value = plot_params$reverse_ranking_X)
+        updateCheckboxInput(session, "ranking_order_X", value = plot_params$ranking_order_X)
 
         updatePickerInput(session, "picker_Y", selected = plot_params$picker_Y)
         updatePickerInput(session, "aggreg_fun_Y", selected = plot_params$aggreg_fun_Y)
         updateRadioButtons(session, "express_Y_as", selected = plot_params$express_Y_as)
         updatePickerInput(session, "ref_genotype_Y", selected = plot_params$ref_genotype_Y)
-        updateCheckboxInput(session, "reverse_ranking_Y", value = plot_params$reverse_ranking_Y)
+        updateCheckboxInput(session, "ranking_order_Y", value = plot_params$ranking_order_Y)
 
         updateMaterialSwitch(session, "switch_SHAPE", value = plot_params$switch_SHAPE)
         updatePickerInput(session, "picker_SHAPE", selected = plot_params$picker_SHAPE)
