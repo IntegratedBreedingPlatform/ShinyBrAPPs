@@ -405,6 +405,17 @@ mod_scatterplot_server <- function(id, rv){
       ## toggle randing order UI
       observe({shinyjs::toggle("div_ranking_order_X", condition = input$express_X_as=="as ranks")})
       observe({shinyjs::toggle("div_ranking_order_Y", condition = input$express_Y_as=="as ranks")})
+      ## toggle draw regression button
+      observeEvent(c(input$express_X_as, input$express_Y_as),{
+        if(input$express_Y_as=="as ranks" & input$express_X_as=="as ranks"){
+          shinyjs::hide("go_regression")
+          if(rv_plot$draw_regression == T){
+            rv_plot$draw_regression <- F
+          }
+        }else{
+          shinyjs::show("go_regression")
+        }
+      })
       ## toggle genotype reference UI
       observe({shinyjs::toggle("div_ref_genotype_X", condition = input$express_X_as=="relatively to genotype")})
       observe({shinyjs::toggle("div_ref_genotype_Y", condition = input$express_Y_as=="relatively to genotype")})
