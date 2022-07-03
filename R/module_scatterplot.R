@@ -56,14 +56,14 @@ mod_scatterplot_ui <- function(id){
             12,
             class = "space-left space-bottom",
             div(
-              pickerInput(ns("picker_X"), "Variable", choices = NULL, inline = T),
+              div(pickerInput(ns("picker_X"), "Variable", choices = NULL),style = "display:inline-block; vertical-align: top; width: 20%"),
               div(
-                class = ns("ui_aggregate"), style = "display:inline-block",
-                pickerInput(ns("aggreg_fun_X"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
+                class = ns("ui_aggregate"), style = "display:inline-block; vertical-align: top; width: 20%",
+                pickerInput(ns("aggreg_fun_X"), "Aggregate", choices = c("mean", "max", "min", "sum"))
               ),
-              div(radioButtons(ns("express_X_as"), "Show values", choices = "", inline = T), style = "display:inline-block"),
-              div(id = ns("div_ref_genotype_X"), pickerInput(ns("ref_genotype_X"), "", choices = NULL, inline = T), style = "display:inline-block"),
-              div(id = ns("div_ranking_order_X"), radioButtons(ns("ranking_order_X"), label = "", choices = c("ascending", "descending"), selected = "descending"), style = "display:inline-block")
+              div(radioButtons(ns("express_X_as"), "Show values", choices = "", inline = T), style = "display:inline-block; width: 20%;"),
+              div(id = ns("div_ref_genotype_X"), pickerInput(ns("ref_genotype_X"), "Reference", choices = NULL, inline = T), style = "display:inline-block; vertical-align: top; width: 20%"),
+              div(id = ns("div_ranking_order_X"), radioButtons(ns("ranking_order_X"), label = "Ranking order", choices = c("ascending", "descending"), selected = "descending"), style = "display:inline-block; vertical-align: top; width: 20%")
             )
           )
         ),
@@ -78,14 +78,14 @@ mod_scatterplot_ui <- function(id){
             12,
             class = "space-left space-bottom",
             div(
-              pickerInput(ns("picker_Y"), "Variable", choices = NULL, inline = T),
+              div(pickerInput(ns("picker_Y"), "Variable", choices = NULL),style = "display:inline-block; vertical-align: top; width: 20%"),
               div(
-                class = ns("ui_aggregate"), style = "display:inline-block",
-                pickerInput(ns("aggreg_fun_Y"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
+                class = ns("ui_aggregate"), style = "display:inline-block; vertical-align: top; width: 20%",
+                pickerInput(ns("aggreg_fun_Y"), "Aggregate", choices = c("mean", "max", "min", "sum"))
               ),
-              div(radioButtons(ns("express_Y_as"), "Show values", choices = "", inline = T), style = "display:inline-block"),
-              div(id = ns("div_ref_genotype_Y"), pickerInput(ns("ref_genotype_Y"), "", choices = NULL, inline = T), style = "display:inline-block"),
-              div(id = ns("div_ranking_order_Y"), radioButtons(ns("ranking_order_Y"), label = "", choices = c("ascending", "descending"), selected = "descending"), style = "display:inline-block")
+              div(radioButtons(ns("express_Y_as"), "Show values", choices = "", inline = T), style = "display:inline-block; width: 20%;"),
+              div(id = ns("div_ref_genotype_Y"), pickerInput(ns("ref_genotype_Y"), "Reference", choices = NULL, inline = T), style = "display:inline-block; vertical-align: top; width: 20%"),
+              div(id = ns("div_ranking_order_Y"), radioButtons(ns("ranking_order_Y"), label = "Ranking order", choices = c("ascending", "descending"), selected = "descending"), style = "display:inline-block; vertical-align: top; width: 20%")
             )
           )
         ),
@@ -105,7 +105,7 @@ mod_scatterplot_ui <- function(id){
               pickerInput(ns("picker_SHAPE"), "Variable", choices = NULL, inline = T),
               div(
                 class = ns("ui_aggregate"), style = "display:inline-block",
-                pickerInput(ns("aggreg_fun_SHAPE"), "Aggregation function", choices = c("concatenate unique values"="unique_values"), inline = T)
+                pickerInput(ns("aggreg_fun_SHAPE"), "Aggregate", choices = c("concatenate unique values"="unique_values"), inline = T)
               )
             )
           )
@@ -126,7 +126,7 @@ mod_scatterplot_ui <- function(id){
               pickerInput(ns("picker_COLOUR"), "Variable", choices = NULL, inline = T),
               div(
                 class = ns("ui_aggregate"), style = "display:inline-block",
-                pickerInput(ns("aggreg_fun_COLOUR"), "Aggregation function", choices = NULL, inline = T)
+                pickerInput(ns("aggreg_fun_COLOUR"), "Aggregate", choices = NULL, inline = T)
               )
             )
           )
@@ -147,7 +147,7 @@ mod_scatterplot_ui <- function(id){
               pickerInput(ns("picker_SIZE"), "Variable", choices = NULL, inline = T),
               div(
                 class = ns("ui_aggregate"), style = "display:inline-block",
-                pickerInput(ns("aggreg_fun_SIZE"), "Aggregation function", choices = c("mean", "max", "min", "sum"), inline = T)
+                pickerInput(ns("aggreg_fun_SIZE"), "Aggregate", choices = c("mean", "max", "min", "sum"), inline = T)
               )
             )
           )
@@ -232,7 +232,7 @@ mod_scatterplot_server <- function(id, rv){
       ## function for data aggregation
       aggreg_functions <- data.table(
         fun = c("mean", "max", "min", "sum", "unique_values"),
-        label = c("average", "max", "min", "sum", "concatenate unique values"),
+        label = c("mean", "max", "min", "sum", "concatenate unique values"),
         for_num = c(T,T,T,T,F)
       )
       unique_values <- function(x, ...){
@@ -304,13 +304,15 @@ mod_scatterplot_server <- function(id, rv){
         req(rv$column_datasource)
         rv$column_datasource[,.N]
 
+        print("update variable selectors: debut")
+
         num_var_choices <- rv$column_datasource[type == "Numerical",.(cols = list(cols)), source]
         non_num_var_choices <- rv$column_datasource[type != "Numerical",.(cols = list(cols)), source]
         var_choices_all <- rv$column_datasource[,.(cols = list(cols)), source]
 
         if(input$switch_aggregate == T){
-          updateRadioButtons(session, "express_X_as", choices = c("as they are", "as ranks", "relatively to genotype"), inline = T)
-          updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks", "relatively to genotype"), inline = T)
+          updateRadioButtons(session, "express_X_as", choices = c("as they are", "as ranks", "relatively to genotype"))
+          updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks", "relatively to genotype"))
           if(input$aggregate_by == "germplasm and environment"){
             var_choices_SHAPE <- rv$column_datasource[type != "Numerical" & !(source %in% "plot"),.(cols = list(cols)), source]
             var_choices_COLOUR <- rv$column_datasource[type == "Numerical" | !(source %in% c("plot")),.(cols = list(cols)), source]
@@ -319,8 +321,8 @@ mod_scatterplot_server <- function(id, rv){
             var_choices_COLOUR <- rv$column_datasource[type == "Numerical" | !(source %in% c("plot", "environment")),.(cols = list(cols)), source]
           }
         }else{
-          updateRadioButtons(session, "express_X_as", choices = c("as they are", "as ranks"), inline = T)
-          updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks"), inline = T)
+          updateRadioButtons(session, "express_X_as", choices = c("as ranks"))
+          updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks"))
           var_choices_SHAPE <- non_num_var_choices
           var_choices_COLOUR <- var_choices_all
         }
@@ -402,7 +404,7 @@ mod_scatterplot_server <- function(id, rv){
         )
       })
 
-      ## toggle randing order UI
+      ## toggle ranking order UI
       observe({shinyjs::toggle("div_ranking_order_X", condition = input$express_X_as=="as ranks")})
       observe({shinyjs::toggle("div_ranking_order_Y", condition = input$express_Y_as=="as ranks")})
       ## toggle draw regression button
@@ -481,7 +483,7 @@ mod_scatterplot_server <- function(id, rv){
           }else{
             data_plot_aggr[, VAR_X_PLOT := base::rank(x = VAR_X, na.last = T, ties.method = "min")]
           }
-        }else if(input$express_X_as=="relatively to genotype" & !(input$aggregate_by %in% c("plot"))){
+        }else if(input$switch_aggregate==T & input$express_X_as=="relatively to genotype" & !(input$aggregate_by %in% c("plot"))){
           # - variation to genotype
           req(input$ref_genotype_X)
           if(input$aggregate_by=="germplasm"){
@@ -497,6 +499,7 @@ mod_scatterplot_server <- function(id, rv){
           }
           data_plot_aggr[,VAR_X_PLOT := 1 + (reference_value - VAR_X)/reference_value]
         }
+
         ## transform Y variable
         # - no transformation (default)
         data_plot_aggr[,VAR_Y_PLOT:=VAR_Y]
