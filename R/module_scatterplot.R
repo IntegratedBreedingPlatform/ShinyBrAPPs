@@ -1193,6 +1193,7 @@ mod_scatterplot_server <- function(id, rv){
             )
           )
         }
+        rv_plot$draw_clusters <- T
         rv_plot$clusters <- data.table(germplasmName = rv$data_plot_aggr[,germplasmName], cluster = clus)
         output$cluster_results <- renderUI({
           tagList(
