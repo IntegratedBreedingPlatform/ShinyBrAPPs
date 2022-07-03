@@ -590,8 +590,9 @@ mod_scatterplot_server <- function(id, rv){
         d[, "X value" := VAR_X_PLOT] # workaround for the plotly tooltip
         d[, "Y value" := VAR_Y_PLOT] # workaround for the plotly tooltip
         d[, "Shape scale" := if(input$switch_SHAPE == T) VAR_SHAPE else NA] # workaround for the plotly tooltip
-        d[, "Colour scale" := if(input$switch_COLOUR == T | rv_plot$draw_clusters == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
+        d[, "Colour scale" := if(input$switch_COLOUR == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
         d[, "Size scale" := if(input$switch_SIZE == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
+        d[, Cluster := if(rv_plot$draw_clusters == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
 
         d <- highlight_key(d)
         p <- ggplot(d, aes(
@@ -605,7 +606,8 @@ mod_scatterplot_server <- function(id, rv){
           y_val = `Y value`, # workaround for the plotly tooltip
           Shape = `Shape scale`, # workaround for the plotly tooltip
           Size = `Size scale`, # workaround for the plotly tooltip
-          Colour = `Colour scale` # workaround for the plotly tooltip
+          Colour = `Colour scale`, # workaround for the plotly tooltip
+          Cluster = Cluster # workaround for the plotly tooltip
         ))
 
         if(isTruthy(reg)){
@@ -655,10 +657,12 @@ mod_scatterplot_server <- function(id, rv){
         # pp <- ggMarginal(p, type = "density", fill =  "black", alpha = 0.05)
         # pp
 
+        tooltip_var <- c("germplasmName", "x_val", "y_val", "Shape", "Colour", "Size", "Cluster")
         ggplotly(#height=length(input$studies)*400,
           p,
           dynamicTicks = "TRUE", source = "A", originalData = T,
-          tooltip = c("germplasmName", "x_val", "y_val", "Shape", "Colour", "Size")) %>%
+          tooltip = tooltip_var[c(T,T,T,input$switch_SHAPE, input$switch_COLOUR, input$switch_SIZE, rv_plot$draw_clusters)]
+        ) %>%
           style(hoverlabel = list(bgcolor = grey(0.3))) %>%
           layout(dragmode = "lasso") %>%
           highlight(on = "plotly_selected", off = "plotly_deselect")
