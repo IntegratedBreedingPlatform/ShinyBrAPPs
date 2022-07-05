@@ -228,6 +228,8 @@ mod_scatterplot_server <- function(id, rv){
       rv_plot$groups <- data.table()
       rv_plot$draw_regression <- F
       rv_plot$draw_clusters <- F
+      rv_plot$counter_hca <- 0
+      rv_plot$counter_kmeans <- 0
 
       ## function for data aggregation
       aggreg_functions <- data.table(
@@ -321,7 +323,7 @@ mod_scatterplot_server <- function(id, rv){
             var_choices_COLOUR <- rv$column_datasource[type == "Numerical" | !(source %in% c("plot", "environment")),.(cols = list(cols)), source]
           }
         }else{
-          updateRadioButtons(session, "express_X_as", choices = c("as ranks"))
+          updateRadioButtons(session, "express_X_as", choices = c("as they are", "as ranks"))
           updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks"))
           var_choices_SHAPE <- non_num_var_choices
           var_choices_COLOUR <- var_choices_all
@@ -558,7 +560,7 @@ mod_scatterplot_server <- function(id, rv){
 
         if(rv_plot$draw_clusters==T){
           if("cluster" %in% names(d)){d[,cluster := NULL]}
-          d <- merge.data.table(x = d, y = rv_plot$clusters, by = "germplasmName")
+          d <- merge.data.table(x = d, y = rv_plot$clusters[,.(germplasmName, cluster)], by = "germplasmName")
           d[,VAR_COLOUR:=as.factor(cluster)]
         }
 
@@ -1181,6 +1183,8 @@ mod_scatterplot_server <- function(id, rv){
               tags$li("Number of clusters: ", tags$b(n_clusters))
             )
           )
+          rv_plot$counter_hca <- rv_plot$counter_hca + 1
+          counter <- rv_plot$counter_hca
         }else{
           kmeans_res <- kmeans(x = d, algorithm = "Forgy", centers = n_clusters)
           clus <- kmeans_res$cluster
@@ -1192,16 +1196,19 @@ mod_scatterplot_server <- function(id, rv){
               tags$li("Number of clusters: ", tags$b(n_clusters))
             )
           )
+          rv_plot$counter_kmeans <- rv_plot$counter_kmeans + 1
+          counter <- rv_plot$counter_kmeans
         }
+        clusters <- data.table(rv$data_plot_aggr[,.(germplasmDbId, germplasmName)], cluster = clus, method = input$cluster_algo, counter = counter)
+        rv_plot$clusters <- clusters
         rv_plot$draw_clusters <- T
-        rv_plot$clusters <- data.table(germplasmName = rv$data_plot_aggr[,germplasmName], cluster = clus)
         output$cluster_results <- renderUI({
           tagList(
             tags$hr(),
             tags$h3("Results", style = "text-align: center;"),
             tags$label("Clusters"),
             renderDT(datatable(
-              rv_plot$clusters,
+              rv_plot$clusters[,.(germplasmName, cluster)],
               rownames = F,
               options = list(
                 paging = F,
@@ -1216,6 +1223,7 @@ mod_scatterplot_server <- function(id, rv){
             }else{
               shiny::actionButton(ns("draw_clusters"), "Draw", icon = icon(NULL), class = "btn btn-info")
             },
+            shiny::actionButton(ns("create_groups_from_clusters"), "Create groups", icon = icon(NULL), class = "btn btn-info"),
             tags$br(),
             tags$label("Number of germplasms per cluster"),
             renderDT(datatable(
@@ -1262,6 +1270,77 @@ mod_scatterplot_server <- function(id, rv){
         if(input$switch_COLOUR == T){
           rv_plot$draw_clusters <- F
         }
+      })
+      observeEvent(input$create_groups_from_clusters,{
+        shinyjs::disable("create_groups_from_clusters")
+        shinyjs::addClass("create_groups_from_clusters", "active")
+        clusters <- rv_plot$clusters[order(cluster)][,.(
+          group_name = paste0(unique(method), unique(counter), ".", cluster),
+          group_desc = paste0(
+            "Clustering method: ", tags$b(input$cluster_algo), tags$br(),
+            "Cluster: ", tags$b(cluster,"/", input$n_clusters), tags$br(),
+            "Timestamp: ", tags$b(Sys.time())
+          ),
+          germplasmDbIds = list(germplasmDbId),
+          germplasmNames = list(germplasmName),
+          .N,
+          plot_params = list(
+            list(
+              switch_aggregate = input$switch_aggregate,
+              aggregate_by = input$aggregate_by,
+              picker_X = input$picker_X,
+              aggreg_fun_X = input$aggreg_fun_X,
+              express_X_as = input$express_X_as,
+              ref_genotype_X = input$ref_genotype_X,
+              ranking_order_X = input$ranking_order_X,
+              picker_Y = input$picker_Y,
+              aggreg_fun_ = input$aggreg_fun_Y,
+              express_Y_as = input$express_Y_as,
+              ref_genotype_Y = input$ref_genotype_Y,
+              ranking_order_Y = input$ranking_order_Y,
+              switch_SHAPE = input$switch_SHAPE,
+              picker_SHAPE = input$picker_SHAPE,
+              aggreg_fun_SHAPE = input$aggreg_fun_SHAPE,
+              switch_COLOUR = input$switch_COLOUR,
+              picker_COLOUR = input$picker_COLOUR,
+              aggreg_fun_COLOUR = input$aggreg_fun_COLOUR,
+              switch_SIZE = input$switch_SIZE,
+              picker_SIZE = input$picker_SIZE,
+              aggreg_fun_SIZE = input$aggreg_fun_SIZE
+            )
+          )
+        ),cluster]
+        clusters[,germplasmNames_label := if(N>6){
+          paste(
+            paste(unlist(germplasmNames)[1:5], collapse = ", "),
+            paste("and", N - 5, "others")
+          )
+        }else{
+          paste(unlist(germplasmNames), collapse = ", ")
+        }]
+        group_id_start <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
+        group_ids <- group_id_start:(group_id_start+clusters[,.N] -1)
+        clusters[, group_id := group_ids]
+        rv_plot$groups <- rbindlist(list(
+          rv_plot$groups,
+          clusters
+        ), fill = T, use.names = T)
+
+        ## update selectors (shape, colour)
+        data_plot <- copy(rv$data_plot) # to avoid reactivity issues related to assignment by reference
+        for(id in clusters[,unique(group_id)]){
+          group_name <- clusters[group_id == id,group_name]
+          data_plot[germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)], eval(group_name) := paste0('In "', group_name,'"')]
+          data_plot[!(germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)]), eval(group_name) := paste0('Not in "', group_name,'"')]
+        }
+        rv$column_datasource <- rbindlist(
+          list(
+            rv$column_datasource,
+            data.table(cols = clusters[,unique(group_name)], source = "group", type = "Text")
+          )
+        )
+        rv$data_plot <- data_plot
+
       })
     }
   )
