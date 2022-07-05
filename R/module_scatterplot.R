@@ -667,7 +667,23 @@ mod_scatterplot_server <- function(id, rv){
         ) %>%
           style(hoverlabel = list(bgcolor = grey(0.3))) %>%
           layout(dragmode = "lasso") %>%
-          highlight(on = "plotly_selected", off = "plotly_deselect")
+          highlight(
+            on = "plotly_selected",
+            off = "plotly_deselect",
+            opacityDim = T,
+            persistent = F,
+            selected = attrs_selected(
+              mode = "markers",
+              opacity = 1,
+              marker = list(
+                alpha = 1,
+                line = list(
+                  color = "red",
+                  width = 5
+                )
+              )
+            )
+          )
       })
 
       observeEvent(event_data("plotly_click", source = "A"),{
