@@ -1038,10 +1038,12 @@ mod_scatterplot_server <- function(id, rv){
               choices = trait_classes,
               inline = T
             ),
-            checkboxInput(
-              ns("mark_as_sel_all_plots_boolean"),
-              label = "Mark all plots where germplasm is present",
-              value = F
+            radioButtons(
+              ns("mark_as_sel_all_plots_radio"),
+              label = "",
+              choiceNames = c("Mark all plots", "Mark the first replicate of each plot"),
+              choiceValues = c("all", "rep1"),
+              selected = "rep1"
             ),
             uiOutput(ns("mark_as_sel_info")),
             actionButton(
@@ -1080,7 +1082,7 @@ mod_scatterplot_server <- function(id, rv){
         )
       })
 
-      observeEvent(c(input$mark_as_sel_var_to_use, input$mark_as_sel_all_plots_boolean, input$mark_as_sel_envs), {
+      observeEvent(c(input$mark_as_sel_var_to_use, input$mark_as_sel_all_plots_radio, input$mark_as_sel_envs), {
         rv_plot$as_sel_data <- NULL
         output$mark_as_sel_info <- renderUI("")
 
@@ -1091,7 +1093,7 @@ mod_scatterplot_server <- function(id, rv){
           observationLevel == "PLOT" & studyDbId %in% input$mark_as_sel_envs &
             germplasmDbId %in% rv_plot$groups[group_id == input$group_sel_input, germplasmDbIds][[1]]
         ]
-        if(input$mark_as_sel_all_plots_boolean==F & as_sel_data[replicate=="1",.N]>0){
+        if(input$mark_as_sel_all_plots_radio=="rep1" & as_sel_data[replicate=="1",.N]>0){
           as_sel_data <- as_sel_data[replicate == "1"]
         }
         as_sel_data <- unique(as_sel_data[,.(germplasmDbId, observationUnitDbId, studyDbId)])
