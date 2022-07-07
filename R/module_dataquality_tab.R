@@ -272,9 +272,9 @@ mod_dataquality_server <- function(id, rv){
           ylab(input$trait) +
           theme(
             legend.position = "none",
-            #axis.text.y = element_text(angle = 60),
-            axis.text.y = element_blank(),
-            axis.title.y = element_blank())
+            axis.text.y = if(all(data_dq[,.(is.na(positionCoordinateX) | is.na(positionCoordinateY))])) element_text(angle = 90) else element_blank(),
+            axis.title.y = element_blank()
+            )
         ggplotly(height=length(input$studies)*400,
                  g1,
                  dynamicTicks = "TRUE", source = "A", originalData = T,
