@@ -4,7 +4,7 @@ mod_dataquality_ui <- function(id){
   tagList(
     fluidRow(
       column(
-        9,
+        8,
         pickerInput(
           inputId = ns("studies"),
           label = "Environments",
@@ -27,6 +27,11 @@ mod_dataquality_ui <- function(id){
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
+      ),
+      column(
+        1,
+        shiny::actionLink(ns("envXtrait"), label = "Env x Trait", width = "100%", icon = icon("info"), css.class = "btn btn-info"),
+        bsModal(ns("envXtraitModal"), title = "Environment x Trait", trigger = ns("envXtrait"), size = "large", plotOutput(ns("envXtraitViz")))
       )
     ),
     fluidRow(
@@ -666,6 +671,26 @@ mod_dataquality_server <- function(id, rv){
         }else{
           shinyjs::show("select_variable_value")
         }
+      })
+
+      observeEvent(input$envXtrait,{
+        output$envXtraitViz <- renderPlot({
+        req(rv$data)
+          ggplot(rv$data[,.N,.(study_name_app, observations.observationVariableName, observationLevel)],
+                 aes(y = study_name_app, x=observations.observationVariableName, fill=N))+
+            geom_tile() +
+            facet_wrap(vars(observationLevel), nrow = 1, drop = T, ) +
+            # facet_grid(cols = vars(observationLevel), drop = T) +
+            scale_fill_continuous(name = "Number of\nobservations") +
+            coord_equal() +
+            theme_minimal() +
+            theme(
+              legend.position = "bottom",
+              panel.grid = element_blank(),
+              axis.title = element_blank(),
+              axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)
+              )
+        })
       })
 
       return(rv)
