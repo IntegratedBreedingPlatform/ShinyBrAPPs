@@ -192,8 +192,8 @@ mod_dataquality_server <- function(id, rv){
       observe({
         req(input$trait)
         req(input$studies)
-        req(rv$data_dq)
-        if("observations.observationVariableName"%in%names(rv$data_dq)){
+        req(rv$data)
+        if("observations.observationVariableName"%in%names(rv$data)){
           rv$data_dq_viz <- rv$data[observations.observationVariableName == input$trait & studyDbId %in% input$studies]
         }else{
           rv$data_dq_viz <- NULL
