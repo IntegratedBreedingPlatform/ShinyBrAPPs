@@ -72,7 +72,7 @@ mod_get_studydata_ui <- function(id){
       )
     ),
     bsModal(ns("modal_study_metadata"), "Environment Metadata", ns("go_study_metadata_ui"), size = "large",
-            dataTableOutput(ns("table_study_metadata"))
+            uiOutput(ns("tables_study_metadata"))
     )
   )
 }
@@ -299,6 +299,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               lapply(rv$study_metadata[loaded == T,unique(study_name_app)], tags$li)
             )
           })
+
           if("trialDbId" %in% names(rv$data)){
             rv$data <- unique(rbindlist(
               list(
@@ -335,26 +336,32 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         toggleModal(session, "modal_study_metadata", toggle = "open")
       })
 
-      output$table_study_metadata <- renderDT({
+      output$tables_study_metadata <- renderUI({
         req(rv$study_metadata)
-        dtable <- datatable(
-          rv$study_metadata,
-          rownames = F,
-          options = list(
-            paging = F,
-            scrollX = T,
-            scrollY = "500px",
-            scrollCollapse = T,
-            dom = 't',
-            rowsGroup = as.list(c(0,(1:length(names(rv$study_metadata)))[unlist(rv$study_metadata[,lapply(.SD, function(x){length(unique(x))}),studyDbId][,lapply(.SD,function(x){all(x==1)})])] - 1)) # indices of the columns with duplicated values per studyDbId
-          ))
-        path <- "www/js/datatables-rowsgroup/"
-        dep <- htmltools::htmlDependency(
-          "RowsGroup", "2.0.0",
-          path, script = "dataTables.rowsGroup.js"
+        panels <- lapply(
+          rv$study_metadata[,unique(studyDbId)],
+          function(id){
+            bsCollapsePanel(
+              title = rv$study_metadata[studyDbId == id, unique(study_name_app)],
+              datatable(
+                rv$study_metadata[studyDbId == id],
+                rownames = F,
+                width = "100%",
+                options = list(
+                  paging = F,
+                  scrollX = T,
+                  scrollCollapse = T,
+                  dom = 't'
+                )
+              )
+            )
+          }
         )
-        dtable$dependencies <- c(dtable$dependencies, list(dep))
-        dtable
+        do.call(
+          what = "bsCollapse",
+          args = append(list(id = NULL, multiple = FALSE, open = NULL), panels),
+          quote = F
+        )
       })
       return(rv)
     }
