@@ -11,6 +11,7 @@ ui <- fluidPage(
   shinysky::busyIndicator(wait = 200, text = NULL, img = "img/loading-animation.gif"),
 
   div(class = "container-fluid",
+      mod_banner_ui("banner"),
       mod_get_studydata_ui("get_studydata"),
       tabsetPanel(id = "tabsetPanel_main",
                   # selected = "Model",
