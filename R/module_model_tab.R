@@ -279,6 +279,8 @@ mod_model_server <- function(id, rv){
           formula = "observationUnitDbId + genotype + trial + loc + repId + subBlock + rowCoord + colCoord ~ observations.observationVariableName",
           value.var = "observations.value"
         )
+        
+        browser()
 
         ## parametrization
         createTD_args <- list(
@@ -424,6 +426,7 @@ mod_model_server <- function(id, rv){
 
         req(rv$fit)
 
+        browser()
         ## SPATs does not make prediction when genotypes are in the fixed part of the model
         # It causes the summary.TD and plot.TD functions to throw error when trying to compute the predictions
         # temporary fix: if there is no "fixed" modelling, then this list item is removed from the fitTD object
@@ -737,6 +740,28 @@ mod_model_server <- function(id, rv){
           write.csv(table_metrics, file, row.names = FALSE)
         }
       )
+      
+      ### Push metrics
+      observeEvent(input$push_metrics_to_BMS_A,{
+        print("push metrics!")
+      })
+      
+      ### Push metrics
+      observeEvent(input$push_metrics_to_BMS_B,{
+        print("push blups/blues!")
+
+        # get methodDbId
+        BLUES_methodDbId <- "100865"
+        BLUPS_methodDbId <- "100867"
+        seBLUES_methodDbId <- "100868"
+        seBLUPS_methodDbId <- "100869"
+        
+        
+        # POST variable
+        brapi_post_variables(rv$con)
+        
+        
+      })
     }
   )
 }
