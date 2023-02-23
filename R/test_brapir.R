@@ -6,7 +6,7 @@ con <- brapirv2::brapi_connect(
   apipath = "bmsapi",
   multicrop = TRUE,
   commoncropname = "maize",
-  token = "aboizet:1677081553827:041003b05889c4ae2778461b47c64ee1",
+  token = "aboizet:1677161655090:011d1a668b81c91ae36f286f08530d17",
   granttype = "token",
   clientid = "brapir",
   bms = TRUE
@@ -44,13 +44,15 @@ brapi_post_several_objects <- function(callurl, token, body) {
 }
 
 brapi_post_several_variables <- function(con, body) {
-  usedArgs <- brapirv2:::brapi_usedArgs(origValues = FALSE)
-  ## Obtain the call url
-  callurl <- brapirv2:::brapi_POST_callURL(usedArgs = usedArgs,
-                                           callPath = "/variables",
-                                           reqArgs = "",
-                                           packageName = "BrAPI-Phenotyping",
-                                           callVersion = 2.0)
+  # usedArgs <- brapirv2:::brapi_usedArgs(origValues = FALSE)
+  # ## Obtain the call url
+  # callurl <- brapirv2:::brapi_POST_callURL(usedArgs = usedArgs,
+  #                                          callPath = "/variables",
+  #                                          reqArgs = "",
+  #                                          packageName = "BrAPI-Phenotyping",
+  #                                          callVersion = 2.0)
+  server_url <- paste0(con$protocol, con$db, ":", con$port, "/", con$apipath, "/", con$commoncropname, "/brapi/v2")
+  callurl <- paste0(server_url, "/variables")
   resp <- brapi_post_several_objects(callurl, con$token, body)
   return(resp)
 }
@@ -142,6 +144,21 @@ brapi_post_bluesblups_variables <- function(variableDbId) {
 }
 
 
+# germplasm_df <- select(rv$data, c("germplasmDbId","germplasmName"))
+# germplasm_df <- germplasm_df[!duplicated(germplasm_df), ]
+# colnames(df2) <- c("germplasmDbId","genotype")
+# total <- merge(df2, rv_mod$metrics_B, by="genotype")
+# 
+# colnames <- colnames(rv_mod$metrics_B)
+# variableNames <- setdiff(colnames, c('genotype','entryType'))
+# variables_df <- select(rv$data, c("observations.observationVariableDbId","observations.observationVariableName"))
+# variables_df <- variables_df[!duplicated(variables_df), ]
+
+# variables <- list()
+# for (i in 1:nrow(variables_df)) {
+#   var <- list(variables_df[i,]["observations.observationVariableName"] = variables_df[i,][observations.observationVariableDbId])
+#   variables <- c(body, var)
+# }
 
 
 
