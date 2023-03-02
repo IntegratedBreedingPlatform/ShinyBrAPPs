@@ -18,7 +18,7 @@ mod_get_studydata_ui <- function(id){
               column(
                 6,id = ns("select_trialDbId_UI"),style = "display:block",
                 textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://bms-uat-test.net/bmsapi", value = "https://bms-uat-test.net/bmsapi", width = "100%"),
-                textInput(ns("token"), "Token", placeholder = "Enter Token", value = "", width = "100%"),
+                textInput(ns("token"), "Token", placeholder = "Enter Token", value = "aboizet:1677788556404:0a3c06c8139acdc2f285914181bb8117", width = "100%"),
                 textInput(ns("cropDb"), "CropDb", value = "maize", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
                 selectizeInput(
                   ns("trials"), label = "Study", choices = NULL, multiple = FALSE, width = "100%",
