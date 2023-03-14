@@ -713,42 +713,9 @@ mod_model_server <- function(id, rv){
           write.csv(metrics, file, row.names = FALSE)
         }
       )
-
-      output$export_metrics_B <- downloadHandler(
-        filename = function() {"BLUPs_and_BLUEs.csv"},
-        content = function(file) {
-          req(rv$fit)
-          table_BLUPs <- as.data.table(extractSTA(STA = rv$fit, what = c("BLUPs")))
-          table_BLUPs[,result:="BLUPs"]
-          table_seBLUPs <- as.data.table(extractSTA(STA = rv$fit, what = c("seBLUPs")))
-          table_seBLUPs[,result:="seBLUPs"]
-          table_BLUEs <- as.data.table(extractSTA(STA = rv$fit, what = c("BLUEs")))
-          table_BLUEs[,result:="BLUEs"]
-          table_seBLUEs <- as.data.table(extractSTA(STA = rv$fit, what = c("seBLUEs")))
-          table_seBLUEs[,result:="seBLUEs"]
-
-          table_metrics <- rbindlist(l = list(table_BLUPs,table_seBLUPs,table_BLUEs,table_seBLUEs), use.names = T, fill = T)
-          table_metrics <- melt(
-            data = table_metrics,
-            measure.vars = names(table_metrics)[!(names(table_metrics)%in%c("genotype","trial","result"))],
-            variable.name = "trait"
-          )
-          setnames(table_metrics, "trial", "environment")
-          setcolorder(table_metrics, c("environment", "genotype", "trait", "result", "value"))
-
-          write.csv(table_metrics, file, row.names = FALSE)
-        }
-      )
       
-      ### Push metrics
-      observeEvent(input$push_metrics_to_BMS_A,{
-        print("push metrics!")
-      })
-      
-      ### PUSH METRICS
-      observeEvent(input$push_metrics_to_BMS_B,{
-        
-        
+      extract_all_BLUEs_BLUPs <- reactive({
+        req(rv$fit)
         table_BLUPs <- as.data.table(extractSTA(STA = rv$fit, what = c("BLUPs")))
         table_BLUPs[,result:="BLUPs"]
         table_seBLUPs <- as.data.table(extractSTA(STA = rv$fit, what = c("seBLUPs")))
@@ -757,7 +724,7 @@ mod_model_server <- function(id, rv){
         table_BLUEs[,result:="BLUEs"]
         table_seBLUEs <- as.data.table(extractSTA(STA = rv$fit, what = c("seBLUEs")))
         table_seBLUEs[,result:="seBLUEs"]
-
+        
         table_metrics <- rbindlist(l = list(table_BLUPs,table_seBLUPs,table_BLUEs,table_seBLUEs), use.names = T, fill = T)
         table_metrics <- melt(
           data = table_metrics,
@@ -765,14 +732,31 @@ mod_model_server <- function(id, rv){
           variable.name = "trait"
         )
         setnames(table_metrics, "trial", "environment")
+        
+        return(table_metrics)
+      })
 
-        colnames(table_metrics) = c("germplasmName", "environment", "method", "originVariableName", "value")
+      output$export_metrics_B <- downloadHandler(
+        filename = function() {"BLUPs_and_BLUEs.csv"},
+        content = function(file) {
+          table_metrics <- extract_all_BLUEs_BLUPs()
+          setcolorder(table_metrics, c("environment", "genotype", "trait", "result", "value"))
+          write.csv(table_metrics, file, row.names = FALSE)
+        }
+      )
+      
+      ### PUSH METRICS_A TO BMS
+      observeEvent(input$push_metrics_to_BMS_A,{
+        print("push metrics!")
+      })
+      
+      ### PUSH METRICS_B TO BMS
+      observeEvent(input$push_metrics_to_BMS_B,{
+        print("PUSH BLUEs/BLUPs")
         
-        origin_variable_ids <- select(table_metrics, c("originVariableName"))
-        origin_variable_ids <- origin_variable_ids[!duplicated(origin_variable_ids), ]
-        
-        
-        print("push blups/blues!")
+        #Get all BLUEs/BLUPs data
+        table_metrics <- extract_all_BLUEs_BLUPs()
+        colnames(table_metrics) = c("germplasmName", "environment", "methodName", "originVariableName", "value")
 
         # Get methodDbIds 
         #TODO use /search/methodDbIds
@@ -782,99 +766,74 @@ mod_model_server <- function(id, rv){
           seBLUEs = "100876",
           seBLUPs = "100877"
         )
-
+        
+        browser()
+        
         # GET AND/OR CREATE BLUES/BLUPS VARIABLES
-        print("Checking if BLUES/BLUPS variables already exist")
+        # Get the ids of variables that were used in the model
+        origin_variable_names <- select(table_metrics, c("originVariableName"))
+        origin_variable_names <- origin_variable_names[!duplicated(origin_variable_names), ]
         
-        ## get variable name, scaleId, traitId
-        colnames <- colnames(rv_mod$metrics_B)
-        #variableNames <- setdiff(colnames, c('genotype','entryType'))
-        #variableNames <- c("PH_M_cm", "Ant_Cmp_Cday", "Days_50Flow")
-        
-        
+        # Get variables ids from data
         variables_df <- select(rv$data, c("observations.observationVariableDbId", "observations.observationVariableName"))
         variables_df <- variables_df[!duplicated(variables_df), ]
         variables_df <- na.omit(variables_df)
         colnames(variables_df) <- c("originVariableDbId","originVariableName")
         
-        # only keep variables used in model 
-        variables_df <- merge(origin_variable_ids, variables_df, by="originVariableName")
+        # Merge variables from table_metrics with variables from data on their name to only keep variables actually used in model
+        variables_df <- merge(origin_variable_names, variables_df, by="originVariableName")
 
+        # Search variables on ids to get scale and trait
         search_variables <- brapirv2::brapi_post_search_variables(
           con = rv$con,
-          #dataTypes = "",
-          #externalReferenceIDs = "",
-          #externalReferenceSources = "",
-          #methodDbIds = "",
-          observationVariableDbIds = as.character(variables_df$originVariableDbId),
-          #observationVariableNames = variableNames,
-          #ontologyDbIds = "",
-          #page = 0,
-          #pageSize = 1000,
-          #scaleDbIds = "",
-          #studyDbId = "",
-          #traitClasses = "",
-          #traitDbIds = ""
-        )
+          observationVariableDbIds = as.character(variables_df$originVariableDbId))
 
         origin_variables <- brapirv2::brapi_get_search_variables_searchResultsDbId(
           con = rv$con,
-          searchResultsDbId = search_variables$searchResultsDbId,
-          #page = 0,
-          #pageSize = 1000
-        )
+          searchResultsDbId = search_variables$searchResultsDbId)
 
-        ## keep only useful columns
-        origin_variables <- data.frame(originVariableDbId = origin_variables$observationVariableDbId, originVariableName = origin_variables$observationVariableName, traitDbId = origin_variables$trait.traitDbId, scaleDbId=origin_variables$scale.scaleDbId)
-        print("variables scale and trait retrieved")
-        print(nrow(variables))
+        origin_variables <- data.frame(
+          originVariableDbId = origin_variables$observationVariableDbId, 
+          originVariableName = origin_variables$observationVariableName, 
+          traitDbId = origin_variables$trait.traitDbId, 
+          scaleDbId=origin_variables$scale.scaleDbId)
+        print("origin_variables:")
+        print(origin_variables)
         
         browser()
-
+        
+        # Checking if BLUES/BLUPS variables already exist
+        print("Checking if BLUES/BLUPS variables already exist")
         missing_variables_df <- data.frame(matrix(nrow = 0, ncol = 5))
         metrics_variables_df <- data.frame(matrix(nrow = 0, ncol = 8))
+        # for each origin variable, we are looking for corresponding BLUPs/BLUEs variables
+        # which means looking for variables with the same scaleDbId, traitDbId but with BLUEs/BLUPs methodDbIds 
         for (i in 1:nrow(origin_variables)) {
           scaleDbId <- origin_variables$scaleDbId[i]  #"6085"
           variableName <- origin_variables$originVariableName[i]
           traitDbId <- origin_variables$traitDbId[i]  #"20454"
           variableDbId <- origin_variables$originVariableDbId[i]
-
-          print(variableName)
-
-          # check if the BLUES/BLUPS variables already exist for this variable
+          
           search_variables <- brapirv2::brapi_post_search_variables(
             con = rv$con,
-            #dataTypes = "",
-            #externalReferenceIDs = "",
-            #externalReferenceSources = "",
             methodDbIds = c(methodIds$BLUEs, methodIds$BLUPs, methodIds$seBLUEs, methodIds$seBLUPs),
-            #observationVariableDbIds = "",
-            #observationVariableNames = "",
-            #ontologyDbIds = "",
-            #page = 0,
-            #pageSize = 1000,
             scaleDbIds = scaleDbId,
-            #studyDbId = "",
-            #traitClasses = "",
             traitDbIds = traitDbId
           )
           nbExistingVariables = 0
 
           existing_variables <- brapirv2::brapi_get_search_variables_searchResultsDbId(
             con = rv$con,
-            searchResultsDbId = search_variables$searchResultsDbId,
-            #page = 0,
-            #pageSize = 1000
-          )
+            searchResultsDbId = search_variables$searchResultsDbId)
 
           if ("data.frame" %in% class(existing_variables)) {
-            for (i in 1:length(methodIds)) {
-              var <- existing_variables[existing_variables$method.methodDbId == methodIds[i], ]
-              if (nrow(var) == 0) {
-                new_variable_name <- paste0(variableName, "_", names(methodIds[i]))
-                missing_variables_df <- rbind(missing_variables_df, c(new_variable_name, "MEANS", methodIds[[i]], scaleDbId, traitDbId))
-              } else {
-                metrics_variables_df <- rbind(metrics_variables_df, c(variableDbId, variableName, var$observationVariableName, var$observationVariableDbId, names(methodIds[i]), methodIds[[i]], traitDbId, scaleDbId))
+            for (j in 1:length(methodIds)) {
+              var <- existing_variables[existing_variables$method.methodDbId == methodIds[j], ]
+              if (nrow(var) == 0) { # missing variable
+                new_variable_name <- paste0(variableName, "_", names(methodIds[j]))
+                missing_variables_df <- rbind(missing_variables_df, c(new_variable_name, "MEANS", methodIds[[j]], scaleDbId, traitDbId))
+              } else { #existing variable
+                metrics_variables_df <- rbind(metrics_variables_df, c(variableDbId, variableName, var[1, "observationVariableName"], var[1, "observationVariableDbId"], names(methodIds[j]), methodIds[[j]], traitDbId, scaleDbId))
               }
             }
             nbExistingVariables = nrow(existing_variables)
@@ -884,12 +843,7 @@ mod_model_server <- function(id, rv){
               missing_variables_df <- rbind(missing_variables_df, c(new_variable_name, "MEANS", methodIds[[i]], scaleDbId, traitDbId))
             }
           }
-
-          print(paste0(nbExistingVariables, " existing variables"))
-
         }
-        # 
-        # browser()
         colnames(missing_variables_df) =  c("observationVariableName", "contextOfUse", "methodDbId", "scaleDbId", "traitDbId")
         colnames(metrics_variables_df) =  c("originVariableDbId", "originVariableName", "observationVariableName", "observationVariableDbId", "methodName", "methodDbId", "traitDbId", "scaleDbId")
 
@@ -899,7 +853,7 @@ mod_model_server <- function(id, rv){
         print("Missing Variables:")
         print(missing_variables_df)
 
-        # create missing variables
+        # Create missing variables
         if (nrow(missing_variables_df) > 0) {
           print("Creating missing BLUES/BLUPS variables")
           print(paste0("Creating ", nrow(missing_variables_df) , " new variables"))
@@ -917,6 +871,8 @@ mod_model_server <- function(id, rv){
             )
             body <- c(body, list(var))
           }
+          
+          browser()
 
           resp <- brapi_post_several_variables(rv$con, jsonlite::toJSON(body))
 
@@ -930,40 +886,42 @@ mod_model_server <- function(id, rv){
             traitDbId = created_variables_df$trait$traitDbId,
             scaleDbId = created_variables_df$scale$scaleDbId)
 
-          print(variables)
+          print("Created variables:")
           print(created_variables_df)
 
-          # merging origin variables with new created variables
-          merge <- merge(created_variables_df, variables, by=c("traitDbId", "scaleDbId"))
+          # Adding originVariableName and originVariableDbId columns to created_variables_df
+          merge <- merge(created_variables_df, origin_variables, by=c("traitDbId", "scaleDbId"))
           print(merge)
 
+          # Add new variables to the existing variables dataframe
           metrics_variables_df <- rbind(metrics_variables_df, merge)
           print(metrics_variables_df)
         }
         
+        browser()
+        
         # add variableDbIds to data table
-        table_metrics <- merge(table_metrics, metrics_variables_df, by="originVariableName")
+        table_metrics <- merge(table_metrics, metrics_variables_df, by=c("originVariableName","methodName"))
         
         # POSTING SCIENTIFIC OBJECTS
         print("Posting scientificObjects")
 
-        germplasm_df <- select(rv$data, c("germplasmDbId","germplasmName", "studyDbId","study_name_app", "programDbId", "trialDbId"))
+        germplasm_df <- select(rv$data, c("germplasmDbId","germplasmName", "studyDbId","study_name_app", "programDbId", "trialDbId", "entryType"))
         germplasm_df <- germplasm_df[!duplicated(germplasm_df), ]
-        colnames(germplasm_df) <- c("germplasmDbId","germplasmName", "studyDbId","environment", "programDbId", "trialDbId")
+        colnames(germplasm_df) <- c("germplasmDbId","germplasmName", "studyDbId","environment", "programDbId", "trialDbId", "entryType")
         table_metrics <- merge(germplasm_df, table_metrics, by=c("germplasmName", "environment"))
-        #table_metrics2 <- select(table_metrics, c("originVariableName", "germplasmName", "environment", "method","value", "originVariableDbId", "observationVariableName", "observationVariableDbId"))
-          
-        obs_unit_df <- select(table_metrics, c("germplasmDbId","germplasmName", "studyDbId","programDbId", "trialDbId"))
-        obs_unit_df <- obs_unit_df[!duplicated(obs_unit_df), ]
+
+        obs_units_df <- select(table_metrics, c("germplasmDbId","germplasmName", "studyDbId","programDbId", "trialDbId", "entryType"))
+        obs_units_df <- obs_units_df[!duplicated(obs_units_df), ]
         # Building body POST request
         body <- list()
-        for (i in 1:1){#nrow(obsUnits_df)) {
+        for (i in 1:nrow(obs_units_df)) {
           obsUnit <- list(
-            observationUnitPosition = list(entryType =jsonlite::unbox(obsUnits_df[[i, "entryType"]]), observationLevel = list(levelName = jsonlite::unbox("MEANS"))),
-            germplasmDbId = jsonlite::unbox(as.character(obsUnits_df[[i, "germplasmDbId"]])),
-            programDbId = jsonlite::unbox(as.character(obsUnits_df[[i, "programDbId"]])),
-            studyDbId = jsonlite::unbox(as.character(obsUnits_df[[i, "studyDbId"]])),
-            trialDbId = jsonlite::unbox(as.character(obsUnits_df[[i, "trialDbId"]]))
+            observationUnitPosition = list(entryType =jsonlite::unbox(obs_units_df[[i, "entryType"]]), observationLevel = list(levelName = jsonlite::unbox("MEANS"))),
+            germplasmDbId = jsonlite::unbox(as.character(obs_units_df[[i, "germplasmDbId"]])),
+            programDbId = jsonlite::unbox(as.character(obs_units_df[[i, "programDbId"]])),
+            studyDbId = jsonlite::unbox(as.character(obs_units_df[[i, "studyDbId"]])),
+            trialDbId = jsonlite::unbox(as.character(obs_units_df[[i, "trialDbId"]]))
           )
           body <- c(body, list(obsUnit))
         }
@@ -974,32 +932,20 @@ mod_model_server <- function(id, rv){
 
         resp <- brapi_post_several_observationUnits(rv$con, jsonlite::toJSON(body))
 
-        print(resp)
-
         created_obsUnits_df <- resp$content$result$data
+        created_obsUnits_df <- select(created_obsUnits_df, c("observationUnitDbId","germplasmDbId", "studyDbId"))
 
         print(created_obsUnits_df)
 
         # POSTING OBSERVATIONS
         print("Posting observations")
-        created_obsUnit_df <- brapirv2::brapi_get_search_observationunits_searchResultsDbId(
-          con = rv$con,
-          searchResultsDbId = "6361",
-          #page = 0,
-          #pageSize = 1000
-        )
 
-        created_obsUnit_df <- data.frame(
-          observationUnitDbId = created_obsUnit_df$observationUnitDbId,
-          germplasmDbId = created_obsUnit_df$germplasmDbId,
-          studyDbId = created_obsUnit_df$studyDbId)
-        
         table_metrics$studyDbId = as.character(table_metrics$studyDbId)
-        table_metrics <- merge(table_metrics, created_obsUnit_df, by=c("germplasmDbId","studyDbId"))
+        table_metrics <- merge(table_metrics, created_obsUnits_df, by=c("germplasmDbId","studyDbId"))
      
         # Building body POST request
         body <- list()
-        for (i in 1:1){#nrow(table_metrics)) {
+        for (i in 1:nrow(table_metrics)) {
             obs <- list(
               germplasmDbId = jsonlite::unbox(as.character(table_metrics[[i, "germplasmDbId"]])),
               observationUnitDbId = jsonlite::unbox(as.character(table_metrics[[i, "observationUnitDbId"]])),
@@ -1008,8 +954,12 @@ mod_model_server <- function(id, rv){
               value = jsonlite::unbox(as.character(table_metrics[[i, "value"]]))
             )
             body <- c(body, list(obs))
-          }
-
+        }
+        resp <- brapi_post_several_observations(rv$con, jsonlite::toJSON(body))
+        
+        created_observations_df <- resp$content$result$data
+        print(paste0("Posted ", nrow(created_observations_df) , " new observations"))
+        
       })
     }
   )

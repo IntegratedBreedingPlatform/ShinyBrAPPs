@@ -42,5 +42,13 @@ brapi_post_several_observationUnits <- function(con, body) {
   return(resp)
 }
 
+# Function to create several new observations with BrAPI
+brapi_post_several_observations <- function(con, body) {
+  server_url <- paste0(con$protocol, con$db, ":", con$port, "/", con$apipath, "/", con$commoncropname, "/brapi/v2")
+  callurl <- paste0(server_url, "/observations")
+  resp <- post_several_objects(callurl, con$token, body)
+  return(resp)
+}
+
 
 
