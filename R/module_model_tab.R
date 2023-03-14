@@ -766,9 +766,7 @@ mod_model_server <- function(id, rv){
           seBLUEs = "100876",
           seBLUPs = "100877"
         )
-        
-        browser()
-        
+
         # GET AND/OR CREATE BLUES/BLUPS VARIABLES
         # Get the ids of variables that were used in the model
         origin_variable_names <- select(table_metrics, c("originVariableName"))
@@ -799,8 +797,6 @@ mod_model_server <- function(id, rv){
           scaleDbId=origin_variables$scale.scaleDbId)
         print("origin_variables:")
         print(origin_variables)
-        
-        browser()
         
         # Checking if BLUES/BLUPS variables already exist
         print("Checking if BLUES/BLUPS variables already exist")
@@ -872,8 +868,6 @@ mod_model_server <- function(id, rv){
             body <- c(body, list(var))
           }
           
-          browser()
-
           resp <- brapi_post_several_variables(rv$con, jsonlite::toJSON(body))
 
           created_variables_df <- resp$content$result$data
@@ -898,13 +892,11 @@ mod_model_server <- function(id, rv){
           print(metrics_variables_df)
         }
         
-        browser()
-        
         # add variableDbIds to data table
         table_metrics <- merge(table_metrics, metrics_variables_df, by=c("originVariableName","methodName"))
         
-        # POSTING SCIENTIFIC OBJECTS
-        print("Posting scientificObjects")
+        # POSTING OBSERVATION UNITS
+        print("Posting observationUnits")
 
         germplasm_df <- select(rv$data, c("germplasmDbId","germplasmName", "studyDbId","study_name_app", "programDbId", "trialDbId", "entryType"))
         germplasm_df <- germplasm_df[!duplicated(germplasm_df), ]
