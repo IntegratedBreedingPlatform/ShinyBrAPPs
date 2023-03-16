@@ -50,5 +50,24 @@ brapi_post_several_observations <- function(con, body) {
   return(resp)
 }
 
+# Function to update a variable with BrAPI
+brapi_put_variable <- function(con, body, variableDbId) {
+  server_url <- paste0(con$protocol, con$db, ":", con$port, "/", con$apipath, "/", con$commoncropname, "/brapi/v2")
+  callurl <- paste0(server_url, "/variables/", variableDbId)
+  resp <- httr::PUT(url = callurl,
+                     body = body,
+                     encode = "json",
+                     httr::timeout(25),
+                     httr::add_headers(
+                       "Authorization" = paste("Bearer", con$token),
+                       "Content-Type"= "application/json",
+                       "accept"= "*/*"
+                     )
+  )
+  
+  cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
+  resp$content <- jsonlite::fromJSON(cont)
+  return(resp)
+}
 
 
