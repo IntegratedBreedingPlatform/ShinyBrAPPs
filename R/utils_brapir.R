@@ -70,6 +70,25 @@ brapi_put_variable <- function(con, body, variableDbId) {
   return(resp)
 }
 
+# Function get variable from searchResultsDbId with BrAPI
+brapi_get_variable_searchResultsDbId <- function(con, searchResultsDbId) {
+  server_url <- paste0(con$protocol, con$db, ":", con$port, "/", con$apipath, "/", con$commoncropname, "/brapi/v2")
+  callurl <- paste0(server_url, "/search/variables/", searchResultsDbId)
+  resp <- httr::GET(url = callurl,
+                    encode = "json",
+                    httr::timeout(25),
+                    httr::add_headers(
+                      "Authorization" = paste("Bearer", con$token),
+                      "Content-Type"= "application/json",
+                      "accept"= "*/*"
+                    )
+  )
+  
+  cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
+  resp$content <- jsonlite::fromJSON(cont)
+  return(resp)
+}
+
 # Function to get methods
 get_BLUES_methodsDbIds <- function(con, programDbId) {
   callurl <- paste0(con$protocol, con$db, ":", con$port, "/", con$apipath, "/crops/", con$commoncropname, "/methods?programUUID=", programDbId)

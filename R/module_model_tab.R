@@ -791,6 +791,7 @@ mod_model_server <- function(id, rv){
           originVariableName = origin_variables$observationVariableName, 
           traitDbId = origin_variables$trait.traitDbId, 
           scaleDbId=origin_variables$scale.scaleDbId)
+        origin_variables <- origin_variables[!duplicated(origin_variables), ]
         print("origin_variables:")
         print(origin_variables)
         
@@ -806,6 +807,7 @@ mod_model_server <- function(id, rv){
           traitDbId <- origin_variables$traitDbId[i]  #"20454"
           variableDbId <- origin_variables$originVariableDbId[i]
           
+          
           search_variables <- brapirv2::brapi_post_search_variables(
             con = rv$con,
             methodDbIds = c(methodIds$BLUEs, methodIds$BLUPs, methodIds$seBLUEs, methodIds$seBLUPs),
@@ -813,14 +815,16 @@ mod_model_server <- function(id, rv){
             traitDbIds = traitDbId
           )
           nbExistingVariables = 0
+          
 
-          existing_variables <- brapirv2::brapi_get_search_variables_searchResultsDbId(
+          res <-brapi_get_variable_searchResultsDbId(
             con = rv$con,
             searchResultsDbId = search_variables$searchResultsDbId)
 
-          if ("data.frame" %in% class(existing_variables)) {
+          if (res$content$metadata$pagination$totalCount > 0) {
+            existing_variables <- res$content$result$data
             for (j in 1:length(methodIds)) {
-              var <- existing_variables[existing_variables$method.methodDbId == methodIds[j], ]
+              var <- existing_variables[existing_variables$method$methodDbId == methodIds[[j]], ]
               if (nrow(var) == 0) { # missing variable
                 new_variable_name <- paste0(variableName, "_", names(methodIds[j]))
                 missing_variables_df <- rbind(missing_variables_df, c(new_variable_name, "MEANS", methodIds[[j]], scaleDbId, traitDbId))
