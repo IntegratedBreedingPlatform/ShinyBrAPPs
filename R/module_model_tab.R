@@ -760,12 +760,8 @@ mod_model_server <- function(id, rv){
 
         # Get methodDbIds 
         #TODO use /search/methodDbIds
-        methodIds <- list(
-          BLUEs = "100874",
-          BLUPs = "100875",
-          seBLUEs = "100876",
-          seBLUPs = "100877"
-        )
+        programDbId <- unique(rv$study_metadata$programDbId)
+        methodIds <- get_BLUES_methodsDbIds(rv$con, programDbId)
 
         # GET AND/OR CREATE BLUES/BLUPS VARIABLES
         # Get the ids of variables that were used in the model
@@ -843,12 +839,13 @@ mod_model_server <- function(id, rv){
         colnames(missing_variables_df) =  c("observationVariableName", "contextOfUse", "methodDbId", "scaleDbId", "traitDbId")
         colnames(metrics_variables_df) =  c("originVariableDbId", "originVariableName", "observationVariableName", "observationVariableDbId", "methodName", "methodDbId", "traitDbId", "scaleDbId")
 
+        metrics_variables_df <- metrics_variables_df[!duplicated(metrics_variables_df), ]
         print("Existing Variables:")
         print(metrics_variables_df)
 
         print("Missing Variables:")
         print(missing_variables_df)
-
+        
         # Create missing variables
         if (nrow(missing_variables_df) > 0) {
           print("Creating missing BLUES/BLUPS variables")
@@ -880,6 +877,7 @@ mod_model_server <- function(id, rv){
             traitDbId = created_variables_df$trait$traitDbId,
             scaleDbId = created_variables_df$scale$scaleDbId)
 
+          created_variables_df <- created_variables_df[!duplicated(created_variables_df), ]
           print("Created variables:")
           print(created_variables_df)
 
@@ -920,7 +918,7 @@ mod_model_server <- function(id, rv){
             cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
             resp$content <- jsonlite::fromJSON(cont)
             if (resp$content$metadata$pagination$totalCount > 0) {
-              print("no new observationUnits")
+              print("stop because observations already exist")
               continue <- FALSE
               break
             }

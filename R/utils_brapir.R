@@ -70,4 +70,29 @@ brapi_put_variable <- function(con, body, variableDbId) {
   return(resp)
 }
 
+# Function to get methods
+get_BLUES_methodsDbIds <- function(con, programDbId) {
+  callurl <- paste0(con$protocol, con$db, ":", con$port, "/", con$apipath, "/crops/", con$commoncropname, "/methods?programUUID=", programDbId)
+  resp <- httr::GET(url = callurl,
+                    httr::timeout(25),
+                    httr::add_headers(
+                      "Authorization" = paste("Bearer", con$token),
+                      "Content-Type"= "application/json",
+                      "accept"= "*/*"
+                    )
+  )
+  
+  cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
+  res <- jsonlite::fromJSON(cont)
+
+  methodIds <- list(
+    BLUEs = res[res$name == "STABrAPP BLUES", "id"],
+    BLUPs = res[res$name == "STABrAPP BLUPS", "id"],
+    seBLUEs = res[res$name == "STABrAPP SEBLUES", "id"],
+    seBLUPs = res[res$name == "STABrAPP SEBLUPS", "id"]
+  )
+  
+  return(methodIds)
+}
+
 
