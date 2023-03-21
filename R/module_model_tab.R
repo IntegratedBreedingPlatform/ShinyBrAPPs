@@ -129,7 +129,7 @@ mod_model_ui <- function(id){
                 6,
                 # tags$h4("Metrics ~ Environment x Trait x Genotype"),
                 downloadButton(ns("export_metrics_B"), "CSV Export", class = "btn btn-info", style = "float:right; margin:5px"),
-                shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push to BMS", icon = icon("leaf"), class="btn btn-primary", style = "float:right; margin:5px"),
+                disabled(shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push to BMS", icon = icon("leaf"), class="btn btn-primary", style = "float:right; margin:5px")),
                 tags$br(),
                 pickerInput(ns("select_metrics_B"), "BLUPs/BLUEs", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs"), width = "40%", inline = T),
                 pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL, width = "40%", inline = T),
@@ -193,6 +193,12 @@ mod_model_server <- function(id, rv){
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
+        
+        req(rv$pushOK)
+        if (rv$pushOK == TRUE) {
+          shinyjs::enable("push_metrics_to_BMS_B")
+        }
+        
       })
 
       observeEvent(c(input$select_environments, rv$excluded_obs),{
