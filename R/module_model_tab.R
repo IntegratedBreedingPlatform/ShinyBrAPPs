@@ -756,11 +756,14 @@ mod_model_server <- function(id, rv){
         
         #Get all BLUEs/BLUPs data
         table_metrics <- extract_all_BLUEs_BLUPs()
-        colnames(table_metrics) = c("germplasmName", "environment", "methodName", "originVariableName", "value")
+        colnames(table_metrics) = c("germplasmName", "environment", "result", "originVariableName", "value")
 
         # Get methodDbIds 
         #TODO use /search/methodDbIds
         programDbId <- unique(rv$study_metadata$programDbId)
+        methodNames <- data.frame(result = c("BLUEs", "BLUPs", "seBLUEs", "seBLUPs"),
+                                  methodName = c("STABrAPP BLUES","STABrAPP BLUPS","STABrAPP SEBLUES","STABrAPP SEBLUPS"))
+        
         methodIds <- get_BLUES_methodsDbIds(rv$con, programDbId)
 
         # GET AND/OR CREATE BLUES/BLUPS VARIABLES
@@ -841,7 +844,7 @@ mod_model_server <- function(id, rv){
           }
         }
         colnames(missing_variables_df) =  c("observationVariableName", "contextOfUse", "methodDbId", "scaleDbId", "traitDbId")
-        colnames(metrics_variables_df) =  c("originVariableDbId", "originVariableName", "observationVariableName", "observationVariableDbId", "methodName", "methodDbId", "traitDbId", "scaleDbId")
+        colnames(metrics_variables_df) =  c("originVariableDbId", "originVariableName", "observationVariableName", "observationVariableDbId", "result", "methodDbId", "traitDbId", "scaleDbId")
 
         metrics_variables_df <- metrics_variables_df[!duplicated(metrics_variables_df), ]
         print("Existing Variables:")
@@ -885,6 +888,8 @@ mod_model_server <- function(id, rv){
           print("Created variables:")
           print(created_variables_df)
 
+          created_variables_df <- merge(created_variables_df, methodNames, by="methodName")
+
           # Adding originVariableName and originVariableDbId columns to created_variables_df
           merge <- merge(created_variables_df, origin_variables, by=c("traitDbId", "scaleDbId"))
           print(merge)
@@ -896,7 +901,7 @@ mod_model_server <- function(id, rv){
         }
         
         # add variableDbIds to data table
-        table_metrics <- merge(table_metrics, metrics_variables_df, by=c("originVariableName","methodName"))
+        table_metrics <- merge(table_metrics, metrics_variables_df, by=c("originVariableName","result"))
         
         # POSTING OBSERVATION UNITS
         print("Posting observationUnits")
