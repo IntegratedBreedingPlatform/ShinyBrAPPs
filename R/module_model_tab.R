@@ -194,10 +194,10 @@ mod_model_server <- function(id, rv){
           )
         )
         
-        req(rv$pushOK)
-        if (rv$pushOK == TRUE) {
+        # req(rv$pushOK)
+        # if (rv$pushOK == TRUE) {
           shinyjs::enable("push_metrics_to_BMS_B")
-        }
+        # }
         
       })
 
@@ -909,42 +909,55 @@ mod_model_server <- function(id, rv){
         # add variableDbIds to data table
         table_metrics <- merge(table_metrics, metrics_variables_df, by=c("originVariableName","result"))
         
-        # POSTING OBSERVATION UNITS
-        print("Posting observationUnits")
-        germplasm_df <- select(rv$data, c("germplasmDbId","germplasmName", "studyDbId","study_name_app", "programDbId", "trialDbId", "entryType"))
-        germplasm_df <- germplasm_df[!duplicated(germplasm_df), ]
-        colnames(germplasm_df) <- c("germplasmDbId","germplasmName", "studyDbId","environment", "programDbId", "trialDbId", "entryType")
-        table_metrics <- merge(germplasm_df, table_metrics, by=c("germplasmName", "environment"))
+
         
-        #check if we can post new observationUnits
-        studyDbIds <- unique(table_metrics$studyDbId)
-        continue <- TRUE
-        for (i in 1:length(studyDbIds)) {
-          for (j in 1:nrow(metrics_variables_df)) {
-            observationVariableDbId = metrics_variables_df[j, "observationVariableDbId"]
-            server_url <- paste0(rv$con$protocol, rv$con$db, ":", rv$con$port, "/", rv$con$apipath, "/", rv$con$commoncropname, "/brapi/v2")
-            callurl <- paste0(server_url, "/observations?observationVariableDbId=", observationVariableDbId, "&studyDbId=", as.character(studyDbIds[i]),"&observationUnitLevelName=MEANS&pageSize=", 1)
-            resp <- httr::GET(url = callurl,
-                              httr::timeout(25),
-                              httr::add_headers(
-                                "Authorization" = paste("Bearer", rv$con$token),
-                                "accept"= "*/*"
-                              ))
-            cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
-            resp$content <- jsonlite::fromJSON(cont)
-            if (resp$content$metadata$pagination$totalCount > 0) {
-              print("stop because observations already exist")
-              continue <- FALSE
-              break
-            }
-          }
-          if (continue){
-            break # Break the outer loop when the flag is fired
-          }
+        print("Checking if observationUnits already exist")
+        
+        # GETTING EXISTING OBSERVATION UNITS
+        needed_observation_units <- unique(rv$data[,.(germplasmDbId, germplasmName, studyDbId, study_name_app, programDbId, trialDbId, entryType)])
+        needed_observation_units$studyDbId <- as.character(needed_observation_units$studyDbId)
+        needed_observation_units$trialDbId <- as.character(needed_observation_units$trialDbId)
+        setnames(needed_observation_units, "study_name_app","environment")
+        table_metrics <- merge(needed_observation_units, table_metrics, by=c("germplasmName", "environment"))
+        
+        browser()
+        studyDbIds <- as.character(unique(table_metrics[, studyDbId]))
+        body <- list(observationLevels = list(list(levelName = jsonlite::unbox("MEANS"))), studyDbIds = studyDbIds)
+        res <- brapi_post_search_obsUnits(
+          con = rv$con,
+          jsonlite::toJSON(body)
+        )
+        
+        existing_obs_units <- NULL
+        try(existing_obs_units <- brapi_get_search_observationunits_searchResultsDbId(con = rv$con, searchResultsDbId = res$content$result$searchResultsDbId))
+        
+        missing_observation_units <- NULL
+        observation_units <- NULL
+        if (is.null(existing_obs_units)) {
+          print("no existing_obs_units")
+          missing_observation_units <- needed_observation_units
+        } else {
+          print("existing_obs_units:")
+          print(existing_obs_units)
+          existing_obs_units <- data.table(existing_obs_units)
+          existing_obs_units <- existing_obs_units[,.(observationUnitDbId, germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId, observationUnitPosition.entryType)]
+          setnames(existing_obs_units, "observationUnitPosition.entryType", "entryType")
+          # COMPARE EXISTING OBSERVATION UNITS GERMPLASM TO DATA GERMPLASM
+          merge <- merge(needed_observation_units, existing_obs_units, by = c("studyDbId", "germplasmDbId", "germplasmName", "programDbId", "trialDbId", "entryType"), all = TRUE)
+          observation_units <- merge[!is.na(observationUnitDbId)] 
+          missing_observation_units <- merge[is.na(observationUnitDbId)] 
         }
         
-        if (continue) { #creating new observationUnits
-          
+        browser()
+        
+        print("missing_obs_units:")
+        print(missing_obs_units)
+        
+        # POSTING MISSING OBSERVATION UNITS
+        browser()
+        if (!is.null(missing_observation_units) && nrow(missing_observation_units) > 0) {
+          print("Posting observationUnits")
+
           #TODO Remove this step when not necessary anymore
           #Create dataset MEANS with PUT variables before posting observationUnits
           for (i in 1:nrow(metrics_variables_df)) {
@@ -961,56 +974,72 @@ mod_model_server <- function(id, rv){
           resp <- brapi_put_variable(rv$con, jsonlite::toJSON(var), metrics_variables_df[1, "observationVariableDbId"])
           #TODO end
   
-          obs_units_df <- select(table_metrics, c("germplasmDbId","germplasmName", "studyDbId","programDbId", "trialDbId", "entryType"))
-          obs_units_df <- obs_units_df[!duplicated(obs_units_df), ]
-          
           # Building body POST request
           body <- list()
-          for (i in 1:nrow(obs_units_df)) {
+          for (i in 1:nrow(missing_observation_units)) {
             obsUnit <- list(
-              observationUnitPosition = list(entryType =jsonlite::unbox(obs_units_df[[i, "entryType"]]), observationLevel = list(levelName = jsonlite::unbox("MEANS"))),
-              germplasmDbId = jsonlite::unbox(as.character(obs_units_df[[i, "germplasmDbId"]])),
-              programDbId = jsonlite::unbox(as.character(obs_units_df[[i, "programDbId"]])),
-              studyDbId = jsonlite::unbox(as.character(obs_units_df[[i, "studyDbId"]])),
-              trialDbId = jsonlite::unbox(as.character(obs_units_df[[i, "trialDbId"]]))
+              observationUnitPosition = list(
+                entryType =jsonlite::unbox(missing_observation_units[[i, "entryType"]]), 
+                observationLevel = list(levelName = jsonlite::unbox("MEANS"))),
+              germplasmDbId = jsonlite::unbox(as.character(missing_observation_units[[i, "germplasmDbId"]])),
+              programDbId = jsonlite::unbox(as.character(missing_observation_units[[i, "programDbId"]])),
+              studyDbId = jsonlite::unbox(as.character(missing_observation_units[[i, "studyDbId"]])),
+              trialDbId = jsonlite::unbox(as.character(missing_observation_units[[i, "trialDbId"]]))
             )
             body <- c(body, list(obsUnit))
           }
+          browser()
   
           resp <- brapi_post_several_observationUnits(rv$con, jsonlite::toJSON(body))
           
           print(resp$content$metadata$status)
   
-          created_obsUnits_df <- resp$content$result$data
-          created_obsUnits_df <- select(created_obsUnits_df, c("observationUnitDbId","germplasmDbId", "studyDbId"))
-  
-          print(created_obsUnits_df)
-  
-          # POSTING OBSERVATIONS
-          print("Posting observations")
-  
-          table_metrics$studyDbId = as.character(table_metrics$studyDbId)
-          table_metrics <- merge(table_metrics, created_obsUnits_df, by=c("germplasmDbId","studyDbId"))
-       
-          # Building body POST request
-          body <- list()
-          for (i in 1:nrow(table_metrics)) {
-              obs <- list(
-                germplasmDbId = jsonlite::unbox(as.character(table_metrics[[i, "germplasmDbId"]])),
-                observationUnitDbId = jsonlite::unbox(as.character(table_metrics[[i, "observationUnitDbId"]])),
-                studyDbId = jsonlite::unbox(as.character(table_metrics[[i, "studyDbId"]])),
-                observationVariableDbId = jsonlite::unbox(as.character(table_metrics[[i, "observationVariableDbId"]])),
-                value = jsonlite::unbox(as.character(table_metrics[[i, "value"]]))
-              )
-              body <- c(body, list(obs))
+          new_observation_units <- resp$content$result$data
+          new_observation_units <- data.table(new_observation_units)
+          new_observation_units <- new_observation_units[,.(observationUnitDbId, germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId, observationUnitPosition.entryType)]
+          setnames(new_observation_units, "observationUnitPosition.entryType", "entryType")
+
+          if (!is.null(observation_units)) {
+            observation_units[,environment:=NULL]
+            observation_units <- rbind(observation_units, new_observation_units)
+          } else { #no existing observation_units
+            observation_units <- new_observation_units
           }
-          resp <- brapi_post_several_observations(rv$con, jsonlite::toJSON(body))
+          print("created observation_units:")
+          print(observation_units)
+        }
+        
+        observation_units <- observation_units[,.(observationUnitDbId, germplasmDbId, studyDbId)] 
           
-          created_observations_df <- resp$content$result$data
-          print(resp$content$metadata$status)
+        print("all observation_units:")
+        print(observation_units)
+  
+        # POSTING OBSERVATIONS
+        print("Posting observations")
+
+        table_metrics$studyDbId = as.character(table_metrics$studyDbId)
+        table_metrics <- merge(table_metrics, observation_units, by=c("germplasmDbId","studyDbId"))
+     
+        # Building body POST request
+        body <- list()
+        for (i in 1:nrow(table_metrics)) {
+            obs <- list(
+              germplasmDbId = jsonlite::unbox(as.character(table_metrics[[i, "germplasmDbId"]])),
+              observationUnitDbId = jsonlite::unbox(as.character(table_metrics[[i, "observationUnitDbId"]])),
+              studyDbId = jsonlite::unbox(as.character(table_metrics[[i, "studyDbId"]])),
+              observationVariableDbId = jsonlite::unbox(as.character(table_metrics[[i, "observationVariableDbId"]])),
+              value = jsonlite::unbox(as.character(table_metrics[[i, "value"]]))
+            )
+            body <- c(body, list(obs))
+        }
+        resp <- brapi_post_several_observations(rv$con, jsonlite::toJSON(body))
+        
+        created_observations_df <- resp$content$result$data
+        print(resp$content$metadata$status)
+        if (resp$content$metadata$status == 200) {
           showNotification(paste0("BLUES/BLUPS were pushed to BMS (",nrow(created_observations_df), " data)"), type = "message", duration = notification_duration)
         } else {
-          showNotification("BLUES/BLUPS have already been pushed to BMS, you should delete them before pushing new values", type = "error", duration = notification_duration)
+          showNotification(paste0("An error occured while creating new observations"), type = "error", duration = notification_duration)
         }
       })
       

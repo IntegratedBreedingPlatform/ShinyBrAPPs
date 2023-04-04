@@ -19,6 +19,13 @@ post_several_objects <- function(callurl, token, body) {
   return(resp)
 }
 
+brapi_post_search_obsUnits <- function(con, body) {
+  server_url <- paste0(con$protocol, con$db, ":", con$port, "/", con$apipath, "/", con$commoncropname, "/brapi/v2")
+  callurl <- paste0(server_url, "/search/observationunits")
+  resp <- post_several_objects(callurl, con$token, body)
+  return(resp)
+  }
+
 # Function to create several new variables with BrAPI
 brapi_post_several_variables <- function(con, body) {
   # usedArgs <- brapirv2:::brapi_usedArgs(origValues = FALSE)
