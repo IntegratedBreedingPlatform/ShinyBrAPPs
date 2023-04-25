@@ -122,14 +122,15 @@ mod_model_ui <- function(id){
                 # tags$h4("Metrics ~ Environment x Trait"),
                 # pickerInput(ns("select_metrics_A"), "Statistics", multiple = F, choices = NULL, width = "40%", inline = T),
                 downloadButton(ns("export_metrics_A"), "CSV Export", class = "btn btn-info", style = "float:right; margin:5px"),
-                #shiny::actionButton(ns("push_metrics_to_BMS_A"), "Push to BMS", icon = icon("leaf"), class = "btn btn-primary", style = "float:right; margin:5px"),
+                shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push BLUES/BLUPS to BMS", icon = icon("leaf"), class = "btn btn-primary", style = "float:right; margin:5px"),
+                bsTooltip(id = ns("push_metrics_to_BMS_B"), title = "You can select the traits you want to push by selecting raws in the table below", placement = "left", trigger = "hover"),
                 dataTableOutput(ns("metrics_A_table"))
               ),
               column(
                 6,
                 # tags$h4("Metrics ~ Environment x Trait x Genotype"),
                 downloadButton(ns("export_metrics_B"), "CSV Export", class = "btn btn-info", style = "float:right; margin:5px"),
-                disabled(shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push to BMS", icon = icon("leaf"), class="btn btn-primary", style = "float:right; margin:5px")),
+                #disabled(shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push to BMS", icon = icon("leaf"), class="btn btn-primary", style = "float:right; margin:5px")),
                 tags$br(),
                 pickerInput(ns("select_metrics_B"), "BLUPs/BLUEs", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs"), width = "40%", inline = T),
                 pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL, width = "40%", inline = T),
@@ -694,19 +695,38 @@ mod_model_server <- function(id, rv){
         setnames(metrics_table, "trial", "environment")
 
         metrics_table_filt <- metrics_table[environment==input$select_environment_metrics, -c("environment"), with = F]
+        rv_mod$metrics_B <- metrics_table_filt
+        
+        selected_rows <- input$metrics_A_table_rows_selected
+        print("selected rows: ")
+        print(selected_rows)
+        traits <- rv_mod$metrics_A[selected_rows]$Trait
+        colnames(metrics_table_filt)
+        selected <- match(traits, colnames(metrics_table_filt)) - 1
+        
+        browser()
+        print("selected columns: ")
+        print(selected)
 
-        datatable(
+        dtable <- datatable(
           metrics_table_filt,
           rownames = F,
-          options = list(
-            paging = F,
-            scrollX = T,
-            scrollY = "500px",
-            scrollCollapse = T,
-            dom = 't'
-          ))
-        
-        rv_mod$metrics_B <- metrics_table_filt
+          # options = list(
+          #   paging = F,
+          #   scrollX = T,
+          #   scrollY = "500px",
+          #   scrollCollapse = T,
+          #   dom = 't'
+          # ),
+          selection = list(mode = 'multiple', selected = selected, target = 'column', selectable = T)
+        )
+        path <- "www/js/datatables-rowsgroup/"
+        dep <- htmltools::htmlDependency(
+          "RowsGroup", "2.0.0",
+          path, script = "dataTables.rowsGroup.js"
+        )
+        dtable$dependencies <- c(dtable$dependencies, list(dep))
+        dtable
       })
 
       output$export_metrics_A <- downloadHandler(
@@ -759,9 +779,17 @@ mod_model_server <- function(id, rv){
       ### PUSH METRICS_B TO BMS
       observeEvent(input$push_metrics_to_BMS_B,{
         print("PUSH BLUEs/BLUPs")
-        
+
         #Get all BLUEs/BLUPs data
         table_metrics <- extract_all_BLUEs_BLUPs()
+        
+        if (!is.null(input$metrics_A_table_rows_selected)) {
+          #filter traits to push
+          selected_rows <- input$metrics_A_table_rows_selected
+          traits <- rv_mod$metrics_A[selected_rows]$Trait
+          table_metrics <- table_metrics[trait %in% traits]
+        }
+        
         colnames(table_metrics) = c("germplasmName", "environment", "result", "originVariableName", "value")
 
         # Get methodDbIds 
@@ -866,17 +894,26 @@ mod_model_server <- function(id, rv){
           print(missing_variables_df$observationVariableName)
 
           # Building body POST request
-          body <- list()
-          for (i in 1:nrow(missing_variables_df)) {
-            var <- list(
+          # body <- list()
+          # for (i in 1:nrow(missing_variables_df)) {
+          #   var <- list(
+          #     contextOfUse = c("MEANS"),
+          #     method = list(methodDbId = jsonlite::unbox(missing_variables_df[i, "methodDbId"])),
+          #     observationVariableName = jsonlite::unbox(missing_variables_df[i, "observationVariableName"]),
+          #     scale = list(scaleDbId = jsonlite::unbox(missing_variables_df[i, "scaleDbId"])),
+          #     trait = list(traitDbId = jsonlite::unbox(missing_variables_df[i, "traitDbId"]))
+          #   )
+          #   body <- c(body, list(var))
+          # }
+          body <- apply(missing_variables_df,1,function(a){
+            list(
               contextOfUse = c("MEANS"),
-              method = list(methodDbId = jsonlite::unbox(missing_variables_df[i, "methodDbId"])),
-              observationVariableName = jsonlite::unbox(missing_variables_df[i, "observationVariableName"]),
-              scale = list(scaleDbId = jsonlite::unbox(missing_variables_df[i, "scaleDbId"])),
-              trait = list(traitDbId = jsonlite::unbox(missing_variables_df[i, "traitDbId"]))
+              method = list(methodDbId = jsonlite::unbox(a[3])),
+              observationVariableName = jsonlite::unbox(a[1]),
+              scale = list(scaleDbId = jsonlite::unbox(a[4])),
+              trait = list(traitDbId = jsonlite::unbox(a[5]))
             )
-            body <- c(body, list(var))
-          }
+          })
           
           resp <- brapi_post_several_variables(rv$con, jsonlite::toJSON(body))
 
@@ -909,8 +946,6 @@ mod_model_server <- function(id, rv){
         # add variableDbIds to data table
         table_metrics <- merge(table_metrics, metrics_variables_df, by=c("originVariableName","result"))
         
-
-        
         print("Checking if observationUnits already exist")
         
         # GETTING EXISTING OBSERVATION UNITS
@@ -920,7 +955,6 @@ mod_model_server <- function(id, rv){
         setnames(needed_observation_units, "study_name_app","environment")
         table_metrics <- merge(needed_observation_units, table_metrics, by=c("germplasmName", "environment"))
         
-        browser()
         studyDbIds <- as.character(unique(table_metrics[, studyDbId]))
         body <- list(observationLevels = list(list(levelName = jsonlite::unbox("MEANS"))), studyDbIds = studyDbIds)
         res <- brapi_post_search_obsUnits(
@@ -948,47 +982,66 @@ mod_model_server <- function(id, rv){
           missing_observation_units <- merge[is.na(observationUnitDbId)] 
         }
         
-        browser()
-        
-        print("missing_obs_units:")
-        print(missing_obs_units)
+        print("missing_observation_units:")
+        print(missing_observation_units)
         
         # POSTING MISSING OBSERVATION UNITS
-        browser()
         if (!is.null(missing_observation_units) && nrow(missing_observation_units) > 0) {
           print("Posting observationUnits")
 
           #TODO Remove this step when not necessary anymore
           #Create dataset MEANS with PUT variables before posting observationUnits
-          for (i in 1:nrow(metrics_variables_df)) {
-            var <- list(
+          # for (i in 1:nrow(metrics_variables_df)) {
+          #   var <- list(
+          #     contextOfUse = c("MEANS"),
+          #     observationVariableDbId = jsonlite::unbox(metrics_variables_df[1, "observationVariableDbId"]),
+          #     method = list(methodDbId = jsonlite::unbox(metrics_variables_df[1, "methodDbId"])),
+          #     observationVariableName = jsonlite::unbox(metrics_variables_df[1, "observationVariableName"]),
+          #     scale = list(scaleDbId = jsonlite::unbox(metrics_variables_df[1, "scaleDbId"])),
+          #     trait = list(traitDbId = jsonlite::unbox(metrics_variables_df[1, "traitDbId"])),
+          #     studyDbIds = as.character(studyDbIds)
+          #   )
+          # }
+          var <- apply(metrics_variables_df,1,function(a){
+            list(
               contextOfUse = c("MEANS"),
-              observationVariableDbId = jsonlite::unbox(metrics_variables_df[1, "observationVariableDbId"]),
-              method = list(methodDbId = jsonlite::unbox(metrics_variables_df[1, "methodDbId"])),
-              observationVariableName = jsonlite::unbox(metrics_variables_df[1, "observationVariableName"]),
-              scale = list(scaleDbId = jsonlite::unbox(metrics_variables_df[1, "scaleDbId"])),
-              trait = list(traitDbId = jsonlite::unbox(metrics_variables_df[1, "traitDbId"])),
+              observationVariableDbId = jsonlite::unbox(a[4]),
+              method = list(methodDbId = jsonlite::unbox(a[6])),
+              observationVariableName = jsonlite::unbox(a[3]),
+              scale = list(scaleDbId = jsonlite::unbox(a[8])),
+              trait = list(traitDbId = jsonlite::unbox(a[7])),
               studyDbIds = as.character(studyDbIds)
             )
-          }
+          })
           resp <- brapi_put_variable(rv$con, jsonlite::toJSON(var), metrics_variables_df[1, "observationVariableDbId"])
           #TODO end
   
           # Building body POST request
-          body <- list()
-          for (i in 1:nrow(missing_observation_units)) {
-            obsUnit <- list(
+          body <- apply(metrics_variables_df,1,function(a){
+            list(
               observationUnitPosition = list(
-                entryType =jsonlite::unbox(missing_observation_units[[i, "entryType"]]), 
+                entryType =jsonlite::unbox(a[6]), 
                 observationLevel = list(levelName = jsonlite::unbox("MEANS"))),
-              germplasmDbId = jsonlite::unbox(as.character(missing_observation_units[[i, "germplasmDbId"]])),
-              programDbId = jsonlite::unbox(as.character(missing_observation_units[[i, "programDbId"]])),
-              studyDbId = jsonlite::unbox(as.character(missing_observation_units[[i, "studyDbId"]])),
-              trialDbId = jsonlite::unbox(as.character(missing_observation_units[[i, "trialDbId"]]))
+              germplasmDbId = jsonlite::unbox(as.character(a[2])),
+              programDbId = jsonlite::unbox(as.character(a[4])),
+              studyDbId = jsonlite::unbox(as.character(a[1])),
+              trialDbId = jsonlite::unbox(as.character(a[5]))
             )
-            body <- c(body, list(obsUnit))
-          }
-          browser()
+          })
+            
+          # body <- list()
+          # for (i in 1:nrow(missing_observation_units)) {
+          #   obsUnit <- list(
+          #     observationUnitPosition = list(
+          #       entryType =jsonlite::unbox(missing_observation_units[[i, "entryType"]]), 
+          #       observationLevel = list(levelName = jsonlite::unbox("MEANS"))),
+          #     germplasmDbId = jsonlite::unbox(as.character(missing_observation_units[[i, "germplasmDbId"]])),
+          #     programDbId = jsonlite::unbox(as.character(missing_observation_units[[i, "programDbId"]])),
+          #     studyDbId = jsonlite::unbox(as.character(missing_observation_units[[i, "studyDbId"]])),
+          #     trialDbId = jsonlite::unbox(as.character(missing_observation_units[[i, "trialDbId"]]))
+          #   )
+          #   body <- c(body, list(obsUnit))
+          # }
   
           resp <- brapi_post_several_observationUnits(rv$con, jsonlite::toJSON(body))
           
@@ -1016,33 +1069,47 @@ mod_model_server <- function(id, rv){
   
         # POSTING OBSERVATIONS
         print("Posting observations")
-
+        
         table_metrics$studyDbId = as.character(table_metrics$studyDbId)
         table_metrics <- merge(table_metrics, observation_units, by=c("germplasmDbId","studyDbId"))
      
         # Building body POST request
-        body <- list()
-        for (i in 1:nrow(table_metrics)) {
-            obs <- list(
-              germplasmDbId = jsonlite::unbox(as.character(table_metrics[[i, "germplasmDbId"]])),
-              observationUnitDbId = jsonlite::unbox(as.character(table_metrics[[i, "observationUnitDbId"]])),
-              studyDbId = jsonlite::unbox(as.character(table_metrics[[i, "studyDbId"]])),
-              observationVariableDbId = jsonlite::unbox(as.character(table_metrics[[i, "observationVariableDbId"]])),
-              value = jsonlite::unbox(as.character(table_metrics[[i, "value"]]))
-            )
-            body <- c(body, list(obs))
-        }
+        # body <- list()
+        # for (i in 1:nrow(table_metrics)) {
+        #     obs <- list(
+        #       germplasmDbId = jsonlite::unbox(as.character(table_metrics[[i, "germplasmDbId"]])),
+        #       observationUnitDbId = jsonlite::unbox(as.character(table_metrics[[i, "observationUnitDbId"]])),
+        #       studyDbId = jsonlite::unbox(as.character(table_metrics[[i, "studyDbId"]])),
+        #       observationVariableDbId = jsonlite::unbox(as.character(table_metrics[[i, "observationVariableDbId"]])),
+        #       value = jsonlite::unbox(as.character(table_metrics[[i, "value"]]))
+        #     )
+        #     body <- c(body, list(obs))
+        # }
+        # 
+        body <- apply(table_metrics,1,function(a){
+          list(
+            germplasmDbId = jsonlite::unbox(as.character(a[1])),
+            observationUnitDbId = jsonlite::unbox(as.character(a[17])),
+            studyDbId = jsonlite::unbox(as.character(a[2])),
+            observationVariableDbId = jsonlite::unbox(as.character(a[13])),
+            value = jsonlite::unbox(as.numeric(a[10]))
+          )
+        })
+        
         resp <- brapi_post_several_observations(rv$con, jsonlite::toJSON(body))
         
         created_observations_df <- resp$content$result$data
         print(resp$content$metadata$status)
-        if (resp$content$metadata$status == 200) {
+        
+        browser()
+        if (resp$status_code == 200) {
           showNotification(paste0("BLUES/BLUPS were pushed to BMS (",nrow(created_observations_df), " data)"), type = "message", duration = notification_duration)
         } else {
           showNotification(paste0("An error occured while creating new observations"), type = "error", duration = notification_duration)
         }
       })
-      
     }
+    
+
   )
 }
