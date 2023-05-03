@@ -985,7 +985,7 @@ mod_model_server <- function(id, rv){
           "The heritability is 0 for some of the traits. Are you sure you still want to push all data ? You can select the traits you want to push by clicking on lines in the statistics table",
           footer = tagList(
             modalButton("Cancel"),
-            shiny::actionButton(ns("ok"), "Push all data anyway")
+            shiny::actionButton(ns("ok"), "Push BLUEs/BLUPs anyway", class = "btn btn-primary")
           )
         )
       }
@@ -1145,10 +1145,10 @@ mod_model_server <- function(id, rv){
           body <- apply(missing_variables_df,1,function(a){
             list(
               contextOfUse = c("MEANS"),
-              method = list(methodDbId = jsonlite::unbox(a[3])),
-              observationVariableName = jsonlite::unbox(a[1]),
-              scale = list(scaleDbId = jsonlite::unbox(a[4])),
-              trait = list(traitDbId = jsonlite::unbox(a[5]))
+              method = list(methodDbId = jsonlite::unbox(a["methodDbId"])),
+              observationVariableName = jsonlite::unbox(a["observationVariableName"]),
+              scale = list(scaleDbId = jsonlite::unbox(a["scaleDbId"])),
+              trait = list(traitDbId = jsonlite::unbox(a["traitDbId"]))
             )
           })
           
@@ -1241,11 +1241,11 @@ mod_model_server <- function(id, rv){
           var <- apply(metrics_variables_df,1,function(a){
             list(
               contextOfUse = c("MEANS"),
-              observationVariableDbId = jsonlite::unbox(a[4]),
-              method = list(methodDbId = jsonlite::unbox(a[6])),
-              observationVariableName = jsonlite::unbox(a[3]),
-              scale = list(scaleDbId = jsonlite::unbox(a[8])),
-              trait = list(traitDbId = jsonlite::unbox(a[7])),
+              observationVariableDbId = jsonlite::unbox(a["observationVariableDbId"]),
+              method = list(methodDbId = jsonlite::unbox(a["methodDbId"])),
+              observationVariableName = jsonlite::unbox(a["observationVariableName"]),
+              scale = list(scaleDbId = jsonlite::unbox(a["scaleDbId"])),
+              trait = list(traitDbId = jsonlite::unbox(a["traitDbId"])),
               studyDbIds = as.character(studyDbIds)
             )
           })
@@ -1256,12 +1256,12 @@ mod_model_server <- function(id, rv){
           body <- apply(missing_observation_units,1,function(a){
             list(
               observationUnitPosition = list(
-                entryType =jsonlite::unbox(a[6]), 
+                entryType =jsonlite::unbox(a["entryType"]), 
                 observationLevel = list(levelName = jsonlite::unbox("MEANS"))),
-              germplasmDbId = jsonlite::unbox(as.character(a[2])),
-              programDbId = jsonlite::unbox(as.character(a[4])),
-              studyDbId = jsonlite::unbox(as.character(a[1])),
-              trialDbId = jsonlite::unbox(as.character(a[5]))
+              germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
+              programDbId = jsonlite::unbox(as.character(a["programDbId"])),
+              studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
+              trialDbId = jsonlite::unbox(as.character(a["trialDbId"]))
             )
           })
             
@@ -1323,11 +1323,11 @@ mod_model_server <- function(id, rv){
         # 
         body <- apply(table_metrics,1,function(a){
           list(
-            germplasmDbId = jsonlite::unbox(as.character(a[1])),
-            observationUnitDbId = jsonlite::unbox(as.character(a[17])),
-            studyDbId = jsonlite::unbox(as.character(a[2])),
-            observationVariableDbId = jsonlite::unbox(as.character(a[13])),
-            value = jsonlite::unbox(as.numeric(a[10]))
+            germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
+            observationUnitDbId = jsonlite::unbox(as.character(a["observationUnitDbId"])),
+            studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
+            observationVariableDbId = jsonlite::unbox(as.character(a["observationVariableDbId"])),
+            value = jsonlite::unbox(as.numeric(a["value"]))
           )
         })
         
