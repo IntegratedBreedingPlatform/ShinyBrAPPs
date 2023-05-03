@@ -947,6 +947,15 @@ mod_model_server <- function(id, rv){
           table_BLUEs <- as.data.table(extractSTA(STA = rv$fit, what = c("BLUEs")))
           table_seBLUEs <- as.data.table(extractSTA(STA = rv$fit, what = c("seBLUEs")))
           
+          if (!is.null(input$metrics_A_table_rows_selected)) {
+            selected_rows <- input$metrics_A_table_rows_selected
+            traits_to_remove <- rv_mod$metrics_A[!selected_rows]$Trait
+            table_BLUPs[, (traits_to_remove):=NULL]
+            table_seBLUPs[, (traits_to_remove):=NULL]
+            table_BLUEs[, (traits_to_remove):=NULL]
+            table_seBLUEs[, (traits_to_remove):=NULL]
+          }
+          
           for (i in 3:length(colnames(table_BLUPs))) {
             colnames(table_BLUPs)[i] <- paste0(colnames(table_BLUPs)[i], "_BLUPs")
             print(colnames(table_BLUPs))
