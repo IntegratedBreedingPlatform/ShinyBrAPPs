@@ -110,13 +110,12 @@ get_BLUES_methodsDbIds <- function(con, programDbId) {
   
   cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
   res <- jsonlite::fromJSON(cont)
-
-  methodIds <- list(
-    BLUEs = res[res$name == "STABrAPP BLUES", "id"],
-    BLUPs = res[res$name == "STABrAPP BLUPS", "id"],
-    seBLUEs = res[res$name == "STABrAPP SEBLUES", "id"],
-    seBLUPs = res[res$name == "STABrAPP SEBLUPS", "id"]
-  )
+  
+  methodIds <- list()
+  if (nrow(res[res$name == "STABrAPP BLUES", ]) > 0) { methodIds["BLUEs"] =  res[res$name == "STABrAPP BLUES", "id"]}
+  if (nrow(res[res$name == "STABrAPP BLUPS", ]) > 0) { methodIds["BLUPs"] =  res[res$name == "STABrAPP BLUPS", "id"]}
+  if (nrow(res[res$name == "STABrAPP SEBLUES", ]) > 0) { methodIds["seBLUEs"] =  res[res$name == "STABrAPP SEBLUES", "id"]}
+  if (nrow(res[res$name == "STABrAPP SEBLUPS", ]) > 0) { methodIds["seBLUPs"] =  res[res$name == "STABrAPP SEBLUPS", "id"]}
   
   return(methodIds)
 }

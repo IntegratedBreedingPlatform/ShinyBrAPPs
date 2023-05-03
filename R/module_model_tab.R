@@ -188,7 +188,7 @@ mod_model_server <- function(id, rv){
         updatePickerInput(
           session,"select_environments",
           choices = choices_env,
-          selected = choices_env,
+          #selected = choices_env,
           options = list(
             placeholder = 'Select 1 or more environments',
             onInitialize = I('function() { this.setValue(""); }')
@@ -201,21 +201,41 @@ mod_model_server <- function(id, rv){
         # }
         
       })
-
-      observeEvent(c(input$select_environments, rv$excluded_obs),{
-        ## only traits found in all environments can be selected
-        trait_by_studyDbIds <- rv$data_dq[study_name_app %in% input$select_environments,.(trait = unique(observations.observationVariableName)), .(studyDbId)]
-        choices_traits <- trait_by_studyDbIds[,.N,trait][N==length(trait_by_studyDbIds[,unique(studyDbId)]), trait]
+      
+      observeEvent(c(input$select_environments, req(!is.null(rv$data_dq))), {
+        
+        # Update traits dropdown
+        if (is.null(input$select_environments)) {
+          choices_traits <- rv$data_dq[,unique(observations.observationVariableName)]
+          if (is.null(input$select_traits)) {
+            selected_traits <- NULL
+          } else {
+            selected_traits <- input$select_traits
+          }
+        } else {
+          ## only traits found in all selected environments can be selected
+          trait_by_studyDbIds <- rv$data_dq[study_name_app %in% input$select_environments, .(trait = unique(observations.observationVariableName)), .(studyDbId)]
+          choices_traits <- trait_by_studyDbIds[, .N, trait][N == length(trait_by_studyDbIds[, unique(studyDbId)]), trait]
+          if (is.null(input$select_traits)) {
+            selected_traits <- choices_traits
+          } else {
+            if (all(input$select_traits %in% choices_traits)) {
+              selected_traits <- input$select_traits
+            } else {
+              selected_traits <- choices_traits
+            }
+          }
+        }
         updatePickerInput(
-          session,"select_traits",
+          session, "select_traits",
           choices = choices_traits,
-          selected = choices_traits,
+          selected = selected_traits,
           options = list(
             placeholder = 'Select 1 or more traits',
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
-
+        
         ## restrict the design choices to the available column in the environment datasets
         # based in the following rules (https://biometris.github.io/statgenSTA/articles/statgenSTA.html#modeling-1)
         # - ibd 		    => 	subBlocks are defined
@@ -263,14 +283,257 @@ mod_model_server <- function(id, rv){
             )
           )
         }
-
+        
         rv_mod$data_checks <- list(
           has_subBlocks = has_subBlocks,
           has_repIds = has_repIds,
           has_coords = has_coords
         )
+      }
+      , ignoreNULL = FALSE)
+      
+      observeEvent(c(input$select_traits, req(!is.null(rv$data_dq))), {
+        
+        # Update environments dropdown
+        if (is.null(input$select_traits)) {
+          req("observations.observationVariableName"%in%names(rv$data_dq))
+          choices_env <- rv$data_dq[,unique(study_name_app)]
+          if (is.null(input$select_environments)) {
+            selected_env <- NULL
+          } else {
+            selected_env <- input$select_environments
+          }
+        } else {
+          ## only environment with all selected traits can be selected
+          env_by_traits <- rv$data_dq[observations.observationVariableName %in% input$select_traits, .(env = unique(study_name_app)), .(observations.observationVariableName)]
+          choices_env <- env_by_traits[, .N, env][N == length(env_by_traits[, unique(observations.observationVariableName)]), env]
+          print("browser1b")
+          print("choices_env")
+          print(choices_env)
+          browser()
+          if (is.null(input$select_environments)) {
+            selected_env <- choices_env
+          } else {
+            if (all(input$select_environments %in% choices_env)) {
+              selected_env <- input$select_environments
+            } else {
+              selected_env <- choices_env
+            }
+          }
+          print(selected_env)
+          print(choices_env)
+          #choices_env <- unique(rv$data_dq[observations.observationVariableName %in% input$select_traits, study_name_app])
+        }
+        updatePickerInput(
+          session, "select_environments",
+          choices = choices_env,
+          selected = selected_env,
+          options = list(
+            placeholder = 'Select 1 or more traits',
+            onInitialize = I('function() { this.setValue(""); }')
+          )
+        )
+        
+        ## the possible covariates
+        # - have to be numerical
+        # - must not be some columns (like ids)
+        # - can be traits
+        all_traits <- rv$data_dq[,unique(observations.observationVariableName)]
+        remaining_traits <- setdiff(all_traits, input$select_traits)
+        choices_cov <- c(names(rv$data_dq)[unlist(rv$data_dq[,lapply(.SD, is.numeric)])], remaining_traits)
+        not_cov <- c(
+          "studyDbId", "trialDbId","observations.observationDbId",
+          "environment_number",
+          "observations.observationVariableDbId",
+          "observations.value",
+          "programDbId"
+        )
+        choices_cov <- choices_cov[!(choices_cov%in%not_cov)]
+        updatePickerInput(
+          session, "covariates", choices = choices_cov, selected = NULL
+        )
+        
+      }, 
+      ignoreNULL = FALSE)
 
-        ###  create TD without the excluded observations
+      # observeEvent(c(input$select_environments, rv$excluded_obs),{
+      #   ## only traits found in all environments can be selected
+      #   trait_by_studyDbIds <- rv$data_dq[study_name_app %in% input$select_environments,.(trait = unique(observations.observationVariableName)), .(studyDbId)]
+      #   choices_traits <- trait_by_studyDbIds[,.N,trait][N==length(trait_by_studyDbIds[,unique(studyDbId)]), trait]
+      #   updatePickerInput(
+      #     session,"select_traits",
+      #     choices = choices_traits,
+      #     #selected = choices_traits,
+      #     options = list(
+      #       placeholder = 'Select 1 or more traits',
+      #       onInitialize = I('function() { this.setValue(""); }')
+      #     )
+      #   )
+      # 
+      #   ## restrict the design choices to the available column in the environment datasets
+      #   # based in the following rules (https://biometris.github.io/statgenSTA/articles/statgenSTA.html#modeling-1)
+      #   # - ibd 		    => 	subBlocks are defined
+      #   # - res.ibd 	  => 	subBlocks and repIds are defined
+      #   # - rcbd		    =>	repIds are defined
+      #   # - rowcol		  =>	rowId and colId are defined
+      #   # - res.rowcol	=>	repIds, rowId and colId are defined
+      #   #
+      #   # NB: choices_model_design is defined in inst/apps/stabrapp/config.R
+      #   # For the following code to work, the item order in choices_model_design has to be: "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"
+      # 
+      #   data_filt <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs) & (study_name_app %in% input$select_environments)]
+      #   has_subBlocks <- data_filt[,.N,.(blockNumber)][,.N]>1
+      #   has_repIds <- data_filt[,.N,.(replicate)][,.N]>1
+      #   has_coords <- data_filt[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1
+      # 
+      #   possible_designs <- choices_model_design[c(
+      #     has_subBlocks, # matches "ibd",
+      #     has_subBlocks & has_repIds, # matches "res.ibd"
+      #     has_repIds, # matches  "rcbd"
+      #     has_coords, # matches "rowcol"
+      #     has_coords & has_repIds # matches "res.rowcol"
+      #   )]
+      # 
+      #   ## set default experimental design
+      #   design_pui <- NA
+      #   if("experimentalDesign.pui"%in%names(rv$study_metadata)){
+      #     design_pui <- rv$study_metadata[study_name_app %in% input$select_environments,unique(experimentalDesign.pui)]
+      #   }
+      #   StatGenSTA_code <- exp_designs_corresp[BMS_pui %in% design_pui, StatGenSTA_code]
+      #   if(length(StatGenSTA_code)==1){
+      #     updatePickerInput(
+      #       session, "model_design",
+      #       choices = possible_designs,
+      #       selected = StatGenSTA_code
+      #     )
+      #   }else{
+      #     updatePickerInput(
+      #       session, "model_design",
+      #       choices = possible_designs,
+      #       selected = "",
+      #       options = list(
+      #         title = "Select Model Design",
+      #         onInitialize = I('function() { this.setValue(""); }')
+      #       )
+      #     )
+      #   }
+      # 
+      #   rv_mod$data_checks <- list(
+      #     has_subBlocks = has_subBlocks,
+      #     has_repIds = has_repIds,
+      #     has_coords = has_coords
+      #   )
+      # 
+      #   ###  create TD without the excluded observations
+      #   ## exclude observations
+      #   data_filtered <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
+      #   ## make 1 column per trait
+      #   data_filtered_casted <- dcast(
+      #     data = data_filtered[,.(
+      #       observationUnitDbId,
+      #       genotype = germplasmName, trial = study_name_app, loc = studyLocationDbId,
+      #       repId = replicate,
+      #       subBlock = blockNumber,
+      #       rowCoord = positionCoordinateY, colCoord = positionCoordinateX,
+      #       observations.observationVariableName, observations.value
+      #     )],
+      #     formula = "observationUnitDbId + genotype + trial + loc + repId + subBlock + rowCoord + colCoord ~ observations.observationVariableName",
+      #     value.var = "observations.value"
+      #   )
+      # 
+      #   ## parametrization
+      #   createTD_args <- list(
+      #     genotype = "genotype",
+      #     trial = "trial",
+      #     loc = "loc",
+      #     repId = "repId",
+      #     subBlock = "subBlock",
+      #     rowCoord = "rowCoord",
+      #     colCoord = "colCoord"
+      #   )
+      #   if(!rv_mod$data_checks$has_subBlocks){
+      #     data_filtered_casted[,subBlock:=NULL]
+      #     createTD_args$subBlock <- NULL
+      #   }
+      #   if(!rv_mod$data_checks$has_repIds){
+      #     data_filtered_casted[,repId:=NULL]
+      #     createTD_args$repId <- NULL
+      #   }
+      #   if(!rv_mod$data_checks$has_coords){
+      #     data_filtered_casted[,rowCoord:=NULL]
+      #     data_filtered_casted[,colCoord:=NULL]
+      #     createTD_args$rowCoord <- NULL
+      #     createTD_args$colCoord <- NULL
+      #   }
+      #   createTD_args <- c(
+      #     list(data = data_filtered_casted),
+      #     createTD_args
+      #   )
+      # 
+      #   ## create TD
+      #   rv_mod$TD <- do.call(what = createTD, args = createTD_args)
+      # 
+      # })
+
+      observeEvent(input$model_engine,{
+        if(input$model_engine=="SpATS"){
+          shinyjs::show("spatial_opt")
+          shinyjs::show("display_psanova_opt")
+        }else{
+          shinyjs::hide("spatial_opt")
+          shinyjs::hide("display_psanova_opt")
+        }
+      })
+
+      output$psanova_opt <- renderUI({ ## based on RAPWeb code
+        req(input$select_environments, rv_mod$TD, input$model_engine == "SpATS", input$display_psanova_opt==T)
+
+        ## Variable selection. Cov vars have to be a factor column.
+        nRows <- min(sapply(X = input$select_environments, FUN = function(trial) {
+          nlevels(droplevels(rv_mod$TD[[trial]]$rowId))
+        }))
+        nCols <- min(sapply(X = input$select_environments, FUN = function(trial) {
+          nlevels(droplevels(rv_mod$TD[[trial]]$colId))
+        }))
+        tagList(
+          sliderInput(inputId = ns("spRowSeg"),
+                      label = "Number of row segments in PSANOVA",
+                      value = floor(nRows / 2), min = 1, max = nRows, step = 1),
+          sliderInput(inputId = ns("spColSeg"),
+                      label = "Number of column segments in PSANOVA",
+                      value = floor(nCols / 2), min = 1, max = nCols, step = 1),
+          sliderInput(inputId = ns("spNestDiv"),
+                      label = "Divisor of segments in PSANOVA",
+                      value = 2, min = 1, max = 5, step = 1)
+        )
+      })
+
+      output$table_model_design_metadata <- renderDT({
+        req(input$select_environments)
+        req(rv$study_metadata)
+        if("experimentalDesign.pui"%in%names(rv$study_metadata)){
+          designs <- rv$study_metadata[study_name_app%in%input$select_environments,.(experimentalDesign.pui = unique(experimentalDesign.pui), experimentalDesign.description = unique(experimentalDesign.description)),study_name_app]
+        }else{
+          designs <- rv$study_metadata[study_name_app%in%input$select_environments,.(unique(study_name_app))]
+          designs[,experimentalDesign.pui:=NA]
+          designs[,experimentalDesign.description:=NA]
+        }
+        datatable(
+          designs,
+          rownames = F,
+          options = list(
+            paging = F,
+            scrollX = T,
+            # scrollY = "500px",
+            scrollCollapse = T,
+            dom = 't'
+          ))
+      })
+
+      observeEvent(input$go_fit_model,{
+        req(rv_mod$data_checks)
+        
+        ## create TD without the excluded observations
         ## exclude observations
         data_filtered <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
         ## make 1 column per trait
@@ -318,88 +581,8 @@ mod_model_server <- function(id, rv){
 
         ## create TD
         rv_mod$TD <- do.call(what = createTD, args = createTD_args)
-
-      })
-
-      observeEvent(input$model_engine,{
-        if(input$model_engine=="SpATS"){
-          shinyjs::show("spatial_opt")
-          shinyjs::show("display_psanova_opt")
-        }else{
-          shinyjs::hide("spatial_opt")
-          shinyjs::hide("display_psanova_opt")
-        }
-      })
-
-      output$psanova_opt <- renderUI({ ## based on RAPWeb code
-        req(input$select_environments, rv_mod$TD, input$model_engine == "SpATS", input$display_psanova_opt==T)
-
-        ## Variable selection. Cov vars have to be a factor column.
-        nRows <- min(sapply(X = input$select_environments, FUN = function(trial) {
-          nlevels(droplevels(rv_mod$TD[[trial]]$rowId))
-        }))
-        nCols <- min(sapply(X = input$select_environments, FUN = function(trial) {
-          nlevels(droplevels(rv_mod$TD[[trial]]$colId))
-        }))
-        tagList(
-          sliderInput(inputId = ns("spRowSeg"),
-                      label = "Number of row segments in PSANOVA",
-                      value = floor(nRows / 2), min = 1, max = nRows, step = 1),
-          sliderInput(inputId = ns("spColSeg"),
-                      label = "Number of column segments in PSANOVA",
-                      value = floor(nCols / 2), min = 1, max = nCols, step = 1),
-          sliderInput(inputId = ns("spNestDiv"),
-                      label = "Divisor of segments in PSANOVA",
-                      value = 2, min = 1, max = 5, step = 1)
-        )
-      })
-
-      observeEvent(input$select_traits,{
-        # req(input$select_traits)
-        ## the possible covariates
-        # - have to be numerical
-        # - must not be some columns (like ids)
-        # - can be traits
-        all_traits <- rv$data_dq[,unique(observations.observationVariableName)]
-        remaining_traits <- setdiff(all_traits, input$select_traits)
-        choices_cov <- c(names(rv$data_dq)[unlist(rv$data_dq[,lapply(.SD, is.numeric)])], remaining_traits)
-        not_cov <- c(
-          "studyDbId", "trialDbId","observations.observationDbId",
-          "environment_number",
-          "observations.observationVariableDbId",
-          "observations.value",
-          "programDbId"
-        )
-        choices_cov <- choices_cov[!(choices_cov%in%not_cov)]
-        updatePickerInput(
-          session, "covariates", choices = choices_cov, selected = NULL
-        )
-      })
-
-      output$table_model_design_metadata <- renderDT({
-        req(input$select_environments)
-        req(rv$study_metadata)
-        if("experimentalDesign.pui"%in%names(rv$study_metadata)){
-          designs <- rv$study_metadata[study_name_app%in%input$select_environments,.(experimentalDesign.pui = unique(experimentalDesign.pui), experimentalDesign.description = unique(experimentalDesign.description)),study_name_app]
-        }else{
-          designs <- rv$study_metadata[study_name_app%in%input$select_environments,.(unique(study_name_app))]
-          designs[,experimentalDesign.pui:=NA]
-          designs[,experimentalDesign.description:=NA]
-        }
-        datatable(
-          designs,
-          rownames = F,
-          options = list(
-            paging = F,
-            scrollX = T,
-            # scrollY = "500px",
-            scrollCollapse = T,
-            dom = 't'
-          ))
-      })
-
-      observeEvent(input$go_fit_model,{
-        req(rv_mod$data_checks)
+        
+        
         rv$fit <- NULL
 
         if (input$model_engine == "SpATS" && input$display_psanova_opt==T) {
@@ -442,6 +625,7 @@ mod_model_server <- function(id, rv){
           }
         }
 
+        browser()
         ## update selectors
         updatePickerInput(
           session, "select_environment_fit",
@@ -703,21 +887,19 @@ mod_model_server <- function(id, rv){
         traits <- rv_mod$metrics_A[selected_rows]$Trait
         colnames(metrics_table_filt)
         selected <- match(traits, colnames(metrics_table_filt)) - 1
-        
-        browser()
         print("selected columns: ")
         print(selected)
 
         dtable <- datatable(
           metrics_table_filt,
           rownames = F,
-          # options = list(
-          #   paging = F,
-          #   scrollX = T,
-          #   scrollY = "500px",
-          #   scrollCollapse = T,
-          #   dom = 't'
-          # ),
+          options = list(
+            paging = F,
+            scrollX = T,
+            scrollY = "500px",
+            scrollCollapse = T,
+            dom = 't'
+          ),
           selection = list(mode = 'multiple', selected = selected, target = 'column', selectable = T)
         )
         path <- "www/js/datatables-rowsgroup/"
@@ -765,8 +947,32 @@ mod_model_server <- function(id, rv){
       output$export_metrics_B <- downloadHandler(
         filename = function() {"BLUPs_and_BLUEs.csv"},
         content = function(file) {
-          table_metrics <- extract_all_BLUEs_BLUPs()
-          setcolorder(table_metrics, c("environment", "genotype", "trait", "result", "value"))
+          table_BLUPs <- as.data.table(extractSTA(STA = rv$fit, what = c("BLUPs")))
+          table_seBLUPs <- as.data.table(extractSTA(STA = rv$fit, what = c("seBLUPs")))
+          table_BLUEs <- as.data.table(extractSTA(STA = rv$fit, what = c("BLUEs")))
+          table_seBLUEs <- as.data.table(extractSTA(STA = rv$fit, what = c("seBLUEs")))
+          
+          for (i in 3:length(colnames(table_BLUPs))) {
+            colnames(table_BLUPs)[i] <- paste0(colnames(table_BLUPs)[i], "_BLUPs")
+            print(colnames(table_BLUPs))
+            colnames(table_seBLUPs)[i] <- paste0(colnames(table_seBLUPs)[i], "_seBLUPs")
+            colnames(table_BLUEs)[i] <- paste0(colnames(table_BLUEs)[i], "_BLUEs")
+            colnames(table_seBLUEs)[i] <- paste0(colnames(table_seBLUEs)[i], "_seBLUEs")
+          }
+          
+          table_metrics <- merge(table_BLUPs, table_seBLUPs, by=c("genotype", "trial"))
+          table_metrics <- merge(table_metrics, table_BLUEs, by=c("genotype", "trial"))
+          table_metrics <- merge(table_metrics, table_seBLUEs, by=c("genotype", "trial"))
+          
+          #rename columns trial and genotype
+          colnames(table_metrics)[colnames(table_metrics) == "trial"] <- "environment"
+          colnames(table_metrics)[colnames(table_metrics) == "genotype"] <- "germplasm"
+          cols <- colnames(table_metrics)
+          
+          #put environment column in first position
+          new_col_order <- append(c(cols[2], cols[1]), cols[3:length(cols)]) 
+          table_metrics <- setcolorder(table_metrics, new_col_order)
+          
           write.csv(table_metrics, file, row.names = FALSE)
         }
       )
@@ -795,10 +1001,11 @@ mod_model_server <- function(id, rv){
         # Get methodDbIds 
         #TODO use /search/methodDbIds
         programDbId <- unique(rv$study_metadata$programDbId)
-        methodNames <- data.frame(result = c("BLUEs", "BLUPs", "seBLUEs", "seBLUPs"),
-                                  methodName = c("STABrAPP BLUES","STABrAPP BLUPS","STABrAPP SEBLUES","STABrAPP SEBLUPS"))
+        # methodNames <- data.frame(result = c("BLUEs", "BLUPs", "seBLUEs", "seBLUPs"),
+        #                           methodName = c("STABrAPP BLUES","STABrAPP BLUPS","STABrAPP SEBLUES","STABrAPP SEBLUPS"))
         
         methodIds <- get_BLUES_methodsDbIds(rv$con, programDbId)
+        methods <- data.table(result = names(methodIds), methodDbId = unname(unlist(methodIds)))
 
         # GET AND/OR CREATE BLUES/BLUPS VARIABLES
         # Get the ids of variables that were used in the model
@@ -922,7 +1129,6 @@ mod_model_server <- function(id, rv){
           created_variables_df <- data.frame(
             observationVariableDbId = created_variables_df$observationVariableDbId,
             observationVariableName = created_variables_df$observationVariableName,
-            methodName = created_variables_df$method$methodName,
             methodDbId = created_variables_df$method$methodDbId,
             traitDbId = created_variables_df$trait$traitDbId,
             scaleDbId = created_variables_df$scale$scaleDbId)
@@ -931,7 +1137,8 @@ mod_model_server <- function(id, rv){
           print("Created variables:")
           print(created_variables_df)
 
-          created_variables_df <- merge(created_variables_df, methodNames, by="methodName")
+          browser()
+          created_variables_df <- merge(created_variables_df, methods, by="methodDbId")
 
           # Adding originVariableName and originVariableDbId columns to created_variables_df
           merge <- merge(created_variables_df, origin_variables, by=c("traitDbId", "scaleDbId"))
@@ -986,6 +1193,7 @@ mod_model_server <- function(id, rv){
         print(missing_observation_units)
         
         # POSTING MISSING OBSERVATION UNITS
+        browser()
         if (!is.null(missing_observation_units) && nrow(missing_observation_units) > 0) {
           print("Posting observationUnits")
 
@@ -1017,7 +1225,7 @@ mod_model_server <- function(id, rv){
           #TODO end
   
           # Building body POST request
-          body <- apply(metrics_variables_df,1,function(a){
+          body <- apply(missing_observation_units,1,function(a){
             list(
               observationUnitPosition = list(
                 entryType =jsonlite::unbox(a[6]), 
@@ -1044,7 +1252,7 @@ mod_model_server <- function(id, rv){
           # }
   
           resp <- brapi_post_several_observationUnits(rv$con, jsonlite::toJSON(body))
-          
+          browser()
           print(resp$content$metadata$status)
   
           new_observation_units <- resp$content$result$data
@@ -1100,8 +1308,7 @@ mod_model_server <- function(id, rv){
         
         created_observations_df <- resp$content$result$data
         print(resp$content$metadata$status)
-        
-        browser()
+
         if (resp$status_code == 200) {
           showNotification(paste0("BLUES/BLUPS were pushed to BMS (",nrow(created_observations_df), " data)"), type = "message", duration = notification_duration)
         } else {
