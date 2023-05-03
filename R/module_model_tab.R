@@ -982,7 +982,7 @@ mod_model_server <- function(id, rv){
       pushModal <- function() {
         modalDialog(
           title = "Confirmation",
-          "The heritability is 0 for some of the traits. Are you sure you still want to push all data ? You can select the traits you want to push by clicking on lines in the statistics table",
+          "The heritability is 0 for some traits and environment. Are you sure you still want to push all BLUEs/BLUPs ? You can select for which traits end environments you want to push BLUEs/BLUPs by clicking on lines in the statistics table",
           footer = tagList(
             modalButton("Cancel"),
             shiny::actionButton(ns("ok"), "Push BLUEs/BLUPs anyway", class = "btn btn-primary")
@@ -1023,7 +1023,9 @@ mod_model_server <- function(id, rv){
         if (!is.null(input$metrics_A_table_rows_selected)) {
           selected_rows <- input$metrics_A_table_rows_selected
           selected_traits <- rv_mod$metrics_A[selected_rows]$Trait
+          selected_env <- rv_mod$metrics_A[selected_rows]$Environment
           table_metrics <- table_metrics[trait %in% selected_traits]
+          table_metrics <- table_metrics[environment %in% selected_env]
         }
         
         print("PUSH BLUEs/BLUPs")
@@ -1186,7 +1188,9 @@ mod_model_server <- function(id, rv){
         print("Checking if observationUnits already exist")
         
         # GETTING EXISTING OBSERVATION UNITS
-        needed_observation_units <- unique(rv$data[,.(germplasmDbId, germplasmName, studyDbId, study_name_app, programDbId, trialDbId, entryType)])
+        browser()
+        needed_env <- unique(table_metrics[,environment])
+        needed_observation_units <- unique(rv$data[study_name_app %in% needed_env,.(germplasmDbId, germplasmName, studyDbId, study_name_app, programDbId, trialDbId, entryType)])
         needed_observation_units$studyDbId <- as.character(needed_observation_units$studyDbId)
         needed_observation_units$trialDbId <- as.character(needed_observation_units$trialDbId)
         setnames(needed_observation_units, "study_name_app","environment")
@@ -1201,7 +1205,7 @@ mod_model_server <- function(id, rv){
         
         existing_obs_units <- NULL
         try(existing_obs_units <- brapi_get_search_observationunits_searchResultsDbId(con = rv$con, searchResultsDbId = res$content$result$searchResultsDbId))
-        
+        browser()
         missing_observation_units <- NULL
         observation_units <- NULL
         if (is.null(existing_obs_units)) {
@@ -1221,6 +1225,7 @@ mod_model_server <- function(id, rv){
         
         print("missing_observation_units:")
         print(missing_observation_units)
+        browser()
         
         # POSTING MISSING OBSERVATION UNITS
         if (!is.null(missing_observation_units) && nrow(missing_observation_units) > 0) {
