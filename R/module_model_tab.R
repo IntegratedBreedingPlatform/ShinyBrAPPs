@@ -992,6 +992,7 @@ mod_model_server <- function(id, rv){
       
       # When OK button is pressed, push BLUES/BLUPS.
       observeEvent(input$ok, {
+        removeModal()
         pushBlues()
       })
 
