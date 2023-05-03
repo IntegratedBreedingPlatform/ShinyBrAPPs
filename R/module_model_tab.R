@@ -307,10 +307,6 @@ mod_model_server <- function(id, rv){
           ## only environment with all selected traits can be selected
           env_by_traits <- rv$data_dq[observations.observationVariableName %in% input$select_traits, .(env = unique(study_name_app)), .(observations.observationVariableName)]
           choices_env <- env_by_traits[, .N, env][N == length(env_by_traits[, unique(observations.observationVariableName)]), env]
-          print("browser1b")
-          print("choices_env")
-          print(choices_env)
-          browser()
           if (is.null(input$select_environments)) {
             selected_env <- choices_env
           } else {
@@ -625,7 +621,6 @@ mod_model_server <- function(id, rv){
           }
         }
 
-        browser()
         ## update selectors
         updatePickerInput(
           session, "select_environment_fit",
@@ -982,20 +977,55 @@ mod_model_server <- function(id, rv){
         print("push metrics!")
       })
       
+      
       ### PUSH METRICS_B TO BMS
+      pushModal <- function() {
+        modalDialog(
+          title = "Confirm pushing BLUES/BLUPS",
+          "Some of the traits have heritabilty equals to 0, are you sure you want to push the corresponding BLUES/BLUPS ?",
+          footer = tagList(
+            modalButton("Cancel"),
+            shiny::actionButton(ns("ok"), "Push BLUES/BLUPS anyway", class = "btn btn-primary")
+          )
+        )
+      }
+      
       observeEvent(input$push_metrics_to_BMS_B,{
-        print("PUSH BLUEs/BLUPs")
-
-        #Get all BLUEs/BLUPs data
-        table_metrics <- extract_all_BLUEs_BLUPs()
-        
+        # check if heritability > 0 before pushing
         if (!is.null(input$metrics_A_table_rows_selected)) {
           #filter traits to push
           selected_rows <- input$metrics_A_table_rows_selected
-          traits <- rv_mod$metrics_A[selected_rows]$Trait
-          table_metrics <- table_metrics[trait %in% traits]
+          traitsToPush <- rv_mod$metrics_A[selected_rows]$Trait
+          heritabilities <- rv_mod$metrics_A[selected_rows]$Heritability
+        } else {
+          heritabilities <- rv_mod$metrics_A$Heritability
         }
         
+        if (all(heritabilities > 0)) {
+          pushBlues()
+        } else {
+          showModal(pushModal())
+        }
+        
+      })
+      
+      observeEvent(input$ok,{
+        removeModal()
+        pushBlues()
+      })
+      
+      pushBlues <- function() {  
+        
+        #Get all BLUEs/BLUPs data
+        table_metrics <- extract_all_BLUEs_BLUPs()
+        
+        # Filter BLUES/BLUPS on selected traits
+        if (!is.null(input$metrics_A_table_rows_selected)) {
+          traitsToPush <- rv_mod$metrics_A[input$metrics_A_table_rows_selected]$Trait
+          table_metrics <- table_metrics[trait %in% traitsToPush]
+        }
+        
+        print("PUSH BLUEs/BLUPs")
         colnames(table_metrics) = c("germplasmName", "environment", "result", "originVariableName", "value")
 
         # Get methodDbIds 
@@ -1115,10 +1145,10 @@ mod_model_server <- function(id, rv){
           body <- apply(missing_variables_df,1,function(a){
             list(
               contextOfUse = c("MEANS"),
-              method = list(methodDbId = jsonlite::unbox(a[3])),
-              observationVariableName = jsonlite::unbox(a[1]),
-              scale = list(scaleDbId = jsonlite::unbox(a[4])),
-              trait = list(traitDbId = jsonlite::unbox(a[5]))
+              method = list(methodDbId = jsonlite::unbox(a["methodDbId"])),
+              observationVariableName = jsonlite::unbox(a["observationVariableName"]),
+              scale = list(scaleDbId = jsonlite::unbox(a["scaleDbId"])),
+              trait = list(traitDbId = jsonlite::unbox(a["traitDbId"]))
             )
           })
           
@@ -1193,7 +1223,6 @@ mod_model_server <- function(id, rv){
         print(missing_observation_units)
         
         # POSTING MISSING OBSERVATION UNITS
-        browser()
         if (!is.null(missing_observation_units) && nrow(missing_observation_units) > 0) {
           print("Posting observationUnits")
 
@@ -1213,11 +1242,11 @@ mod_model_server <- function(id, rv){
           var <- apply(metrics_variables_df,1,function(a){
             list(
               contextOfUse = c("MEANS"),
-              observationVariableDbId = jsonlite::unbox(a[4]),
-              method = list(methodDbId = jsonlite::unbox(a[6])),
-              observationVariableName = jsonlite::unbox(a[3]),
-              scale = list(scaleDbId = jsonlite::unbox(a[8])),
-              trait = list(traitDbId = jsonlite::unbox(a[7])),
+              observationVariableDbId = jsonlite::unbox(a["observationVariableDbId"]),
+              method = list(methodDbId = jsonlite::unbox(a["methodDbId"])),
+              observationVariableName = jsonlite::unbox(a["observationVariableName"]),
+              scale = list(scaleDbId = jsonlite::unbox(a["scaleDbId"])),
+              trait = list(traitDbId = jsonlite::unbox(a["traitDbId"])),
               studyDbIds = as.character(studyDbIds)
             )
           })
@@ -1228,12 +1257,12 @@ mod_model_server <- function(id, rv){
           body <- apply(missing_observation_units,1,function(a){
             list(
               observationUnitPosition = list(
-                entryType =jsonlite::unbox(a[6]), 
+                entryType =jsonlite::unbox(a["entryType"]), 
                 observationLevel = list(levelName = jsonlite::unbox("MEANS"))),
-              germplasmDbId = jsonlite::unbox(as.character(a[2])),
-              programDbId = jsonlite::unbox(as.character(a[4])),
-              studyDbId = jsonlite::unbox(as.character(a[1])),
-              trialDbId = jsonlite::unbox(as.character(a[5]))
+              germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
+              programDbId = jsonlite::unbox(as.character(a["programDbId"])),
+              studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
+              trialDbId = jsonlite::unbox(as.character(a["trialDbId"]))
             )
           })
             
@@ -1252,7 +1281,6 @@ mod_model_server <- function(id, rv){
           # }
   
           resp <- brapi_post_several_observationUnits(rv$con, jsonlite::toJSON(body))
-          browser()
           print(resp$content$metadata$status)
   
           new_observation_units <- resp$content$result$data
@@ -1296,11 +1324,11 @@ mod_model_server <- function(id, rv){
         # 
         body <- apply(table_metrics,1,function(a){
           list(
-            germplasmDbId = jsonlite::unbox(as.character(a[1])),
-            observationUnitDbId = jsonlite::unbox(as.character(a[17])),
-            studyDbId = jsonlite::unbox(as.character(a[2])),
-            observationVariableDbId = jsonlite::unbox(as.character(a[13])),
-            value = jsonlite::unbox(as.numeric(a[10]))
+            germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
+            observationUnitDbId = jsonlite::unbox(as.character(a["observationUnitDbId"])),
+            studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
+            observationVariableDbId = jsonlite::unbox(as.character(a["observationVariableDbId"])),
+            value = jsonlite::unbox(as.numeric(a["value"]))
           )
         })
         
@@ -1314,7 +1342,7 @@ mod_model_server <- function(id, rv){
         } else {
           showNotification(paste0("An error occured while creating new observations"), type = "error", duration = notification_duration)
         }
-      })
+      }
     }
     
 
