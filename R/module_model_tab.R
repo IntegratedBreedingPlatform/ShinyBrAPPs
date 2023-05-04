@@ -876,14 +876,14 @@ mod_model_server <- function(id, rv){
         metrics_table_filt <- metrics_table[environment==input$select_environment_metrics, -c("environment"), with = F]
         rv_mod$metrics_B <- metrics_table_filt
         
-        selected_rows <- input$metrics_A_table_rows_selected
-        print("selected rows: ")
-        print(selected_rows)
-        traits <- rv_mod$metrics_A[selected_rows]$Trait
-        colnames(metrics_table_filt)
-        selected <- match(traits, colnames(metrics_table_filt)) - 1
-        print("selected columns: ")
-        print(selected)
+        # selected_rows <- input$metrics_A_table_rows_selected
+        # print("selected rows: ")
+        # print(selected_rows)
+        # traits <- rv_mod$metrics_A[selected_rows]$Trait
+        # colnames(metrics_table_filt)
+        # selected <- match(traits, colnames(metrics_table_filt)) - 1
+        # print("selected columns: ")
+        # print(selected)
 
         dtable <- datatable(
           metrics_table_filt,
@@ -895,7 +895,7 @@ mod_model_server <- function(id, rv){
             scrollCollapse = T,
             dom = 't'
           ),
-          selection = list(mode = 'multiple', selected = selected, target = 'column', selectable = T)
+          #selection = list(mode = 'multiple', selected = selected, target = 'column', selectable = T)
         )
         path <- "www/js/datatables-rowsgroup/"
         dep <- htmltools::htmlDependency(
@@ -949,7 +949,6 @@ mod_model_server <- function(id, rv){
           
           for (i in 3:length(colnames(table_BLUPs))) {
             colnames(table_BLUPs)[i] <- paste0(colnames(table_BLUPs)[i], "_BLUPs")
-            print(colnames(table_BLUPs))
             colnames(table_seBLUPs)[i] <- paste0(colnames(table_seBLUPs)[i], "_seBLUPs")
             colnames(table_BLUEs)[i] <- paste0(colnames(table_BLUEs)[i], "_BLUEs")
             colnames(table_seBLUEs)[i] <- paste0(colnames(table_seBLUEs)[i], "_seBLUEs")
@@ -1019,13 +1018,18 @@ mod_model_server <- function(id, rv){
         #Get all BLUEs/BLUPs data
         table_metrics <- extract_all_BLUEs_BLUPs()
         
-        #filter traits to push
+        #filter traits and env to push
         if (!is.null(input$metrics_A_table_rows_selected)) {
           selected_rows <- input$metrics_A_table_rows_selected
-          selected_traits <- rv_mod$metrics_A[selected_rows]$Trait
-          selected_env <- rv_mod$metrics_A[selected_rows]$Environment
-          table_metrics <- table_metrics[trait %in% selected_traits]
-          table_metrics <- table_metrics[environment %in% selected_env]
+          all_lines_to_keep <- data.table(matrix(nrow = 0, ncol = ncol(table_metrics)))
+          colnames(all_lines_to_keep) <- colnames(table_metrics)
+          for (i in 1:length(selected_rows)) {
+            row_trait <- rv_mod$metrics_A[selected_rows[i]]$Trait
+            row_env <- rv_mod$metrics_A[selected_rows[i]]$Environment
+            lines_to_keep <- table_metrics[trait == row_trait & environment == row_env]
+            all_lines_to_keep <- rbind(all_lines_to_keep, lines_to_keep)
+          }
+          table_metrics <- all_lines_to_keep
         }
         
         print("PUSH BLUEs/BLUPs")
@@ -1188,7 +1192,6 @@ mod_model_server <- function(id, rv){
         print("Checking if observationUnits already exist")
         
         # GETTING EXISTING OBSERVATION UNITS
-        browser()
         needed_env <- unique(table_metrics[,environment])
         needed_observation_units <- unique(rv$data[study_name_app %in% needed_env,.(germplasmDbId, germplasmName, studyDbId, study_name_app, programDbId, trialDbId, entryType)])
         needed_observation_units$studyDbId <- as.character(needed_observation_units$studyDbId)
@@ -1205,7 +1208,7 @@ mod_model_server <- function(id, rv){
         
         existing_obs_units <- NULL
         try(existing_obs_units <- brapi_get_search_observationunits_searchResultsDbId(con = rv$con, searchResultsDbId = res$content$result$searchResultsDbId))
-        browser()
+
         missing_observation_units <- NULL
         observation_units <- NULL
         if (is.null(existing_obs_units)) {
@@ -1225,7 +1228,6 @@ mod_model_server <- function(id, rv){
         
         print("missing_observation_units:")
         print(missing_observation_units)
-        browser()
         
         # POSTING MISSING OBSERVATION UNITS
         if (!is.null(missing_observation_units) && nrow(missing_observation_units) > 0) {
@@ -1313,7 +1315,7 @@ mod_model_server <- function(id, rv){
         
         table_metrics$studyDbId = as.character(table_metrics$studyDbId)
         table_metrics <- merge(table_metrics, observation_units, by=c("germplasmDbId","studyDbId"))
-     
+
         # Building body POST request
         # body <- list()
         # for (i in 1:nrow(table_metrics)) {
@@ -1338,8 +1340,7 @@ mod_model_server <- function(id, rv){
         })
         
         resp <- brapi_post_several_observations(rv$con, jsonlite::toJSON(body))
-        
-        created_observations_df <- resp$content$result$data
+        #created_observations_df <- resp$content$result$data
         print(resp$content$metadata$status)
 
         if (resp$status_code == 200) {
