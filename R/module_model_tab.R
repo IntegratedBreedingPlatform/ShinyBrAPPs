@@ -203,15 +203,11 @@ mod_model_server <- function(id, rv){
       })
       
       observeEvent(c(input$select_environments, req(!is.null(rv$data_dq))), {
-        
         # Update traits dropdown
         if (is.null(input$select_environments)) {
           choices_traits <- rv$data_dq[,unique(observations.observationVariableName)]
-          if (is.null(input$select_traits)) {
-            selected_traits <- NULL
-          } else {
-            selected_traits <- input$select_traits
-          }
+          selected_traits <- NULL
+
         } else {
           ## only traits found in all selected environments can be selected
           trait_by_studyDbIds <- rv$data_dq[study_name_app %in% input$select_environments, .(trait = unique(observations.observationVariableName)), .(studyDbId)]
@@ -293,7 +289,6 @@ mod_model_server <- function(id, rv){
       , ignoreNULL = FALSE)
       
       observeEvent(c(input$select_traits, req(!is.null(rv$data_dq))), {
-        
         # Update environments dropdown
         if (is.null(input$select_traits)) {
           req("observations.observationVariableName"%in%names(rv$data_dq))
