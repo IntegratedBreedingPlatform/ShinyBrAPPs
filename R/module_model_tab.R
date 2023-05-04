@@ -1340,7 +1340,7 @@ mod_model_server <- function(id, rv){
         })
         
         resp <- brapi_post_several_observations(rv$con, jsonlite::toJSON(body))
-        #created_observations_df <- resp$content$result$data
+        created_observations_df <- resp$content$result$data
         print(resp$content$metadata$status)
 
         if (resp$status_code == 200) {
