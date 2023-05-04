@@ -202,148 +202,160 @@ mod_model_server <- function(id, rv){
         
       })
       
-      observeEvent(c(input$select_environments, req(!is.null(rv$data_dq))), {
-        # Update traits dropdown
-        if (is.null(input$select_environments)) {
-          choices_traits <- rv$data_dq[,unique(observations.observationVariableName)]
-          selected_traits <- NULL
-
-        } else {
-          ## only traits found in all selected environments can be selected
-          trait_by_studyDbIds <- rv$data_dq[study_name_app %in% input$select_environments, .(trait = unique(observations.observationVariableName)), .(studyDbId)]
-          choices_traits <- trait_by_studyDbIds[, .N, trait][N == length(trait_by_studyDbIds[, unique(studyDbId)]), trait]
-          if (is.null(input$select_traits)) {
-            selected_traits <- choices_traits
-          } else {
-            if (all(input$select_traits %in% choices_traits)) {
-              selected_traits <- input$select_traits
+      select_env_d <- reactive(input$select_environments) %>% debounce(500)
+      select_trait_d <- reactive(input$select_traits) %>% debounce(500)
+      
+      observeEvent(c(input$select_environments_open, req(!is.null(rv$data_dq))), {
+        #update when closing dropdown
+        if (!isTRUE(input$environments_open)) {
+          # Update traits dropdown
+          if (is.null(input$select_environments)) {
+            choices_traits <- rv$data_dq[,unique(observations.observationVariableName)]
+            if (is.null(input$select_traits)) {
+              selected_traits <- NULL
             } else {
+              selected_traits <- input$select_traits
+            }
+  
+          } else {
+            ## only traits found in all selected environments can be selected
+            trait_by_studyDbIds <- rv$data_dq[study_name_app %in% input$select_environments, .(trait = unique(observations.observationVariableName)), .(studyDbId)]
+            choices_traits <- trait_by_studyDbIds[, .N, trait][N == length(trait_by_studyDbIds[, unique(studyDbId)]), trait]
+            if (is.null(input$select_traits)) {
               selected_traits <- choices_traits
+            } else {
+              if (all(input$select_traits %in% choices_traits)) {
+                selected_traits <- input$select_traits
+              } else {
+                selected_traits <- choices_traits
+              }
             }
           }
-        }
-        updatePickerInput(
-          session, "select_traits",
-          choices = choices_traits,
-          selected = selected_traits,
-          options = list(
-            placeholder = 'Select 1 or more traits',
-            onInitialize = I('function() { this.setValue(""); }')
-          )
-        )
-        
-        ## restrict the design choices to the available column in the environment datasets
-        # based in the following rules (https://biometris.github.io/statgenSTA/articles/statgenSTA.html#modeling-1)
-        # - ibd 		    => 	subBlocks are defined
-        # - res.ibd 	  => 	subBlocks and repIds are defined
-        # - rcbd		    =>	repIds are defined
-        # - rowcol		  =>	rowId and colId are defined
-        # - res.rowcol	=>	repIds, rowId and colId are defined
-        #
-        # NB: choices_model_design is defined in inst/apps/stabrapp/config.R
-        # For the following code to work, the item order in choices_model_design has to be: "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"
-
-        data_filt <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs) & (study_name_app %in% input$select_environments)]
-        has_subBlocks <- data_filt[,.N,.(blockNumber)][,.N]>1
-        has_repIds <- data_filt[,.N,.(replicate)][,.N]>1
-        has_coords <- data_filt[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1
-
-        possible_designs <- choices_model_design[c(
-          has_subBlocks, # matches "ibd",
-          has_subBlocks & has_repIds, # matches "res.ibd"
-          has_repIds, # matches  "rcbd"
-          has_coords, # matches "rowcol"
-          has_coords & has_repIds # matches "res.rowcol"
-        )]
-
-        ## set default experimental design
-        design_pui <- NA
-        if("experimentalDesign.pui"%in%names(rv$study_metadata)){
-          design_pui <- rv$study_metadata[study_name_app %in% input$select_environments,unique(experimentalDesign.pui)]
-        }
-        StatGenSTA_code <- exp_designs_corresp[BMS_pui %in% design_pui, StatGenSTA_code]
-        if(length(StatGenSTA_code)==1){
           updatePickerInput(
-            session, "model_design",
-            choices = possible_designs,
-            selected = StatGenSTA_code
-          )
-        }else{
-          updatePickerInput(
-            session, "model_design",
-            choices = possible_designs,
-            selected = "",
+            session, "select_traits",
+            choices = choices_traits,
+            selected = selected_traits,
             options = list(
-              title = "Select Model Design",
+              placeholder = 'Select 1 or more traits',
               onInitialize = I('function() { this.setValue(""); }')
             )
           )
-        }
-        
-        rv_mod$data_checks <- list(
-          has_subBlocks = has_subBlocks,
-          has_repIds = has_repIds,
-          has_coords = has_coords
-        )
-      }
-      , ignoreNULL = FALSE)
-      
-      observeEvent(c(input$select_traits, req(!is.null(rv$data_dq))), {
-        # Update environments dropdown
-        if (is.null(input$select_traits)) {
-          req("observations.observationVariableName"%in%names(rv$data_dq))
-          choices_env <- rv$data_dq[,unique(study_name_app)]
-          if (is.null(input$select_environments)) {
-            selected_env <- NULL
-          } else {
-            selected_env <- input$select_environments
+          
+          ## restrict the design choices to the available column in the environment datasets
+          # based in the following rules (https://biometris.github.io/statgenSTA/articles/statgenSTA.html#modeling-1)
+          # - ibd 		    => 	subBlocks are defined
+          # - res.ibd 	  => 	subBlocks and repIds are defined
+          # - rcbd		    =>	repIds are defined
+          # - rowcol		  =>	rowId and colId are defined
+          # - res.rowcol	=>	repIds, rowId and colId are defined
+          #
+          # NB: choices_model_design is defined in inst/apps/stabrapp/config.R
+          # For the following code to work, the item order in choices_model_design has to be: "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"
+  
+          data_filt <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs) & (study_name_app %in% input$select_environments)]
+          has_subBlocks <- data_filt[,.N,.(blockNumber)][,.N]>1
+          has_repIds <- data_filt[,.N,.(replicate)][,.N]>1
+          has_coords <- data_filt[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1
+  
+          possible_designs <- choices_model_design[c(
+            has_subBlocks, # matches "ibd",
+            has_subBlocks & has_repIds, # matches "res.ibd"
+            has_repIds, # matches  "rcbd"
+            has_coords, # matches "rowcol"
+            has_coords & has_repIds # matches "res.rowcol"
+          )]
+  
+          ## set default experimental design
+          design_pui <- NA
+          if("experimentalDesign.pui"%in%names(rv$study_metadata)){
+            design_pui <- rv$study_metadata[study_name_app %in% input$select_environments,unique(experimentalDesign.pui)]
           }
-        } else {
-          ## only environment with all selected traits can be selected
-          env_by_traits <- rv$data_dq[observations.observationVariableName %in% input$select_traits, .(env = unique(study_name_app)), .(observations.observationVariableName)]
-          choices_env <- env_by_traits[, .N, env][N == length(env_by_traits[, unique(observations.observationVariableName)]), env]
-          if (is.null(input$select_environments)) {
-            selected_env <- choices_env
-          } else {
-            if (all(input$select_environments %in% choices_env)) {
-              selected_env <- input$select_environments
-            } else {
-              selected_env <- choices_env
-            }
+          StatGenSTA_code <- exp_designs_corresp[BMS_pui %in% design_pui, StatGenSTA_code]
+          if(length(StatGenSTA_code)==1){
+            updatePickerInput(
+              session, "model_design",
+              choices = possible_designs,
+              selected = StatGenSTA_code
+            )
+          }else{
+            updatePickerInput(
+              session, "model_design",
+              choices = possible_designs,
+              selected = "",
+              options = list(
+                title = "Select Model Design",
+                onInitialize = I('function() { this.setValue(""); }')
+              )
+            )
           }
-          print(selected_env)
-          print(choices_env)
-          #choices_env <- unique(rv$data_dq[observations.observationVariableName %in% input$select_traits, study_name_app])
-        }
-        updatePickerInput(
-          session, "select_environments",
-          choices = choices_env,
-          selected = selected_env,
-          options = list(
-            placeholder = 'Select 1 or more traits',
-            onInitialize = I('function() { this.setValue(""); }')
+          
+          rv_mod$data_checks <- list(
+            has_subBlocks = has_subBlocks,
+            has_repIds = has_repIds,
+            has_coords = has_coords
           )
-        )
-        
-        ## the possible covariates
-        # - have to be numerical
-        # - must not be some columns (like ids)
-        # - can be traits
-        all_traits <- rv$data_dq[,unique(observations.observationVariableName)]
-        remaining_traits <- setdiff(all_traits, input$select_traits)
-        choices_cov <- c(names(rv$data_dq)[unlist(rv$data_dq[,lapply(.SD, is.numeric)])], remaining_traits)
-        not_cov <- c(
-          "studyDbId", "trialDbId","observations.observationDbId",
-          "environment_number",
-          "observations.observationVariableDbId",
-          "observations.value",
-          "programDbId"
-        )
-        choices_cov <- choices_cov[!(choices_cov%in%not_cov)]
-        updatePickerInput(
-          session, "covariates", choices = choices_cov, selected = NULL
-        )
-        
+        }
+      }, ignoreNULL = FALSE)
+      
+      observeEvent(c(input$select_traits_open, req(!is.null(rv$data_dq))), {
+        #update when closing dropdown
+        if (!isTRUE(input$select_traits_open)) {
+          # Update environments dropdown
+          if (is.null(input$select_traits)) {
+            req("observations.observationVariableName"%in%names(rv$data_dq))
+            choices_env <- rv$data_dq[,unique(study_name_app)]
+            if (is.null(input$select_environments)) {
+              selected_env <- NULL
+            } else {
+              selected_env <- input$select_environments
+            }
+          } else {
+            ## only environment with all selected traits can be selected
+            env_by_traits <- rv$data_dq[observations.observationVariableName %in% input$select_traits, .(env = unique(study_name_app)), .(observations.observationVariableName)]
+            choices_env <- env_by_traits[, .N, env][N == length(env_by_traits[, unique(observations.observationVariableName)]), env]
+            if (is.null(input$select_environments)) {
+              selected_env <- choices_env
+            } else {
+              if (all(input$select_environments %in% choices_env)) {
+                selected_env <- input$select_environments
+              } else {
+                selected_env <- choices_env
+              }
+            }
+            print(selected_env)
+            print(choices_env)
+            #choices_env <- unique(rv$data_dq[observations.observationVariableName %in% input$select_traits, study_name_app])
+          }
+          updatePickerInput(
+            session, "select_environments",
+            choices = choices_env,
+            selected = selected_env,
+            options = list(
+              placeholder = 'Select 1 or more traits',
+              onInitialize = I('function() { this.setValue(""); }')
+            )
+          )
+          
+          ## the possible covariates
+          # - have to be numerical
+          # - must not be some columns (like ids)
+          # - can be traits
+          all_traits <- rv$data_dq[,unique(observations.observationVariableName)]
+          remaining_traits <- setdiff(all_traits, input$select_traits)
+          choices_cov <- c(names(rv$data_dq)[unlist(rv$data_dq[,lapply(.SD, is.numeric)])], remaining_traits)
+          not_cov <- c(
+            "studyDbId", "trialDbId","observations.observationDbId",
+            "environment_number",
+            "observations.observationVariableDbId",
+            "observations.value",
+            "programDbId"
+          )
+          choices_cov <- choices_cov[!(choices_cov%in%not_cov)]
+          updatePickerInput(
+            session, "covariates", choices = choices_cov, selected = NULL
+          )
+          
+        }
       }, 
       ignoreNULL = FALSE)
 
