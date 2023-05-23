@@ -73,19 +73,9 @@ mod_dataquality_ui <- function(id){
               )
             ),
             fluidRow(
-              column(
-                width = 6,
-                plotlyOutput(ns("distribution_viz"),height = "400px")
-              ),
-              column(
-                width = 5,
-                plotlyOutput(ns("layout_viz"))
-              ),
-              column(
-                width = 1,
-                plotOutput(ns("layout_legend"))
-              )
+              uiOutput(ns("cols"))
             )
+            
           ),
           tabPanel(
             "Correlations",
@@ -118,8 +108,9 @@ mod_dataquality_server <- function(id, rv){
   moduleServer(
     id,
     function(input, output, session){
-
+      ns <- session$ns
       rv_dq <- reactiveValues()
+      rv_width <- reactiveVal(12)
 
       observe({
 
@@ -173,6 +164,26 @@ mod_dataquality_server <- function(id, rv){
           )
         )
       })
+      
+      output$cols <- renderUI({
+        ns <- NS(id)
+        tagList(
+          column(
+            width = rv_width(),
+            #"test col width"
+            plotlyOutput(ns("distribution_viz"))#,height = "400px")
+          ),
+          column(
+            width = 5,
+            plotlyOutput(ns("layout_viz"))
+          ),
+          column(
+            width = 1,
+            plotOutput(ns("layout_legend"))
+          )
+        )
+      })
+
 
       observeEvent(input$studies,{
         ## only traits found in all environments can be selected
@@ -230,6 +241,12 @@ mod_dataquality_server <- function(id, rv){
         req(rv$data_dq_viz[,.N]>0)
         req(input$trait)
         req(input$studies)
+        
+        if (rv$data_dq_viz[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1) {
+          rv_width(6)
+        } else {
+          rv_width(12)
+        }
 
         input$set_excluded_obs
         input$set_non_excluded_obs
