@@ -323,10 +323,11 @@ mod_dataquality_server <- function(id, rv){
         data_dq[, positionCoordinateX:=as.numeric(positionCoordinateX)]
         data_dq[, positionCoordinateY:=as.numeric(positionCoordinateY)]
 
-        plot_text <- data_dq[,.N,.(positionCoordinateX, positionCoordinateY, study_name_BMS)][,.N,.(study_name_BMS)]
-        plot_text[,x:=1]
-        plot_text[,y:=1]
-        plot_text[N<=1,label:="No layout"]
+        #plot_text <- data_dq[,.(N=.N,x=min(positionCoordinateX)+(max(positionCoordinateX)-min(positionCoordinateX))/2,y=min(positionCoordinateY)+(max(positionCoordinateY)-min(positionCoordinateY))/2),.(study_name_BMS)]
+        #plot_text[,x:=1]
+        #plot_text[,y:=1]
+        #plot_text[N<=1,label:="No layout"]
+
         g2 <- ggplot(
           data_dq[!(observations.observationDbId %in% rv$excluded_obs)],
           aes(x = positionCoordinateX, y = positionCoordinateY)
@@ -349,9 +350,9 @@ mod_dataquality_server <- function(id, rv){
               entryType = entryType
             )
           ) +
-          geom_text(data = plot_text, aes(x = x, y = y, label = label), hjust = 1) +
+          #geom_text(data = plot_text, aes(x = x, y = y, label = label), hjust = 1) +
           #coord_equal() +
-          facet_wrap(study_name_BMS~., ncol = 1) +
+          facet_wrap(study_name_BMS~., ncol = 1, scales="free") +
           scale_fill_gradientn(
             name=input$trait,
             colours = topo.colors(100)
