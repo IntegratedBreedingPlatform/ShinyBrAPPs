@@ -96,8 +96,15 @@ brapi_get_variable_searchResultsDbId <- function(con, searchResultsDbId) {
   return(resp)
 }
 
-# Function to get methods
+# Function to get variable methods
 get_BLUES_methodsDbIds <- function(con, programDbId) {
+  methodNames = list(
+    "BLUEs" = "STABrAPP BLUES", 
+    "BLUPs" = "STABrAPP BLUPS", 
+    "seBLUEs" = "STABrAPP SEBLUES", 
+    "seBLUPs" = "STABrAPP SEBLUPS"
+  )
+  
   callurl <- paste0(con$protocol, con$db, ":", con$port, "/", con$apipath, "/crops/", con$commoncropname, "/methods?programUUID=", programDbId)
   resp <- httr::GET(url = callurl,
                     httr::timeout(25),
@@ -110,14 +117,24 @@ get_BLUES_methodsDbIds <- function(con, programDbId) {
   
   cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
   res <- jsonlite::fromJSON(cont)
-  
+
   methodIds <- list()
-  if (nrow(res[res$name == "STABrAPP BLUES", ]) > 0) { methodIds["BLUEs"] =  res[res$name == "STABrAPP BLUES", "id"]}
-  if (nrow(res[res$name == "STABrAPP BLUPS", ]) > 0) { methodIds["BLUPs"] =  res[res$name == "STABrAPP BLUPS", "id"]}
-  if (nrow(res[res$name == "STABrAPP SEBLUES", ]) > 0) { methodIds["seBLUEs"] =  res[res$name == "STABrAPP SEBLUES", "id"]}
-  if (nrow(res[res$name == "STABrAPP SEBLUPS", ]) > 0) { methodIds["seBLUPs"] =  res[res$name == "STABrAPP SEBLUPS", "id"]}
+  if (nrow(res[res$name == methodNames$BLUEs, ]) > 0) { methodIds["BLUEs"] =  res[res$name == methodNames$BLUEs, "id"]}
+  if (nrow(res[res$name == methodNames$BLUPs, ]) > 0) { methodIds["BLUPs"] =  res[res$name == methodNames$BLUPs, "id"]}
+  if (nrow(res[res$name == methodNames$seBLUEs, ]) > 0) { methodIds["seBLUEs"] =  res[res$name == methodNames$seBLUEs, "id"]}
+  if (nrow(res[res$name == methodNames$seBLUPs, ]) > 0) { methodIds["seBLUPs"] =  res[res$name == methodNames$seBLUPs, "id"]}
+  
+  if (length(methodIds) < 4) {
+    #missing at least one method
+    missing_methods = c()
+    if (is.null(methodIds$BLUEs)) {missing_methods = append(missing_methods, methodNames$BLUEs)}
+    if (is.null(methodIds$BLUPs)) {missing_methods = append(missing_methods, methodNames$BLUPs)}
+    if (is.null(methodIds$seBLUEs)) {missing_methods = append(missing_methods, methodNames$seBLUEs)}
+    if (is.null(methodIds$seBLUPs)) {missing_methods = append(missing_methods, methodNames$seBLUPs)}
+    message = paste("Missing variable methods in BMS:",paste0(missing_methods, collapse = ", "))
+    stop(message)
+  }
   
   return(methodIds)
 }
-
 
