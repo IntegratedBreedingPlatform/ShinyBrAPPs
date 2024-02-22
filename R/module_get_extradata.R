@@ -34,6 +34,9 @@ mod_get_extradata_server <- function(id, rv){
             formula = formul,
             value.var = "observations.value"
           )
+          
+          # remove observationunits with observationLevels=SUMMARY_STATISTICS (because no germplasmDbId for these observations)
+          data_plot <- data_plot[observationLevel != "SUMMARY_STATISTICS"]
 
           ### Data source 2: Environment  GET /brapi/v2/studies
           ## extract envrionment parameters from rv$study_metadata
@@ -95,7 +98,6 @@ mod_get_extradata_server <- function(id, rv){
           column_datasource <- merge.data.table(column_datasource, column_types2[,.(column, type)], by.x = "cols", by.y = "column", all.x = T)
 
           ### data source 3: GET /brapi/v1/germplasm
-
           ## add germplasm info
           germplasms <- data_plot[,unique(germplasmDbId)]
           withProgress(message = "GET /brapi/v1/germplasm/{germplasmDbID}/attribute", value = 0, {
@@ -117,8 +119,8 @@ mod_get_extradata_server <- function(id, rv){
               showNotification("Could not get germplasm data", type = "error", duration = notification_duration)
             }))
           })
-
-          if(exists("germplasm_data")){
+          
+          if(exists("germplasm_data") && nrow(germplasm_data>0)){
             req("attributeName" %in% names(germplasm_data))
             germplasm_data_2 <- dcast(germplasm_data, "germplasmDbId ~ attributeName", value.var = "value")
             if(!any(duplicated(germplasm_data_2))){
