@@ -37,7 +37,7 @@ get_env_data <- function(con, studyDbId, env_number, loc_name, loc_name_abbrev, 
     if(!("observations.value"%in%names(study))){
       study[,observations.value:=NA]
     }
-    study[,observations.value:=as.numeric(observations.value)] # XXX this should not always be the case
+    
     study[, locationName:=loc_name]
 
     study[,study_name_BMS := paste0(
