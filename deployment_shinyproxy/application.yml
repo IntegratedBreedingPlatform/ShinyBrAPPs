@@ -8,13 +8,13 @@ proxy:
   specs:
   - id: stabrapp
     display-name: stabrapp
-    description: "sprint 7 and minor bug fixes (as of 15/03/22)"
+    description: "updated on 26/02/2024"
     container-cmd: ["R", "-e", "shinybrapps::run_stabrapp()"]
     container-image: shinybrapps
     container-network: shinyproxy-network
   - id: decision_support
     display-name: Decision support tool
-    description: "sprint 3 (as of 18/03/22)"
+    description: "updated on 26/02/2024"
     container-cmd: ["R", "-e", "shinybrapps::run_decision()"]
     container-image: shinybrapps
     container-network: shinyproxy-network
