@@ -287,7 +287,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               x
             }
           })]
-
+          
           env_choices <- rv$study_metadata[loaded==F,unique(studyDbId)]
           if(length(env_choices)==0){
             updateCheckboxGroupInput(session = session,inputId = "environments", label = "", choices = vector())

@@ -209,8 +209,8 @@ mod_model_server <- function(id, rv){
         #update when closing dropdown
         if (!isTRUE(input$environments_open)) {
           # Update traits dropdown
-          if (is.null(input$select_environments)) {
-            choices_traits <- rv$data_dq[,unique(observations.observationVariableName)]
+          if (is.null(input$select_environments)) {            
+            choices_traits <- unique(rv$data_dq[scale.dataType == "Numerical"]$observations.observationVariableName)            
             if (is.null(input$select_traits)) {
               selected_traits <- NULL
             } else {
@@ -219,7 +219,7 @@ mod_model_server <- function(id, rv){
   
           } else {
             ## only traits found in all selected environments can be selected
-            trait_by_studyDbIds <- rv$data_dq[study_name_app %in% input$select_environments, .(trait = unique(observations.observationVariableName)), .(studyDbId)]
+            trait_by_studyDbIds <- rv$data_dq[scale.dataType == "Numerical"][study_name_app %in% input$select_environments, .(trait = unique(observations.observationVariableName)), .(studyDbId)]
             choices_traits <- trait_by_studyDbIds[, .N, trait][N == length(trait_by_studyDbIds[, unique(studyDbId)]), trait]
             if (is.null(input$select_traits)) {
               selected_traits <- choices_traits
@@ -231,6 +231,7 @@ mod_model_server <- function(id, rv){
               }
             }
           }
+
           updatePickerInput(
             session, "select_traits",
             choices = choices_traits,
@@ -535,9 +536,9 @@ mod_model_server <- function(id, rv){
 
       observeEvent(input$go_fit_model,{
         req(rv_mod$data_checks)
-        
         ## create TD without the excluded observations
         ## exclude observations
+        rv$data_dq[,observations.value:=as.numeric(observations.value)]
         data_filtered <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
         ## make 1 column per trait
         data_filtered_casted <- dcast(
