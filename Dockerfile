@@ -21,7 +21,7 @@ RUN R -e "install.packages('RColorBrewer', dependencies=TRUE, repos='http://cran
 RUN R -e "install.packages('e1071', dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('remotes', dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN R -e "remotes::install_github('mverouden/brapir-v1')"
-RUN R -e "remotes::install_github('mverouden/brapir-v2')"
+RUN R -e "remotes::install_github('aliceboizet/brapir-v2')"
 RUN R -e "install.packages('viridisLite', dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('gridExtra', dependencies=TRUE, repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('statgenSTA', dependencies=TRUE, repos='http://cran.rstudio.com/')"
