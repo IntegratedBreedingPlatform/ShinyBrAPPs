@@ -17,9 +17,9 @@ mod_get_studydata_ui <- function(id){
             fluidRow(
               column(
                 6,id = ns("select_trialDbId_UI"),style = "display:block",
-                textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://brapi.bms-uat-test.net/bmsapi", value = "https://brapi.bms-uat-test.net/bmsapi", width = "100%"),
-                textInput(ns("token"), "Token", placeholder = "Enter Token", width = "100%"),
-                textInput(ns("cropDb"), "CropDb", value = "wheat", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
+                textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://bms-uat-test.net/bmsapi", value = "https://bms-uat.ibp.services/bmsapi", width = "100%"),
+                textInput(ns("token"), "Token", placeholder = "Enter Token", value = "", width = "100%"),
+                textInput(ns("cropDb"), "CropDb", value = "maize", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
                 selectizeInput(
                   ns("trials"), label = "Study", choices = NULL, multiple = FALSE, width = "100%",
                   options = list(
@@ -101,9 +101,14 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         rv$study_metadata <- NULL
         rv$data <- NULL
         rv$trial_metadata <- NULL
-
+        rv$pushOK <- FALSE
+        
         observeEvent(parse_GET_param(),{
-
+          
+          if(!is.null(parse_GET_param()$pushOK)){
+            rv$pushOK <- parse_GET_param()$pushOK
+          }
+          
           if(!is.null(parse_GET_param()$apiURL) &
              !is.null(parse_GET_param()$token) &
              !is.null(parse_GET_param()$cropDb) &
@@ -113,6 +118,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
             ### set up connection
             parsed_url <- parse_api_url(parse_GET_param()$apiURL)
+            
             rv$con <- brapirv2::brapi_connect(
               secure = TRUE,
               protocol = parsed_url$brapi_protocol,
@@ -126,7 +132,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               clientid = "brapir",
               bms = TRUE
             )
-
+            
             # get study_metadata
             tryCatch({
               study_metadata <- make_study_metadata(con = rv$con, studyDbIds = parse_GET_param()$studyDbIds)
@@ -153,7 +159,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               req(input$apiURL)
               req(input$token)
               req(input$cropDb)
-
+  
               updateSelectizeInput(
                 session = session, inputId = "trials", choices = "",
                 options = list(
@@ -164,6 +170,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
               ## set up connection
               parsed_url <- parse_api_url(input$apiURL)
+
               rv$con <- brapirv2::brapi_connect(
                 secure = TRUE,
                 protocol = parsed_url$brapi_protocol,
@@ -249,6 +256,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
       observeEvent(env_to_load(),{
         req(env_to_load())
         req(rv$study_metadata)
+        
 
         withProgress(message = "Loading", value = 0, {
           n_studies <- length(env_to_load())
@@ -279,7 +287,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               x
             }
           })]
-
+          
           env_choices <- rv$study_metadata[loaded==F,unique(studyDbId)]
           if(length(env_choices)==0){
             updateCheckboxGroupInput(session = session,inputId = "environments", label = "", choices = vector())
