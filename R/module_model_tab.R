@@ -773,6 +773,7 @@ mod_model_server <- function(id, rv){
       observeEvent(input$select_trait_outliers,{
         req(rv$fit)
         req(input$select_trait_outliers)
+        
         stdResR <- as.data.table(extractSTA(STA = rv$fit, traits = input$select_trait_outliers, what = "stdResR"))
         res_q <- quantile(abs(stdResR[[input$select_trait_outliers]]), probs = seq(0,1,0.01), na.rm = T)
         updateSliderInput(
@@ -785,18 +786,70 @@ mod_model_server <- function(id, rv){
         req(rv$fit)
         req(input$select_trait_outliers)
         req(input$limit_residual>0)
-        outliersSTA <- outlierSTA(
+        
+        # outliers on all traits (used to get number of outliers for each observationUnit)
+        outliersSTA_all <- outlierSTA(
           rv$fit,
-          traits = input$select_trait_outliers,
           what = "random",
           rLimit = input$limit_residual,
           commonFactors = "genotype",
           verbose = F
         )
-        outliers <- as.data.table(outliersSTA$outliers)
+        outliers_all <- as.data.table(outliersSTA_all$outliers)
+        
+        validate(need(outliers_all[,.N]>0 , "No outlier on this trait"))
+        
+        # outliers for the selected trait
+        outliers <- outliers_all[trait == input$select_trait_outliers]
+        
+        validate(need(outliers[,.N]>0 , "No outlier on this trait"))
+        
+        outliers_nb <- outliers_all[, .(count_outliers = sum(outlier)), by = observationUnitDbId]
+        obs_nb <- unique(outliers_all[, .(count_non_na = rowSums(!is.na(.SD[, 12:19]))), by = observationUnitDbId])
+        outliers_by_obsUnit <- merge(outliers_nb, obs_nb, by="observationUnitDbId")   
+        setnames(outliers_by_obsUnit, "count_outliers", "#outliers")
+        setnames(outliers_by_obsUnit, "count_non_na", "#observations")
+        
+        #outliers <- as.data.table(outliersSTA$outliers)
         if(outliers[,.N]>0){
           setnames(outliers, "trial", "environment")
         }
+        
+        outliers <- merge(outliers, outliers_by_obsUnit, by="observationUnitDbId")
+        outliers <- outliers[order(genotype, environment, repId)]
+        
+        # change columns order (move variables columns at the end)
+        cols <- colnames(outliers)
+        subBlock_index <- which(cols == "subBlock")
+        outlier_index <- which(cols == "outlier")
+        new_cols_order <- c(cols[1:subBlock_index], cols[outlier_index:length(cols)], cols[(subBlock_index+1):(outlier_index-1)])
+        setcolorder(outliers, new_cols_order)
+        
+        group_colors <- unique(outliers[ , .(environment, genotype)])
+        
+        # group_colors <- lapply(seq_along(group_colors), function(i) {
+        #   if (i %% 2 == 0) {
+        #     color = "'#d9edf7'"  
+        #   } else {
+        #     color = "'#e3e3e3'"  
+        #   }
+        #   return(paste0("'", group_colors[i],"':", color))
+        # })
+        # 
+        group_colors <- lapply(seq_len(nrow(group_colors)), function(i) {
+          if (i %% 2 == 0) {
+            color = "'#d9edf7'"  
+          } else {
+            color = "'#e3e3e3'"  
+          }
+          return(paste0("'", paste0(group_colors[i, environment], "|", group_colors[i, genotype]),"':", color))
+        })
+        group_colors <- paste(group_colors, collapse = ",")
+        
+        genotype_col_index = which(colnames(outliers) == "genotype") - 1
+        env_col_index = which(colnames(outliers) == "environment") - 1
+        outlier_col_index = which(colnames(outliers) == "outlier") - 1
+        
         datatable(
           outliers,
           rownames = F,
@@ -805,7 +858,22 @@ mod_model_server <- function(id, rv){
             scrollX = T,
             scrollY = "500px",
             scrollCollapse = T,
-            dom = 't'
+            dom = 't',
+            rowCallback = JS(
+              sprintf(
+                "function(row, data) {
+                  var groups = {%s};
+                  $('td', row).css('background-color', groups[data[%i].concat('|', data[%i])]);
+                  if (data[%i]) {
+                    $('td', row).css('font-weight', 'bold');
+                  }
+                }",
+                group_colors,
+                env_col_index,
+                genotype_col_index,
+                outlier_col_index
+              )
+            )
           )
         )
       })
