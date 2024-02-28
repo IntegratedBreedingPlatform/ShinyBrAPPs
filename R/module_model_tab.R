@@ -57,7 +57,12 @@ mod_model_ui <- function(id){
         )
       )
     ),
-    fluidRow(column(12,shiny::actionButton(ns("go_fit_model"), "Fit model", class = "btn btn-info"))),
+    fluidRow(
+      column(12,
+         shiny::actionButton(ns("go_fit_model"), "Fit model", class = "btn btn-info"),
+         hidden(shiny::actionButton(ns("go_fit_no_outlier"), "Refit without outliers", class = "btn btn-info"))
+      )
+    ),
     fluidRow(
       column(
         12,
@@ -153,17 +158,11 @@ mod_model_server <- function(id, rv){
       ns <- session$ns
 
       rv_mod <- reactiveValues()
+      
+      
 
       observe({
         ## initialization
-        updatePickerInput(
-          session,"select_environments",
-          choices = ""
-        )
-        updatePickerInput(
-          session,"select_traits",
-          choices = ""
-        )
         updatePickerInput(
           session, "select_environment_fit",
           choices = ""
@@ -181,6 +180,7 @@ mod_model_server <- function(id, rv){
           choices = ""
         )
         rv$fit <- NULL
+        rv$obsUnit_outliers <- NULL
 
         req(rv$data_dq)
         req("observations.observationVariableName"%in%names(rv$data_dq))
@@ -188,9 +188,18 @@ mod_model_server <- function(id, rv){
         updatePickerInput(
           session,"select_environments",
           choices = choices_env,
-          #selected = choices_env,
           options = list(
             placeholder = 'Select 1 or more environments',
+            onInitialize = I('function() { this.setValue(""); }')
+          )
+        )
+
+        choices_traits <- unique(rv$data_dq[scale.dataType == "Numerical"]$observations.observationVariableName)
+        updatePickerInput(
+          session,"select_traits",
+          choices = choices_traits,
+          options = list(
+            placeholder = 'Select 1 or more traits',
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
@@ -199,15 +208,17 @@ mod_model_server <- function(id, rv){
         # if (rv$pushOK == TRUE) {
           shinyjs::enable("push_metrics_to_BMS_B")
         # }
+        shinyjs::hide("go_fit_no_outlier")
+        rv_mod$selected_env <- NULL
+        rv_mod$selected_traits <- NULL
         
       })
       
-      select_env_d <- reactive(input$select_environments) %>% debounce(500)
-      select_trait_d <- reactive(input$select_traits) %>% debounce(500)
-      
       observeEvent(c(input$select_environments_open, req(!is.null(rv$data_dq))), {
-        #update when closing dropdown
-        if (!isTRUE(input$environments_open)) {
+        #update traits dropdown when closing environment dropdown and only if the environments selection has changed
+        if (!isTRUE(input$select_environments_open) && !identical(input$select_environments, rv_mod$selected_env)) {
+          rv_mod$selected_env <- input$select_environments
+          shinyjs::hide("go_fit_no_outlier")
           # Update traits dropdown
           if (is.null(input$select_environments)) {            
             choices_traits <- unique(rv$data_dq[scale.dataType == "Numerical"]$observations.observationVariableName)            
@@ -299,8 +310,10 @@ mod_model_server <- function(id, rv){
       }, ignoreNULL = FALSE)
       
       observeEvent(c(input$select_traits_open, req(!is.null(rv$data_dq))), {
-        #update when closing dropdown
-        if (!isTRUE(input$select_traits_open)) {
+        #update environmentq dropdown when closing traits dropdown and only if the traits selection has changed
+        if (!isTRUE(input$select_traits_open) && !identical(input$select_traits, rv_mod$selected_traits)) {
+          rv_mod$selected_traits <- input$select_traits
+          shinyjs::hide("go_fit_no_outlier")
           # Update environments dropdown
           if (is.null(input$select_traits)) {
             req("observations.observationVariableName"%in%names(rv$data_dq))
@@ -359,125 +372,6 @@ mod_model_server <- function(id, rv){
         }
       }, 
       ignoreNULL = FALSE)
-
-      # observeEvent(c(input$select_environments, rv$excluded_obs),{
-      #   ## only traits found in all environments can be selected
-      #   trait_by_studyDbIds <- rv$data_dq[study_name_app %in% input$select_environments,.(trait = unique(observations.observationVariableName)), .(studyDbId)]
-      #   choices_traits <- trait_by_studyDbIds[,.N,trait][N==length(trait_by_studyDbIds[,unique(studyDbId)]), trait]
-      #   updatePickerInput(
-      #     session,"select_traits",
-      #     choices = choices_traits,
-      #     #selected = choices_traits,
-      #     options = list(
-      #       placeholder = 'Select 1 or more traits',
-      #       onInitialize = I('function() { this.setValue(""); }')
-      #     )
-      #   )
-      # 
-      #   ## restrict the design choices to the available column in the environment datasets
-      #   # based in the following rules (https://biometris.github.io/statgenSTA/articles/statgenSTA.html#modeling-1)
-      #   # - ibd 		    => 	subBlocks are defined
-      #   # - res.ibd 	  => 	subBlocks and repIds are defined
-      #   # - rcbd		    =>	repIds are defined
-      #   # - rowcol		  =>	rowId and colId are defined
-      #   # - res.rowcol	=>	repIds, rowId and colId are defined
-      #   #
-      #   # NB: choices_model_design is defined in inst/apps/stabrapp/config.R
-      #   # For the following code to work, the item order in choices_model_design has to be: "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"
-      # 
-      #   data_filt <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs) & (study_name_app %in% input$select_environments)]
-      #   has_subBlocks <- data_filt[,.N,.(blockNumber)][,.N]>1
-      #   has_repIds <- data_filt[,.N,.(replicate)][,.N]>1
-      #   has_coords <- data_filt[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1
-      # 
-      #   possible_designs <- choices_model_design[c(
-      #     has_subBlocks, # matches "ibd",
-      #     has_subBlocks & has_repIds, # matches "res.ibd"
-      #     has_repIds, # matches  "rcbd"
-      #     has_coords, # matches "rowcol"
-      #     has_coords & has_repIds # matches "res.rowcol"
-      #   )]
-      # 
-      #   ## set default experimental design
-      #   design_pui <- NA
-      #   if("experimentalDesign.pui"%in%names(rv$study_metadata)){
-      #     design_pui <- rv$study_metadata[study_name_app %in% input$select_environments,unique(experimentalDesign.pui)]
-      #   }
-      #   StatGenSTA_code <- exp_designs_corresp[BMS_pui %in% design_pui, StatGenSTA_code]
-      #   if(length(StatGenSTA_code)==1){
-      #     updatePickerInput(
-      #       session, "model_design",
-      #       choices = possible_designs,
-      #       selected = StatGenSTA_code
-      #     )
-      #   }else{
-      #     updatePickerInput(
-      #       session, "model_design",
-      #       choices = possible_designs,
-      #       selected = "",
-      #       options = list(
-      #         title = "Select Model Design",
-      #         onInitialize = I('function() { this.setValue(""); }')
-      #       )
-      #     )
-      #   }
-      # 
-      #   rv_mod$data_checks <- list(
-      #     has_subBlocks = has_subBlocks,
-      #     has_repIds = has_repIds,
-      #     has_coords = has_coords
-      #   )
-      # 
-      #   ###  create TD without the excluded observations
-      #   ## exclude observations
-      #   data_filtered <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
-      #   ## make 1 column per trait
-      #   data_filtered_casted <- dcast(
-      #     data = data_filtered[,.(
-      #       observationUnitDbId,
-      #       genotype = germplasmName, trial = study_name_app, loc = studyLocationDbId,
-      #       repId = replicate,
-      #       subBlock = blockNumber,
-      #       rowCoord = positionCoordinateY, colCoord = positionCoordinateX,
-      #       observations.observationVariableName, observations.value
-      #     )],
-      #     formula = "observationUnitDbId + genotype + trial + loc + repId + subBlock + rowCoord + colCoord ~ observations.observationVariableName",
-      #     value.var = "observations.value"
-      #   )
-      # 
-      #   ## parametrization
-      #   createTD_args <- list(
-      #     genotype = "genotype",
-      #     trial = "trial",
-      #     loc = "loc",
-      #     repId = "repId",
-      #     subBlock = "subBlock",
-      #     rowCoord = "rowCoord",
-      #     colCoord = "colCoord"
-      #   )
-      #   if(!rv_mod$data_checks$has_subBlocks){
-      #     data_filtered_casted[,subBlock:=NULL]
-      #     createTD_args$subBlock <- NULL
-      #   }
-      #   if(!rv_mod$data_checks$has_repIds){
-      #     data_filtered_casted[,repId:=NULL]
-      #     createTD_args$repId <- NULL
-      #   }
-      #   if(!rv_mod$data_checks$has_coords){
-      #     data_filtered_casted[,rowCoord:=NULL]
-      #     data_filtered_casted[,colCoord:=NULL]
-      #     createTD_args$rowCoord <- NULL
-      #     createTD_args$colCoord <- NULL
-      #   }
-      #   createTD_args <- c(
-      #     list(data = data_filtered_casted),
-      #     createTD_args
-      #   )
-      # 
-      #   ## create TD
-      #   rv_mod$TD <- do.call(what = createTD, args = createTD_args)
-      # 
-      # })
 
       observeEvent(input$model_engine,{
         if(input$model_engine=="SpATS"){
@@ -540,6 +434,21 @@ mod_model_server <- function(id, rv){
         ## exclude observations
         rv$data_dq[,observations.value:=as.numeric(observations.value)]
         data_filtered <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
+        fitModel(data_filtered)
+      })
+      
+      observeEvent(input$go_fit_no_outlier,{
+        req(rv_mod$data_checks)
+        req(rv$obsUnit_outliers)
+        ## create TD without the excluded observations
+        ## exclude observations
+        rv$data_dq[,observations.value:=as.numeric(observations.value)]
+        data_filtered <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
+        data_filtered <- data_filtered[!(observationUnitDbId %in% rv$obsUnit_outliers)]
+        fitModel(data_filtered)
+      })
+      
+      fitModel <- function(data_filtered) {
         ## make 1 column per trait
         data_filtered_casted <- dcast(
           data = data_filtered[,.(
@@ -553,7 +462,7 @@ mod_model_server <- function(id, rv){
           formula = "observationUnitDbId + genotype + trial + loc + repId + subBlock + rowCoord + colCoord ~ observations.observationVariableName",
           value.var = "observations.value"
         )
-
+        
         ## parametrization
         createTD_args <- list(
           genotype = "genotype",
@@ -582,42 +491,43 @@ mod_model_server <- function(id, rv){
           list(data = data_filtered_casted),
           createTD_args
         )
-
+        
         ## create TD
         rv_mod$TD <- do.call(what = createTD, args = createTD_args)
         
         
         rv$fit <- NULL
-
+        
         if (input$model_engine == "SpATS" && input$display_psanova_opt==T) {
           cntrl <- list(nSeg = c(input$spColSeg, input$spRowSeg),
                         nestDiv = input$spNestDiv)
         } else {
           cntrl <- NULL
         }
-
+        
         ### fit TD
-        a <- tryCatch(
-          rv$fit <- fitTD(
-            TD = rv_mod$TD,
-            trials = input$select_environments,
-            design = input$model_design,
-            traits = input$select_traits,
-            engine = input$model_engine,
-            covariates = input$covariates,
-            what = input$what,
-            # useCheckId = FALSE,
-            spatial = ifelse(input$model_engine=="SpATS", input$spatial_opt, F),
-            control = cntrl
-          ),
+        a <- tryCatch({
+            rv$fit <- fitTD(
+              TD = rv_mod$TD,
+              trials = input$select_environments,
+              design = input$model_design,
+              traits = input$select_traits,
+              engine = input$model_engine,
+              covariates = input$covariates,
+              what = input$what,
+              # useCheckId = FALSE,
+              spatial = ifelse(input$model_engine=="SpATS", input$spatial_opt, F),
+              control = cntrl
+            )
+          },
           error=function(e){ e })
         mess <- a$message
         if(!is.null(mess)){
           showNotification(mess, type = "error", duration = notification_duration)
         }
-
+        
         req(rv$fit)
-
+        
         ## SPATs does not make prediction when genotypes are in the fixed part of the model
         # It causes the summary.TD and plot.TD functions to throw error when trying to compute the predictions
         # temporary fix: if there is no "fixed" modelling, then this list item is removed from the fitTD object
@@ -628,7 +538,7 @@ mod_model_server <- function(id, rv){
             showNotification(paste0(trial,':\nno modelling for what=fixed'), type = "default", duration = notification_duration)
           }
         }
-
+        
         ## update selectors
         updatePickerInput(
           session, "select_environment_fit",
@@ -645,7 +555,7 @@ mod_model_server <- function(id, rv){
           choices = input$select_traits,
           selected = input$select_traits[1]
         )
-
+        
         # if(input$model_engine%in%c("lme4")){
         #   choices_metrics_A <- c("Wald"="wald", "Heritability"="heritability", "CV"="CV")
         # }else{
@@ -655,7 +565,7 @@ mod_model_server <- function(id, rv){
         #   session, "select_metrics_A",
         #   choices = choices_metrics_A
         # )
-
+        
         updatePickerInput(
           session,"select_trait_metrics",
           choices = input$select_traits
@@ -665,10 +575,10 @@ mod_model_server <- function(id, rv){
           session, "select_environment_metrics",
           choices = input$select_environments
         )
-
+        
         # assign input$model_engine to a reactive variable (isolated in the "observeEvent-go fit model") to prevent the app from changing model results unless "go fit model" is clicked
         rv_mod$model_engine <- input$model_engine
-      })
+      }
 
       ## show fitted models per trait and environments
       observeEvent(c(input$select_environment_fit, input$select_trait_fit),{
@@ -782,11 +692,12 @@ mod_model_server <- function(id, rv){
           value = as.numeric(res_q[100]) # by default, the 1% extreme residuals are returned
         )
       })
+      
       output$table_outliers <- renderDataTable({
         req(rv$fit)
         req(input$select_trait_outliers)
         req(input$limit_residual>0)
-        
+
         # outliers on all traits (used to get number of outliers for each observationUnit)
         outliersSTA_all <- outlierSTA(
           rv$fit,
@@ -796,7 +707,6 @@ mod_model_server <- function(id, rv){
           verbose = F
         )
         outliers_all <- as.data.table(outliersSTA_all$outliers)
-        
         validate(need(outliers_all[,.N]>0 , "No outlier on this trait"))
         
         # outliers for the selected trait
@@ -804,18 +714,21 @@ mod_model_server <- function(id, rv){
         
         validate(need(outliers[,.N]>0 , "No outlier on this trait"))
         
-        outliers_nb <- outliers_all[, .(count_outliers = sum(outlier)), by = observationUnitDbId]
-        obs_nb <- unique(outliers_all[, .(count_non_na = rowSums(!is.na(.SD[, 12:19]))), by = observationUnitDbId])
+        outliers_nb <- outliers_all[, .(`#outliers` = sum(outlier)), by = observationUnitDbId]
+        subBlock_index <- which(colnames(outliers_all) == "subBlock")
+        obs_nb <- unique(outliers_all[, .(observationUnitDbId,  `#observations` = rowSums(!is.na(.SD[, (subBlock_index+1):(length(colnames(outliers_all))-1)])))])
         outliers_by_obsUnit <- merge(outliers_nb, obs_nb, by="observationUnitDbId")   
-        setnames(outliers_by_obsUnit, "count_outliers", "#outliers")
-        setnames(outliers_by_obsUnit, "count_non_na", "#observations")
         
-        #outliers <- as.data.table(outliersSTA$outliers)
+        rv$obsUnit_outliers <- outliers_by_obsUnit[`#outliers` > 0]$observationUnitDbId
+        shinyjs::show("go_fit_no_outlier")
+        
         if(outliers[,.N]>0){
           setnames(outliers, "trial", "environment")
         }
         
         outliers <- merge(outliers, outliers_by_obsUnit, by="observationUnitDbId")
+        
+        #Sort outliers on genotype, environment and repetition
         outliers <- outliers[order(genotype, environment, repId)]
         
         # change columns order (move variables columns at the end)
@@ -825,17 +738,9 @@ mod_model_server <- function(id, rv){
         new_cols_order <- c(cols[1:subBlock_index], cols[outlier_index:length(cols)], cols[(subBlock_index+1):(outlier_index-1)])
         setcolorder(outliers, new_cols_order)
         
+        # set a color for each environment/genotype couple
+        # 2 colors depending on even or odd row
         group_colors <- unique(outliers[ , .(environment, genotype)])
-        
-        # group_colors <- lapply(seq_along(group_colors), function(i) {
-        #   if (i %% 2 == 0) {
-        #     color = "'#d9edf7'"  
-        #   } else {
-        #     color = "'#e3e3e3'"  
-        #   }
-        #   return(paste0("'", group_colors[i],"':", color))
-        # })
-        # 
         group_colors <- lapply(seq_len(nrow(group_colors)), function(i) {
           if (i %% 2 == 0) {
             color = "'#d9edf7'"  
