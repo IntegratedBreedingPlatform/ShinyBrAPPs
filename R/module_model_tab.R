@@ -283,6 +283,7 @@ mod_model_server <- function(id, rv){
             design_pui <- rv$study_metadata[study_name_app %in% input$select_environments,unique(experimentalDesign.pui)]
           }
           StatGenSTA_code <- exp_designs_corresp[BMS_pui %in% design_pui, StatGenSTA_code]
+          
           if(length(StatGenSTA_code)==1){
             updatePickerInput(
               session, "model_design",
@@ -290,10 +291,17 @@ mod_model_server <- function(id, rv){
               selected = StatGenSTA_code
             )
           }else{
+            selected_model_design <- ""
+            #keep selected model design when changing environment
+            if (!is.null(input$model_design)) {
+              if (input$model_design %in% possible_designs) {
+                selected_model_design <- input$model_design
+              }
+            } 
             updatePickerInput(
               session, "model_design",
               choices = possible_designs,
-              selected = "",
+              selected = selected_model_design,
               options = list(
                 title = "Select Model Design",
                 onInitialize = I('function() { this.setValue(""); }')
