@@ -206,6 +206,13 @@ mod_dataquality_server <- function(id, rv){
         req(rv$data)
         if("observations.observationVariableName"%in%names(rv$data)){
           rv$data_dq_viz <- rv$data[observations.observationVariableName == input$trait & studyDbId %in% input$studies]
+          print(unique(rv$data_dq_viz$scale.dataType))
+          print(rv$data_dq_viz$observations.value)
+          if (length(unique(rv$data_dq_viz$scale.dataType)) && unique(rv$data_dq_viz$scale.dataType) == "Numerical") {
+            rv$data_dq_viz[, observations.value:=as.numeric(observations.value)]
+          } else if (length(unique(rv$data_dq_viz$scale.dataType)) && unique(rv$data_dq_viz$scale.dataType) == "Date") {
+            rv$data_dq_viz[, observations.value:=as.Date(observations.value)]
+          }
         }else{
           rv$data_dq_viz <- NULL
         }
@@ -214,6 +221,7 @@ mod_dataquality_server <- function(id, rv){
       observeEvent(input$select_variable,{
         req(input$select_variable)
         values <- unique(rv$data_dq_viz[,input$select_variable, with = F])
+        
         if(values[,.N]==1){
           values <- unname(values)
         }
