@@ -58,9 +58,14 @@ mod_model_ui <- function(id){
       )
     ),
     fluidRow(
-      column(12,
-         shiny::actionButton(ns("go_fit_model"), "Fit model", class = "btn btn-info"),
-         hidden(shiny::actionButton(ns("go_fit_no_outlier"), "Refit without outliers", class = "btn btn-info"))
+      column(
+        2,
+        shiny::actionButton(ns("go_fit_model"), "Fit model", class = "btn btn-info"),
+        hidden(shiny::actionButton(ns("go_fit_no_outlier"), "Refit without outliers", class = "btn btn-info"))
+      ),
+      column(
+        4,
+        h4(textOutput(ns("fit_outliers_output")))
       )
     ),
     fluidRow(
@@ -209,6 +214,7 @@ mod_model_server <- function(id, rv){
           shinyjs::enable("push_metrics_to_BMS_B")
         # }
         shinyjs::hide("go_fit_no_outlier")
+        shinyjs::hide("fit_outliers_output")
         rv_mod$selected_env <- NULL
         rv_mod$selected_traits <- NULL
         
@@ -443,6 +449,9 @@ mod_model_server <- function(id, rv){
         rv$data_dq[,observations.value:=as.numeric(observations.value)]
         data_filtered <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
         fitModel(data_filtered)
+        output$fit_outliers_output = renderText({
+          ""
+        })
       })
       
       observeEvent(input$go_fit_no_outlier,{
@@ -454,6 +463,9 @@ mod_model_server <- function(id, rv){
         data_filtered <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
         data_filtered <- data_filtered[!(observationUnitDbId %in% rv$obsUnit_outliers)]
         fitModel(data_filtered)
+        output$fit_outliers_output = renderText({
+          "The outliers were removed before fitting the model"
+        })
       })
       
       fitModel <- function(data_filtered) {
@@ -729,6 +741,7 @@ mod_model_server <- function(id, rv){
         
         rv$obsUnit_outliers <- outliers_by_obsUnit[`#outliers` > 0]$observationUnitDbId
         shinyjs::show("go_fit_no_outlier")
+        shinyjs::show("fit_outliers_output")
         
         if(outliers[,.N]>0){
           setnames(outliers, "trial", "environment")
