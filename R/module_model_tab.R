@@ -258,70 +258,72 @@ mod_model_server <- function(id, rv){
               onInitialize = I('function() { this.setValue(""); }')
             )
           )
-          
-          ## restrict the design choices to the available column in the environment datasets
-          # based in the following rules (https://biometris.github.io/statgenSTA/articles/statgenSTA.html#modeling-1)
-          # - ibd 		    => 	subBlocks are defined
-          # - res.ibd 	  => 	subBlocks and repIds are defined
-          # - rcbd		    =>	repIds are defined
-          # - rowcol		  =>	rowId and colId are defined
-          # - res.rowcol	=>	repIds, rowId and colId are defined
-          #
-          # NB: choices_model_design is defined in inst/apps/stabrapp/config.R
-          # For the following code to work, the item order in choices_model_design has to be: "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"
-  
-          data_filt <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs) & (study_name_app %in% input$select_environments)]
-          has_subBlocks <- data_filt[,.N,.(blockNumber)][,.N]>1
-          has_repIds <- data_filt[,.N,.(replicate)][,.N]>1
-          has_coords <- data_filt[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1
-  
-          possible_designs <- choices_model_design[c(
-            has_subBlocks, # matches "ibd",
-            has_subBlocks & has_repIds, # matches "res.ibd"
-            has_repIds, # matches  "rcbd"
-            has_coords, # matches "rowcol"
-            has_coords & has_repIds # matches "res.rowcol"
-          )]
-  
-          ## set default experimental design
-          design_pui <- NA
-          if("experimentalDesign.pui"%in%names(rv$study_metadata)){
-            design_pui <- rv$study_metadata[study_name_app %in% input$select_environments,unique(experimentalDesign.pui)]
-          }
-          StatGenSTA_code <- exp_designs_corresp[BMS_pui %in% design_pui, StatGenSTA_code]
-          
-          if(length(StatGenSTA_code)==1){
-            updatePickerInput(
-              session, "model_design",
-              choices = possible_designs,
-              selected = StatGenSTA_code
-            )
-          }else{
-            selected_model_design <- ""
-            #keep selected model design when changing environment
-            if (!is.null(input$model_design)) {
-              if (input$model_design %in% possible_designs) {
-                selected_model_design <- input$model_design
-              }
-            } 
-            updatePickerInput(
-              session, "model_design",
-              choices = possible_designs,
-              selected = selected_model_design,
-              options = list(
-                title = "Select Model Design",
-                onInitialize = I('function() { this.setValue(""); }')
-              )
-            )
-          }
-          
-          rv_mod$data_checks <- list(
-            has_subBlocks = has_subBlocks,
-            has_repIds = has_repIds,
-            has_coords = has_coords
-          )
         }
       }, ignoreNULL = FALSE)
+      
+      observeEvent(input$select_environments, {
+        ## restrict the design choices to the available column in the environment datasets
+        # based in the following rules (https://biometris.github.io/statgenSTA/articles/statgenSTA.html#modeling-1)
+        # - ibd 		    => 	subBlocks are defined
+        # - res.ibd 	  => 	subBlocks and repIds are defined
+        # - rcbd		    =>	repIds are defined
+        # - rowcol		  =>	rowId and colId are defined
+        # - res.rowcol	=>	repIds, rowId and colId are defined
+        #
+        # NB: choices_model_design is defined in inst/apps/stabrapp/config.R
+        # For the following code to work, the item order in choices_model_design has to be: "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"
+        
+        data_filt <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs) & (study_name_app %in% input$select_environments)]
+        has_subBlocks <- data_filt[,.N,.(blockNumber)][,.N]>1
+        has_repIds <- data_filt[,.N,.(replicate)][,.N]>1
+        has_coords <- data_filt[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1
+        
+        possible_designs <- choices_model_design[c(
+          has_subBlocks, # matches "ibd",
+          has_subBlocks & has_repIds, # matches "res.ibd"
+          has_repIds, # matches  "rcbd"
+          has_coords, # matches "rowcol"
+          has_coords & has_repIds # matches "res.rowcol"
+        )]
+        
+        ## set default experimental design
+        design_pui <- NA
+        if("experimentalDesign.pui"%in%names(rv$study_metadata)){
+          design_pui <- rv$study_metadata[study_name_app %in% input$select_environments,unique(experimentalDesign.pui)]
+        }
+        StatGenSTA_code <- exp_designs_corresp[BMS_pui %in% design_pui, StatGenSTA_code]
+        
+        if(length(StatGenSTA_code)==1){
+          updatePickerInput(
+            session, "model_design",
+            choices = possible_designs,
+            selected = StatGenSTA_code
+          )
+        }else{
+          selected_model_design <- ""
+          #keep selected model design when changing environment
+          if (!is.null(input$model_design)) {
+            if (input$model_design %in% possible_designs) {
+              selected_model_design <- input$model_design
+            }
+          } 
+          updatePickerInput(
+            session, "model_design",
+            choices = possible_designs,
+            selected = selected_model_design,
+            options = list(
+              title = "Select Model Design",
+              onInitialize = I('function() { this.setValue(""); }')
+            )
+          )
+        }
+        
+        rv_mod$data_checks <- list(
+          has_subBlocks = has_subBlocks,
+          has_repIds = has_repIds,
+          has_coords = has_coords
+        )
+      })
       
       observeEvent(c(input$select_traits_open, req(!is.null(rv$data_dq))), {
         #update environmentq dropdown when closing traits dropdown and only if the traits selection has changed
