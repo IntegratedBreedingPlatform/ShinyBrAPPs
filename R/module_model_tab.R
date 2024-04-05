@@ -450,6 +450,7 @@ mod_model_server <- function(id, rv){
         ## exclude observations
         rv$data_dq[,observations.value:=as.numeric(observations.value)]
         data_filtered <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
+        rv$fitted_data <- data_filtered
         fitModel(data_filtered)
         output$fit_outliers_output = renderText({
           ""
@@ -464,6 +465,7 @@ mod_model_server <- function(id, rv){
         rv$data_dq[,observations.value:=as.numeric(observations.value)]
         data_filtered <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
         data_filtered <- data_filtered[!(observationUnitDbId %in% rv$obsUnit_outliers)]
+        rv$fitted_data <- data_filtered
         fitModel(data_filtered)
         output$fit_outliers_output = renderText({
           "The outliers were removed before fitting the model"
@@ -705,7 +707,7 @@ mod_model_server <- function(id, rv){
       observeEvent(input$select_trait_outliers,{
         req(rv$fit)
         req(input$select_trait_outliers)
-        
+
         stdResR <- as.data.table(extractSTA(STA = rv$fit, traits = input$select_trait_outliers, what = "stdResR"))
         res_q <- quantile(abs(stdResR[[input$select_trait_outliers]]), probs = seq(0,1,0.01), na.rm = T)
         updateSliderInput(
@@ -736,9 +738,16 @@ mod_model_server <- function(id, rv){
         
         validate(need(outliers[,.N]>0 , "No outlier on this trait"))
         
+        req(rv$fitted_data)
+
+        which(colnames(outliers_all) == "subBlock")
         outliers_nb <- outliers_all[, .(`#outliers` = sum(outlier)), by = observationUnitDbId]
-        subBlock_index <- which(colnames(outliers_all) == "subBlock")
-        obs_nb <- unique(outliers_all[, .(observationUnitDbId,  `#observations` = rowSums(!is.na(.SD[, (subBlock_index+1):(length(colnames(outliers_all))-1)])))])
+        
+        variables_index <- which(colnames(outliers_all) %in% unique(rv$fitted_data$observations.observationVariableName))
+        first_var_index <- variables_index[1]
+        last_var_index <- variables_index[length(variables_index)]
+
+        obs_nb <- unique(outliers_all[, .(observationUnitDbId,  `#observations` = rowSums(!is.na(.SD[, (first_var_index):(last_var_index)])))])
         outliers_by_obsUnit <- merge(outliers_nb, obs_nb, by="observationUnitDbId")   
         
         rv$obsUnit_outliers <- outliers_by_obsUnit[`#outliers` > 0]$observationUnitDbId
@@ -748,7 +757,7 @@ mod_model_server <- function(id, rv){
         if(outliers[,.N]>0){
           setnames(outliers, "trial", "environment")
         }
-        
+
         outliers <- merge(outliers, outliers_by_obsUnit, by="observationUnitDbId")
         
         #Sort outliers on genotype, environment and repetition
@@ -756,9 +765,9 @@ mod_model_server <- function(id, rv){
         
         # change columns order (move variables columns at the end)
         cols <- colnames(outliers)
-        subBlock_index <- which(cols == "subBlock")
+        first_var_index <- which(colnames(outliers_all) %in% unique(rv$fitted_data$observations.observationVariableName))[1]
         outlier_index <- which(cols == "outlier")
-        new_cols_order <- c(cols[1:subBlock_index], cols[outlier_index:length(cols)], cols[(subBlock_index+1):(outlier_index-1)])
+        new_cols_order <- c(cols[1:first_var_index-1], cols[outlier_index:length(cols)], cols[(first_var_index):(outlier_index-1)])
         setcolorder(outliers, new_cols_order)
         
         # set a color for each environment/genotype couple
