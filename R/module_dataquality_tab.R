@@ -126,14 +126,18 @@ mod_dataquality_server <- function(id, rv){
         }
 
         rv$data_dq <- rv$data[observationLevel == "PLOT"]
+        
+        browser()
 
         if(!("observations.observationVariableName"%in%names(rv$data_dq))){
           showNotification("No trait data", type = "error", duration = notification_duration)
         }
         req("observations.observationVariableName"%in%names(rv$data_dq))
+       
 
-        env_choices <- rv$study_metadata[loaded==T,unique(studyDbId)]
-        names(env_choices) <- rv$study_metadata[loaded==T,unique(study_name_app)]
+        env_choices <- rv$data_dq[!is.na(observations.value)][,unique(studyDbId)]
+        names(env_choices) <- rv$data_dq[!is.na(observations.value)][,unique(study_name_app)]
+        #names(env_choices) <- rv$study_metadata[loaded==T,unique(study_name_app)]
         updatePickerInput(
           inputId = "studies", session = session,
           choices = env_choices, selected = env_choices,

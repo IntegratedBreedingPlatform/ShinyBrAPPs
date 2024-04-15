@@ -189,7 +189,8 @@ mod_model_server <- function(id, rv){
 
         req(rv$data_dq)
         req("observations.observationVariableName"%in%names(rv$data_dq))
-        choices_env <- rv$data_dq[,unique(study_name_app)]
+        
+        choices_env <- rv$data_dq[!is.na(study_name_app)][,unique(study_name_app)]
         updatePickerInput(
           session,"select_environments",
           choices = choices_env,
