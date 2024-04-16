@@ -37,7 +37,7 @@ mod_get_studydata_ui <- function(id){
                   inputId = ns("environments"),
                   label = "Available environments",
                   choices = NULL,
-                  icon = icon("check-square-o"),
+                  icon = icon("square-check"),
                   status = "primary",
                   outline = TRUE,
                   width = "100%",
@@ -358,6 +358,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
                 options = list(
                   paging = F,
                   scrollX = T,
+                  scrollY = 400,
                   scrollCollapse = T,
                   dom = 't'
                 )
