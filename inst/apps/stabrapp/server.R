@@ -4,7 +4,8 @@ rv <- reactiveValues(
   study_metadata = NULL,      # study metadata
   data = NULL,                # trial data as a data.table object
   excluded_obs = NULL,        # vector of excluded observations.observationDbId (data quality module)
-  pushOK = FALSE              # to avoid pushing BLUES/BLUPS to easily
+  pushOK = FALSE,             # to avoid pushing BLUES/BLUPS to easily
+  appname = "STABrAPP"
 )
 
 server <- function(input, output, session){

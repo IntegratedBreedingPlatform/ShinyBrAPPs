@@ -16,7 +16,7 @@ mod_banner_server <- function(id, rv){
                   style="border-radius: 6px;
                 width:129px;
                 height:34px;
-                margin-right:10px"),paste("STABrAPP - Study: ", paste(rv$data[,unique(trialName)], collapse = ", ")), style="font: 500 14px/32px Roboto,Helvetica Neue,sans-serif;"),
+                margin-right:10px"),paste(rv$appname," - Study: ", paste(rv$data[,unique(trialName)], collapse = ", ")), style="font: 500 14px/32px Roboto,Helvetica Neue,sans-serif;"),
           style = "padding: 2px 0 2px 10px;
                  font-weight: 700;
                  min-height: auto;
