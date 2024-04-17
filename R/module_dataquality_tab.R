@@ -126,8 +126,6 @@ mod_dataquality_server <- function(id, rv){
         }
 
         rv$data_dq <- rv$data[observationLevel == "PLOT"]
-        
-        browser()
 
         if(!("observations.observationVariableName"%in%names(rv$data_dq))){
           showNotification("No trait data", type = "error", duration = notification_duration)
