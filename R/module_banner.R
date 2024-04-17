@@ -27,7 +27,7 @@ mod_banner_server <- function(id, rv){
                     border-color: #357ebd;
                     position: absolute;
                     top: 0;
-                    left: 15px;")
+                    left: 3px;")
       })
     }
   )

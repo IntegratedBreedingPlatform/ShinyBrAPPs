@@ -3,7 +3,7 @@ source("config.R")
 
 ui <- fluidPage(
   tags$head(
-    tags$link(rel = "stylesheet", type = "text/css", href = "css/app.css"),
+    #tags$link(rel = "stylesheet", type = "text/css", href = "css/app.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/custom_styles.css")
   ),
   # Static App banner

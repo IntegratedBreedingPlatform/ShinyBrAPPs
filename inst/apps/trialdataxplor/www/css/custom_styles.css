@@ -16,3 +16,7 @@
     border-radius: 0;
   }
 }
+
+.container-fluid {
+  padding-left: 3px;
+}
