@@ -3,7 +3,7 @@ rv <- reactiveValues(
   trial_metadata = NULL,      # trial metadata
   study_metadata = NULL,      # study metadata
   data = NULL,                # trial data as a data.table object
-  appname = "BMS Trial data explorer",
+  appname = appname,
   tr=NULL,
   st = NULL,
   stdatadt=NULL,

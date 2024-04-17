@@ -12,7 +12,7 @@
   z-index: 0;
   border-width: 0 0 1px;
 
-  @media (min-width: @grid-float-breakpoint) {
+@media (min-width: @grid-float-breakpoint) {
     border-radius: 0;
   }
 }

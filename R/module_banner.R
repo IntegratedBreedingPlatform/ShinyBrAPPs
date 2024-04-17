@@ -16,14 +16,18 @@ mod_banner_server <- function(id, rv){
                   style="border-radius: 6px;
                 width:129px;
                 height:34px;
-                margin-right:10px"),paste(rv$appname," - Study: ", paste(rv$data[,unique(trialName)], collapse = ", ")), style="font: 500 14px/32px Roboto,Helvetica Neue,sans-serif;"),
-          style = "padding: 2px 0 2px 10px;
-                 font-weight: 700;
-                 min-height: auto;
-                 color: #fff;
-                 background-color: #225691;
-                 margin-bottom: 5px;
-                 border-color: #357ebd;")
+                margin-right:10px"),paste(rv$appname," - Study: ", paste(rv$data[,unique(trialName)], collapse = ", ")),
+          style="font: 500 20px/32px Roboto,Helvetica Neue,sans-serif;"),
+        style = "padding: 2px 0 2px 10px;
+                    font-weight: 700;
+                    min-height: auto;
+                    color: #fff;
+                    background-color: #225691;
+                    margin-bottom: 5px;
+                    border-color: #357ebd;
+                    position: absolute;
+                    top: 0;
+                    left: 15px;")
       })
     }
   )

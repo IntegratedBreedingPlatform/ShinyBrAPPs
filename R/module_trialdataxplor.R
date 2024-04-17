@@ -68,11 +68,11 @@ mod_trialdataxplor_server <- function(id, rv){
         }
         
         data_dq <- rv$data[observationLevel == "PLOT"]
-        
+        req("observations.observationVariableName"%in%names(data_dq))        
         if(!("observations.observationVariableName"%in%names(data_dq))){
           showNotification("No trait data", type = "error", duration = notification_duration)
         }
-        req("observations.observationVariableName"%in%names(data_dq))
+
         
         env_choices <- rv$study_metadata[loaded==T,unique(studyDbId)]
         names(env_choices) <- rv$study_metadata[loaded==T,unique(study_name_app)]
@@ -117,6 +117,7 @@ mod_trialdataxplor_server <- function(id, rv){
         updateSelectInput(session, inputId = "obs_trait",choices = unique(data_dq$observations.observationVariableName))
      })
      observeEvent(input$obs_trait, {
+       req(rv$data_dq)
        obs_study_data <- rv$data_dq[observations.observationVariableName==input$obs_trait,.N,.(studyDbId, locationName, studyName,countryName)]
        updateSelectizeInput(session,
                             inputId = "obs_study",

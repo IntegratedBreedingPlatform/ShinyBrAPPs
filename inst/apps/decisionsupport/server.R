@@ -1,4 +1,4 @@
-rv <- reactiveValues(appname = "DSBrAPP")
+rv <- reactiveValues(appname = appname)
 
 server <- function(input, output, session){
   rv <- mod_get_studydata_server("get_studydata", rv)

@@ -3,6 +3,7 @@
 # brapi_port <- 80
 # brapi_apipath <- "bmsapi"
 brapi_version <- "2.0"
+appname <- "STABrAPP"
 
 
 # hidden_columns_observationunits <- c(

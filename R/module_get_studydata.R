@@ -346,6 +346,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
       output$tables_study_metadata <- renderUI({
         req(rv$study_metadata)
+        #browser()
         panels <- lapply(
           rv$study_metadata[,unique(studyDbId)],
           function(id){
@@ -358,7 +359,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
                 options = list(
                   paging = F,
                   scrollX = T,
-                  scrollY = 400,
+                  scrollY = 500,
                   scrollCollapse = T,
                   dom = 't'
                 )
