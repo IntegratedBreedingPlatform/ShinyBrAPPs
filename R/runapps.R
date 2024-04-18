@@ -27,3 +27,13 @@ run_decision <- function() {
 
   shiny::runApp(appDir, display.mode = "normal",launch.browser = T)
 }
+
+#' @export
+run_trialdataxplor <- function() {
+  appDir <- system.file("apps", "trialdataxplor", package = "shinybrapps")
+  if (appDir == "") {
+    stop("Could not find app directory. Try re-installing `trialdataxplor`.", call. = FALSE)
+  }
+
+  shiny::runApp(appDir, display.mode = "normal",launch.browser = T)
+}
