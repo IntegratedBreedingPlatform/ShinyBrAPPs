@@ -37,5 +37,7 @@ Depends:
     leaflet,
     rclipboard,
     openxlsx,
+    shinycssloaders,
+    gtools,
     R (>= 2.10)
 RoxygenNote: 7.1.1
