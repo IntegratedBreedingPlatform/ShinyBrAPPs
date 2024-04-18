@@ -9,7 +9,10 @@ rv <- reactiveValues(
   stdatadt=NULL,
   variables=NULL,
   data_dq=NULL,
-  locs=NULL
+  locs=NULL,
+  study_no_dat=NULL,
+  var_no_dat=NULL,
+  candidat_out=NULL
 )
 
 

@@ -36,6 +36,17 @@ mod_trialdataxplor_ui <- function(id){
                                         div(tableOutput(ns("selected_obs")), style = "font-size: 75%;"))
                                       #)
                              ),
+                             tabPanel("Data check report",value="check",
+                                      downloadButton(ns("download_check"), label = "Download report"),
+                                      h3("Studies with no data:"),
+                                      div(tableOutput(ns("study_no_dat")), style = "font-size: 75%;"),
+                                      h3("Missing variables per study:"),
+                                      div(tableOutput(ns("var_no_dat")), style = "font-size: 75%;"),
+                                      h3("Candidate outliers:"),
+                                      sliderInput(ns("outslid"), "coef", min = 1.5, max=5, value = 1.5),
+                                      div(tableOutput(ns("candidat_out")), style = "font-size: 75%;")
+                                      
+                             ),
                              tabPanel("Locations map",value="map",
                                       leaflet::leafletOutput(outputId = ns("locationmap"), height = 600))
                              
@@ -101,6 +112,8 @@ mod_trialdataxplor_server <- function(id, rv){
           missingst <- st[!studyDbId%in%data_dq$studyDbId]
           missingmsg <- paste(paste0(missingst$study_label,"(",missingst$studyDbId,")"),collapse=", ")
           showModal(modalDialog(paste0("The following studies had not observation data: ", missingmsg)))
+          rv$study_no_dat <- missingst
+          output$study_no_dat <- renderTable(missingst,digits=0)
         }
         #browser()
         output$spinning_boxplot <- renderUI({
@@ -160,8 +173,18 @@ mod_trialdataxplor_server <- function(id, rv){
        req(rv$data_dq[,.N]>0)
        data_dq <- rv$data_dq
        #browser()
-       output$counts_table <- renderTable(dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(studyLocation,Variable=observations.observationVariableName)],
-                                                Variable~studyLocation, fill = 0))
+       ct <- dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(studyLocation,Variable=observations.observationVariableName)],
+                   Variable~studyLocation, fill = 0)
+       output$counts_table <- renderTable(ct)
+       vnd <- melt(ct, variable.name = "StudyLocation")[value==0,.(StudyLocation, Variable)]
+       rv$var_no_dat <- vnd
+       output$var_no_dat <- renderTable(vnd)
+       cdout0 <- data_dq[observations.value==0, .(reason="value=0",studyDbId, study_label, observationVariableDbId, observations.observationVariableName, observations.value, germplasmName, replicate, blockNumber, plotNumber, entryNumber)]
+       norm_var <- data_dq[scale.dataType=="Numerical" & observations.value!=0][data_dq[!is.na(observations.value),.(sd=sd(observations.value)),.(studyDbId,observationVariableDbId)][sd!=0],on=.(studyDbId,observationVariableDbId)][!is.na(observations.value)][,.(shapiro.test(observations.value)$`p.value`),.(studyDbId,observationVariableDbId, observations.observationVariableName)][V1>=0.05]
+       cdoutbp <-data_dq[data_dq[norm_var, on=.(studyDbId,observationVariableDbId)][,.(observations.value=boxplot.stats(observations.value, coef = input$outslid)$out),.(studyDbId,observationVariableDbId)],on=.(studyDbId,observationVariableDbId, observations.value)][, .(reason="boxplot-outliers",studyDbId, study_label, observationVariableDbId,observations.observationVariableName, observations.value, germplasmName, replicate, blockNumber, plotNumber, entryNumber)]
+       cdout <- rbind(cdout0,cdoutbp)
+       rv$candidat_out <- cdout
+       output$candidat_out <- renderTable(cdout, digits=0)
        data_dq[, facetrows := paste0("V: ",observations.observationVariableName,"\n",
                                          "T: ",trait.name, "\n",
                                          "M: ",method.methodName,"\n",
@@ -305,6 +328,26 @@ mod_trialdataxplor_server <- function(id, rv){
        })
      })
      
+     output$download_check <- downloadHandler(
+       filename = function() {
+         # Use the selected dataset as the suggested file name
+         paste0("data_check", ".xlsx")
+       },
+       content = function(file) {
+         # Write the dataset to the `file` that will be downloaded
+         wb <- openxlsx::createWorkbook()
+         openxlsx::addWorksheet(wb, "Studies with no data")
+         openxlsx::addWorksheet(wb, "Missing variables per study")
+         openxlsx::addWorksheet(wb, "Candidate outliers")
+         openxlsx::writeData(wb, 1, rv$study_no_dat)
+         openxlsx::writeData(wb, 2, rv$var_no_dat)
+         openxlsx::writeData(wb, 3, rv$candidat_out)
+         openxlsx::setColWidths(wb, sheet = 1, cols = 1:6, widths = "auto")
+         openxlsx::setColWidths(wb, sheet = 2, cols = 1:2, widths = "auto")
+         openxlsx::setColWidths(wb, sheet = 3, cols = 1:8, widths = "auto")
+         openxlsx::saveWorkbook(wb, file = file, overwrite = TRUE)
+       }
+     )
      
      return(rv)
     }
