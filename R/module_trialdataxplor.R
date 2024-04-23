@@ -159,8 +159,8 @@ mod_trialdataxplor_server <- function(id, rv){
                                                                 labelOptions = labelOptions(noHide = T))%>%
                                                addTiles(group = "OSM") %>%
                                                addLayersControl(baseGroups = c("Positron", "Gray","Lite", "OSM", "Terrain", "Satellite"))%>%
-                                               addProviderTiles(providers$Stadia.StamenTerrainBackground, group = "Terrain") %>%
-                                               addProviderTiles(providers$Stadia.StamenTonerLite, group = "Lite") %>%
+                                               #addProviderTiles(providers$Stadia.StamenTerrainBackground, group = "Terrain") %>%
+                                               #addProviderTiles(providers$Stadia.StamenTonerLite, group = "Lite") %>%
                                                addProviderTiles(providers$CartoDB.Positron, group = "Positron") %>%
                                                addProviderTiles(providers$Esri.WorldGrayCanvas, group = "Gray") %>%
                                                addProviderTiles(providers$Esri.WorldImagery, group = "Satellite"))
