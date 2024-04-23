@@ -18,6 +18,12 @@ proxy:
     container-cmd: ["R", "-e", "shinybrapps::run_decision()"]
     container-image: shinybrapps
     container-network: shinyproxy-network
+  - id: trialdataxplor
+    display-name: Trial data explore
+    description: "updated on 18/04/2024"
+    container-cmd: ["R", "-e", "shinybrapps::run_trialdataxplor()"]
+    container-image: shinybrapps
+    container-network: shinyproxy-network
   - id: test
     display-name: test app
     description: displays hello world

@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
 	libxml2-dev \
 	libssl-dev \
 	libcurl4-openssl-dev \
+	libgdal-dev \
 	cmake
 
 ## Install R deps
@@ -35,6 +36,11 @@ RUN R -e "install.packages('remotes', repos='http://cran.rstudio.com/')"
 RUN R -e "remotes::install_github('AnalytixWare/ShinySky')"
 RUN R -e "remotes::install_github('mverouden/brapir-v1')"
 RUN R -e "remotes::install_github('aliceboizet/brapir-v2')"
+RUN R -e "install.packages('rclipboard', repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('openxlsx', repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('shinycssloaders', repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('gtools', repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('leaflet', repos='http://cran.rstudio.com/')"
 
 ## Install shinybrapps
 # Note: presently the image is constructed from within the package directory because the repo "IntegratedBreedingPlatform/ShinyBrAPPs" is private. If it becomes public, it will be possible to construct the image from anywhere via "install_gihub()"
