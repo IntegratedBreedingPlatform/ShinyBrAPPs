@@ -153,18 +153,17 @@ mod_trialdataxplor_server <- function(id, rv){
          locs[,c("lon", "lat") :=tstrsplit(gsub("[c,\\(,\\)]","",coordinates.geometry.coordinates), split = " ")]
          locs[,lat:=as.numeric(lat)]
          locs[,lon:=as.numeric(lon)]
-         output$locationmap <- renderLeaflet(leaflet(data = locs) %>%   addTiles(group = "OSM") %>%
-                                               addProviderTiles(providers$Stamen.TerrainBackground, group = "Terrain") %>%
-                                               addProviderTiles(providers$Stamen.TonerLite, group = "Lite") %>%
-                                               addProviderTiles(providers$CartoDB.Positron, group = "Positron") %>%
-                                               addProviderTiles(providers$Esri.WorldGrayCanvas, group = "Gray") %>%
-                                               addProviderTiles(providers$Esri.WorldImagery, group = "Satellite") %>%
-                                               addLayersControl(
-                                                 baseGroups = c("Positron", "Gray","Lite", "OSM", "Terrain", "Satellite")
-                                               )%>%
+         output$locationmap <- renderLeaflet(leaflet(data = locs) %>%  
                                                addCircleMarkers(popup = ~as.character(locationName),
                                                                 label=~as.character(locationName),
-                                                                labelOptions = labelOptions(noHide = T)))
+                                                                labelOptions = labelOptions(noHide = T))%>%
+                                               addTiles(group = "OSM") %>%
+                                               addLayersControl(baseGroups = c("Positron", "Gray","Lite", "OSM", "Terrain", "Satellite"))%>%
+                                               addProviderTiles(providers$Stadia.StamenTerrainBackground, group = "Terrain") %>%
+                                               addProviderTiles(providers$Stadia.StamenTonerLite, group = "Lite") %>%
+                                               addProviderTiles(providers$CartoDB.Positron, group = "Positron") %>%
+                                               addProviderTiles(providers$Esri.WorldGrayCanvas, group = "Gray") %>%
+                                               addProviderTiles(providers$Esri.WorldImagery, group = "Satellite"))
          
        }
      })
