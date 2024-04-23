@@ -192,12 +192,13 @@ mod_trialdataxplor_server <- function(id, rv){
        data_dq[, facetcols := paste0(studyLocation,"\n",countryName)]
        loclabels <- unique(data_dq[,.(facetcols,studyLocation)])
        g<-ggplot(data_dq, aes(y=observations.value, x=replicate)) +
-         geom_boxplot() +
+         geom_boxplot(aes(fill=as.factor(replicate))) +
          facet_grid(rows=vars(facetrows), cols=vars(facetcols), scales = "free") +
          ggtitle(input$trial) +
          theme(strip.text.y.right = element_text(angle = 0, vjust = 1, hjust=0, size = 10),
                strip.text.x = element_text(size = 10),
-               strip.background.y = element_rect(fill = "white", colour = "black")) #+ coord_flip()
+               strip.background.y = element_rect(fill = "white", colour = "black"),
+               legend.position = "none") #+ coord_flip()
        g <- g + geom_text(
          data    = loclabels,
          size=3,
