@@ -113,18 +113,20 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
   location_ids <- unique(study_metadata$locationDbId)
 
   ## get location abbreviations
-  withProgress(message = "Reaching location metadata", value = 0, {
-    req(location_ids)
-    loc_names <- rbindlist(l = lapply(1:length(location_ids), function(k){
-      incProgress(
-        1/length(location_ids),
-        detail = study_metadata[locationDbId==location_ids[k], unique(locationName)]
-      )
-      try({
-        brapirv2::brapi_get_locations_locationDbId(con = con, locationDbId = location_ids[k])
-      })
-    }), fill = T, use.names = T)
-  })
+  #withProgress(message = "Reaching location metadata", value = 0, {
+  #  req(location_ids)
+  #  loc_names <- rbindlist(l = lapply(1:length(location_ids), function(k){
+  #    incProgress(
+  #      1/length(location_ids),
+  #      detail = study_metadata[locationDbId==location_ids[k], unique(locationName)]
+  #    )
+  #    try({
+  #      brapirv2::brapi_get_locations_locationDbId(con = con, locationDbId = location_ids[k])
+  #    })
+  #  }), fill = T, use.names = T)
+  #})
+  loc_names <- brapirv2::brapi_get_search_locations_searchResultsDbId(con, searchResultsDbId = brapirv2::brapi_post_search_locations(con, locationDbIds = location_ids)$searchResultsDbId)
+  setDT(loc_names)
   req(loc_names)
   maxchar <- 9
   loc_names[,location_name_abbrev := lapply(abbreviation, function(x){
