@@ -36,7 +36,9 @@ get_env_data <- function(con, studyDbId, env_number, loc_name, loc_name_abbrev, 
     study <- as.data.table(brapirv1::brapi_get_studies_studyDbId_observationunits(con = con, studyDbId = studyDbId))
     variables <- as.data.table(brapirv2::brapi_get_variables(con = con, studyDbId = studyDbId))
     variables <- variables[,.(observationVariableDbId, scale.dataType)] 
-    study <- merge(study,variables, by.x = "observations.observationVariableDbId", by.y = "observationVariableDbId")
+    if (any(colnames(study)=="observations.observationVariableDbId")){
+      study <- merge(study,variables, by.x = "observations.observationVariableDbId", by.y = "observationVariableDbId")
+    }
     
     if(!("observations.value"%in%names(study))){
       study[,observations.value:=NA]
