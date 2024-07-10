@@ -96,7 +96,7 @@ mod_trialdataxplor_server <- function(id, rv){
         rv$variables <- variables
         
         locs <- do.call(gtools::smartbind, lapply(unique(rv$study_metadata$locationDbId), function(l){
-          brapi_get_locations_locationDbId(rv$con, locationDbId = l)
+          brapi_get_locations(rv$con, locationDbId = l)
         }))
         setDT(locs)
         st <- locs[,.(locationDbId,countryName)][rv$study_metadata, on=.(locationDbId)]
