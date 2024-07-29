@@ -16,47 +16,126 @@ select_from_layout <- function(d, input_click = NULL, input_brush = NULL){
         (positionCoordinateX-int_x/2>=input_brush$xmin) &
         (positionCoordinateY+int_y/2<=input_brush$ymax) &
         (positionCoordinateY-int_y/2>=input_brush$ymin),
-      observations.observationDbId
+      observationDbId
     ]
     return(obs)
   }else if(!is.null(input_click)){
     obs <- d[
       (abs(input_click$x-positionCoordinateX)<=int_x/2) & (abs(input_click$y-positionCoordinateY)<=int_y/2),
-      observations.observationDbId
+      observationDbId
     ]
     return(obs)
   }
 
 }
 
+
+#' @param con brapi_connection
+#' @param studyDbId 
+#' @param env_number 
+#' @param loc_name 
+#' @param loc_name_abbrev 
+#' @param stu_name_app 
+#' @param stu_name_abbrev_app 
+#' @param obs_unit_level can be a vector, e.g. c('PLOT', 'REP')
+#'
 #' @export
-get_env_data <- function(con, studyDbId, env_number, loc_name, loc_name_abbrev, stu_name_app, stu_name_abbrev_app){
+get_env_data <- function(con = NULL, 
+                         studyDbId = NULL, 
+                         env_number = NULL, 
+                         loc_name = NULL, 
+                         loc_name_abbrev = NULL, 
+                         stu_name_app = NULL, 
+                         stu_name_abbrev_app = NULL, 
+                         obs_unit_level = NULL){
+  
   study <- data.table()
   try({
-    study <- as.data.table(brapirv1::brapi_get_studies_studyDbId_observationunits(con = con, studyDbId = studyDbId))
-    variables <- as.data.table(brapirv2::brapi_get_variables(con = con, studyDbId = studyDbId))
-    variables <- variables[,.(observationVariableDbId, scale.dataType)] 
-    if (any(colnames(study)=="observations.observationVariableDbId")){
-      study <- merge(study,variables, by.x = "observations.observationVariableDbId", by.y = "observationVariableDbId")
+    if (is.null(obs_unit_level)) {
+      study_obs <- as.data.table(brapirv2::brapi_get_observationunits(
+        con = con,
+        studyDbId = studyDbId,
+        includeObservations = T)
+      )
+    } else {
+      obs_levels <- data.frame(levelName = obs_unit_level)
+      
+      res <- brapirv2::brapi_post_search_observationunits(
+        con = con, 
+        studyDbIds = studyDbId,
+        observationLevels = obs_levels,
+        includeObservations = T)
+      study_obs <- as.data.table(brapirv2::brapi_get_search_observationunits_searchResultsDbId(con, as.character(res)))
+      # study_obs2 <- as.data.table(brapirv2::brapi_get_observationunits(
+      #   con = con,
+      #   studyDbId = studyDbId,
+      #   observationUnitLevelName = "PLOT",
+      #   includeObservations = T)
+      # )
     }
-    
-    if(!("observations.value"%in%names(study))){
-      study[,observations.value:=NA]
-    }
-    
-    study[, locationName:=loc_name]
 
-    study[,study_name_BMS := paste0(
-      env_number, "-",
-      loc_name
-    )]
-    study[,environment_number := env_number]
-    study[,location_name := loc_name]
-    study[,location_abbrev := loc_name_abbrev]
-    study[,study_name_app := stu_name_app]
-    study[,study_name_abbrev_app := stu_name_abbrev_app]
+    if (!"observations.observationDbId" %in% colnames(study_obs)) {
+      study_obs <- NULL
+    } else {
+      study_obs <- study_obs[, .(
+        observationUnitDbId,
+        observationUnitName,
+        germplasmDbId, 
+        germplasmName, 
+        studyDbId, 
+        studyName, 
+        programDbId, 
+        programName, 
+        locationDbId, 
+        locationName, 
+        trialDbId, 
+        trialName,
+        observationDbId = `observations.observationDbId`,
+        observationLevel = `observationUnitPosition.observationLevel.levelName`, 
+        observationLevelCode = `observationUnitPosition.observationLevel.levelCode`, 
+        entryType = `observationUnitPosition.entryType`,
+        entryNumber = `additionalInfo.ENTRY_NO`,
+        levelCode = `observationUnitPosition.observationLevelRelationships.levelCode`,
+        levelName = `observationUnitPosition.observationLevelRelationships.levelName`,
+        positionCoordinateX = `observationUnitPosition.positionCoordinateX`,
+        positionCoordinateY = `observationUnitPosition.positionCoordinateY`,
+        observationTimeStamp = `observations.observationTimeStamp`, 
+        observationVariableDbId = `observations.observationVariableDbId`, 
+        observationVariableName = `observations.observationVariableName`, 
+        observationValue = `observations.value`
+      )]
+      
+      grouping_cols <- setdiff(names(study_obs), c("levelCode", "levelName"))
+      
+      study_obs <- study_obs[, .(plotNumber = levelCode[levelName == "PLOT"],
+                                 replicate = levelCode[levelName == "REP"],
+                                 blockNumber = levelCode[levelName == "BLOCK"]),
+                             by = grouping_cols]
+      
+      variables <- as.data.table(brapirv2::brapi_get_variables(con = con, studyDbId = studyDbId))
+      variables <- variables[, .(observationVariableDbId, scale.dataType)] 
+      if (any(colnames(study_obs)=="observationVariableDbId")){
+        study_obs <- merge(study_obs, variables, 
+                       by.x = "observationVariableDbId", 
+                       by.y = "observationVariableDbId")
+      }
+      
+      if(!("observationValue"%in%names(study_obs))){
+        study_obs[,observationValue:=NA]
+      }
+      
+      study_obs[,study_name_BMS := paste0(
+        env_number, "-",
+        loc_name
+      )]
+      study_obs[,environment_number := env_number]
+      study_obs[,location_name := loc_name]
+      study_obs[,location_abbrev := loc_name_abbrev]
+      study_obs[,study_name_app := stu_name_app]
+      study_obs[,study_name_abbrev_app := stu_name_abbrev_app]
+    }
   })
-  return(study)
+  return(study_obs)
 }
 
 #' @export

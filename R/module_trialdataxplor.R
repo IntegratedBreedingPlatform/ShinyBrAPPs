@@ -78,17 +78,17 @@ mod_trialdataxplor_server <- function(id, rv){
             ), type = "default", duration = notification_duration)
         }
         
-        data_dq <- rv$data[observationLevel == "PLOT"]
-        req("observations.observationVariableName"%in%names(data_dq))        
-        if(!("observations.observationVariableName"%in%names(data_dq))){
+        data_dq <- rv$data
+        req("observationVariableName"%in%names(data_dq))        
+        if(!("observationVariableName"%in%names(data_dq))){
           showNotification("No trait data", type = "error", duration = notification_duration)
         }
 
         
         env_choices <- rv$study_metadata[loaded==T,unique(studyDbId)]
         names(env_choices) <- rv$study_metadata[loaded==T,unique(study_name_app)]
-        data_dq <- data_dq[!is.na(observations.observationVariableDbId)]
-        scrid <- brapi_post_search_variables(rv$con, observationVariableDbIds = as.character(unique(data_dq$observations.observationVariableDbId)))
+        data_dq <- data_dq[!is.na(observationVariableDbId)]
+        scrid <- brapi_post_search_variables(rv$con, observationVariableDbIds = as.character(unique(data_dq$observationVariableDbId)))
         variables <- brapi_get_search_variables_searchResultsDbId(rv$con, searchResultsDbId = scrid$searchResultsDbId)
         setDT(variables)
         #browser()
@@ -104,9 +104,9 @@ mod_trialdataxplor_server <- function(id, rv){
         st[, studyDbId:=as.numeric(studyDbId)]
         st[, study_label:=paste0(locationName," (",countryName,")")]
         data_dq <- st[,.(studyDbId,countryName )][data_dq, on=.(studyDbId)]
-        data_dq <- variables[,.(observationVariableDbId, trait.name, method.methodName, scale.scaleName)][data_dq, on=.(observationVariableDbId=observations.observationVariableDbId)]
-        data_dq[, study_label:=paste0(studyLocation," (",countryName,")")]
-        data_dq[, observations.value:=as.numeric(observations.value)]
+        data_dq <- variables[,.(observationVariableDbId, trait.name, method.methodName, scale.scaleName)][data_dq, on=.(observationVariableDbId=observationVariableDbId)]
+        data_dq[, study_label:=paste0(locationName," (",countryName,")")]
+        data_dq[, observationValue:=as.numeric(observationValue)]
         data_dq[, replicate:=as.factor(replicate)]
         if (any(!st$studyDbId%in%data_dq$studyDbId)){
           missingst <- st[!studyDbId%in%data_dq$studyDbId]
@@ -127,11 +127,11 @@ mod_trialdataxplor_server <- function(id, rv){
         rv$data_dq <- data_dq
         rv$locs <- locs
         
-        updateSelectInput(session, inputId = "obs_trait",choices = unique(data_dq$observations.observationVariableName))
+        updateSelectInput(session, inputId = "obs_trait",choices = unique(data_dq$observationVariableName))
      })
      observeEvent(input$obs_trait, {
        req(rv$data_dq)
-       obs_study_data <- rv$data_dq[observations.observationVariableName==input$obs_trait,.N,.(studyDbId, locationName, studyName,countryName)]
+       obs_study_data <- rv$data_dq[observationVariableName==input$obs_trait,.N,.(studyDbId, locationName, studyName,countryName)]
        updateSelectizeInput(session,
                             inputId = "obs_study",
                             selected = NULL,
@@ -172,25 +172,25 @@ mod_trialdataxplor_server <- function(id, rv){
        req(rv$data_dq[,.N]>0)
        data_dq <- rv$data_dq
        #browser()
-       ct <- dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(studyLocation,Variable=observations.observationVariableName)],
+       ct <- dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(studyLocation,Variable=observationVariableName)],
                    Variable~studyLocation, fill = 0)
        output$counts_table <- renderTable(ct)
        vnd <- melt(ct, variable.name = "StudyLocation")[value==0,.(StudyLocation, Variable)]
        rv$var_no_dat <- vnd
        output$var_no_dat <- renderTable(vnd)
-       cdout0 <- data_dq[observations.value==0, .(reason="value=0",studyDbId, study_label, observationVariableDbId, observations.observationVariableName, observations.value, germplasmName, replicate, blockNumber, plotNumber, entryNumber)]
-       norm_var <- data_dq[scale.dataType=="Numerical" & observations.value!=0][data_dq[!is.na(observations.value),.(sd=sd(observations.value)),.(studyDbId,observationVariableDbId)][sd!=0],on=.(studyDbId,observationVariableDbId)][!is.na(observations.value)][,.(shapiro.test(observations.value)$`p.value`),.(studyDbId,observationVariableDbId, observations.observationVariableName)][V1>=0.05]
-       cdoutbp <-data_dq[data_dq[norm_var, on=.(studyDbId,observationVariableDbId)][,.(observations.value=boxplot.stats(observations.value, coef = input$outslid)$out),.(studyDbId,observationVariableDbId)],on=.(studyDbId,observationVariableDbId, observations.value)][, .(reason="boxplot-outliers",studyDbId, study_label, observationVariableDbId,observations.observationVariableName, observations.value, germplasmName, replicate, blockNumber, plotNumber, entryNumber)]
+       cdout0 <- data_dq[observationValue==0, .(reason="value=0",studyDbId, study_label, observationVariableDbId, observationVariableName, observationValue, germplasmName, replicate, blockNumber, plotNumber, entryNumber)]
+       norm_var <- data_dq[scale.dataType=="Numerical" & observationValue!=0][data_dq[!is.na(observationValue),.(sd=sd(observationValue)),.(studyDbId,observationVariableDbId)][sd!=0],on=.(studyDbId,observationVariableDbId)][!is.na(observationValue)][,.(shapiro.test(observationValue)$`p.value`),.(studyDbId,observationVariableDbId, observationVariableName)][V1>=0.05]
+       cdoutbp <-data_dq[data_dq[norm_var, on=.(studyDbId,observationVariableDbId)][,.(observationValue=boxplot.stats(observationValue, coef = input$outslid)$out),.(studyDbId,observationVariableDbId)],on=.(studyDbId,observationVariableDbId, observationValue)][, .(reason="boxplot-outliers",studyDbId, study_label, observationVariableDbId,observationVariableName, observationValue, germplasmName, replicate, blockNumber, plotNumber, entryNumber)]
        cdout <- rbind(cdout0,cdoutbp)
        rv$candidat_out <- cdout
        output$candidat_out <- renderTable(cdout, digits=0)
-       data_dq[, facetrows := paste0("V: ",observations.observationVariableName,"\n",
+       data_dq[, facetrows := paste0("V: ",observationVariableName,"\n",
                                          "T: ",trait.name, "\n",
                                          "M: ",method.methodName,"\n",
                                          "S: ",scale.scaleName)]
-       data_dq[, facetcols := paste0(studyLocation,"\n",countryName)]
-       loclabels <- unique(data_dq[,.(facetcols,studyLocation)])
-       g<-ggplot(data_dq, aes(y=observations.value, x=replicate)) +
+       data_dq[, facetcols := paste0(locationName,"\n",countryName)]
+       loclabels <- unique(data_dq[,.(facetcols,locationName)])
+       g<-ggplot(data_dq, aes(y=observationValue, x=replicate)) +
          geom_boxplot(aes(fill=as.factor(replicate))) +
          facet_grid(rows=vars(facetrows), cols=vars(facetcols), scales = "free") +
          ggtitle(input$trial) +
@@ -201,13 +201,13 @@ mod_trialdataxplor_server <- function(id, rv){
        g <- g + geom_text(
          data    = loclabels,
          size=3,
-         mapping = aes(x = 0.25, y = 0, label = studyLocation),
+         mapping = aes(x = 0.25, y = 0, label = locationName),
          hjust   = 0,
          vjust   = 1, angle=90
        )
-       # g<-ggplot(toplot, aes(y=observations.value, fill=replicate, x=studyLocation)) +
+       # g<-ggplot(toplot, aes(y=observationValue, fill=replicate, x=locationName)) +
        #   geom_boxplot() +
-       #   facet_wrap(~paste0(observations.observationVariableName,"\n",trait.name) , ncol= 1, scales = "free", strip.position="top") +
+       #   facet_wrap(~paste0(observationVariableName,"\n",trait.name) , ncol= 1, scales = "free", strip.position="top") +
        #   ggtitle(t) +
        #   theme(strip.text.y.right = element_text(angle = 0), axis.text.x =  element_text(angle = 90)) #+ coord_flip()
        #browser()
@@ -225,15 +225,15 @@ mod_trialdataxplor_server <- function(id, rv){
          output$observ_boxplot <- renderPlot({
            req(rv$data_dq[,.N]>0)
           #browser()
-           data_dq <- rv$data_dq[studyDbId==input$obs_study & observations.observationVariableName==input$obs_trait]
+           data_dq <- rv$data_dq[studyDbId==input$obs_study & observationVariableName==input$obs_trait]
            #rv$data_dq <- data_dq
            req(data_dq[,.N]>0)
            
            #data_dq[, is.selected:=F]
-           #data_dq[observations.observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
+           #data_dq[observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
            
            g1 <- ggplot(data_dq, aes(
-             y = observations.value,
+             y = observationValue,
              x = study_label
            )) +
              #geom_violin(alpha = 0.2) +
@@ -248,7 +248,7 @@ mod_trialdataxplor_server <- function(id, rv){
                alpha = 0.5,
                fill = grey(0.9),
                #aes(
-               #  # fill = observations.value,
+               #  # fill = observationValue,
                #  plotNumber = plotNumber,
                #  blockNumber = blockNumber,
                #  replicate = replicate,
@@ -258,7 +258,7 @@ mod_trialdataxplor_server <- function(id, rv){
                #  germplasmName = germplasmName,
                #  #stroke = ifelse(is.selected,1,0.1),
                #  #color = is.selected,
-               #  key = observations.observationDbId
+               #  key = observationDbId
                #),
                size = 3
              ) +
@@ -274,7 +274,7 @@ mod_trialdataxplor_server <- function(id, rv){
            #ggplotly(#height=length(input$studies)*400,
            #         g1,
            #         dynamicTicks = "TRUE", source = "A", originalData = T,
-           #         tooltip = c("germplasmName", "observations.value", "key", "plotNumber", "blockNumber", "replicate", "entryType")
+           #         tooltip = c("germplasmName", "observationValue", "key", "plotNumber", "blockNumber", "replicate", "entryType")
            #         ) %>%
            #  style(hoverlabel = list(bgcolor = "white")) %>%
            #  layout(dragmode = "lasso")
@@ -285,9 +285,9 @@ mod_trialdataxplor_server <- function(id, rv){
        req(rv$data_dq[,.N]>0)
        req(input$observ_boxplot_brush)
        #browser()
-       rv$obs_btable <- brushedPoints(rv$data_dq[studyDbId==input$obs_study & observations.observationVariableName==input$obs_trait,.(trait.name,
-                                                                                                                                      VariableName=observations.observationVariableName,
-                                                                                                                                      observations.value,
+       rv$obs_btable <- brushedPoints(rv$data_dq[studyDbId==input$obs_study & observationVariableName==input$obs_trait,.(trait.name,
+                                                                                                                                      VariableName=observationVariableName,
+                                                                                                                                      observationValue,
                                                                                                                                       plotNumber,
                                                                                                                                       germplasmName,
                                                                                                                                       entryNumber,
@@ -296,15 +296,15 @@ mod_trialdataxplor_server <- function(id, rv){
                                                                                                                                       #observationUnitDbId,
                                                                                                                                       positionCoordinateX,
                                                                                                                                       positionCoordinateY,
-                                                                                                                                      TimeStamp=observations.observationTimeStamp,
+                                                                                                                                      TimeStamp=observationTimeStamp,
                                                                                                                                       study_label,
                                                                                                                                       germplasmDbId)],
                                       input$observ_boxplot_brush)
        #if (input$obs_display_all_germ){
        #  rv$obs_btable <- rbind(rv$obs_btable,
        #                         rv$data_dq[germplasmDbId%in%rv$obs_btable$germplasmDbId,.(trait.name,
-       #                                                                                   #observations.observationVariableName,
-       #                                                                                   observations.value,
+       #                                                                                   #observationVariableName,
+       #                                                                                   observationValue,
        #                                                                                   germplasmDbId,
        #                                                                                   plotNumber,
        #                                                                                   germplasmName,
@@ -314,7 +314,7 @@ mod_trialdataxplor_server <- function(id, rv){
        #                                                                                   #observationUnitDbId,
        #                                                                                   positionCoordinateX,
        #                                                                                   positionCoordinateY,
-       #                                                                                   observations.observationTimeStamp,
+       #                                                                                   observationTimeStamp,
        #                                                                                   study_label)])[order(germplasmDbId)]
        #}
        rv$obs_btable

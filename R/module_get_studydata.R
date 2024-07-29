@@ -78,7 +78,7 @@ mod_get_studydata_ui <- function(id){
 }
 
 #' @export
-mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_dev = NULL
+mod_get_studydata_server <- function(id, rv, obs_unit_level = NULL, dataset_4_dev = NULL){ # XXX dataset_4_dev = NULL
   moduleServer(
     id,
     function(input, output, session){
@@ -256,8 +256,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
       observeEvent(env_to_load(),{
         req(env_to_load())
         req(rv$study_metadata)
-        
-
+        study_metadata <- rv$study_metadata
         withProgress(message = "Loading", value = 0, {
           n_studies <- length(env_to_load())
 
@@ -271,10 +270,10 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               loc_name = rv$study_metadata[studyDbId == id,unique(locationName)],
               loc_name_abbrev = rv$study_metadata[studyDbId == id,unique(location_name_abbrev)],
               stu_name_app = rv$study_metadata[studyDbId == id,unique(study_name_app)],
-              stu_name_abbrev_app = rv$study_metadata[studyDbId == id,unique(study_name_abbrev_app)]
+              stu_name_abbrev_app = rv$study_metadata[studyDbId == id,unique(study_name_abbrev_app)],
+              obs_unit_level = obs_unit_level
             )
-
-            rv$study_metadata[studyDbId == id,loaded:=T]
+            if (!is.null(study)) { rv$study_metadata[studyDbId == id,loaded:=T] }
             return(study)
           }), use.names = T,fill = T
           )

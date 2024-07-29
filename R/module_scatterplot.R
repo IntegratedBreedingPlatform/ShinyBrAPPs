@@ -1099,7 +1099,7 @@ mod_scatterplot_server <- function(id, rv){
         as_sel_data <- unique(as_sel_data[,.(germplasmDbId, observationUnitDbId, studyDbId)])
 
         as_sel_data[,observationVariableDbId := input$mark_as_sel_var_to_use]
-        as_sel_data[,observations.value := "1"]
+        as_sel_data[,observationValue := "1"]
 
         output$mark_as_sel_info <- renderUI({
           tagList(
@@ -1131,7 +1131,7 @@ mod_scatterplot_server <- function(id, rv){
                 germplasmDbId = as.character(rv_plot$as_sel_data[row_id, germplasmDbId]),
                 observationUnitDbId = as.character(rv_plot$as_sel_data[row_id, observationUnitDbId]),
                 observationVariableDbId = as.character(rv_plot$as_sel_data[row_id, observationVariableDbId]),
-                value = as.character(rv_plot$as_sel_data[row_id, observations.value]),
+                value = as.character(rv_plot$as_sel_data[row_id, observationValue]),
                 additionalInfo = list() # otherwise error message: "Argument: \"additionalInfo\" should be provided as a list, see the help page on how the list should be constructed."
               )
             }, error = function(e)({e})
@@ -1147,7 +1147,7 @@ mod_scatterplot_server <- function(id, rv){
                       '"germplasmDbId":"', as.character(rv_plot$as_sel_data[row_id, germplasmDbId]),'",',
                       '"observationUnitDbId":"', as.character(rv_plot$as_sel_data[row_id, observationUnitDbId]),'",',
                       '"observationVariableDbId":"', as.character(rv_plot$as_sel_data[row_id, observationVariableDbId]),'",',
-                      '"value":"', as.character(rv_plot$as_sel_data[row_id, observations.value]),'"'
+                      '"value":"', as.character(rv_plot$as_sel_data[row_id, observationValue]),'"'
                     )),
                     tags$code(mess)
                   ),

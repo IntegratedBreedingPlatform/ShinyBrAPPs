@@ -17,7 +17,7 @@ rv <- reactiveValues(
 
 
 server <- function(input, output, session){
-  rv <- mod_get_studydata_server("get_studydata", rv)
+  rv <- mod_get_studydata_server("get_studydata", rv, obs_unit_level = "PLOT")
   mod_banner_server("banner", rv)
   mod_trialdataxplor_server("xplor", rv)
 }
