@@ -11,7 +11,7 @@ mod_get_extradata_server <- function(id, rv){
         req(rv$data)
         req(rv$study_metadata)
 
-        if(!isTruthy("observations.observationVariableName"%in%names(rv$data))){
+        if(!isTruthy("observationVariableName"%in%names(rv$data))){
           showNotification("Data set without observations", type = "warning", duration = notification_duration)
           req(F)
         }
@@ -23,20 +23,20 @@ mod_get_extradata_server <- function(id, rv){
           ## 1 trait per column
           formul <- paste(
             paste(
-              names(data_tmp)[!names(data_tmp)%in%c("observations.observationVariableName", "observations.value", "observations.observationDbId", "observations.observationVariableDbId")],
+              names(data_tmp)[!names(data_tmp)%in%c("observationVariableName", "observationValue", "observationDbId", "observationVariableDbId")],
               collapse = " + "
             ),
-            " ~ observations.observationVariableName"
+            " ~ observationVariableName"
           )
 
           data_plot <- dcast(
-            data = data_tmp[!is.na(observations.observationVariableName)],#[studyDbId %in% input$studies],
+            data = data_tmp[!is.na(observationVariableName)],#[studyDbId %in% input$studies],
             formula = formul,
-            value.var = "observations.value"
+            value.var = "observationValue"
           )
           
           # remove observationunits with observationLevels=SUMMARY_STATISTICS (because no germplasmDbId for these observations)
-          data_plot <- data_plot[observationLevel != "SUMMARY_STATISTICS"]
+          #data_plot <- data_plot[observationLevel != "SUMMARY_STATISTICS"]
 
           ### Data source 2: Environment  GET /brapi/v2/studies
           ## extract envrionment parameters from rv$study_metadata
@@ -65,11 +65,11 @@ mod_get_extradata_server <- function(id, rv){
           )
 
           ## GxE
-          traits <- rv$data[, unique(observations.observationVariableName)]
+          traits <- rv$data[, unique(observationVariableName)]
           column_datasource[cols %in% traits, source := "GxE"]
 
           ## environment
-          column_datasource[cols %in% names(rv$environmentParameters) & cols != "studyDbId", source := "environment"]
+          column_datasource[cols %in% names(environmentParameters) & cols != "studyDbId", source := "environment"]
           column_datasource[grep("study|location|trial",cols), source := "environment"]
 
           ## germplasm
@@ -100,7 +100,7 @@ mod_get_extradata_server <- function(id, rv){
           ### data source 3: GET /brapi/v1/germplasm
           ## add germplasm info
           germplasms <- data_plot[,unique(germplasmDbId)]
-          withProgress(message = "GET /brapi/v1/germplasm/{germplasmDbID}/attribute", value = 0, {
+          withProgress(message = "POST brapi/v2/search/attributevalues/", value = 0, {
             # get study_metadata
             tryCatch({
               incProgress(
