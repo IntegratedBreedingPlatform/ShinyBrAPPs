@@ -23,8 +23,8 @@ mod_scatterplot_ui <- function(id){
               multiple = T,
               options = list(
                 `actions-box` = TRUE,
-                title = 'Load Environments First',
-                onInitialize = I('function() { this.setValue(""); }')
+                title = 'Load Environments First'
+                #onInitialize = I('function() { this.setValue(""); }')
               )
             )
           )
@@ -221,7 +221,6 @@ mod_scatterplot_server <- function(id, rv){
   moduleServer(
     id,
     function(input, output, session){
-
       ns <- session$ns
       rv_plot <- reactiveValues()
 
@@ -271,9 +270,15 @@ mod_scatterplot_server <- function(id, rv){
         envs <- unique(rv$data_plot[,.(studyDbId, study_name_app)])
         env_choices <- envs[,studyDbId]
         names(env_choices) <- envs[,study_name_app]
+        # to avoid selected env reinitialized after creating a group
+        if (is.null(input$env)) {
+          env_selected <- env_choices
+        } else {
+          env_selected <- input$env
+        }
         updatePickerInput(
           session, "env",
-          choices = env_choices, selected = env_choices
+          choices = env_choices, selected = env_selected
         )
       })
 
@@ -1088,6 +1093,8 @@ mod_scatterplot_server <- function(id, rv){
 
         req(input$mark_as_sel_var_to_use)
         req(input$mark_as_sel_envs)
+        
+        browser()
 
         as_sel_data <- rv$data[
           observationLevel == "PLOT" & studyDbId %in% input$mark_as_sel_envs &
