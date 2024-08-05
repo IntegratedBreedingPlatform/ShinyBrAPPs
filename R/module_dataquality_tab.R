@@ -113,28 +113,25 @@ mod_dataquality_server <- function(id, rv){
       rv_width <- reactiveVal(12)
 
       observe({
-
         req(rv$data)
 
-        if(rv$data[observationLevel!="PLOT", .N]>0){
-          showNotification(
-          paste0("Taking away the level(s) of observation: ",
-                rv$data[observationLevel!="PLOT", paste(unique(observationLevel), collapse = ", ")],
-                "\n(",rv$data[observationLevel!="PLOT", .N], " values)",
-          "\n\n(Only the PLOT observation level is considered for STA)"
-          ), type = "default", duration = notification_duration)
-        }
+        # if(rv$data[observationLevel!="PLOT", .N]>0){
+        #   showNotification(
+        #   paste0("Taking away the level(s) of observation: ",
+        #         rv$data[observationLevel!="PLOT", paste(unique(observationLevel), collapse = ", ")],
+        #         "\n(",rv$data[observationLevel!="PLOT", .N], " values)",
+        #   "\n\n(Only the PLOT observation level is considered for STA)"
+        #   ), type = "default", duration = notification_duration)
+        # }
 
-        rv$data_dq <- rv$data[observationLevel == "PLOT"]
-
-        if(!("observations.observationVariableName"%in%names(rv$data_dq))){
+        rv$data_dq <- rv$data
+        if(!("observationVariableName"%in%names(rv$data_dq))){
           showNotification("No trait data", type = "error", duration = notification_duration)
         }
-        req("observations.observationVariableName"%in%names(rv$data_dq))
+        req("observationVariableName"%in%names(rv$data_dq))
        
-
-        env_choices <- rv$data_dq[!is.na(observations.value)][,unique(studyDbId)]
-        names(env_choices) <- rv$data_dq[!is.na(observations.value)][,unique(study_name_app)]
+        env_choices <- rv$data_dq[!is.na(observationValue)][,unique(studyDbId)]
+        names(env_choices) <- rv$data_dq[!is.na(observationValue)][,unique(study_name_app)]
         #names(env_choices) <- rv$study_metadata[loaded==T,unique(study_name_app)]
         updatePickerInput(
           inputId = "studies", session = session,
@@ -144,6 +141,17 @@ mod_dataquality_server <- function(id, rv){
             onInitialize = I('function() { this.setValue(""); }')
           )
         )
+        
+        # trait_choices <- unique(rv$data_dq$observationVariableName)
+        # updatePickerInput(
+        #   inputId = "trait", session = session,
+        #   choices = trait_choices,
+        #   selected = trait_choices[1],
+        #   options = list(
+        #     title = 'Select a trait'
+        #     # onInitialize = I('function() { this.setValue(""); }')
+        #   )
+        # )
 
         are_num <- rv$data_dq[,lapply(.SD, is.numeric)]
         non_numeric_variables <- names(are_num)[are_num==F]
@@ -186,39 +194,43 @@ mod_dataquality_server <- function(id, rv){
         )
       })
 
-
       observeEvent(input$studies,{
-        ## only traits found in all environments can be selected
-        trait_by_studyDbIds <- rv$data_dq[studyDbId %in% input$studies,.(trait = unique(observations.observationVariableName)), .(studyDbId)]
-        trait_choices <- trait_by_studyDbIds[,.N,trait][N==length(trait_by_studyDbIds[,unique(studyDbId)]), trait]
-        updatePickerInput(
-          inputId = "trait", session = session,
-          choices = trait_choices,
-          selected = trait_choices[1],
-          options = list(
-            title = 'Select a trait'
-            # onInitialize = I('function() { this.setValue(""); }')
-          )
-        )
-      })
-
-      observe({
-        req(input$trait)
-        req(input$studies)
         req(rv$data)
-        if("observations.observationVariableName"%in%names(rv$data)){
-          rv$data_dq_viz <- rv$data[observations.observationVariableName == input$trait & studyDbId %in% input$studies]
-          print(unique(rv$data_dq_viz$scale.dataType))
-          print(rv$data_dq_viz$observations.value)
-          if (length(unique(rv$data_dq_viz$scale.dataType)) && unique(rv$data_dq_viz$scale.dataType) == "Numerical") {
-            rv$data_dq_viz[, observations.value:=as.numeric(observations.value)]
-          } else if (length(unique(rv$data_dq_viz$scale.dataType)) && unique(rv$data_dq_viz$scale.dataType) == "Date") {
-            rv$data_dq_viz[, observations.value:=as.Date(observations.value)]
-          }
-        }else{
-          rv$data_dq_viz <- NULL
+
+        choices_traits <- unique(rv$data[studyDbId %in% input$studies]$observationVariableName)
+        if (input$trait%in%choices_traits) {
+          selected_trait <- input$trait
+          loadData()
+        } else {
+          selected_trait <- choices_traits[1]
         }
+        
+        updatePickerInput(
+          session, "trait",
+          choices = choices_traits,
+          selected = selected_trait,
+          options = list(
+            placeholder = 'Select 1 or more traits',
+            onInitialize = I('function() { this.setValue(""); }')
+          )
+        )        
       })
+      
+      observeEvent(input$trait,{
+        req(rv$data)
+        req(input$trait != "")
+        loadData()
+      })
+      
+      #'Filter data on selected trait and studies and convert values in numeric or dates
+      loadData <- function() { 
+        rv$data_dq_viz <- rv$data[observationVariableName == input$trait & studyDbId %in% input$studies]
+        if (length(unique(rv$data_dq_viz$scale.dataType)) && unique(rv$data_dq_viz$scale.dataType) == "Numerical") {
+          rv$data_dq_viz[, observationValue:=as.numeric(observationValue)]
+        } else if (length(unique(rv$data_dq_viz$scale.dataType)) && unique(rv$data_dq_viz$scale.dataType) == "Date") {
+          rv$data_dq_viz[, observationValue:=as.Date(observationValue)]
+        }
+      }
 
       observeEvent(input$select_variable,{
         req(input$select_variable)
@@ -242,7 +254,7 @@ mod_dataquality_server <- function(id, rv){
       observeEvent(input$select_variable_value,{
         sel_observationDbIds <- rv$data_dq_viz[
           eval(as.name(input$select_variable)) %in% input$select_variable_value,
-          observations.observationDbId
+          observationDbId
         ]
         rv$sel_observationDbIds <- sel_observationDbIds
       })
@@ -261,15 +273,15 @@ mod_dataquality_server <- function(id, rv){
         input$set_excluded_obs
         input$set_non_excluded_obs
 
-        data_dq <- rv$data_dq_viz[!(observations.observationDbId %in% rv$excluded_obs)]
+        data_dq <- rv$data_dq_viz[!(observationDbId %in% rv$excluded_obs)]
 
         data_dq[, is.selected:=F]
-        data_dq[observations.observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
+        data_dq[observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
 
         data_dq[,study_name_abbrev_app:=factor(study_name_abbrev_app, levels = rev(levels(factor(study_name_abbrev_app))))]
 
         g1 <- ggplot(data_dq, aes(
-          y = observations.value,
+          y = observationValue,
           x = study_name_abbrev_app
         )) +
           geom_violin(alpha = 0.2) +
@@ -284,7 +296,7 @@ mod_dataquality_server <- function(id, rv){
             alpha = 0.5,
             fill = grey(0.9),
             aes(
-              # fill = observations.value,
+              #fill = observationValue,
               plotNumber = plotNumber,
               blockNumber = blockNumber,
               replicate = replicate,
@@ -294,7 +306,7 @@ mod_dataquality_server <- function(id, rv){
               germplasmName = germplasmName,
               stroke = ifelse(is.selected,1,0.1),
               color = is.selected,
-              key = observations.observationDbId
+              key = observationDbId
             ),
             size = 3
           ) +
@@ -307,10 +319,10 @@ mod_dataquality_server <- function(id, rv){
             axis.text.y = if(all(data_dq[,.(is.na(positionCoordinateX) | is.na(positionCoordinateY))])) element_text(angle = 90) else element_blank(),
             axis.title.y = element_blank()
           )
-        ggplotly(height=length(input$studies)*400,
+        ggplotly(height=length(unique(data_dq$studyName))*400,
                  g1,
                  dynamicTicks = "TRUE", source = "A", originalData = T,
-                 tooltip = c("germplasmName", "observations.value", "key", "plotNumber", "blockNumber", "replicate", "entryType")) %>%
+                 tooltip = c("germplasmName", "observationValue", "key", "plotNumber", "blockNumber", "replicate", "entryType")) %>%
           style(hoverlabel = list(bgcolor = "white")) %>%
           layout(dragmode = "lasso")
       })
@@ -320,7 +332,7 @@ mod_dataquality_server <- function(id, rv){
         req(rv$data_dq_viz[,.N>0])
         req(rv$data_dq_viz[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1)
         req(input$studies)
-        req(all(input$studies%in%rv$data_dq_viz[,unique(studyDbId)]))
+        #req(all(input$studies%in%rv$data_dq_viz[,unique(studyDbId)]))
         req(input$trait)
 
         input$set_excluded_obs
@@ -329,30 +341,30 @@ mod_dataquality_server <- function(id, rv){
         data_dq <- rv$data_dq_viz
 
         data_dq[,is.selected:=F]
-        data_dq[observations.observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
+        data_dq[observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
         data_dq[, positionCoordinateX:=as.numeric(positionCoordinateX)]
         data_dq[, positionCoordinateY:=as.numeric(positionCoordinateY)]
-
+        
         #plot_text <- data_dq[,.(N=.N,x=min(positionCoordinateX)+(max(positionCoordinateX)-min(positionCoordinateX))/2,y=min(positionCoordinateY)+(max(positionCoordinateY)-min(positionCoordinateY))/2),.(study_name_BMS)]
         #plot_text[,x:=1]
         #plot_text[,y:=1]
         #plot_text[N<=1,label:="No layout"]
 
         g2 <- ggplot(
-          data_dq[!(observations.observationDbId %in% rv$excluded_obs)],
+          data_dq[!(observationDbId %in% rv$excluded_obs)],
           aes(x = positionCoordinateX, y = positionCoordinateY)
         ) +
           geom_point( # fixes shaky tile selection via plotly
             aes(
-              fill = observations.value,
-              key = observations.observationDbId
+              fill = observationValue,
+              key = observationDbId
             ),
             alpha = 0
           )+
           geom_tile(
             aes(
-              fill = observations.value,
-              observations.observationDbId = observations.observationDbId,
+              fill = observationValue,
+              observationDbId = observationDbId,
               germplasmName = germplasmName,
               replicate = replicate,
               plotNumber = plotNumber,
@@ -378,7 +390,7 @@ mod_dataquality_server <- function(id, rv){
           req(!all(data_dq[,.(is.na(positionCoordinateX) | is.na(positionCoordinateY))]))
           repBords <- NULL
           try({
-            repBords <- rbindlist(lapply(input$studies, function(tr){
+            repBords <- rbindlist(lapply(unique(data_dq$studyDbId), function(tr){
               if(rv$data_dq_viz[studyDbId==tr, any(!is.na(positionCoordinateY))]){
                 repBord <- calcPlotBorders(as.data.frame(data_dq[studyDbId==tr, .(
                   rowCoord = as.numeric(positionCoordinateY),
@@ -394,15 +406,15 @@ mod_dataquality_server <- function(id, rv){
           })
           if(!is.null(repBords)){
             g2 <- g2 +
-              ggplot2::geom_segment(ggplot2::aes_string(x = "x - 0.5",
-                                                        xend = "x - 0.5",
-                                                        y = "y - 0.5",
-                                                        yend = "y + 0.5"),
+              ggplot2::geom_segment(ggplot2::aes(x = x - 0.5,
+                                                 xend = x - 0.5,
+                                                 y = y - 0.5,
+                                                 yend = y + 0.5),
                                     data = repBords[W == "vertW"], size = 1, linetype = "dashed", colour = grey(0.5)) +
-              ggplot2::geom_segment(ggplot2::aes_string(x = "x - 0.5",
-                                                        xend = "x + 0.5",
-                                                        y = "y - 0.5",
-                                                        yend = "y - 0.5"),
+              ggplot2::geom_segment(ggplot2::aes(x = x - 0.5,
+                                                 xend = x + 0.5,
+                                                 y = y - 0.5,
+                                                 yend = y - 0.5),
                                     data = repBords[W == "horW"], size = 1, linetype = "dashed", colour = grey(0.5)) +
               scale_linetype(guide = "none")
           }
@@ -411,38 +423,20 @@ mod_dataquality_server <- function(id, rv){
         ## drawing a border (4 segments) for each tile that is selected
         if(data_dq[is.selected==T,.N]>0){
           g2 <- g2 +
-            ggplot2::geom_segment(data = data_dq[is.selected==T],
-                                  ggplot2::aes_string(x = "x - 0.5",
-                                                      xend = "x - 0.5",
-                                                      y = "y - 0.5",
-                                                      yend = "y + 0.5"),
-                                  size = 1, alpha = 1, color = "red") +
-            ggplot2::geom_segment(data = data_dq[is.selected==T],
-                                  ggplot2::aes_string(x = "x + 0.5",
-                                                      xend = "x + 0.5",
-                                                      y = "y - 0.5",
-                                                      yend = "y + 0.5"),
-                                  size = 1, alpha = 1, color = "red") +
-            ggplot2::geom_segment(ggplot2::aes_string(x = "x - 0.5",
-                                                      xend = "x + 0.5",
-                                                      y = "y - 0.5",
-                                                      yend = "y - 0.5"),
-                                  data = data_dq[is.selected==T], size = 1, alpha = 1, color = "red") +
-            ggplot2::geom_segment(ggplot2::aes_string(x = "x - 0.5",
-                                                      xend = "x + 0.5",
-                                                      y = "y + 0.5",
-                                                      yend = "y + 0.5"),
-                                  data = data_dq[is.selected==T], size = 1, alpha = 1, color = "red")
+            geom_rect(data = data_dq[data_dq$is.selected == TRUE, ],
+                      aes(xmin = positionCoordinateX - 0.5, xmax = positionCoordinateX + 0.5,
+                          ymin = positionCoordinateY - 0.5, ymax = positionCoordinateY + 0.5),
+                      fill = NA, color = "red", size = 1, alpha = 1)
         }
 
         ## extract legend
         rv_dq$layout_legend <- get_legend(g2)
         g2 <- g2 + theme(legend.position="none")
 
-        ggplotly(height=length(input$studies)*400,
+        ggplotly(height=length(unique(data_dq$studyName))*400,
                  g2,
                  dynamicTicks = "TRUE", source = "A", originalData = T,
-                 tooltip = c("germplasmName", "observations.value", "key", "plotNumber", "blockNumber", "replicate", "positionCoordinateX", "positionCoordinateY", "entryType")) %>%
+                 tooltip = c("germplasmName", "observationValue", "key", "plotNumber", "blockNumber", "replicate", "positionCoordinateX", "positionCoordinateY", "entryType")) %>%
           style(hoverlabel = list(bgcolor = "white")) %>%
           layout(dragmode = "lasso")
       })
@@ -493,11 +487,11 @@ mod_dataquality_server <- function(id, rv){
 
       output$correlationPlot <- renderPlotly({
         data_dq_casted <- dcast(
-          rv$data_dq_viz[!(observations.observationDbId %in% rv$excluded_obs) & studyDbId %in% input$studies],
-          germplasmDbId + studyDbId + studyLocationDbId + study_name_app + germplasmName +
+          rv$data_dq_viz[!(observationDbId %in% rv$excluded_obs) & studyDbId %in% input$studies],
+          germplasmDbId + studyDbId + locationDbId + study_name_app + germplasmName +
             replicate + observationUnitDbId + positionCoordinateY +
-            positionCoordinateX ~ observations.observationVariableName,
-          value.var = "observations.value"
+            positionCoordinateX ~ observationVariableName,
+          value.var = "observationValue"
         )
         req(data_dq_casted)
 
@@ -505,13 +499,13 @@ mod_dataquality_server <- function(id, rv){
           data = data_dq_casted,
           genotype = "germplasmName",
           trial = "study_name_app",
-          loc = "studyLocationDbId",
+          loc = "locationDbId",
           repId = "replicate",
           subBlock = "observationUnitDbId",
           rowCoord = "positionCoordinateY",
           colCoord = "positionCoordinateX"
         )
-        p <- plot(TD, plotType="cor", traits = input$trait, output = F, trials = rv$study_metadata[studyDbId %in% input$studies, unique(study_name_app)])
+        p <- plot(TD, plotType="cor", traits = input$trait, output = F, trials = unique(data_dq_casted$study_name_app))
         ggplotly(p[[input$trait]], source = "B")
       })
 
@@ -519,7 +513,7 @@ mod_dataquality_server <- function(id, rv){
       output$sumstats_table <- renderDataTable({
         req(rv$data_dq_viz)
         data_dq <- rv$data_dq_viz
-        data_dq_notexcl <- rv$data_dq_viz[!(observations.observationDbId %in% rv$excluded_obs)]
+        data_dq_notexcl <- rv$data_dq_viz[!(observationDbId %in% rv$excluded_obs)]
 
         sumtable_all <- data_dq[
           ,
@@ -529,63 +523,96 @@ mod_dataquality_server <- function(id, rv){
           study_name_app
         ]
 
-        sumtable_notexcl <- data_dq_notexcl[
-          ,
-          .(
-            "No. of observations" = .N,
-            "Mean"=mean(observations.value, na.rm = T),
-            "Minimum"=min(observations.value, na.rm = T),
-            "Quantile 0.25"=quantile(observations.value, probs = c(0.25)),
-            "Median"=quantile(observations.value, probs = c(0.5)),
-            "Quantile 0.75"=quantile(observations.value, probs = c(0.75)),
-            "Maximum"=max(observations.value, na.rm = T),
-            "Standard deviation"=sd(observations.value, na.rm = T),
-            "Variance"=var(observations.value, na.rm = T),
-            "Sum of values"=sum(observations.value, na.rm = T),
-            "Sum of squares"=sum((observations.value-mean(observations.value, na.rm = T))^2),
-            "Uncorrected sum of squares"=sum(observations.value^2, na.rm = T),
-            "Skewness"=e1071::skewness(observations.value),
-            "Kurtosis"=e1071::kurtosis(observations.value)
-          ),
-          study_name_app
-        ]
-
+        dataType = unique(data_dq_notexcl$scale.dataType)
+        
+        if (dataType == "Date") {
+          sumtable_notexcl <- data_dq_notexcl[
+            ,
+            .(
+              "No. of observations" = .N,
+              "Mean"=mean(observationValue, na.rm = T),
+              "Minimum"=min(observationValue, na.rm = T),
+              "Quantile 0.25"=quantile(observationValue, probs = c(0.25), type = 1),
+              "Median"=quantile(observationValue, probs = c(0.5), type = 1),
+              "Quantile 0.75"=quantile(observationValue, probs = c(0.75), type = 1),
+              "Maximum"=max(observationValue, na.rm = T)
+            ),
+            study_name_app
+          ]
+          
+          columns <- c(
+            "No. of values",
+            "No. of observations",
+            "No. of excluded values",
+            "Mean",
+            "Minimum",
+            "Quantile 0.25",
+            "Median",
+            "Quantile 0.75",
+            "Maximum"
+          )
+        } else {
+          sumtable_notexcl <- data_dq_notexcl[
+            ,
+            .(
+              "No. of observations" = .N,
+              "Mean"=mean(observationValue, na.rm = T),
+              "Minimum"=min(observationValue, na.rm = T),
+              "Quantile 0.25"=ifelse(dataType == "Date",quantile(observationValue, probs = c(0.25), type = 1),quantile(observationValue, probs = c(0.25))),
+              "Median"=ifelse(dataType == "Date",quantile(observationValue, probs = c(0.5), type = 1),quantile(observationValue, probs = c(0.5))),
+              "Quantile 0.75"=ifelse(dataType == "Date",quantile(observationValue, probs = c(0.75), type = 1),quantile(observationValue, probs = c(0.75))),
+              "Maximum"=max(observationValue, na.rm = T),
+              "Standard deviation"=sd(observationValue, na.rm = T),
+              "Variance"=var(observationValue, na.rm = T),
+              "Sum of values"=sum(observationValue, na.rm = T),
+              "Sum of squares"=sum((observationValue-mean(observationValue, na.rm = T))^2),
+              "Uncorrected sum of squares"=sum(observationValue^2, na.rm = T),
+              "Skewness"=e1071::skewness(observationValue),
+              "Kurtosis"=e1071::kurtosis(observationValue)
+            ),
+            study_name_app
+          ]
+          
+          sumtable_notexcl[,"Standard error of mean":=`Standard deviation`/sqrt(`No. of observations`)]
+          sumtable_notexcl[,"Standard error of variance":=`Variance`/sqrt(`No. of observations`)]
+          sumtable_notexcl[,"%cov":=`Variance`/`Mean`]
+          sumtable_notexcl[,"%Standard error of skewness":=`Skewness`/sqrt(`No. of observations`)]
+          sumtable_notexcl[,"%Standard error of kurtosis":=`Kurtosis`/sqrt(`No. of observations`)]
+          sumtable_notexcl[,"Range":=Maximum - Minimum]
+          
+          columns <- c(
+            "No. of values",
+            "No. of observations",
+            "No. of excluded values",
+            "Mean",
+            "Minimum",
+            "Quantile 0.25",
+            "Median",
+            "Quantile 0.75",
+            "Maximum",
+            "Range",
+            "Standard deviation",
+            "Standard error of mean",
+            "Variance",
+            "Standard error of variance",
+            "%cov",
+            "Sum of values",
+            "Sum of squares",
+            "Uncorrected sum of squares",
+            "Skewness",
+            "%Standard error of skewness",
+            "Kurtosis",
+            "%Standard error of kurtosis"
+          )
+        }
+        
         setkey(sumtable_all,study_name_app)
         setkey(sumtable_notexcl,study_name_app)
         sumtable <- sumtable_all[sumtable_notexcl]
-
         sumtable[,"No. of excluded values":= `No. of values` - `No. of observations`]
-        sumtable[,"Range":=Maximum - Minimum]
-        sumtable[,"Standard error of mean":=`Standard deviation`/sqrt(`No. of observations`)]
-        sumtable[,"Standard error of variance":=`Variance`/sqrt(`No. of observations`)]
-        sumtable[,"%cov":=`Variance`/`Mean`]
-        sumtable[,"%Standard error of skewness":=`Skewness`/sqrt(`No. of observations`)]
-        sumtable[,"%Standard error of kurtosis":=`Kurtosis`/sqrt(`No. of observations`)]
+
         rownames_sumtable <- sumtable[,study_name_app]
-        columns <- c(
-          "No. of values",
-          "No. of observations",
-          "No. of excluded values",
-          "Mean",
-          "Minimum",
-          "Quantile 0.25",
-          "Median",
-          "Quantile 0.75",
-          "Maximum",
-          "Range",
-          "Standard deviation",
-          "Standard error of mean",
-          "Variance",
-          "Standard error of variance",
-          "%cov",
-          "Sum of values",
-          "Sum of squares",
-          "Uncorrected sum of squares",
-          "Skewness",
-          "%Standard error of skewness",
-          "Kurtosis",
-          "%Standard error of kurtosis"
-        )
+
         sumtable <- sumtable[,columns, with = F]
         rownames(sumtable) <- rownames_sumtable
         datatable(
@@ -613,7 +640,7 @@ mod_dataquality_server <- function(id, rv){
 
         input$set_excluded_obs
         input$set_non_excluded_obs
-        selected_obs <- rv$data_dq_viz[observations.observationDbId %in% rv$sel_observationDbIds & !(observations.observationDbId %in% rv$excluded_obs)]
+        selected_obs <- rv$data_dq_viz[observationDbId %in% rv$sel_observationDbIds & !(observationDbId %in% rv$excluded_obs)]
         setcolorder(selected_obs, visible_columns_selected_obs)
         datatable(
           selected_obs,
@@ -644,9 +671,9 @@ mod_dataquality_server <- function(id, rv){
       observeEvent(input$set_excluded_obs,{
 
         new_excluded_obs <- rv$data_dq_viz[
-          observations.observationDbId %in% rv$sel_observationDbIds
+          observationDbId %in% rv$sel_observationDbIds
         ][
-          input$selected_obs_table_rows_selected, observations.observationDbId
+          input$selected_obs_table_rows_selected, observationDbId
         ]
 
         rv$sel_observationDbIds <- setdiff(rv$sel_observationDbIds, new_excluded_obs) # remove the "selected" status from the new excluded observations
@@ -659,10 +686,10 @@ mod_dataquality_server <- function(id, rv){
         rv$data_dq_viz
         input$set_excluded_obs
         input$set_non_excluded_obs
-        req(rv$data_dq_viz[observations.observationDbId %in% rv$excluded_obs,.N]>0)
+        req(rv$data_dq_viz[observationDbId %in% rv$excluded_obs,.N]>0)
         shinyjs::show(selector = ".display_if_exclusion")
 
-        selected_excl_obs <- rv$data_dq_viz[observations.observationDbId %in% rv$excluded_obs]
+        selected_excl_obs <- rv$data_dq_viz[observationDbId %in% rv$excluded_obs]
         setcolorder(selected_excl_obs, visible_columns_selected_obs)
         datatable(
           selected_excl_obs,
@@ -687,8 +714,8 @@ mod_dataquality_server <- function(id, rv){
       })
 
       observeEvent(input$set_non_excluded_obs,{
-        non_excluded_obs <- rv$data_dq_viz[observations.observationDbId %in% rv$excluded_obs][
-          input$excluded_obs_table_rows_selected, observations.observationDbId]
+        non_excluded_obs <- rv$data_dq_viz[observationDbId %in% rv$excluded_obs][
+          input$excluded_obs_table_rows_selected, observationDbId]
 
         rv$excluded_obs <- setdiff(rv$excluded_obs, non_excluded_obs)
       })
@@ -703,9 +730,9 @@ mod_dataquality_server <- function(id, rv){
 
       observeEvent(input$envXtrait,{
         output$envXtraitViz <- renderPlot({
-        req(rv$data)
-          ggplot(rv$data[,.N,.(study_name_app, observations.observationVariableName, observationLevel)],
-                 aes(y = study_name_app, x=observations.observationVariableName, fill=N))+
+          req(rv$data)
+          ggplot(rv$data[,.N,.(study_name_app,observationVariableName, observationLevel)],
+                 aes(y = study_name_app, x=observationVariableName, fill=N))+
             geom_tile() +
             facet_wrap(vars(observationLevel), nrow = 1, drop = T, ) +
             # facet_grid(cols = vars(observationLevel), drop = T) +

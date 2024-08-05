@@ -188,7 +188,7 @@ mod_model_server <- function(id, rv){
         rv$obsUnit_outliers <- NULL
 
         req(rv$data_dq)
-        req("observations.observationVariableName"%in%names(rv$data_dq))
+        req("observationVariableName"%in%names(rv$data_dq))
         
         choices_env <- rv$data_dq[!is.na(study_name_app)][,unique(study_name_app)]
         updatePickerInput(
@@ -200,7 +200,7 @@ mod_model_server <- function(id, rv){
           )
         )
 
-        choices_traits <- unique(rv$data_dq[scale.dataType == "Numerical"]$observations.observationVariableName)
+        choices_traits <- unique(rv$data_dq[scale.dataType == "Numerical"]$observationVariableName)
         updatePickerInput(
           session,"select_traits",
           choices = choices_traits,
@@ -228,7 +228,7 @@ mod_model_server <- function(id, rv){
           shinyjs::hide("go_fit_no_outlier")
           # Update traits dropdown
           if (is.null(input$select_environments)) {            
-            choices_traits <- unique(rv$data_dq[scale.dataType == "Numerical"]$observations.observationVariableName)            
+            choices_traits <- unique(rv$data_dq[scale.dataType == "Numerical"]$observationVariableName)            
             if (is.null(input$select_traits)) {
               selected_traits <- NULL
             } else {
@@ -237,7 +237,7 @@ mod_model_server <- function(id, rv){
   
           } else {
             ## only traits found in all selected environments can be selected
-            trait_by_studyDbIds <- rv$data_dq[scale.dataType == "Numerical"][study_name_app %in% input$select_environments, .(trait = unique(observations.observationVariableName)), .(studyDbId)]
+            trait_by_studyDbIds <- rv$data_dq[scale.dataType == "Numerical"][study_name_app %in% input$select_environments, .(trait = unique(observationVariableName)), .(studyDbId)]
             choices_traits <- trait_by_studyDbIds[, .N, trait][N == length(trait_by_studyDbIds[, unique(studyDbId)]), trait]
             if (is.null(input$select_traits)) {
               selected_traits <- choices_traits
@@ -333,7 +333,7 @@ mod_model_server <- function(id, rv){
           shinyjs::hide("go_fit_no_outlier")
           # Update environments dropdown
           if (is.null(input$select_traits)) {
-            req("observations.observationVariableName"%in%names(rv$data_dq))
+            req("observationVariableName"%in%names(rv$data_dq))
             choices_env <- rv$data_dq[,unique(study_name_app)]
             if (is.null(input$select_environments)) {
               selected_env <- NULL
@@ -342,8 +342,8 @@ mod_model_server <- function(id, rv){
             }
           } else {
             ## only environment with all selected traits can be selected
-            env_by_traits <- rv$data_dq[observations.observationVariableName %in% input$select_traits, .(env = unique(study_name_app)), .(observations.observationVariableName)]
-            choices_env <- env_by_traits[, .N, env][N == length(env_by_traits[, unique(observations.observationVariableName)]), env]
+            env_by_traits <- rv$data_dq[observationVariableName %in% input$select_traits, .(env = unique(study_name_app)), .(observationVariableName)]
+            choices_env <- env_by_traits[, .N, env][N == length(env_by_traits[, unique(observationVariableName)]), env]
             if (is.null(input$select_environments)) {
               selected_env <- choices_env
             } else {
@@ -353,9 +353,6 @@ mod_model_server <- function(id, rv){
                 selected_env <- choices_env
               }
             }
-            print(selected_env)
-            print(choices_env)
-            #choices_env <- unique(rv$data_dq[observations.observationVariableName %in% input$select_traits, study_name_app])
           }
           updatePickerInput(
             session, "select_environments",
@@ -371,14 +368,14 @@ mod_model_server <- function(id, rv){
           # - have to be numerical
           # - must not be some columns (like ids)
           # - can be traits
-          all_traits <- rv$data_dq[,unique(observations.observationVariableName)]
+          all_traits <- rv$data_dq[,unique(observationVariableName)]
           remaining_traits <- setdiff(all_traits, input$select_traits)
           choices_cov <- c(names(rv$data_dq)[unlist(rv$data_dq[,lapply(.SD, is.numeric)])], remaining_traits)
           not_cov <- c(
-            "studyDbId", "trialDbId","observations.observationDbId",
+            "studyDbId", "trialDbId","observationDbId",
             "environment_number",
-            "observations.observationVariableDbId",
-            "observations.value",
+            "observationVariableDbId",
+            "observationValue",
             "programDbId"
           )
           choices_cov <- choices_cov[!(choices_cov%in%not_cov)]
@@ -449,8 +446,8 @@ mod_model_server <- function(id, rv){
         req(rv_mod$data_checks)
         ## create TD without the excluded observations
         ## exclude observations
-        rv$data_dq[,observations.value:=as.numeric(observations.value)]
-        data_filtered <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
+        rv$data_dq[,observationValue:=as.numeric(observationValue)]
+        data_filtered <- rv$data_dq[!(observationDbId %in% rv$excluded_obs)]
         rv$fitted_data <- data_filtered
         fitModel(data_filtered)
         output$fit_outliers_output = renderText({
@@ -463,8 +460,8 @@ mod_model_server <- function(id, rv){
         req(rv$obsUnit_outliers)
         ## create TD without the excluded observations
         ## exclude observations
-        rv$data_dq[,observations.value:=as.numeric(observations.value)]
-        data_filtered <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
+        rv$data_dq[,observationValue:=as.numeric(observationValue)]
+        data_filtered <- rv$data_dq[!(observationDbId %in% rv$excluded_obs)]
         data_filtered <- data_filtered[!(observationUnitDbId %in% rv$obsUnit_outliers)]
         rv$fitted_data <- data_filtered
         fitModel(data_filtered)
@@ -474,44 +471,52 @@ mod_model_server <- function(id, rv){
       })
       
       fitModel <- function(data_filtered) {
-        ## make 1 column per trait
-        data_filtered_casted <- dcast(
-          data = data_filtered[,.(
-            observationUnitDbId,
-            genotype = germplasmName, trial = study_name_app, loc = studyLocationDbId,
-            repId = replicate,
-            subBlock = blockNumber,
-            rowCoord = positionCoordinateY, colCoord = positionCoordinateX,
-            observations.observationVariableName, observations.value
-          )],
-          formula = "observationUnitDbId + genotype + trial + loc + repId + subBlock + rowCoord + colCoord ~ observations.observationVariableName",
-          value.var = "observations.value"
-        )
         
         ## parametrization
         createTD_args <- list(
           genotype = "genotype",
           trial = "trial",
-          loc = "loc",
-          repId = "repId",
-          subBlock = "subBlock",
-          rowCoord = "rowCoord",
-          colCoord = "colCoord"
+          loc = "loc"
         )
-        if(!rv_mod$data_checks$has_subBlocks){
-          data_filtered_casted[,subBlock:=NULL]
-          createTD_args$subBlock <- NULL
+        
+        data <- data_filtered[,.(
+          observationUnitDbId,
+          genotype = germplasmName,
+          trial = study_name_app, 
+          loc = locationDbId,
+          observationVariableName, 
+          observationValue
+        )]
+        
+        formula <- "observationUnitDbId + genotype + trial + loc"
+        
+        if(rv_mod$data_checks$has_subBlocks){
+          createTD_args$subBlock <- "subBlock"
+          data[,subBlock := data_filtered$blockNumber]
+          formula <- paste0(formula, " + subBlock")
         }
-        if(!rv_mod$data_checks$has_repIds){
-          data_filtered_casted[,repId:=NULL]
-          createTD_args$repId <- NULL
+        if(rv_mod$data_checks$has_repIds){
+          createTD_args$repId <- "repId"
+          data[,repId := data_filtered$replicate]
+          formula <- paste0(formula, " + repId")
         }
-        if(!rv_mod$data_checks$has_coords){
-          data_filtered_casted[,rowCoord:=NULL]
-          data_filtered_casted[,colCoord:=NULL]
-          createTD_args$rowCoord <- NULL
-          createTD_args$colCoord <- NULL
+        if(rv_mod$data_checks$has_coords){
+          createTD_args$rowCoord <- "rowCoord"
+          createTD_args$colCoord <- "colCoord"
+          data[,rowCoord := data_filtered$positionCoordinateY]
+          data[,colCoord := data_filtered$positionCoordinateX]
+          formula <- paste0(formula, " + rowCoord + colCoord")
         }
+        
+        formula <- paste0(formula, " ~ observationVariableName")
+        
+        ## make 1 column per trait
+        data_filtered_casted <- dcast(
+          data = data,
+          formula = formula,
+          value.var = "observationValue"
+        )
+        
         createTD_args <- c(
           list(data = data_filtered_casted),
           createTD_args
@@ -519,7 +524,6 @@ mod_model_server <- function(id, rv){
         
         ## create TD
         rv_mod$TD <- do.call(what = createTD, args = createTD_args)
-        
         
         rv$fit <- NULL
         
@@ -667,7 +671,7 @@ mod_model_server <- function(id, rv){
           isolate(req(rv_mod$data_checks$has_coords))
           req(input$select_environment_fit)
           plots_envs <- lapply(input$select_environment_fit, function(trial){
-            if(rv$data_dq[observations.observationVariableName == input$select_trait_fit & study_name_app == trial,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
+            if(rv$data_dq[observationVariableName == input$select_trait_fit & study_name_app == trial,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
               p <- plot(
                 rv$fit,
                 plotType = "spatial",
@@ -744,7 +748,7 @@ mod_model_server <- function(id, rv){
         which(colnames(outliers_all) == "subBlock")
         outliers_nb <- outliers_all[, .(`#outliers` = sum(outlier)), by = observationUnitDbId]
         
-        variables_index <- which(colnames(outliers_all) %in% unique(rv$fitted_data$observations.observationVariableName))
+        variables_index <- which(colnames(outliers_all) %in% unique(rv$fitted_data$observationVariableName))
         first_var_index <- variables_index[1]
         last_var_index <- variables_index[length(variables_index)]
 
@@ -766,7 +770,7 @@ mod_model_server <- function(id, rv){
         
         # change columns order (move variables columns at the end)
         cols <- colnames(outliers)
-        first_var_index <- which(colnames(outliers_all) %in% unique(rv$fitted_data$observations.observationVariableName))[1]
+        first_var_index <- which(colnames(outliers_all) %in% unique(rv$fitted_data$observationVariableName))[1]
         outlier_index <- which(cols == "outlier")
         new_cols_order <- c(cols[1:first_var_index-1], cols[outlier_index:length(cols)], cols[(first_var_index):(outlier_index-1)])
         setcolorder(outliers, new_cols_order)
@@ -1074,7 +1078,7 @@ mod_model_server <- function(id, rv){
           origin_variable_names <- origin_variable_names[!duplicated(origin_variable_names), ]
           
           # Get variables ids from data
-          variables_df <- select(rv$data, c("observations.observationVariableDbId", "observations.observationVariableName"))
+          variables_df <- select(rv$data, c("observationVariableDbId", "observationVariableName"))
           variables_df <- variables_df[!duplicated(variables_df), ]
           variables_df <- na.omit(variables_df)
           colnames(variables_df) <- c("originVariableDbId","originVariableName")

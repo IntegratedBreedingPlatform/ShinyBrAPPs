@@ -23,8 +23,8 @@ mod_scatterplot_ui <- function(id){
               multiple = T,
               options = list(
                 `actions-box` = TRUE,
-                title = 'Load Environments First',
-                onInitialize = I('function() { this.setValue(""); }')
+                title = 'Load Environments First'
+                #onInitialize = I('function() { this.setValue(""); }')
               )
             )
           )
@@ -221,7 +221,6 @@ mod_scatterplot_server <- function(id, rv){
   moduleServer(
     id,
     function(input, output, session){
-
       ns <- session$ns
       rv_plot <- reactiveValues()
 
@@ -271,9 +270,15 @@ mod_scatterplot_server <- function(id, rv){
         envs <- unique(rv$data_plot[,.(studyDbId, study_name_app)])
         env_choices <- envs[,studyDbId]
         names(env_choices) <- envs[,study_name_app]
+        # to avoid selected env reinitialized after creating a group
+        if (is.null(input$env)) {
+          env_selected <- env_choices
+        } else {
+          env_selected <- input$env
+        }
         updatePickerInput(
           session, "env",
-          choices = env_choices, selected = env_choices
+          choices = env_choices, selected = env_selected
         )
       })
 
@@ -1088,6 +1093,8 @@ mod_scatterplot_server <- function(id, rv){
 
         req(input$mark_as_sel_var_to_use)
         req(input$mark_as_sel_envs)
+        
+        browser()
 
         as_sel_data <- rv$data[
           observationLevel == "PLOT" & studyDbId %in% input$mark_as_sel_envs &
@@ -1099,7 +1106,7 @@ mod_scatterplot_server <- function(id, rv){
         as_sel_data <- unique(as_sel_data[,.(germplasmDbId, observationUnitDbId, studyDbId)])
 
         as_sel_data[,observationVariableDbId := input$mark_as_sel_var_to_use]
-        as_sel_data[,observations.value := "1"]
+        as_sel_data[,observationValue := "1"]
 
         output$mark_as_sel_info <- renderUI({
           tagList(
@@ -1131,7 +1138,7 @@ mod_scatterplot_server <- function(id, rv){
                 germplasmDbId = as.character(rv_plot$as_sel_data[row_id, germplasmDbId]),
                 observationUnitDbId = as.character(rv_plot$as_sel_data[row_id, observationUnitDbId]),
                 observationVariableDbId = as.character(rv_plot$as_sel_data[row_id, observationVariableDbId]),
-                value = as.character(rv_plot$as_sel_data[row_id, observations.value]),
+                value = as.character(rv_plot$as_sel_data[row_id, observationValue]),
                 additionalInfo = list() # otherwise error message: "Argument: \"additionalInfo\" should be provided as a list, see the help page on how the list should be constructed."
               )
             }, error = function(e)({e})
@@ -1147,7 +1154,7 @@ mod_scatterplot_server <- function(id, rv){
                       '"germplasmDbId":"', as.character(rv_plot$as_sel_data[row_id, germplasmDbId]),'",',
                       '"observationUnitDbId":"', as.character(rv_plot$as_sel_data[row_id, observationUnitDbId]),'",',
                       '"observationVariableDbId":"', as.character(rv_plot$as_sel_data[row_id, observationVariableDbId]),'",',
-                      '"value":"', as.character(rv_plot$as_sel_data[row_id, observations.value]),'"'
+                      '"value":"', as.character(rv_plot$as_sel_data[row_id, observationValue]),'"'
                     )),
                     tags$code(mess)
                   ),
