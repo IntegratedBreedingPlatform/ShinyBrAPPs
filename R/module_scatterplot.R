@@ -4,8 +4,7 @@ mod_scatterplot_ui <- function(id){
   
   tagList(
     fluidRow(
-      column(
-        3,
+      column(2,
         pickerInput(
           inputId = ns("env"),
           label = "Environments",
@@ -41,7 +40,7 @@ mod_scatterplot_ui <- function(id){
           column(4, hidden(pickerInput(ns("ref_genotype_Y"), "Reference", choices = NULL, inline = T)))
         ),
         div(
-          class = ns( "custom-box"),
+          #class = ns( "custom-box"),
           shinydashboard::box(
             #title = span('Options ', icon('screwdriver-wrench')),
             width = 12,
@@ -87,8 +86,7 @@ mod_scatterplot_ui <- function(id){
           )
         )
       ),
-      column(
-        6,
+      column(7,
         plotlyOutput(
           ns("scatterplot"), width = "100%", height = "600px"
           # click = ns("scatterplot_click"),
@@ -115,39 +113,41 @@ mod_scatterplot_ui <- function(id){
           )
         )
       ),
-      column(
-        3
-      )
-    ),
-    fluidRow(
-      column(10,uiOutput(ns("ui_groups"))),
-      column(2,
-             div(
-               class = ns("group_actions"), style = "display: none",
-               tags$label("Vizualize"),
-               div(
-                 class = ns("one_group_selected"), style = "display: none",
-                 actionButton(ns("action_groups_plot_creation_params"),label = "Like at Group Creation", block = T, css.class = "btn btn-info")
-               ),
-               bsTooltip(ns("action_groups_plot_creation_params"), title = "Set the plot parameters as they were at group creation", placement = "left"),
-               tags$label("Create new group"),
-               actionButton(ns("action_groups_union"),label = "Union", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
-               actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
-               actionButton(ns("action_groups_complement"),label = "Complement", block = T, css.class = "btn btn-info"),
-               tags$label("Delete Groups"),
-               actionButton(ns("action_groups_delete"),label = "Delete", block = T, css.class = "btn btn-info"),
-               div(
-                 class = ns("one_group_selected"), style = "display: none",
-                 tags$label("Export Group"),
-                 downloadButton(ns("action_groups_export_group_details"),label = "Export Group Details", class = "btn-block btn-primary"),
-                 actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome"),
-                 actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome")
-               ),
-               bsModal(ns("modal_export_group_as_list"), "Export Group as List", NULL, size = "large",
-                       uiOutput(ns("modal_export_group_as_list_ui"))),
-               bsModal(ns("modal_export_group_mark_as_selection"), "Mark as Selection", NULL, size = "large",
-                       uiOutput(ns("modal_export_group_mark_as_selection_ui")))
-             )
+
+      column(3,
+        fluidRow(
+          column(12,uiOutput(ns("ui_groups")))
+        ),
+        fluidRow(
+          column(12,
+           shinydashboard::box(
+             id = ns("group_actions_box"),
+             #title = span('Options ', icon('screwdriver-wrench')),
+             width = 12,
+             #class = "custom-box",
+             h4('Actions ', icon('screwdriver-wrench')),
+             actionButton(ns("action_groups_plot_creation_params"),label = "Visualize like at group creation", block = T, css.class = paste("btn btn-info", ns("one_group_selected"))),
+             actionButton(ns("action_groups_union"),label = "Union", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
+             actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
+             actionButton(ns("action_groups_complement"),label = "Complement", block = T, css.class = paste("btn btn-info", ns("one_group_selected"))),
+             actionButton(ns("action_groups_delete"),label = "Delete", block = T, css.class =paste("btn btn-info", ns("one_group_selected")))
+           ),
+           shinydashboard::box(
+             id = ns("export_box"),
+             #title = span('Options ', icon('screwdriver-wrench')),
+             width = 12,
+             #class = "custom-box",
+             h4('Export '),
+             downloadButton(ns("action_groups_export_group_details"),label = "Export Group Details", class = "btn-block btn-primary"),
+             actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome"),
+             actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome")
+           )
+         ),
+         bsModal(ns("modal_export_group_as_list"), "Export Group as List", NULL, size = "large",
+                 uiOutput(ns("modal_export_group_as_list_ui"))),
+         bsModal(ns("modal_export_group_mark_as_selection"), "Mark as Selection", NULL, size = "large",
+                 uiOutput(ns("modal_export_group_mark_as_selection_ui")))
+        )
       )
     )
   )
@@ -244,6 +244,14 @@ mod_scatterplot_server <- function(id, rv){
         )
       })
       
+      observeEvent(input$left_side,{
+        updateControlbar(id = "sidebar", session = session)
+      })
+      
+      observeEvent(input$right_side,{
+        updateControlbar(id = "controlbar", session = session)
+      })
+      
       ## update variable selectors
       observe({
         req(rv$data_plot)
@@ -289,8 +297,8 @@ mod_scatterplot_server <- function(id, rv){
         
         
         # shinyjs::toggle("ui_SHAPE", condition = input$switch_aggregate==T)
-        shinyjs::toggle("ui_COLOUR", condition = input$switch_aggregate==T)
-        shinyjs::toggle("ui_SIZE", condition = input$switch_aggregate==T)
+        # shinyjs::toggle("ui_COLOUR", condition = input$switch_aggregate==T)
+        # shinyjs::toggle("ui_SIZE", condition = input$switch_aggregate==T)
         
         # Work around for pickerInputs with option groups that have only one option.
         # The default behaviour is to display only the group name.
@@ -554,8 +562,8 @@ mod_scatterplot_server <- function(id, rv){
           try({
             reg <- lm(formula = VAR_Y_PLOT ~ VAR_X_PLOT, data = d, na.action = na.exclude)
           })
-          shinyjs::addClass(id = "go_regression", class = "active")
-          updateActionButton(session, "go_regression", icon = icon("check"))
+          #shinyjs::addClass(id = "go_regression", class = "active")
+          #updateActionButton(session, "go_regression", icon = icon("check"))
           output$regression_output <- renderUI({
             tags$p(
               tags$b("Y"),"=",signif(reg$coefficients[2], digits = 2),tags$b("X"),
@@ -787,9 +795,11 @@ mod_scatterplot_server <- function(id, rv){
       })
       
       observe({
-        shinyjs::toggle(selector = paste0(".",ns("group_actions")), condition = length(input$group_sel_input)>0)
+        shinyjs::toggle(id = "group_actions_box", condition = length(input$group_sel_input)>0)
         shinyjs::toggle(selector = paste0(".",ns("create_new_groups_from_groups")), condition = length(input$group_sel_input)>1)
         shinyjs::toggle(selector = paste0(".",ns("one_group_selected")), condition = length(input$group_sel_input)==1)
+        shinyjs::toggle(id = "export_box", condition = length(input$group_sel_input)==1)
+
       })
       
       ## Create new groups
