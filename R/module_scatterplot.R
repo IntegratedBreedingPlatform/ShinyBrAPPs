@@ -3,154 +3,192 @@ mod_scatterplot_ui <- function(id){
   ns <- NS(id)
   
   tagList(
-    fluidRow(
-      column(2,
-        pickerInput(
-          inputId = ns("env"),
-          label = "Environments",
-          choices = NULL,
-          width = "100%",
-          multiple = T
-        ),
-        #tags$h4("Aggregate observations", style = "display:inline", class = "space-right"),
-        fluidRow(
-          materialSwitch(inputId = ns("switch_aggregate"), label = "Aggregate observations", value = F, inline = T, status = "info"),
-          pickerInput(ns("aggregate_by"), "Aggregate by", choices =  c("germplasm and environment", "germplasm"), selected = "germplasm", multiple = F)
-        ),
-        fluidRow(
-          column(6, pickerInput(ns("picker_X"), "X", choices = NULL)),
-          column(6, hidden(pickerInput(ns("aggreg_fun_X"), "Aggregate", choices = c("mean", "max", "min", "sum"))))
-        ),
-        fluidRow(
-          checkboxGroupInput(ns("express_X_as"), label = NULL, choices = c("As ranks"), inline = T)
-        ),
-        fluidRow(
-          column(2, hidden(switchInput(ns("ranking_order_X"), onLabel = "asc", offLabel = "desc", size = "mini"))),
-          column(4, hidden(pickerInput(ns("ref_genotype_X"), "Reference", choices = NULL, inline = T)))
-        ),
-        fluidRow(
-          column(6, pickerInput(ns("picker_Y"), "Y", choices = NULL)),
-          column(6, hidden(pickerInput(ns("aggreg_fun_Y"), "Aggregate", choices = c("mean", "max", "min", "sum"))))
-        ),
-        fluidRow(
-          checkboxGroupInput(ns("express_Y_as"), label = NULL, choices = c("As ranks"), inline = T),
-        ),
-        fluidRow(
-          column(2, hidden(switchInput(ns("ranking_order_Y"), onLabel = "asc", offLabel = "desc", size = "mini"))),
-          column(4, hidden(pickerInput(ns("ref_genotype_Y"), "Reference", choices = NULL, inline = T)))
-        ),
-        div(
-          #class = ns( "custom-box"),
-          shinydashboard::box(
-            #title = span('Options ', icon('screwdriver-wrench')),
-            width = 12,
-            class = "custom-box",
-            h4('Options ', icon('screwdriver-wrench')),
-            fluidRow(
-              column(2),
-              column(5, strong("Variables")),
-              column(5, hidden(strong("aggregate", id = "aggregate_text")))
-            ),
-            
-            fluidRow(
-              column(2, strong("Shape")),
-              column(5, 
-                     div(style = "display:inline-block; width: 100%;",pickerInput(ns("picker_SHAPE"), choices = c("---" = ""), selected = ""))
-              ),
-              column(5, 
-                     div(style = "display:inline-block; width: 100%;",pickerInput(ns("aggreg_fun_SHAPE"), choices = c("concatenate unique values"="unique_values")))
-              )
-            ),
-            fluidRow(
-              column(2, strong("Colour")),
-              column(5, 
-                     div(style = "display:inline-block; width: 100%;",
-                         pickerInput(ns("picker_COLOUR"), choices = c("---" = ""), selected = ""))
-              ), 
-              column(5, 
-                     div(style = "display:inline-block; width: 100%;",
-                         pickerInput(ns("aggreg_fun_COLOUR"), choices = c("concatenate unique values"="unique_values")))
-              )
-            ),
-            fluidRow(
-              column(2, strong("Size")),
-              column(5, 
-                     div(style = "display:inline-block; width: 100%;",
-                         pickerInput(ns("picker_SIZE"), choices = c("---"= ""), selected = ""))
-              ),
-              column(5, 
-                     div(style = "display:inline-block; width: 100%;",
-                         pickerInput(ns("aggreg_fun_SIZE"), choices = c("concatenate unique values"="unique_values")))
-              )
-            )
-          )
-        )
-      ),
-      column(7,
-        plotlyOutput(
-          ns("scatterplot"), width = "100%", height = "600px"
-          # click = ns("scatterplot_click"),
-          # hover = ns("scatterplot_hover"),
-          # brush = ns("scatterplot_brush")
-        ),
-        bsTooltip(ns("scatterplot"), title = "Tip: press the shift key for multiple mouse selection", placement = "left"),
-        fluidRow(
-          column(
-            12,
-            hidden(actionButton(ns("go_regression"), "Draw Regression", css.class = "btn btn-info", `aria-pressed`="true", icon = "box")),
-            uiOutput(ns("ui_clusters"), inline = T),
-            span(class = ns("ui_create_group"), style = "display: none;",
-                 actionButton(ns("go_create_group"), "Create Group", css.class = "btn btn-info")
-            ),
-            bsModal(ns("modal_create_group"), "Create Group", NULL, size = "small",
-                    uiOutput(ns("modal_create_group_ui")))
-          )
-        ),
-        fluidRow(
-          column(
-            12,
-            uiOutput(ns("regression_output"))
-          )
-        )
-      ),
-
-      column(3,
-        fluidRow(
-          column(12,uiOutput(ns("ui_groups")))
-        ),
-        fluidRow(
-          column(12,
-           shinydashboard::box(
-             id = ns("group_actions_box"),
-             #title = span('Options ', icon('screwdriver-wrench')),
-             width = 12,
-             #class = "custom-box",
-             h4('Actions ', icon('screwdriver-wrench')),
-             actionButton(ns("action_groups_plot_creation_params"),label = "Visualize like at group creation", block = T, css.class = paste("btn btn-info", ns("one_group_selected"))),
-             actionButton(ns("action_groups_union"),label = "Union", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
-             actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
-             actionButton(ns("action_groups_complement"),label = "Complement", block = T, css.class = paste("btn btn-info", ns("one_group_selected"))),
-             actionButton(ns("action_groups_delete"),label = "Delete", block = T, css.class =paste("btn btn-info", ns("one_group_selected")))
-           ),
-           shinydashboard::box(
-             id = ns("export_box"),
-             #title = span('Options ', icon('screwdriver-wrench')),
-             width = 12,
-             #class = "custom-box",
-             h4('Export '),
-             downloadButton(ns("action_groups_export_group_details"),label = "Export Group Details", class = "btn-block btn-primary"),
-             actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome"),
-             actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome")
-           )
-         ),
-         bsModal(ns("modal_export_group_as_list"), "Export Group as List", NULL, size = "large",
-                 uiOutput(ns("modal_export_group_as_list_ui"))),
-         bsModal(ns("modal_export_group_mark_as_selection"), "Mark as Selection", NULL, size = "large",
-                 uiOutput(ns("modal_export_group_mark_as_selection_ui")))
-        )
+    tags$style(
+      HTML(
+        ".nav .nav-item .nav-link { font-size: 20px; }
+        .center-checkbox {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100%; /* Optionnel, pour centrer verticalement dans une colonne pleine hauteur */
+        }
+        
+        ",
+        
       )
-    )
-  )
+    ),
+    bslib::page_navbar(
+      selected = "Studies",
+      collapsible = TRUE,
+      position = "fixed-top",
+      bslib::nav_panel(
+        title = "Studies",
+        bslib::layout_sidebar(
+          sidebar = bslib::sidebar(
+            width = 350,
+             pickerInput(
+               inputId = ns("env"),
+               label = "Environments",
+               choices = NULL,
+               width = "100%",
+               multiple = T
+             ),
+             #tags$h4("Aggregate observations", style = "display:inline", class = "space-right"),
+             fluidRow(
+               materialSwitch(inputId = ns("switch_aggregate"), label = "Aggregate observations", value = F, inline = T, status = "info"),
+               pickerInput(ns("aggregate_by"), "Aggregate by", choices =  c("germplasm and environment", "germplasm"), selected = "germplasm", multiple = F)
+             ),
+             fluidRow(
+               column(6, pickerInput(ns("picker_X"), "X", choices = NULL)),
+               column(6, hidden(pickerInput(ns("aggreg_fun_X"), "Aggregate", choices = c("mean", "max", "min", "sum"))))
+             ),
+             fluidRow(
+               column(6, awesomeCheckbox(ns("express_X_as_ranks"), label = "As ranks")),
+               column(6, hidden(switchInput(ns("ranking_order_X"), onLabel = "asc", offLabel = "desc", size = "mini")))
+             ),
+            fluidRow(
+              column(6, awesomeCheckbox(ns("express_X_relative"), label = "relatively to genotype")),
+              column(6, hidden(pickerInput(ns("ref_genotype_X"), "Reference", choices = NULL, inline = T)))
+            ),
+             fluidRow(
+               column(6, pickerInput(ns("picker_Y"), "Y", choices = NULL)),
+               column(6, hidden(pickerInput(ns("aggreg_fun_Y"), "Aggregate", choices = c("mean", "max", "min", "sum"))))
+             ),
+            fluidRow(
+              column(6, awesomeCheckbox(ns("express_Y_as_ranks"), label = "As ranks"), inline = T),
+              column(6, hidden(switchInput(ns("ranking_order_Y"), onLabel = "asc", offLabel = "desc", size = "mini")))
+            ),
+            fluidRow(
+              column(6, awesomeCheckbox(ns("express_Y_relative"), label = "relatively to genotype"), inline = T),
+              column(6, hidden(pickerInput(ns("ref_genotype_Y"), "Reference", choices = NULL, inline = T)))
+            ),
+             div(
+               bslib::card(
+                 bslib::card_header(
+                   h4('Options ', icon('screwdriver-wrench'))
+                 ),
+                 bslib::card_body(
+                   fluidRow(
+                     column(2),
+                     column(5, strong("Variables")),
+                     column(5, hidden(strong("Aggregate", id = ns("aggregate_text"))))
+                   ),
+                   
+                   fluidRow(
+                     column(2, strong("Shape")),
+                     column(5, 
+                            div(style = "display:inline-block; width: 100%;",pickerInput(ns("picker_SHAPE"), choices = c("---" = ""), selected = ""))
+                     ),
+                     column(5, 
+                            div(style = "display:inline-block; width: 100%;",pickerInput(ns("aggreg_fun_SHAPE"), choices = c("concatenate unique values"="unique_values")))
+                     )
+                   ),
+                   fluidRow(
+                     column(2, strong("Colour")),
+                     column(5, 
+                            div(style = "display:inline-block; width: 100%;",
+                                pickerInput(ns("picker_COLOUR"), choices = c("---" = ""), selected = ""))
+                     ), 
+                     column(5, 
+                            div(style = "display:inline-block; width: 100%;",
+                                pickerInput(ns("aggreg_fun_COLOUR"), choices = c("concatenate unique values"="unique_values")))
+                     )
+                   ),
+                   fluidRow(
+                     column(2, strong("Size")),
+                     column(5, 
+                            div(style = "display:inline-block; width: 100%;",
+                                pickerInput(ns("picker_SIZE"), choices = c("---"= ""), selected = ""))
+                     ),
+                     column(5, 
+                            div(style = "display:inline-block; width: 100%;",
+                                pickerInput(ns("aggreg_fun_SIZE"), choices = c("concatenate unique values"="unique_values")))
+                     )
+                   )
+                 )
+               )
+             )
+          ),
+
+          bslib::card(
+            full_screen = TRUE,
+            bslib::layout_sidebar(
+              
+             plotlyOutput(
+               ns("scatterplot"), width = "100%", height = "600px"
+               # click = ns("scatterplot_click"),
+               # hover = ns("scatterplot_hover"),
+               # brush = ns("scatterplot_brush")
+             ),
+             bsTooltip(ns("scatterplot"), title = "Tip: press the shift key for multiple mouse selection", placement = "left"),
+             fluidRow(
+               column(
+                 12,
+                 hidden(actionButton(ns("go_regression"), "Draw Regression", css.class = "btn btn-info", `aria-pressed`="true", icon = "box")),
+                 uiOutput(ns("ui_clusters"), inline = T),
+                 span(class = ns("ui_create_group"), style = "display: none;",
+                      actionButton(ns("go_create_group"), "Create Group", css.class = "btn btn-info")
+                 ),
+                 bsModal(ns("modal_create_group"), "Create Group", NULL, size = "small",
+                         uiOutput(ns("modal_create_group_ui")))
+               )
+             ),
+             fluidRow(
+               column(
+                 12,
+                 uiOutput(ns("regression_output"))
+               )
+             ),
+             sidebar = bslib::sidebar(
+                 position = "right",
+                 width = 300,
+                 fluidRow(
+                   column(12,uiOutput(ns("ui_groups")))
+                 ),
+                 fluidRow(
+                   column(12,
+                      bslib::card(
+                        class = ns("at_least_one_group_selected"),
+                        bslib::card_header(
+                          h4('Actions ', icon('screwdriver-wrench'))
+                        ),
+                        bslib::card_body(
+                          #title = span('Options ', icon('screwdriver-wrench')),
+                          #width = 12,
+                          #h4('Actions ', icon('screwdriver-wrench')),
+                          actionButton(ns("action__seplot_creation_params"),label = "Visualize like at group creation", block = T, css.class = paste("btn btn-info", ns("one_group_selected"))),
+                          actionButton(ns("action_groups_union"),label = "Union", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
+                          actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
+                          actionButton(ns("action_groups_complement"),label = "Complement", block = T, css.class = paste("btn btn-info", ns("at_least_one_group_selected"))),
+                          actionButton(ns("action_groups_delete"),label = "Delete", block = T, css.class =paste("btn btn-info", ns("at_least_one_group_selected")))
+                        )
+                      ),
+                      bslib::card(
+                        id = ns("export_box"),
+                        bslib::card_header(
+                          h4('Export ')
+                        ),
+                        bslib::card_body(
+                          downloadButton(ns("action_groups_export_group_details"),label = "Export Group Details", class = "btn-block btn-primary"),
+                          actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome"),
+                          actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome")
+                        )
+                      )
+                   )
+                 )
+               )
+             )
+          )
+        ),
+        # bsModal(ns("modal_export_group_as_list"), "Export Group as List", NULL, size = "l",
+        #         uiOutput(ns("modal_export_group_as_list_ui"))),
+        # bsModal(ns("modal_export_group_mark_as_selection"), "Mark as Selection", NULL, size = "l",
+        #         uiOutput(ns("modal_export_group_mark_as_selection_ui")))
+      ),
+      bslib::nav_panel(
+        title = "GxE"
+      )
+    ))
 }
 
 #' @export
@@ -272,8 +310,8 @@ mod_scatterplot_server <- function(id, rv){
           shinyjs::show("aggreg_fun_SHAPE")
           shinyjs::show("aggreg_fun_COLOUR")
           shinyjs::show("aggreg_fun_SIZE")
-          updateCheckboxGroupInput(session, "express_X_as", choices = c("as ranks", "relatively to genotype"), inline = T)
-          updateCheckboxGroupInput(session, "express_Y_as", choices = c("as ranks", "relatively to genotype"), inline = T)
+          shinyjs::show("express_X_relative")
+          shinyjs::show("express_Y_relative")
           if(input$aggregate_by == "germplasm and environment"){
             var_choices_SHAPE <- rv$column_datasource[type != "Numerical" & !(source %in% "plot"),.(cols = list(cols)), source]
             var_choices_COLOUR <- rv$column_datasource[type == "Numerical" | !(source %in% c("plot")),.(cols = list(cols)), source]
@@ -289,8 +327,8 @@ mod_scatterplot_server <- function(id, rv){
           shinyjs::hide("aggreg_fun_SHAPE")
           shinyjs::hide("aggreg_fun_COLOUR")
           shinyjs::hide("aggreg_fun_SIZE")
-          updateCheckboxGroupInput(session, "express_X_as", choices = c("as ranks"))
-          updateCheckboxGroupInput(session, "express_Y_as", choices = c("as ranks"))
+          shinyjs::hide("express_X_relative")
+          shinyjs::hide("express_Y_relative")
           var_choices_SHAPE <- non_num_var_choices
           var_choices_COLOUR <- var_choices_all
         }
@@ -378,8 +416,10 @@ mod_scatterplot_server <- function(id, rv){
         )
       })
       
-      toggle_draw_regression_button <- function(){
-        if(!is.null(input$express_X_as) && !is.null(input$express_Y_as) && input$express_Y_as=="as ranks" && input$express_X_as=="as ranks"){
+      ## toggle draw regression button
+      observeEvent(c(input$express_X_as_ranks, input$express_Y_as_ranks),{
+        if(!is.null(input$express_X_as_ranks) && input$express_X_as_ranks
+           && !is.null(input$express_Y_as_ranks) && input$express_Y_as_ranks){
           shinyjs::hide("go_regression")
           if(rv_plot$draw_regression == T){
             rv_plot$draw_regression <- F
@@ -387,33 +427,57 @@ mod_scatterplot_server <- function(id, rv){
         }else{
           shinyjs::show("go_regression")
         }
-      }
+      })
       
-      observeEvent(input$express_X_as, {
-        if (length(input$express_X_as) > 1) { #have only one checkbox selected
-          selected <- setdiff(input$express_X_as, rv_plot$selected_express_X_as)
-          updateCheckboxGroupInput(session, "express_X_as", selected = selected)
-        } else {
-          selected <- input$express_X_as
-        }
-        rv_plot$selected_express_X_as <- selected
-        shinyjs::toggle("ranking_order_X", condition = !is.null(selected) && selected=="as ranks")
-        shinyjs::toggle("ref_genotype_X", condition = !is.null(selected) && selected=="relatively to genotype")
-        toggle_draw_regression_button()
-      }, ignoreNULL = F)
+      observeEvent({
+        list(input$express_X_as_ranks, input$express_X_relative)
+        }, {
+          if (is.null(rv_plot$selected_express_X)) {
+            if (input$express_X_as_ranks) {
+              rv_plot$selected_express_X = "ranks"
+            } else if (input$express_X_relative) {
+              rv_plot$selected_express_X = "relative"
+            }
+          } else {
+            if (rv_plot$selected_express_X == "ranks" && input$express_X_relative) {
+              updateCheckboxInput(session, "express_X_as_ranks", value = F)
+              rv_plot$selected_express_X = "relative"
+            } else if (rv_plot$selected_express_X == "relative" && input$express_X_as_ranks) {
+              updateCheckboxInput(session, "express_X_as_relative", value = F)
+              rv_plot$selected_express_X = "ranks"
+            }
+          }
+          if (!input$express_X_as_ranks && !input$express_X_relative) {
+            rv_plot$selected_express_X = NULL
+          }
+          shinyjs::toggle("ranking_order_X", condition = !is.null(rv_plot$selected_express_X) && rv_plot$selected_express_X == "ranks")
+          shinyjs::toggle("ref_genotype_X", condition = !is.null(rv_plot$selected_express_X) && rv_plot$selected_express_X == "relative")
+        })
       
-      observeEvent(input$express_Y_as, {
-        if (length(input$express_Y_as) > 1) { #have only one checkbox selected
-          selected <- setdiff(input$express_Y_as, rv_plot$selected_express_Y_as)
-          updateCheckboxGroupInput(session, "express_Y_as", selected = setdiff(input$express_Y_as, rv_plot$selected_express_Y_as))
+      observeEvent({
+        list(input$express_Y_as_ranks, input$express_Y_relative)
+      }, {
+        if (is.null(rv_plot$selected_express_Y)) {
+          if (input$express_Y_as_ranks) {
+            rv_plot$selected_express_Y = "ranks"
+          } else if (input$express_Y_relative) {
+            rv_plot$selected_express_Y = "relative"
+          }
         } else {
-          selected <- input$express_Y_as
+          if (rv_plot$selected_express_Y == "ranks" && input$express_Y_relative) {
+            updateCheckboxInput(session, "express_Y_as_ranks", value = F)
+            rv_plot$selected_express_Y = "relative"
+          } else if (rv_plot$selected_express_Y == "relative" && input$express_Y_as_ranks) {
+            updateCheckboxInput(session, "express_Y_as_relative", value = F)
+            rv_plot$selected_express_Y = "ranks"
+          }
         }
-        rv_plot$selected_express_Y_as <- selected
-        shinyjs::toggle("ranking_order_Y", condition = !is.null(selected) && selected=="as ranks")
-        shinyjs::toggle("ref_genotype_Y", condition = !is.null(selected) && selected=="relatively to genotype")
-        toggle_draw_regression_button()
-      }, ignoreNULL = F)
+        if (!input$express_Y_as_ranks && !input$express_Y_relative) {
+          rv_plot$selected_express_Y = NULL
+        }
+        shinyjs::toggle("ranking_order_Y", condition = !is.null(rv_plot$selected_express_Y) && rv_plot$selected_express_Y == "ranks")
+        shinyjs::toggle("ref_genotype_Y", condition = !is.null(rv_plot$selected_express_Y) && rv_plot$selected_express_Y == "relative")
+      })
       
       ## aggreg dataset
       observe({
@@ -437,7 +501,7 @@ mod_scatterplot_server <- function(id, rv){
         #req(input$picker_SHAPE %in% names(rv$data_plot))
         #req(input$aggreg_fun_COLOUR)
         #req(aggreg_functions[fun == input$aggreg_fun_COLOUR, for_num] == rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"])
-
+        
         data_plot_aggr <- rv$data_plot[
           studyDbId %in% input$env,
           .(
@@ -734,33 +798,40 @@ mod_scatterplot_server <- function(id, rv){
       })
       
       observeEvent(input$go_create_group,{
-        # selection <- rbindlist(list(
-        #   # event_data("plotly_click", source = "A"),
-        #   event_data("plotly_selected", source = "A")
-        # ), use.names = T, fill = T)
         if(rv_plot$selection[,.N]>0){
-          toggleModal(session, "modal_create_group")
-          # germplasms <- unique(rv$data[germplasmDbId %in% rv$selection[,germplasmDbId], .(germplasmDbId, germplasmName)])
-          # group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
-          output$modal_create_group_ui <- renderUI({
-            req(rv_plot$selection[,.N]>0)
-            tagList(
-              tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
-              tags$p(rv_plot$selection[,germplasmNames_label]),
-              textInput(ns("modal_create_group_text_input_label"), label = "Group Name", value = paste("Group", rv_plot$selection[,group_id]), placeholder = "Group Label"),
-              textAreaInput(ns("modal_create_group_text_input_descr"), label = "Group Description", placeholder = "Group Description", resize = "vertical",
-                            value = paste0(
-                              "Visualization at group creation:\nX=",input$picker_X,", \nY=",input$picker_Y,
-                              if(isTruthy(input$picker_COLOUR)) paste(", \nColour=", input$picker_COLOUR),
-                              if(isTruthy(input$picker_SHAPE)) paste(", \nShape=", input$picker_SHAPE),
-                              if(isTruthy(input$picker_SIZE)) paste(", \nSize=", input$picker_SIZE)
-                            )
-              ),
-              actionButton(ns("modal_create_group_go"), label = "Create", css.class = "btn btn-info")
-            )
-          })
+          showModal(groupModal("Create new group", paste0(
+            "Visualization at group creation:\nX=",input$picker_X,", \nY=",input$picker_Y,
+            if(isTruthy(input$picker_COLOUR)) paste(", \nColour=", input$picker_COLOUR),
+            if(isTruthy(input$picker_SHAPE)) paste(", \nShape=", input$picker_SHAPE),
+            if(isTruthy(input$picker_SIZE)) paste(", \nSize=", input$picker_SIZE)
+          )))
         }
       })
+      
+      groupModal <- function(modal_title, group_description) {
+        req(rv_plot$selection[,.N]>0)
+        modalDialog(
+          title = modal_title,
+          fade = F,
+          size = "l",
+          tagList(
+            tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
+            tags$p(rv_plot$selection[,germplasmNames_label]),
+            textInput(ns("modal_create_group_text_input_label"), label = "Group Name", value = paste("Group", rv_plot$selection[,group_id]), placeholder = "Group Label"),
+            textAreaInput(
+              ns("modal_create_group_text_input_descr"), 
+              label = "Group Description", 
+              placeholder = "Group Description", 
+              resize = "vertical",
+              value = group_description
+            )
+          ),
+          footer = tagList(
+            modalButton("Cancel"),
+            actionButton(ns("modal_create_group_go"), label = "Create", css.class = "btn btn-info")
+          )
+        )
+      }
       
       observeEvent(input$modal_create_group_go, {
         rv_plot$selection[, group_name := input$modal_create_group_text_input_label]
@@ -785,7 +856,8 @@ mod_scatterplot_server <- function(id, rv){
         rv_plot$selection <- data.table()
         rv_plot$plot_selection <- data.table()
         
-        toggleModal(session, "modal_create_group", toggle = "close")
+        removeModal()
+        #toggleModal(session, "modal_create_group", toggle = "close")
       })
       observeEvent(rv_plot$groups$group_id,{
         req(rv_plot$groups)
@@ -795,16 +867,14 @@ mod_scatterplot_server <- function(id, rv){
       })
       
       observe({
-        shinyjs::toggle(id = "group_actions_box", condition = length(input$group_sel_input)>0)
+        shinyjs::toggle(selector = paste0(".",ns("at_least_one_group_selected")), condition = length(input$group_sel_input)>0)
         shinyjs::toggle(selector = paste0(".",ns("create_new_groups_from_groups")), condition = length(input$group_sel_input)>1)
         shinyjs::toggle(selector = paste0(".",ns("one_group_selected")), condition = length(input$group_sel_input)==1)
         shinyjs::toggle(id = "export_box", condition = length(input$group_sel_input)==1)
-
       })
       
       ## Create new groups
       observeEvent(input$action_groups_union,{
-        toggleModal(session, "modal_create_group")
         union_germplasms_id <- rv_plot$groups[group_id %in% input$group_sel_input, unlist(germplasmDbIds)]
         germplasms <- unique(rv$data[germplasmDbId %in% union_germplasms_id, .(germplasmDbId, germplasmName)])
         group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
@@ -824,16 +894,8 @@ mod_scatterplot_server <- function(id, rv){
         }]
         rv_plot$selection <- selection_data
         
-        output$modal_create_group_ui <- renderUI({
-          tagList(
-            tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
-            tags$p(rv_plot$selection[,germplasmNames_label]),
-            textInput(ns("modal_create_group_text_input_label"), label = "group label", value = paste("group", rv_plot$selection[,group_id]), placeholder = "group label"),
-            textAreaInput(ns("modal_create_group_text_input_descr"), label = "group description", placeholder = "group description", resize = "vertical",
-                          value = paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∪ ")),
-            actionButton(ns("modal_create_group_go"), label = "Create")
-          )
-        })
+        showModal(groupModal("Create new group from Union", 
+                             paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∪ ")))
       })
       observeEvent(input$action_groups_intersect,{
         toggleModal(session, "modal_create_group")
@@ -856,20 +918,17 @@ mod_scatterplot_server <- function(id, rv){
         }]
         rv_plot$selection <- selection_data
         
-        output$modal_create_group_ui <- renderUI({
-          if(rv_plot$selection[1,N>0]){
-            tagList(
-              tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
-              tags$p(rv_plot$selection[,germplasmNames_label]),
-              textInput(ns("modal_create_group_text_input_label"), label = "group label", value = paste("group", rv_plot$selection[,group_id]), placeholder = "group label"),
-              textAreaInput(ns("modal_create_group_text_input_descr"), label = "group description", placeholder = "group description", resize = "vertical",
-                            value = paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∩ ")),
-              actionButton(ns("modal_create_group_go"), label = "Create")
+        if(rv_plot$selection[1,N>0]){
+          showModal(
+            groupModal(
+              "Create new group from Complement",
+              paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∩ ")
             )
-          }else{
-            tags$label("This intersection results in an empty group.")
-          }
-        })
+          )
+        } else {
+          showModal(modalDialog(tags$label("This intersection results in an empty group.")))
+        }
+       
       })
       observeEvent(input$action_groups_complement,{
         toggleModal(session, "modal_create_group")
@@ -892,16 +951,12 @@ mod_scatterplot_server <- function(id, rv){
         }]
         rv_plot$selection <- selection_data
         
-        output$modal_create_group_ui <- renderUI({
-          tagList(
-            tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
-            tags$p(rv_plot$selection[,germplasmNames_label]),
-            textInput(ns("modal_create_group_text_input_label"), label = "Group Name", value = paste("group", rv_plot$selection[,group_id]), placeholder = "Group Name"),
-            textAreaInput(ns("modal_create_group_text_input_descr"), label = "Group Description", placeholder = "Group Description", resize = "vertical",
-                          value = paste("Complement of (", paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∪ "), ")")),
-            actionButton(ns("modal_create_group_go"), label = "Create")
+        showModal(
+          groupModal(
+            "Create new group from Complement",
+            paste("Complement of (", paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∪ "), ")")
           )
-        })
+        )
       })
       
       observeEvent(input$action_groups_plot_creation_params,{
@@ -945,12 +1000,12 @@ mod_scatterplot_server <- function(id, rv){
         
         ## delete groups
         rv_plot$groups <- rv_plot$groups[!(group_id %in% input$group_sel_input)]
-      })
-      
+      })      
       
       observeEvent(input$action_groups_export_as_list,{
-        toggleModal(session, "modal_export_group_as_list", toggle = "open")
-        output$modal_export_group_as_list_ui <- renderUI(
+        showModal(modalDialog(
+          fade = F,
+          title = "Export Group as List",
           tagList(
             textInput(
               ns("listName"),
@@ -965,22 +1020,26 @@ mod_scatterplot_server <- function(id, rv){
               value = rv_plot$groups[group_id == input$group_sel_input, group_desc],
               placeholder = "Description of a List",
               width = "100%"
-            ),
-            uiOutput(ns("go_create_list_ui"))
+            )
+          ),
+          easyClose = TRUE,
+          footer = tagList(
+            modalButton("Cancel"),
+            actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-info")
           )
-        )
+        ))
       })
       
-      observeEvent(c(input$listDescription, input$listName), {
-        if(input$listName != "" & input$listDescription != ""){
-          output$go_create_list_ui <- renderUI({actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-primary")})
-        }else{
-          output$go_create_list_ui <- renderUI({actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-primary", disabled = "")})
-        }
-      })
+      # observeEvent(c(input$listDescription, input$listName), {
+      #   if(input$listName != "" & input$listDescription != ""){
+      #     output$go_create_list_ui <- renderUI({actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-primary")})
+      #   }else{
+      #     output$go_create_list_ui <- renderUI({actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-primary", disabled = "")})
+      #   }
+      # })
       
       observeEvent(input$go_create_list,{
-        toggleModal(session, "modal_export_group_as_list", toggle = "close")
+        removeModal()
         req(length(input$group_sel_input)==1)
         tryCatch({
           brapirv2::brapi_post_lists(
@@ -1005,17 +1064,18 @@ mod_scatterplot_server <- function(id, rv){
       
       observeEvent(input$action_groups_mark_as_selection,{
         req(length(input$group_sel_input)==1)
-        toggleModal(session, "modal_export_group_mark_as_selection", toggle = "open")
-        output$modal_export_group_mark_as_selection_ui <- renderUI({
-          
-          envs <- unique(rv$data_plot[,.(studyDbId, study_name_app)])
-          env_choices <- envs[,studyDbId]
-          names(env_choices) <- envs[,study_name_app]
-          
-          trait_classes <- rv$ontology_variables[,unique(trait.traitClass)]
-          
+        envs <- unique(rv$data_plot[,.(studyDbId, study_name_app)])
+        env_choices <- envs[,studyDbId]
+        names(env_choices) <- envs[,study_name_app]
+        
+        #TODO propose only variables that are selection type
+        #trait_classes <- rv$ontology_variables[,unique(trait.traitClass)]
+        
+        showModal(modalDialog(
+          fade = F,
+          title = "Export Group as List",
           tagList(
-            checkboxGroupInput(
+            awesomeCheckboxGroup(
               inputId = ns("mark_as_sel_envs"),
               label = "Environments",
               choices = env_choices,
@@ -1028,26 +1088,28 @@ mod_scatterplot_server <- function(id, rv){
               choices = NULL,
               inline = T
             ),
-            pickerInput(
-              inputId = ns("mark_as_sel_trait_classes"),
-              label = "Filter Variable by Trait Class",
-              choices = trait_classes,
-              inline = T
-            ),
-            radioButtons(
+            # pickerInput(
+            #   inputId = ns("mark_as_sel_trait_classes"),
+            #   label = "Filter Variable by Trait Class",
+            #   choices = trait_classes,
+            #   inline = T
+            # ),
+            awesomeRadio(
               ns("mark_as_sel_all_plots_radio"),
               label = "",
-              choiceNames = c("Mark all plots", "Mark the first replicate of each plot"),
-              choiceValues = c("all", "rep1"),
-              selected = "rep1"
+              choices = list(all = "Mark all plots", rep1 = "Mark the first replicate of each plot"),
+              selected = "rep1",
+              status = "primary"
             ),
-            uiOutput(ns("mark_as_sel_info")),
-            actionButton(
-              ns("action_groups_mark_as_selection_go"),
-              "OK", style = "primary"
-            )
+            #uiOutput(ns("mark_as_sel_info")),
+          ),
+          easyClose = TRUE,
+          footer = tagList(
+            modalButton("Cancel"),
+            actionButton(ns("action_groups_mark_as_selection_go"),
+                         "OK", style = "primary")
           )
-        })
+        ))
       })
       
       
@@ -1356,6 +1418,11 @@ mod_scatterplot_server <- function(id, rv){
         rv$data_plot <- data_plot
         
       })
+      
+      # observeEvent(input$toggleButton, {
+      #   browser()
+      #   session$sendCustomMessage(type = "toggle", message = list(id = "collapseCardBody"))
+      # })
     }
   )
 }
