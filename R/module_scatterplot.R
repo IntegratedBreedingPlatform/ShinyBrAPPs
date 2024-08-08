@@ -134,44 +134,46 @@ mod_scatterplot_ui <- function(id){
            )
          ),
          sidebar = bslib::sidebar(
-             position = "right",
-             width = 300,
-             fluidRow(
-               column(12,uiOutput(ns("ui_groups")))
-             ),
-             fluidRow(
-               column(12,
-                  bslib::card(
-                    class = ns("at_least_one_group_selected"),
-                    bslib::card_header(
-                      h4('Actions ', icon('screwdriver-wrench'))
-                    ),
-                    bslib::card_body(
-                      #title = span('Options ', icon('screwdriver-wrench')),
-                      #width = 12,
-                      #h4('Actions ', icon('screwdriver-wrench')),
-                      actionButton(ns("action__seplot_creation_params"),label = "Visualize like at group creation", block = T, css.class = paste("btn btn-info", ns("one_group_selected"))),
-                      actionButton(ns("action_groups_union"),label = "Union", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
-                      actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
-                      actionButton(ns("action_groups_complement"),label = "Complement", block = T, css.class = paste("btn btn-info", ns("at_least_one_group_selected"))),
-                      actionButton(ns("action_groups_delete"),label = "Delete", block = T, css.class =paste("btn btn-info", ns("at_least_one_group_selected")))
-                    )
+           id = "groups_sidebar",
+           position = "right",
+           #open = F,
+           width = 300,
+           fluidRow(
+             column(12,uiOutput(ns("ui_groups")))
+           ),
+           fluidRow(
+             column(12,
+                bslib::card(
+                  class = ns("at_least_one_group_selected"),
+                  bslib::card_header(
+                    h4('Actions ', icon('screwdriver-wrench'))
                   ),
-                  bslib::card(
-                    id = ns("export_box"),
-                    bslib::card_header(
-                      h4('Export ')
-                    ),
-                    bslib::card_body(
-                      downloadButton(ns("action_groups_export_group_details"),label = "Export Group Details", class = "btn-block btn-primary"),
-                      actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome"),
-                      actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome")
-                    )
+                  bslib::card_body(
+                    #title = span('Options ', icon('screwdriver-wrench')),
+                    #width = 12,
+                    #h4('Actions ', icon('screwdriver-wrench')),
+                    actionButton(ns("action__seplot_creation_params"),label = "Visualize like at group creation", block = T, css.class = paste("btn btn-info", ns("one_group_selected"))),
+                    actionButton(ns("action_groups_union"),label = "Union", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
+                    actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
+                    actionButton(ns("action_groups_complement"),label = "Complement", block = T, css.class = paste("btn btn-info", ns("at_least_one_group_selected"))),
+                    actionButton(ns("action_groups_delete"),label = "Delete", block = T, css.class =paste("btn btn-info", ns("at_least_one_group_selected")))
                   )
-               )
-             )
-           )
-         )
+                ),
+                bslib::card(
+                  id = ns("export_box"),
+                  bslib::card_header(
+                    h4('Export ')
+                  ),
+                  bslib::card_body(
+                    downloadButton(ns("action_groups_export_group_details"),label = "Export Group Details", class = "btn-block btn-primary"),
+                    actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome"),
+                    actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome")
+                  )
+                )
+              )
+            )
+          )
+        )
       )
     ),
     # bsModal(ns("modal_export_group_as_list"), "Export Group as List", NULL, size = "l",
@@ -288,9 +290,22 @@ mod_scatterplot_server <- function(id, rv){
         
         print("update variable selectors: debut")
         
-        num_var_choices <- rv$column_datasource[type == "Numerical",.(cols = list(cols)), source]
-        non_num_var_choices <- rv$column_datasource[type != "Numerical",.(cols = list(cols)), source]
-        var_choices_all <- rv$column_datasource[,.(cols = list(cols)), source]
+        #update names of sources
+        picker_section_names <- data.table(source=c("GxE",
+                                                    "plot",
+                                                    "germplasm",
+                                                    "environment",
+                                                    "Means"),
+                                           rename=c("Measured variable",
+                                                    "Observation units attributes",
+                                                    "Germplasm attributes",
+                                                    "Environment details",
+                                                    "Means"))
+        column_datasource <- merge(rv$column_datasource, picker_section_names, by = c("source"), all.x = T)[!is.na(rename), source := rename][,rename := NULL]
+        
+        num_var_choices <- column_datasource[type == "Numerical" & visible,.(cols = list(cols)), source]
+        non_num_var_choices <- column_datasource[type != "Numerical" & visible == T,.(cols = list(cols)), source]
+        var_choices_all <- column_datasource[visible == T,.(cols = list(cols)), source]
         
         if(input$switch_aggregate == T){
           shinyjs::show("aggregate_by")
@@ -306,8 +321,8 @@ mod_scatterplot_server <- function(id, rv){
             var_choices_SHAPE <- rv$column_datasource[type != "Numerical" & !(source %in% "plot"),.(cols = list(cols)), source]
             var_choices_COLOUR <- rv$column_datasource[type == "Numerical" | !(source %in% c("plot")),.(cols = list(cols)), source]
           }else if(input$aggregate_by == "germplasm"){
-            var_choices_SHAPE <- rv$column_datasource[type != "Numerical" & !(source %in% c("plot", "environment")),.(cols = list(cols)), source]
-            var_choices_COLOUR <- rv$column_datasource[type == "Numerical" | !(source %in% c("plot", "environment")),.(cols = list(cols)), source]
+            var_choices_SHAPE <- rv$column_datasource[type != "Numerical" & !(source %in% c("Observation Unit attributes", "Environment details")),.(cols = list(cols)), source]
+            var_choices_COLOUR <- rv$column_datasource[type == "Numerical" | !(source %in% c("Observation Unit attributes", "Environment details")),.(cols = list(cols)), source]
           }
         }else{
           shinyjs::hide("aggregate_by")
@@ -327,6 +342,19 @@ mod_scatterplot_server <- function(id, rv){
         # shinyjs::toggle("ui_SHAPE", condition = input$switch_aggregate==T)
         # shinyjs::toggle("ui_COLOUR", condition = input$switch_aggregate==T)
         # shinyjs::toggle("ui_SIZE", condition = input$switch_aggregate==T)
+        
+        picker_section_names <- data.table(source=c("GxE",
+                                                    "plot",
+                                                    "germplasm",
+                                                    "environment",
+                                                    "Means",
+                                                    "group"),
+                                           rename=c("Measured variable",
+                                                    "Observation units attributes",
+                                                    "Germplasm attributes",
+                                                    "Environment details",
+                                                    "Means",
+                                                    "Group"))
         
         # Work around for pickerInputs with option groups that have only one option.
         # The default behaviour is to display only the group name.
@@ -365,38 +393,31 @@ mod_scatterplot_server <- function(id, rv){
         if(isTruthy(input$picker_SHAPE)){val_picker_SHAPE <- input$picker_SHAPE}
         if(isTruthy(input$picker_COLOUR)){val_picker_COLOUR <- input$picker_COLOUR}
         if(isTruthy(input$picker_SIZE)){val_picker_SIZE <- input$picker_SIZE}
-        picker_section_names <- data.frame(source=c("GxE",
-                                                    "plot",
-                                                    "germplasm",
-                                                    "environment"),
-                                           rename=c("Measured variable",
-                                                    "Observation units attributes",
-                                                    "Germplasm attributes",
-                                                    "Environment details"))
+
         updatePickerInput(
           session = session, inputId = "picker_X",
-          choices = setNames(num_var_choices[,cols], picker_section_names$rename[match(num_var_choices[,source], picker_section_names$source)]),
+          choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
           selected = val_picker_X
         )
         updatePickerInput(
           session = session, inputId = "picker_Y",
-          choices = setNames(num_var_choices[,cols], picker_section_names$rename[match(num_var_choices[,source], picker_section_names$source)]),
+          choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
           selected = val_picker_Y
         )
         
         updatePickerInput(
           session = session, inputId = "picker_SIZE",
-          choices = c(no_selection, setNames(num_var_choices[,cols], picker_section_names$rename[match(num_var_choices[,source], picker_section_names$source)])),
+          choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
           selected = val_picker_SIZE
         )
         updatePickerInput(
           session = session, inputId = "picker_SHAPE",
-          choices = c(no_selection, setNames(var_choices_SHAPE[,cols], picker_section_names$rename[match(var_choices_SHAPE[,source], picker_section_names$source)])),
+          choices = setNames(var_choices_SHAPE[,cols], var_choices_SHAPE[,source]),
           selected = val_picker_SHAPE
         )
         updatePickerInput(
           session = session, inputId = "picker_COLOUR",
-          choices = c(no_selection, setNames(var_choices_COLOUR[,cols], picker_section_names$rename[match(var_choices_COLOUR[,source], picker_section_names$source)])),
+          choices = setNames(var_choices_COLOUR[,cols], var_choices_COLOUR[,source]),
           selected = val_picker_COLOUR
         )
       })
@@ -810,7 +831,6 @@ mod_scatterplot_server <- function(id, rv){
         modalDialog(
           title = modal_title,
           fade = F,
-          size = "l",
           tagList(
             tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
             tags$p(rv_plot$selection[,germplasmNames_label]),
@@ -845,7 +865,7 @@ mod_scatterplot_server <- function(id, rv){
         rv$column_datasource <- rbindlist(
           list(
             rv$column_datasource,
-            data.table(cols = input$modal_create_group_text_input_label, source = "group", type = "Text")
+            data.table(cols = input$modal_create_group_text_input_label, source = "group", type = "Text", visible = T)
           )
         )
         rv$data_plot <- data_plot
@@ -856,7 +876,20 @@ mod_scatterplot_server <- function(id, rv){
         removeModal()
         #toggleModal(session, "modal_create_group", toggle = "close")
       })
+      
+      
       observeEvent(rv_plot$groups$group_id,{
+        if (!is.null(rv_plot$groups) && length(rv_plot$groups)>0) {
+          bslib::sidebar_toggle(
+            id = "groups_sidebar",
+            open = T
+          )
+        } else {
+          bslib::sidebar_toggle(
+            id = "groups_sidebar",
+            open = F
+          )
+        }
         req(rv_plot$groups)
         output$ui_groups <- renderUI({
           group_selector(input_id = ns("group_sel_input"), group_table = rv_plot$groups, column_datasource = rv$column_datasource, data_plot = rv$data_plot, panel_style = "info")

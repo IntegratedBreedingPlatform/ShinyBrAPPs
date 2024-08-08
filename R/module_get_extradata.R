@@ -64,9 +64,10 @@ mod_get_extradata_server <- function(id, rv){
             source = "plot"
           )
 
-          ## GxE
+          ## Observations
           traits <- rv$data[, unique(observationVariableName)]
           column_datasource[cols %in% traits, source := "GxE"]
+          column_datasource[grepl("BLUE", cols) | grepl("BLUP", cols) , source := "Means"]
 
           ## environment
           column_datasource[cols %in% names(environmentParameters) & cols != "studyDbId", source := "environment"]
@@ -158,7 +159,12 @@ mod_get_extradata_server <- function(id, rv){
           nothing <- lapply(column_datasource[type=="Numerical", cols], function(col){
             data_plot[,eval(col) := as.numeric(eval(as.name(col)))]
           })
-
+          
+          hidden_cols <- c("scale.dataType", "entryNumber", "environmentNumber", "germplasmDbId", "observationUnitDbId", "studyDbId", "programDbId",
+                                   "programName", "study_name_BMS", "study_name_abbrev_app", "study_name_app", "environment_number", "entryNumber", "locationDbId")
+          column_datasource <- column_datasource[, visible := T]
+          column_datasource <- column_datasource[cols %in% hidden_cols, visible := F]
+          
           rv$environmentParameters <- environmentParameters
           rv$data_plot <- data_plot
 
