@@ -365,31 +365,38 @@ mod_scatterplot_server <- function(id, rv){
         if(isTruthy(input$picker_SHAPE)){val_picker_SHAPE <- input$picker_SHAPE}
         if(isTruthy(input$picker_COLOUR)){val_picker_COLOUR <- input$picker_COLOUR}
         if(isTruthy(input$picker_SIZE)){val_picker_SIZE <- input$picker_SIZE}
-        
+        picker_section_names <- data.frame(source=c("GxE",
+                                                    "plot",
+                                                    "germplasm",
+                                                    "environment"),
+                                           rename=c("Measured variable",
+                                                    "Observation units attributes",
+                                                    "Germplasm attributes",
+                                                    "Environment details"))
         updatePickerInput(
           session = session, inputId = "picker_X",
-          choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
+          choices = setNames(num_var_choices[,cols], picker_section_names$rename[match(num_var_choices[,source], picker_section_names$source)]),
           selected = val_picker_X
         )
         updatePickerInput(
           session = session, inputId = "picker_Y",
-          choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
+          choices = setNames(num_var_choices[,cols], picker_section_names$rename[match(num_var_choices[,source], picker_section_names$source)]),
           selected = val_picker_Y
         )
         
         updatePickerInput(
           session = session, inputId = "picker_SIZE",
-          choices = c(no_selection, setNames(num_var_choices[,cols], num_var_choices[,source])),
+          choices = c(no_selection, setNames(num_var_choices[,cols], picker_section_names$rename[match(num_var_choices[,source], picker_section_names$source)])),
           selected = val_picker_SIZE
         )
         updatePickerInput(
           session = session, inputId = "picker_SHAPE",
-          choices = c(no_selection, setNames(var_choices_SHAPE[,cols], var_choices_SHAPE[,source])),
+          choices = c(no_selection, setNames(var_choices_SHAPE[,cols], picker_section_names$rename[match(var_choices_SHAPE[,source], picker_section_names$source)])),
           selected = val_picker_SHAPE
         )
         updatePickerInput(
           session = session, inputId = "picker_COLOUR",
-          choices = c(no_selection, setNames(var_choices_COLOUR[,cols], var_choices_COLOUR[,source])),
+          choices = c(no_selection, setNames(var_choices_COLOUR[,cols], picker_section_names$rename[match(var_choices_COLOUR[,source], picker_section_names$source)])),
           selected = val_picker_COLOUR
         )
       })
