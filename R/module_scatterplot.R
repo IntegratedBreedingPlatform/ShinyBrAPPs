@@ -24,15 +24,16 @@ mod_scatterplot_ui <- function(id){
            label = "Environments",
            choices = NULL,
            width = "100%",
+           options = list(container = "body"), 
            multiple = T
          ),
          #tags$h4("Aggregate observations", style = "display:inline", class = "space-right"),
          fluidRow(
            materialSwitch(inputId = ns("switch_aggregate"), label = "Aggregate observations", value = F, inline = T, status = "info"),
-           pickerInput(ns("aggregate_by"), "Aggregate by", choices =  c("germplasm and environment", "germplasm"), selected = "germplasm", multiple = F)
+           pickerInput(ns("aggregate_by"), "Aggregate by",  options = list(container = "body"), choices =  c("germplasm and environment", "germplasm"), selected = "germplasm", multiple = F)
          ),
          fluidRow(
-           column(6, pickerInput(ns("picker_X"), "X", choices = NULL)),
+           column(6, pickerInput(ns("picker_X"), "X",  options = list(container = "body"), choices = NULL)),
            column(6, hidden(pickerInput(ns("aggreg_fun_X"), "Aggregate", choices = c("mean", "max", "min", "sum"))))
          ),
          fluidRow(
@@ -44,7 +45,7 @@ mod_scatterplot_ui <- function(id){
           column(6, hidden(pickerInput(ns("ref_genotype_X"), "Reference", choices = NULL, inline = T)))
         ),
          fluidRow(
-           column(6, pickerInput(ns("picker_Y"), "Y", choices = NULL)),
+           column(6, pickerInput(ns("picker_Y"), "Y",  options = list(container = "body"), choices = NULL)),
            column(6, hidden(pickerInput(ns("aggreg_fun_Y"), "Aggregate", choices = c("mean", "max", "min", "sum"))))
          ),
         fluidRow(
@@ -70,32 +71,32 @@ mod_scatterplot_ui <- function(id){
                fluidRow(
                  column(2, strong("Shape")),
                  column(5, 
-                        div(style = "display:inline-block; width: 100%;",pickerInput(ns("picker_SHAPE"), choices = c("---" = ""), selected = ""))
+                        div(style = "display:inline-block; width: 100%;",pickerInput(ns("picker_SHAPE"), options = list(container = "body"), choices = c("---" = ""), selected = ""))
                  ),
                  column(5, 
-                        div(style = "display:inline-block; width: 100%;",pickerInput(ns("aggreg_fun_SHAPE"), choices = c("concatenate unique values"="unique_values")))
+                        div(style = "display:inline-block; width: 100%;",pickerInput(ns("aggreg_fun_SHAPE"),  options = list(container = "body"), choices = c("concatenate unique values"="unique_values")))
                  )
                ),
                fluidRow(
                  column(2, strong("Colour")),
                  column(5, 
                         div(style = "display:inline-block; width: 100%;",
-                            pickerInput(ns("picker_COLOUR"), choices = c("---" = ""), selected = ""))
+                            pickerInput(ns("picker_COLOUR"),  options = list(container = "body"), choices = c("---" = ""), selected = ""))
                  ), 
                  column(5, 
                         div(style = "display:inline-block; width: 100%;",
-                            pickerInput(ns("aggreg_fun_COLOUR"), choices = c("concatenate unique values"="unique_values")))
+                            pickerInput(ns("aggreg_fun_COLOUR"),  options = list(container = "body"), choices = c("concatenate unique values"="unique_values")))
                  )
                ),
                fluidRow(
                  column(2, strong("Size")),
                  column(5, 
                         div(style = "display:inline-block; width: 100%;",
-                            pickerInput(ns("picker_SIZE"), choices = c("---"= ""), selected = ""))
+                            pickerInput(ns("picker_SIZE"),  options = list(container = "body"), choices = c("---"= ""), selected = ""))
                  ),
                  column(5, 
                         div(style = "display:inline-block; width: 100%;",
-                            pickerInput(ns("aggreg_fun_SIZE"), choices = c("concatenate unique values"="unique_values")))
+                            pickerInput(ns("aggreg_fun_SIZE"),  options = list(container = "body"), choices = c("concatenate unique values"="unique_values")))
                  )
                )
              )
