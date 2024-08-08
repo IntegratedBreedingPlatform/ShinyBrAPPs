@@ -12,183 +12,172 @@ mod_scatterplot_ui <- function(id){
           align-items: center;
           height: 100%; /* Optionnel, pour centrer verticalement dans une colonne pleine hauteur */
         }
-        
         ",
-        
       )
     ),
-    bslib::page_navbar(
-      selected = "Studies",
-      collapsible = TRUE,
-      position = "fixed-top",
-      bslib::nav_panel(
-        title = "Studies",
-        bslib::layout_sidebar(
-          sidebar = bslib::sidebar(
-            width = 350,
-             pickerInput(
-               inputId = ns("env"),
-               label = "Environments",
-               choices = NULL,
-               width = "100%",
-               multiple = T
-             ),
-             #tags$h4("Aggregate observations", style = "display:inline", class = "space-right"),
-             fluidRow(
-               materialSwitch(inputId = ns("switch_aggregate"), label = "Aggregate observations", value = F, inline = T, status = "info"),
-               pickerInput(ns("aggregate_by"), "Aggregate by", choices =  c("germplasm and environment", "germplasm"), selected = "germplasm", multiple = F)
-             ),
-             fluidRow(
-               column(6, pickerInput(ns("picker_X"), "X", choices = NULL)),
-               column(6, hidden(pickerInput(ns("aggreg_fun_X"), "Aggregate", choices = c("mean", "max", "min", "sum"))))
-             ),
-             fluidRow(
-               column(6, awesomeCheckbox(ns("express_X_as_ranks"), label = "As ranks")),
-               column(6, hidden(switchInput(ns("ranking_order_X"), onLabel = "asc", offLabel = "desc", size = "mini")))
-             ),
-            fluidRow(
-              column(6, awesomeCheckbox(ns("express_X_relative"), label = "relatively to genotype")),
-              column(6, hidden(pickerInput(ns("ref_genotype_X"), "Reference", choices = NULL, inline = T)))
-            ),
-             fluidRow(
-               column(6, pickerInput(ns("picker_Y"), "Y", choices = NULL)),
-               column(6, hidden(pickerInput(ns("aggreg_fun_Y"), "Aggregate", choices = c("mean", "max", "min", "sum"))))
-             ),
-            fluidRow(
-              column(6, awesomeCheckbox(ns("express_Y_as_ranks"), label = "As ranks"), inline = T),
-              column(6, hidden(switchInput(ns("ranking_order_Y"), onLabel = "asc", offLabel = "desc", size = "mini")))
-            ),
-            fluidRow(
-              column(6, awesomeCheckbox(ns("express_Y_relative"), label = "relatively to genotype"), inline = T),
-              column(6, hidden(pickerInput(ns("ref_genotype_Y"), "Reference", choices = NULL, inline = T)))
-            ),
-             div(
-               bslib::card(
-                 bslib::card_header(
-                   h4('Options ', icon('screwdriver-wrench'))
-                 ),
-                 bslib::card_body(
-                   fluidRow(
-                     column(2),
-                     column(5, strong("Variables")),
-                     column(5, hidden(strong("Aggregate", id = ns("aggregate_text"))))
-                   ),
-                   
-                   fluidRow(
-                     column(2, strong("Shape")),
-                     column(5, 
-                            div(style = "display:inline-block; width: 100%;",pickerInput(ns("picker_SHAPE"), choices = c("---" = ""), selected = ""))
-                     ),
-                     column(5, 
-                            div(style = "display:inline-block; width: 100%;",pickerInput(ns("aggreg_fun_SHAPE"), choices = c("concatenate unique values"="unique_values")))
-                     )
-                   ),
-                   fluidRow(
-                     column(2, strong("Colour")),
-                     column(5, 
-                            div(style = "display:inline-block; width: 100%;",
-                                pickerInput(ns("picker_COLOUR"), choices = c("---" = ""), selected = ""))
-                     ), 
-                     column(5, 
-                            div(style = "display:inline-block; width: 100%;",
-                                pickerInput(ns("aggreg_fun_COLOUR"), choices = c("concatenate unique values"="unique_values")))
-                     )
-                   ),
-                   fluidRow(
-                     column(2, strong("Size")),
-                     column(5, 
-                            div(style = "display:inline-block; width: 100%;",
-                                pickerInput(ns("picker_SIZE"), choices = c("---"= ""), selected = ""))
-                     ),
-                     column(5, 
-                            div(style = "display:inline-block; width: 100%;",
-                                pickerInput(ns("aggreg_fun_SIZE"), choices = c("concatenate unique values"="unique_values")))
-                     )
-                   )
-                 )
-               )
-             )
-          ),
-
-          bslib::card(
-            full_screen = TRUE,
-            bslib::layout_sidebar(
-              
-             plotlyOutput(
-               ns("scatterplot"), width = "100%", height = "600px"
-               # click = ns("scatterplot_click"),
-               # hover = ns("scatterplot_hover"),
-               # brush = ns("scatterplot_brush")
-             ),
-             bsTooltip(ns("scatterplot"), title = "Tip: press the shift key for multiple mouse selection", placement = "left"),
-             fluidRow(
-               column(
-                 12,
-                 hidden(actionButton(ns("go_regression"), "Draw Regression", css.class = "btn btn-info", `aria-pressed`="true", icon = "box")),
-                 uiOutput(ns("ui_clusters"), inline = T),
-                 span(class = ns("ui_create_group"), style = "display: none;",
-                      actionButton(ns("go_create_group"), "Create Group", css.class = "btn btn-info")
-                 ),
-                 bsModal(ns("modal_create_group"), "Create Group", NULL, size = "small",
-                         uiOutput(ns("modal_create_group_ui")))
-               )
-             ),
-             fluidRow(
-               column(
-                 12,
-                 uiOutput(ns("regression_output"))
-               )
-             ),
-             sidebar = bslib::sidebar(
-                 position = "right",
-                 width = 300,
-                 fluidRow(
-                   column(12,uiOutput(ns("ui_groups")))
-                 ),
-                 fluidRow(
-                   column(12,
-                      bslib::card(
-                        class = ns("at_least_one_group_selected"),
-                        bslib::card_header(
-                          h4('Actions ', icon('screwdriver-wrench'))
-                        ),
-                        bslib::card_body(
-                          #title = span('Options ', icon('screwdriver-wrench')),
-                          #width = 12,
-                          #h4('Actions ', icon('screwdriver-wrench')),
-                          actionButton(ns("action__seplot_creation_params"),label = "Visualize like at group creation", block = T, css.class = paste("btn btn-info", ns("one_group_selected"))),
-                          actionButton(ns("action_groups_union"),label = "Union", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
-                          actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
-                          actionButton(ns("action_groups_complement"),label = "Complement", block = T, css.class = paste("btn btn-info", ns("at_least_one_group_selected"))),
-                          actionButton(ns("action_groups_delete"),label = "Delete", block = T, css.class =paste("btn btn-info", ns("at_least_one_group_selected")))
-                        )
-                      ),
-                      bslib::card(
-                        id = ns("export_box"),
-                        bslib::card_header(
-                          h4('Export ')
-                        ),
-                        bslib::card_body(
-                          downloadButton(ns("action_groups_export_group_details"),label = "Export Group Details", class = "btn-block btn-primary"),
-                          actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome"),
-                          actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome")
-                        )
-                      )
-                   )
-                 )
-               )
-             )
-          )
+    
+    bslib::layout_sidebar(
+      sidebar = bslib::sidebar(
+        width = 350,
+         pickerInput(
+           inputId = ns("env"),
+           label = "Environments",
+           choices = NULL,
+           width = "100%",
+           multiple = T
+         ),
+         #tags$h4("Aggregate observations", style = "display:inline", class = "space-right"),
+         fluidRow(
+           materialSwitch(inputId = ns("switch_aggregate"), label = "Aggregate observations", value = F, inline = T, status = "info"),
+           pickerInput(ns("aggregate_by"), "Aggregate by", choices =  c("germplasm and environment", "germplasm"), selected = "germplasm", multiple = F)
+         ),
+         fluidRow(
+           column(6, pickerInput(ns("picker_X"), "X", choices = NULL)),
+           column(6, hidden(pickerInput(ns("aggreg_fun_X"), "Aggregate", choices = c("mean", "max", "min", "sum"))))
+         ),
+         fluidRow(
+           column(6, awesomeCheckbox(ns("express_X_as_ranks"), label = "As ranks")),
+           column(6, hidden(switchInput(ns("ranking_order_X"), onLabel = "asc", offLabel = "desc", size = "mini")))
+         ),
+        fluidRow(
+          column(6, awesomeCheckbox(ns("express_X_relative"), label = "relatively to genotype")),
+          column(6, hidden(pickerInput(ns("ref_genotype_X"), "Reference", choices = NULL, inline = T)))
         ),
-        # bsModal(ns("modal_export_group_as_list"), "Export Group as List", NULL, size = "l",
-        #         uiOutput(ns("modal_export_group_as_list_ui"))),
-        # bsModal(ns("modal_export_group_mark_as_selection"), "Mark as Selection", NULL, size = "l",
-        #         uiOutput(ns("modal_export_group_mark_as_selection_ui")))
+         fluidRow(
+           column(6, pickerInput(ns("picker_Y"), "Y", choices = NULL)),
+           column(6, hidden(pickerInput(ns("aggreg_fun_Y"), "Aggregate", choices = c("mean", "max", "min", "sum"))))
+         ),
+        fluidRow(
+          column(6, awesomeCheckbox(ns("express_Y_as_ranks"), label = "As ranks"), inline = T),
+          column(6, hidden(switchInput(ns("ranking_order_Y"), onLabel = "asc", offLabel = "desc", size = "mini")))
+        ),
+        fluidRow(
+          column(6, awesomeCheckbox(ns("express_Y_relative"), label = "relatively to genotype"), inline = T),
+          column(6, hidden(pickerInput(ns("ref_genotype_Y"), "Reference", choices = NULL, inline = T)))
+        ),
+         div(
+           bslib::card(
+             bslib::card_header(
+               h4('Options ', icon('screwdriver-wrench'))
+             ),
+             bslib::card_body(
+               fluidRow(
+                 column(2),
+                 column(5, strong("Variables")),
+                 column(5, hidden(strong("Aggregate", id = ns("aggregate_text"))))
+               ),
+               
+               fluidRow(
+                 column(2, strong("Shape")),
+                 column(5, 
+                        div(style = "display:inline-block; width: 100%;",pickerInput(ns("picker_SHAPE"), choices = c("---" = ""), selected = ""))
+                 ),
+                 column(5, 
+                        div(style = "display:inline-block; width: 100%;",pickerInput(ns("aggreg_fun_SHAPE"), choices = c("concatenate unique values"="unique_values")))
+                 )
+               ),
+               fluidRow(
+                 column(2, strong("Colour")),
+                 column(5, 
+                        div(style = "display:inline-block; width: 100%;",
+                            pickerInput(ns("picker_COLOUR"), choices = c("---" = ""), selected = ""))
+                 ), 
+                 column(5, 
+                        div(style = "display:inline-block; width: 100%;",
+                            pickerInput(ns("aggreg_fun_COLOUR"), choices = c("concatenate unique values"="unique_values")))
+                 )
+               ),
+               fluidRow(
+                 column(2, strong("Size")),
+                 column(5, 
+                        div(style = "display:inline-block; width: 100%;",
+                            pickerInput(ns("picker_SIZE"), choices = c("---"= ""), selected = ""))
+                 ),
+                 column(5, 
+                        div(style = "display:inline-block; width: 100%;",
+                            pickerInput(ns("aggreg_fun_SIZE"), choices = c("concatenate unique values"="unique_values")))
+                 )
+               )
+             )
+           )
+         )
       ),
-      bslib::nav_panel(
-        title = "GxE"
+
+      bslib::card(
+        full_screen = TRUE,
+        bslib::layout_sidebar(
+          
+         plotlyOutput(
+           ns("scatterplot"), width = "100%", height = "600px"
+           # click = ns("scatterplot_click"),
+           # hover = ns("scatterplot_hover"),
+           # brush = ns("scatterplot_brush")
+         ),
+         bsTooltip(ns("scatterplot"), title = "Tip: press the shift key for multiple mouse selection", placement = "left"),
+         fluidRow(
+           column(
+             12,
+             hidden(actionButton(ns("go_regression"), "Draw Regression", css.class = "btn btn-info", `aria-pressed`="true", icon = "box")),
+             uiOutput(ns("ui_clusters"), inline = T),
+             span(class = ns("ui_create_group"), style = "display: none;",
+                  actionButton(ns("go_create_group"), "Create Group", css.class = "btn btn-info")
+             ),
+             bsModal(ns("modal_create_group"), "Create Group", NULL, size = "small",
+                     uiOutput(ns("modal_create_group_ui")))
+           )
+         ),
+         fluidRow(
+           column(
+             12,
+             uiOutput(ns("regression_output"))
+           )
+         ),
+         sidebar = bslib::sidebar(
+             position = "right",
+             width = 300,
+             fluidRow(
+               column(12,uiOutput(ns("ui_groups")))
+             ),
+             fluidRow(
+               column(12,
+                  bslib::card(
+                    class = ns("at_least_one_group_selected"),
+                    bslib::card_header(
+                      h4('Actions ', icon('screwdriver-wrench'))
+                    ),
+                    bslib::card_body(
+                      #title = span('Options ', icon('screwdriver-wrench')),
+                      #width = 12,
+                      #h4('Actions ', icon('screwdriver-wrench')),
+                      actionButton(ns("action__seplot_creation_params"),label = "Visualize like at group creation", block = T, css.class = paste("btn btn-info", ns("one_group_selected"))),
+                      actionButton(ns("action_groups_union"),label = "Union", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
+                      actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
+                      actionButton(ns("action_groups_complement"),label = "Complement", block = T, css.class = paste("btn btn-info", ns("at_least_one_group_selected"))),
+                      actionButton(ns("action_groups_delete"),label = "Delete", block = T, css.class =paste("btn btn-info", ns("at_least_one_group_selected")))
+                    )
+                  ),
+                  bslib::card(
+                    id = ns("export_box"),
+                    bslib::card_header(
+                      h4('Export ')
+                    ),
+                    bslib::card_body(
+                      downloadButton(ns("action_groups_export_group_details"),label = "Export Group Details", class = "btn-block btn-primary"),
+                      actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome"),
+                      actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome")
+                    )
+                  )
+               )
+             )
+           )
+         )
       )
-    ))
+    ),
+    # bsModal(ns("modal_export_group_as_list"), "Export Group as List", NULL, size = "l",
+    #         uiOutput(ns("modal_export_group_as_list_ui"))),
+    # bsModal(ns("modal_export_group_mark_as_selection"), "Mark as Selection", NULL, size = "l",
+    #         uiOutput(ns("modal_export_group_mark_as_selection_ui")))
+  )
 }
 
 #' @export

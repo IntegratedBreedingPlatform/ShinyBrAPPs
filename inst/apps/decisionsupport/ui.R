@@ -31,7 +31,18 @@ ui <- fluidPage(
         mod_banner_ui("banner"),
         mod_get_studydata_ui("get_studydata"),
         mod_get_extradata_ui("get_extradata"),
-        mod_scatterplot_ui("scatterplot")
+        bslib::page_navbar(
+          selected = "Studies",
+          #position = "fixed-top",
+          bslib::nav_panel(
+            title = "Studies",
+            mod_scatterplot_ui("scatterplot")
+          ),
+          bslib::nav_panel(
+            title = "GxE",
+            mod_gxe_ui("gxe")
+          )
+        )
       )
   ),
 )
