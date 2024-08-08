@@ -172,8 +172,8 @@ mod_trialdataxplor_server <- function(id, rv){
        req(rv$data_dq[,.N]>0)
        data_dq <- rv$data_dq
        #browser()
-       ct <- dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(studyLocation,Variable=observationVariableName)],
-                   Variable~studyLocation, fill = 0)
+       ct <- dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(locationName,Variable=observationVariableName)],
+                   Variable~locationName, fill = 0)
        output$counts_table <- renderTable(ct)
        vnd <- melt(ct, variable.name = "StudyLocation")[value==0,.(StudyLocation, Variable)]
        rv$var_no_dat <- vnd
