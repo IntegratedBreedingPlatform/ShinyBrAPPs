@@ -755,7 +755,7 @@ mod_scatterplot_server <- function(id, rv){
         shinyjs::toggle(selector = paste0(".",ns("ui_create_group")), condition = rv_plot$plot_selection[,.N]>0)
         req(dim(rv_plot$plot_selection)[1]>0)
         germplasms <- unique(rv$data_plot[germplasmDbId %in% rv_plot$plot_selection[,unique(key)], .(germplasmDbId, germplasmName)])
-        group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
+        group_id <- ifelse(is.null(rv_plot$groups$group_id) || length(rv_plot$groups$group_id) == 0, 1, max(rv_plot$groups$group_id) + 1)
         selection_data <- data.table(
           group_id = group_id,
           N = germplasms[,.N],
