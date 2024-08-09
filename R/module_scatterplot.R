@@ -200,6 +200,7 @@ mod_scatterplot_server <- function(id, rv){
       rv_plot$counter_kmeans <- 0
       rv_plot$selected_express_X_as <- NULL
       rv_plot$selected_express_Y_as <- NULL
+      rv_plot$selection_variables <- NULL
       
       ## function for data aggregation
       aggreg_functions <- data.table(
@@ -301,9 +302,9 @@ mod_scatterplot_server <- function(id, rv){
                                                     "Germplasm attributes",
                                                     "Environment details",
                                                     "Means"))
-        column_datasource <- merge(rv$column_datasource, picker_section_names, by = c("source"), all.x = T)[!is.na(rename), source := rename][,rename := NULL]
-        
-        num_var_choices <- column_datasource[type == "Numerical" & visible,.(cols = list(cols)), source]
+        column_datasource <- merge(rv$column_datasource, picker_section_names, by = c("source"), all.x = T)[!is.na(rename), source := rename]
+
+        num_var_choices <- column_datasource[type == "Numerical" & visible == T,.(cols = list(cols)), source]
         non_num_var_choices <- column_datasource[type != "Numerical" & visible == T,.(cols = list(cols)), source]
         var_choices_all <- column_datasource[visible == T,.(cols = list(cols)), source]
         
@@ -318,11 +319,11 @@ mod_scatterplot_server <- function(id, rv){
           shinyjs::show("express_X_relative")
           shinyjs::show("express_Y_relative")
           if(input$aggregate_by == "germplasm and environment"){
-            var_choices_SHAPE <- rv$column_datasource[type != "Numerical" & !(source %in% "plot"),.(cols = list(cols)), source]
-            var_choices_COLOUR <- rv$column_datasource[type == "Numerical" | !(source %in% c("plot")),.(cols = list(cols)), source]
+            var_choices_SHAPE <- column_datasource[visible == T & type != "Numerical" & !(source %in% "Observation units attributes"),.(cols = list(cols)), source]
+            var_choices_COLOUR <- column_datasource[visible == T & type == "Numerical" & !(source %in% c("Observation units attributes")),.(cols = list(cols)), source]
           }else if(input$aggregate_by == "germplasm"){
-            var_choices_SHAPE <- rv$column_datasource[type != "Numerical" & !(source %in% c("Observation Unit attributes", "Environment details")),.(cols = list(cols)), source]
-            var_choices_COLOUR <- rv$column_datasource[type == "Numerical" | !(source %in% c("Observation Unit attributes", "Environment details")),.(cols = list(cols)), source]
+            var_choices_SHAPE <- column_datasource[visible == T & type != "Numerical" & !(source %in% c("Observation Unit attributes", "Environment details")),.(cols = list(cols)), source]
+            var_choices_COLOUR <- column_datasource[visible == T & type == "Numerical" & !(source %in% c("Observation Unit attributes", "Environment details")),.(cols = list(cols)), source]
           }
         }else{
           shinyjs::hide("aggregate_by")
@@ -337,24 +338,6 @@ mod_scatterplot_server <- function(id, rv){
           var_choices_SHAPE <- non_num_var_choices
           var_choices_COLOUR <- var_choices_all
         }
-        
-        
-        # shinyjs::toggle("ui_SHAPE", condition = input$switch_aggregate==T)
-        # shinyjs::toggle("ui_COLOUR", condition = input$switch_aggregate==T)
-        # shinyjs::toggle("ui_SIZE", condition = input$switch_aggregate==T)
-        
-        picker_section_names <- data.table(source=c("GxE",
-                                                    "plot",
-                                                    "germplasm",
-                                                    "environment",
-                                                    "Means",
-                                                    "group"),
-                                           rename=c("Measured variable",
-                                                    "Observation units attributes",
-                                                    "Germplasm attributes",
-                                                    "Environment details",
-                                                    "Means",
-                                                    "Group"))
         
         # Work around for pickerInputs with option groups that have only one option.
         # The default behaviour is to display only the group name.
@@ -1091,6 +1074,19 @@ mod_scatterplot_server <- function(id, rv){
         }))
       })
       
+      #Function to retrieve variables of selection type :
+      # First, filter on traitClass = selection_trait_class (config param) in WS 
+      # Then, get variables with traitName = selection_trait_name (config param)
+      getSelectionVariables <- function(studyDbIds) {
+        res <- brapirv2::brapi_post_search_variables(
+          con = rv$con, 
+          studyDbId = studyDbIds,
+          traitClasses = selection_traitClass
+        )
+        var <- data.table(brapirv2::brapi_get_search_variables_searchResultsDbId(rv$con, res$searchResultsDbId))
+        var <- var[trait.traitName == selection_traitName, .(observationVariableDbId, observationVariableName)]
+      }
+      
       
       observeEvent(input$action_groups_mark_as_selection,{
         req(length(input$group_sel_input)==1)
@@ -1099,7 +1095,10 @@ mod_scatterplot_server <- function(id, rv){
         names(env_choices) <- envs[,study_name_app]
         
         #TODO propose only variables that are selection type
-        #trait_classes <- rv$ontology_variables[,unique(trait.traitClass)]
+        variables <- getSelectionVariables(env_choices)
+        variable_choices <- variables[, observationVariableDbId]
+        names(variable_choices) <- variables[, observationVariableName]
+        
         
         showModal(modalDialog(
           fade = F,
@@ -1115,7 +1114,7 @@ mod_scatterplot_server <- function(id, rv){
             pickerInput(
               inputId = ns("mark_as_sel_var_to_use"),
               label = "Variable to use",
-              choices = NULL,
+              choices = variable_choices,
               inline = T
             ),
             # pickerInput(
@@ -1127,7 +1126,7 @@ mod_scatterplot_server <- function(id, rv){
             awesomeRadio(
               ns("mark_as_sel_all_plots_radio"),
               label = "",
-              choices = list(all = "Mark all plots", rep1 = "Mark the first replicate of each plot"),
+              choices = list(`Mark all plots` = "all", `Mark the first replicate of each plot` = "rep1"),
               selected = "rep1",
               status = "primary"
             ),
@@ -1244,7 +1243,7 @@ mod_scatterplot_server <- function(id, rv){
             }
           })
         })
-        toggleModal(session, "modal_export_group_mark_as_selection", toggle = "open")
+        removeModal()
         rv_plot$as_sel_data <- NULL
       })
       
