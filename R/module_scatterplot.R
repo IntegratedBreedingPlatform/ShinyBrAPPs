@@ -107,7 +107,7 @@ mod_scatterplot_ui <- function(id){
       bslib::card(
         full_screen = TRUE,
         bslib::layout_sidebar(
-          
+
          plotlyOutput(
            ns("scatterplot"), width = "100%", height = "600px"
            # click = ns("scatterplot_click"),
@@ -134,7 +134,7 @@ mod_scatterplot_ui <- function(id){
            )
          ),
          sidebar = bslib::sidebar(
-           id = "groups_sidebar",
+           id = ns("groups_sidebar"),
            position = "right",
            #open = F,
            width = 300,
@@ -224,7 +224,6 @@ mod_scatterplot_server <- function(id, rv){
         }
       }
       
-      
       observe({
         req(rv$data_plot)
         req(rv$column_datasource)
@@ -253,6 +252,7 @@ mod_scatterplot_server <- function(id, rv){
         )
       })
       
+      
       observe({
         req(rv$data_plot)
         ## update group of germplasms
@@ -273,14 +273,6 @@ mod_scatterplot_server <- function(id, rv){
             `live-search` = TRUE
           )
         )
-      })
-      
-      observeEvent(input$left_side,{
-        updateControlbar(id = "sidebar", session = session)
-      })
-      
-      observeEvent(input$right_side,{
-        updateControlbar(id = "controlbar", session = session)
       })
       
       ## update variable selectors
@@ -862,22 +854,23 @@ mod_scatterplot_server <- function(id, rv){
       
       
       observeEvent(rv_plot$groups$group_id,{
-        if (!is.null(rv_plot$groups) && length(rv_plot$groups)>0) {
-          bslib::sidebar_toggle(
+        if (!is.null(rv_plot$groups) && nrow(rv_plot$groups)>0) {
+          bslib::toggle_sidebar(
             id = "groups_sidebar",
             open = T
           )
         } else {
-          bslib::sidebar_toggle(
+          bslib::toggle_sidebar(
             id = "groups_sidebar",
             open = F
           )
         }
         req(rv_plot$groups)
+        req(length(rv_plot$groups) > 0)
         output$ui_groups <- renderUI({
           group_selector(input_id = ns("group_sel_input"), group_table = rv_plot$groups, column_datasource = rv$column_datasource, data_plot = rv$data_plot, panel_style = "info")
         })
-      })
+      }, ignoreNULL = TRUE)
       
       observe({
         shinyjs::toggle(selector = paste0(".",ns("at_least_one_group_selected")), condition = length(input$group_sel_input)>0)
