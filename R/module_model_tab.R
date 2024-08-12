@@ -1236,7 +1236,7 @@ mod_model_server <- function(id, rv){
   
           missing_observation_units <- NULL
           observation_units <- NULL
-          if (is.null(existing_obs_units)) {
+          if (nrow(existing_obs_units)==0) {
             print("no existing_obs_units")
             missing_observation_units <- needed_observation_units
           } else {
