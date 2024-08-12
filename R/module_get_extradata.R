@@ -161,7 +161,8 @@ mod_get_extradata_server <- function(id, rv){
           })
           
           hidden_cols <- c("scale.dataType", "entryNumber", "environmentNumber", "germplasmDbId", "observationUnitDbId", "studyDbId", "programDbId",
-                                   "programName", "study_name_BMS", "study_name_abbrev_app", "study_name_app", "environment_number", "entryNumber", "locationDbId")
+                           "programName", "study_name_BMS", "study_name_abbrev_app", "study_name_app", "environment_number", "entryNumber", 
+                           "locationDbId", "location_name", "location_abbrev", "trialDbId", "trialName")
           column_datasource <- column_datasource[, visible := T]
           column_datasource <- column_datasource[cols %in% hidden_cols, visible := F]
           
