@@ -20,7 +20,7 @@ mod_get_studydata_ui <- function(id){
                 textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://bms-uat-test.net/bmsapi", value = "https://bms-uat.ibp.services/bmsapi", width = "100%"),
                 textInput(ns("token"), "Token", placeholder = "Enter Token", value = "", width = "100%"),
                 textInput(ns("cropDb"), "CropDb", value = "maize", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
-                #pickerInput(ns("picker_obs_unit_level"), label = "Observation unit levels", choices = c("PLOT", "MEANS"), multiple = T), 
+                selectInput(ns("picker_obs_unit_level"), label = "Observation unit levels", choices = c("PLOT", "MEANS"), selected = c("PLOT", "MEANS"), multiple = T, width = "100%"),
                 selectizeInput(
                   ns("trials"), label = "Study", choices = NULL, multiple = FALSE, width = "100%",
                   options = list(
@@ -79,7 +79,7 @@ mod_get_studydata_ui <- function(id){
 }
 
 #' @export
-mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_dev = NULL
+mod_get_studydata_server <- function(id, rv, obs_unit_level = NULL, dataset_4_dev = NULL){ # XXX dataset_4_dev = NULL
   moduleServer(
     id,
     function(input, output, session){
@@ -149,12 +149,14 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
             rv$study_metadata <- study_metadata
 
-            if (isTruthy(obs_level_url)) {
-              rv$obs_unit_level <- parse_GET_param()$obs_unit_level
-            } else {
-              rv$obs_unit_level <- "PLOT" 
-            }
-            
+            if (isTruthy(can_filter_obs_unit_level_in_url)) {
+              chosen_levels <- parse_GET_param()$obs_unit_level
+              if (!is.null(chosen_levels)) {
+                rv$obs_unit_level <- intersect(rv$obs_unit_levels, chosen_levels)
+              } else {
+                rv$obs_unit_level <- NULL
+              }
+            } 
 
           }else{
 
@@ -163,10 +165,13 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             shinyjs::hide(id = "get_studydata_by_url")
 
             ### BrAPI GET trials
-            observeEvent(c(input$apiURL, input$token, input$cropDb),{
+            observeEvent(c(input$apiURL, input$token, input$cropDb, input$picker_obs_unit_level),{
               req(input$apiURL)
               req(input$token)
               req(input$cropDb)
+              req(input$picker_obs_unit_level)
+              
+              rv$obs_unit_level <-  input$picker_obs_unit_level
   
               updateSelectizeInput(
                 session = session, inputId = "trials", choices = "",
@@ -254,6 +259,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
       ## load environment data
       observeEvent(input$load_env,{
         req(input$environments)
+        req(rv$study_metadata)
         req(rv$study_metadata)
         env_to_load(input$environments)
       })

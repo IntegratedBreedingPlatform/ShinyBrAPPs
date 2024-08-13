@@ -5,7 +5,8 @@
 brapi_version <- "2.0"
 notification_duration = 10 # in seconds
 appname <- "BMS trial data explorer"
-obs_level_url <- F
+can_filter_obs_unit_level_in_url <- F
+obs_unit_level <- c("PLOT")
 
 
 

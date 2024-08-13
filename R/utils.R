@@ -76,6 +76,19 @@ get_env_data <- function(con = NULL,
     if (!"observations.observationDbId" %in% colnames(study_obs)) {
       study_obs <- NULL
     } else {
+      
+      #to manage the case when we get MEANS and PLOTS
+      if ("observationUnitPosition.observationLevelRelationships.levelCode" %in% names(study_obs)) {
+        study_obs[, levelCode := `observationUnitPosition.observationLevelRelationships.levelCode`]
+      } else {
+        study_obs[, levelCode := NA]
+      }
+      if ("observationUnitPosition.observationLevelRelationships.levelName" %in% names(study_obs)) {
+        study_obs[, levelName := `observationUnitPosition.observationLevelRelationships.levelName`]
+      } else {
+        study_obs[, levelName := NA]
+      }
+      
       study_obs <- study_obs[, .(
         observationUnitDbId,
         observationUnitName,
@@ -94,10 +107,8 @@ get_env_data <- function(con = NULL,
         observationLevelCode = `observationUnitPosition.observationLevel.levelCode`, 
         entryType = `observationUnitPosition.entryType`,
         entryNumber = `additionalInfo.ENTRY_NO`,
-        levelCode = ifelse("observationUnitPosition.observationLevelRelationships.levelCode" %in% colnames(study_obs),
-                           `observationUnitPosition.observationLevelRelationships.levelCode`, NA),
-        levelName = ifelse("observationUnitPosition.observationLevelRelationships.levelName" %in% colnames(study_obs),
-                           `observationUnitPosition.observationLevelRelationships.levelName`, NA),
+        levelCode,
+        levelName,
         positionCoordinateX = `observationUnitPosition.positionCoordinateX`,
         positionCoordinateY = `observationUnitPosition.positionCoordinateY`,
         observationTimeStamp = `observations.observationTimeStamp`, 
