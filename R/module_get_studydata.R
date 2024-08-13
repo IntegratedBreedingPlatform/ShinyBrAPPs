@@ -152,7 +152,7 @@ mod_get_studydata_server <- function(id, rv, obs_unit_level = NULL, dataset_4_de
             if (isTruthy(can_filter_obs_unit_level_in_url)) {
               chosen_levels <- parse_GET_param()$obs_unit_level
               if (!is.null(chosen_levels)) {
-                rv$obs_unit_level <- intersect(rv$obs_unit_levels, chosen_levels)
+                rv$obs_unit_level <- intersect(rv$obs_unit_level, chosen_levels)
               } else {
                 rv$obs_unit_level <- NULL
               }
@@ -171,7 +171,7 @@ mod_get_studydata_server <- function(id, rv, obs_unit_level = NULL, dataset_4_de
               req(input$cropDb)
               req(input$picker_obs_unit_level)
               
-              rv$obs_unit_level <-  input$picker_obs_unit_level
+              #rv$obs_unit_level <-  input$picker_obs_unit_level
   
               updateSelectizeInput(
                 session = session, inputId = "trials", choices = "",
@@ -271,6 +271,7 @@ mod_get_studydata_server <- function(id, rv, obs_unit_level = NULL, dataset_4_de
         req(env_to_load())
         req(rv$study_metadata)
         study_metadata <- rv$study_metadata
+        browser()
         withProgress(message = "Loading", value = 0, {
           n_studies <- length(env_to_load())
 
