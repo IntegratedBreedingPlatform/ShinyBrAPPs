@@ -48,8 +48,7 @@ get_env_data <- function(con = NULL,
                          stu_name_app = NULL, 
                          stu_name_abbrev_app = NULL, 
                          obs_unit_level = NULL){
-  
-  study <- data.table()
+
   try({
     if (is.null(obs_unit_level)) {
       study_obs <- as.data.table(brapirv2::brapi_get_observationunits(
@@ -95,8 +94,10 @@ get_env_data <- function(con = NULL,
         observationLevelCode = `observationUnitPosition.observationLevel.levelCode`, 
         entryType = `observationUnitPosition.entryType`,
         entryNumber = `additionalInfo.ENTRY_NO`,
-        levelCode = `observationUnitPosition.observationLevelRelationships.levelCode`,
-        levelName = `observationUnitPosition.observationLevelRelationships.levelName`,
+        levelCode = ifelse("observationUnitPosition.observationLevelRelationships.levelCode" %in% colnames(study_obs),
+                           `observationUnitPosition.observationLevelRelationships.levelCode`, NA),
+        levelName = ifelse("observationUnitPosition.observationLevelRelationships.levelName" %in% colnames(study_obs),
+                           `observationUnitPosition.observationLevelRelationships.levelName`, NA),
         positionCoordinateX = `observationUnitPosition.positionCoordinateX`,
         positionCoordinateY = `observationUnitPosition.positionCoordinateY`,
         observationTimeStamp = `observations.observationTimeStamp`, 

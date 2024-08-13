@@ -20,6 +20,7 @@ mod_get_studydata_ui <- function(id){
                 textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://bms-uat-test.net/bmsapi", value = "https://bms-uat.ibp.services/bmsapi", width = "100%"),
                 textInput(ns("token"), "Token", placeholder = "Enter Token", value = "", width = "100%"),
                 textInput(ns("cropDb"), "CropDb", value = "maize", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
+                #pickerInput(ns("picker_obs_unit_level"), label = "Observation unit levels", choices = c("PLOT", "MEANS"), multiple = T), 
                 selectizeInput(
                   ns("trials"), label = "Study", choices = NULL, multiple = FALSE, width = "100%",
                   options = list(
@@ -78,7 +79,7 @@ mod_get_studydata_ui <- function(id){
 }
 
 #' @export
-mod_get_studydata_server <- function(id, rv, obs_unit_level = NULL, dataset_4_dev = NULL){ # XXX dataset_4_dev = NULL
+mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_dev = NULL
   moduleServer(
     id,
     function(input, output, session){
@@ -147,6 +148,13 @@ mod_get_studydata_server <- function(id, rv, obs_unit_level = NULL, dataset_4_de
             env_to_load(study_metadata[,unique(studyDbId)])
 
             rv$study_metadata <- study_metadata
+
+            if (isTruthy(obs_level_url)) {
+              rv$obs_unit_level <- parse_GET_param()$obs_unit_level
+            } else {
+              rv$obs_unit_level <- "PLOT" 
+            }
+            
 
           }else{
 
@@ -271,7 +279,7 @@ mod_get_studydata_server <- function(id, rv, obs_unit_level = NULL, dataset_4_de
               loc_name_abbrev = rv$study_metadata[studyDbId == id,unique(location_name_abbrev)],
               stu_name_app = rv$study_metadata[studyDbId == id,unique(study_name_app)],
               stu_name_abbrev_app = rv$study_metadata[studyDbId == id,unique(study_name_abbrev_app)],
-              obs_unit_level = obs_unit_level
+              obs_unit_level = rv$obs_unit_level
             )
             if (!is.null(study)) { rv$study_metadata[studyDbId == id,loaded:=T] }
             return(study)
