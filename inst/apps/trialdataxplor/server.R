@@ -12,8 +12,7 @@ rv <- reactiveValues(
   locs=NULL,
   study_no_dat=NULL,
   var_no_dat=NULL,
-  candidat_out=NULL,
-  obs_unit_level = obs_unit_level
+  candidat_out=NULL
 )
 
 

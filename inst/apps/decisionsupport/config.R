@@ -3,6 +3,6 @@ appname <- "DSBrAPP"
 selection_traitClass <- "Breedingprocess"
 selection_traitName <- "Selections"
 can_filter_obs_unit_level_in_url <- T
-obs_unit_level <- c("PLOT", "MEANS")
+allowed_obs_unit_levels <- c("PLOT", "MEANS")
 
 notification_duration = 10 # in seconds

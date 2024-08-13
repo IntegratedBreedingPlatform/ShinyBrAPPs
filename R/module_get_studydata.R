@@ -20,7 +20,7 @@ mod_get_studydata_ui <- function(id){
                 textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://bms-uat-test.net/bmsapi", value = "https://bms-uat.ibp.services/bmsapi", width = "100%"),
                 textInput(ns("token"), "Token", placeholder = "Enter Token", value = "", width = "100%"),
                 textInput(ns("cropDb"), "CropDb", value = "maize", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
-                selectInput(ns("picker_obs_unit_level"), label = "Observation unit levels", choices = c("PLOT", "MEANS"), selected = c("PLOT", "MEANS"), multiple = T, width = "100%"),
+                selectInput(ns("picker_obs_unit_level"), label = "Observation unit levels", choices = allowed_obs_unit_levels, selected = allowed_obs_unit_levels, multiple = T, width = "100%"),
                 selectizeInput(
                   ns("trials"), label = "Study", choices = NULL, multiple = FALSE, width = "100%",
                   options = list(
@@ -79,7 +79,7 @@ mod_get_studydata_ui <- function(id){
 }
 
 #' @export
-mod_get_studydata_server <- function(id, rv, obs_unit_level = NULL, dataset_4_dev = NULL){ # XXX dataset_4_dev = NULL
+mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_dev = NULL
   moduleServer(
     id,
     function(input, output, session){
@@ -152,12 +152,12 @@ mod_get_studydata_server <- function(id, rv, obs_unit_level = NULL, dataset_4_de
             if (isTruthy(can_filter_obs_unit_level_in_url)) {
               chosen_levels <- parse_GET_param()$obs_unit_level
               if (!is.null(chosen_levels)) {
-                rv$chosen_obs_unit_level <- intersect(rv$obs_unit_level, chosen_levels)
+                rv$obs_unit_level <- intersect(allowed_obs_unit_levels, chosen_levels)
               } else {
-                rv$chosen_obs_unit_level <- NULL
+                rv$obs_unit_level <- NULL
               }
             } else {
-              rv$chosen_obs_unit_level <- rv$obs_unit_level
+              rv$obs_unit_level <- allowed_obs_unit_levels
             }
 
           }else{
@@ -173,7 +173,7 @@ mod_get_studydata_server <- function(id, rv, obs_unit_level = NULL, dataset_4_de
               req(input$cropDb)
               req(input$picker_obs_unit_level)
               
-              #rv$obs_unit_level <-  input$picker_obs_unit_level
+              rv$obs_unit_level <-  input$picker_obs_unit_level
   
               updateSelectizeInput(
                 session = session, inputId = "trials", choices = "",
@@ -287,7 +287,7 @@ mod_get_studydata_server <- function(id, rv, obs_unit_level = NULL, dataset_4_de
               loc_name_abbrev = rv$study_metadata[studyDbId == id,unique(location_name_abbrev)],
               stu_name_app = rv$study_metadata[studyDbId == id,unique(study_name_app)],
               stu_name_abbrev_app = rv$study_metadata[studyDbId == id,unique(study_name_abbrev_app)],
-              obs_unit_level =rv$chosen_obs_unit_level
+              obs_unit_level =rv$obs_unit_level
             )
             if (!is.null(study)) { rv$study_metadata[studyDbId == id,loaded:=T] }
             return(study)

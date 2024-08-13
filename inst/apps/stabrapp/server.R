@@ -5,8 +5,7 @@ rv <- reactiveValues(
   data = NULL,                # trial data as a data.table object
   excluded_obs = NULL,        # vector of excluded observations.observationDbId (data quality module)
   pushOK = FALSE,             # to avoid pushing BLUES/BLUPS to easily
-  appname = appname,
-  obs_unit_level = obs_unit_level
+  appname = appname
 )
 
 server <- function(input, output, session){

@@ -1,5 +1,4 @@
-rv <- reactiveValues(appname = appname,
-                     obs_unit_level = obs_unit_level)
+rv <- reactiveValues(appname = appname)
 
 server <- function(input, output, session){
   rv <- mod_get_studydata_server("get_studydata", rv)
