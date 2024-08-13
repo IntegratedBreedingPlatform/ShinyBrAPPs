@@ -104,7 +104,7 @@ mod_scatterplot_ui <- function(id){
          )
       ),
 
-      bslib::card(
+      bslib::card(height = "800px",
         full_screen = TRUE,
         bslib::layout_sidebar(
 
