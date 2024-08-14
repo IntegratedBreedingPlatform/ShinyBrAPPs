@@ -138,16 +138,14 @@ mod_gxe_ui <- function(id){
                         choices = c("scatter", "line", "trellis", "scatterFit"), selected = "line"),
             pickerInput(ns("FW_picker_color_by"), label="Color by", choices = c("sensitivity clusters")),
             #materialSwitch(ns("FW_cluster_sensitivity"), "Color by sensitivity clusters", value = FALSE, status = "info"),
-            numericInput(ns("FW_cluster_sensitivity_nb"),"Number of clusters", min = 1, max = 10, step = 1, value = 1),
+            numericInput(ns("FW_cluster_sensitivity_nb"),"Number of clusters", min = 1, max = 8, step = 1, value = 1),
             pickerInput(ns("FW_picker_cluster_on"), label="Cluster on", choices = c(sensitivity="sens", `genotype means`="genMean"), multiple = TRUE, selected = "sens")
           ),
           bslib::layout_columns(
             #### Accordion results ####
             bslib::accordion(id = ns("FW_accord1"),
                              #actionButton(ns("expand_MM_accord1"),label = "Open all", class = "btn btn-info"),
-                             bslib::accordion_panel(title = "Analysis summary", 
-                                                    verbatimTextOutput(ns("FW_text_output")) 
-                             ),
+
                              bslib::accordion_panel(title = "FW plot",
                                                     bslib::layout_columns(
                                                     bslib::card(full_screen = T,
@@ -156,6 +154,9 @@ mod_gxe_ui <- function(id){
                                                     ),
                                                     bslib::card(DT::dataTableOutput(ns("FW_sens_clusters_DT")))
                                                     )
+                             ),
+                             bslib::accordion_panel(title = "Analysis summary", 
+                                                    verbatimTextOutput(ns("FW_text_output")) 
                              )
             )
           )
@@ -212,7 +213,8 @@ mod_gxe_server <- function(id, rv){
 
         updatePickerInput(
           session, "picker_env",
-          choices = env_choices
+          choices = env_choices,
+          selected = env_choices
         )
        
       })
@@ -494,6 +496,7 @@ mod_gxe_server <- function(id, rv){
       })
       ### FW plot ####
       observe({
+        req(rv$TDFW)
         output$FW_plot <- renderPlot({
         #output$FW_plot <- renderPlotly({
           TDFWplot <- rv$TDFW
@@ -518,6 +521,7 @@ mod_gxe_server <- function(id, rv){
         })
       })
       observe({
+        req(rv$sensclust)
         output$FW_sens_clusters_DT <- DT::renderDataTable(rv$sensclust[,.(genotype, sensitivity_cluster, sens, genMean)])
       })
     }
