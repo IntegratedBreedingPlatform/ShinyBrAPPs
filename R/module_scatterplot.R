@@ -312,10 +312,10 @@ mod_scatterplot_server <- function(id, rv){
           shinyjs::show("express_Y_relative")
           if(input$aggregate_by == "germplasm and environment"){
             var_choices_SHAPE <- column_datasource[visible == T & type != "Numerical" & !(source %in% "Observation units attributes"),.(cols = list(cols)), source]
-            var_choices_COLOUR <- column_datasource[visible == T & type == "Numerical" & !(source %in% c("Observation units attributes")),.(cols = list(cols)), source]
+            var_choices_COLOUR <- column_datasource[visible == T & (type == "Numerical" | type == "Text") & !(source %in% c("Observation units attributes")),.(cols = list(cols)), source]
           }else if(input$aggregate_by == "germplasm"){
             var_choices_SHAPE <- column_datasource[visible == T & type != "Numerical" & !(source %in% c("Observation Unit attributes", "Environment details")),.(cols = list(cols)), source]
-            var_choices_COLOUR <- column_datasource[visible == T & type == "Numerical" & !(source %in% c("Observation Unit attributes", "Environment details")),.(cols = list(cols)), source]
+            var_choices_COLOUR <- column_datasource[visible == T & (type == "Numerical" | type == "Text") & !(source %in% c("Observation Unit attributes", "Environment details")),.(cols = list(cols)), source]
           }
         }else{
           shinyjs::hide("aggregate_by")
