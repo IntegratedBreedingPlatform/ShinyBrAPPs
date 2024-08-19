@@ -454,9 +454,10 @@ mod_gxe_server <- function(id, rv){
         bslib::accordion_panel_set(id="MM_accord2", values=TRUE)
       })
       observe({
+        req(rv$TDVarComp)
         if (is.null(rv$TDVarComp$nestingFactor)){
           predict_levels <- "genotype"
-          if (dropsVarComp$useLocYear){
+          if (rv$TDVarComp$useLocYear){
             predict_levels <- c("genotype","trial")
           }
         } else {
