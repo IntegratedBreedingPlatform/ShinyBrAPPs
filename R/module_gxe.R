@@ -136,7 +136,7 @@ mod_gxe_ui <- function(id){
             pickerInput(ns("FW_picker_plot_type"),
                         label="Plot type",
                         choices = c("scatter", "line", "trellis", "scatterFit"), selected = "line"),
-            pickerInput(ns("FW_picker_color_by"), label="Color by", choices = c("sensitivity clusters")),
+            pickerInput(ns("FW_picker_color_by"), label="Color by", multiple = F, choices = c("Nothing","sensitivity clusters")),
             #materialSwitch(ns("FW_cluster_sensitivity"), "Color by sensitivity clusters", value = FALSE, status = "info"),
             numericInput(ns("FW_cluster_sensitivity_nb"),"Number of clusters", min = 1, max = 8, step = 1, value = 1),
             pickerInput(ns("FW_picker_cluster_on"), label="Cluster on", choices = c(sensitivity="sens", `genotype means`="genMean"), multiple = TRUE, selected = "sens")
@@ -297,7 +297,7 @@ mod_gxe_server <- function(id, rv){
       observeEvent(input$picker_germplasm_attr, {
         updatePickerInput(
           session, "FW_picker_color_by",
-          choices = c(input$picker_germplasm_attr,"sensitivity clusters"),
+          choices = c("Nothing",input$picker_germplasm_attr,"sensitivity clusters"),
           selected = character(0)
         )
       }
@@ -449,7 +449,7 @@ mod_gxe_server <- function(id, rv){
           } else {
             data.table()[]
           }
-        })
+        }, rownames= FALSE)
         bslib::accordion_panel_set(id="MM_accord1", values=TRUE)
         bslib::accordion_panel_set(id="MM_accord2", values=TRUE)
       })
@@ -473,7 +473,7 @@ mod_gxe_server <- function(id, rv){
           } else {
             data.table()[]
           }
-        })
+        },rownames= FALSE)
         
       })
       ### Expand all accordion panels ####
@@ -509,21 +509,26 @@ mod_gxe_server <- function(id, rv){
               #browser()
               sensclust <- data.table(rv$TDFW$estimates)
               sensclust <- sensclust[!is.na(sens)]
-              sensclust <- sensclust[,sensitivity_cluster:=kmeans(.SD,centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
+              #browser()
+              sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
               rv$sensclust <- sensclust
               TDFWplot$TD <- lapply(TDFWplot$TD, function(a) data.table(a)[sensclust, on=.(genotype)])
               #ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster"))
               plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
             } else {
-              #ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by))
-              plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
+              if (input$FW_picker_color_by=="Nothing"){
+                plot(TDFWplot, plotType = input$FW_picker_plot_type)
+              } else {
+                #ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by))
+                plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
+              }
             }
           }
         })
       })
       observe({
         req(rv$sensclust)
-        output$FW_sens_clusters_DT <- DT::renderDataTable(rv$sensclust[,.(genotype, sensitivity_cluster, sens, genMean)])
+        output$FW_sens_clusters_DT <- DT::renderDataTable(rv$sensclust[,.(genotype, sensitivity_cluster, sens, genMean)],rownames= FALSE)
       })
     }
   )
