@@ -136,7 +136,7 @@ mod_scatterplot_ui <- function(id){
          sidebar = bslib::sidebar(
            id = ns("groups_sidebar"),
            position = "right",
-           #open = F,
+           open = F,
            width = 300,
            fluidRow(
              column(12,uiOutput(ns("ui_groups")))
