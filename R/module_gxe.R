@@ -17,8 +17,11 @@ mod_gxe_ui <- function(id){
             #   h4('Options ', icon('screwdriver-wrench'))
             # ),
             width = 350,
-            pickerInput(ns("picker_trait"), label = "Trait", choices = c()),
-            pickerInput(ns("picker_germplasm_level"), label = "Germplasm level", choices = c("germplasmDbId","germplasmName"), selected = "GermplasmDbId"),
+            pickerInput(ns("picker_trait"), label = tags$span(style="color: red;","Trait"), choices = c()),
+            materialSwitch(ns("use_weights"),label = "Use weights", value = FALSE, inline = T, status = "info"),
+            pickerInput(ns("weight_var"), label = "Weight variable", choices = c()),
+            pickerInput(ns("picker_germplasm_level"), label = tags$span(style="color: red;","Germplasm level"), choices = c("germplasmDbId","germplasmName"), selected = "GermplasmDbId"),
+            pickerInput(ns("picker_env_variable"), label = tags$span(style="color: red;","Variable to use as Environment Name"), choices = c()),
             pickerInput(ns("picker_env"),
                         label = "Environments",
                         choices = c(),
@@ -57,7 +60,7 @@ mod_gxe_ui <- function(id){
             pickerInput(ns("picker_gxe_mm_env_struct"),
                       label = "Environment structure",
                       options = list(container = "body"), 
-                      choices = c(`Environments correspond to trials`=1,
+                      choices = c(`Trials correspond to environments`=1,
                                   `Trials form a factorial structure of locations x years`=2,
                                   `Trials are nested within year`=3,
                                   `Trials are nested within locations`=4,
@@ -138,7 +141,7 @@ mod_gxe_ui <- function(id){
                         choices = c("scatter", "line", "trellis", "scatterFit"), selected = "line"),
             pickerInput(ns("FW_picker_color_by"), label="Color by", multiple = F, choices = c("Nothing","sensitivity clusters")),
             #materialSwitch(ns("FW_cluster_sensitivity"), "Color by sensitivity clusters", value = FALSE, status = "info"),
-            numericInput(ns("FW_cluster_sensitivity_nb"),"Number of clusters", min = 1, max = 8, step = 1, value = 1),
+            numericInput(ns("FW_cluster_sensitivity_nb"),"Number of clusters", min = 2, max = 8, step = 1, value = 2),
             pickerInput(ns("FW_picker_cluster_on"), label="Cluster on", choices = c(sensitivity="sens", `genotype means`="genMean"), multiple = TRUE, selected = "sens")
           ),
           bslib::layout_columns(
@@ -148,10 +151,13 @@ mod_gxe_ui <- function(id){
 
                              bslib::accordion_panel(title = "FW plot",
                                                     bslib::layout_columns(
-                                                    bslib::card(full_screen = T,
+                                                    bslib::card(full_screen = T, height = "800",
                                                       #plotlyOutput(ns("FW_plot"))
-                                                      plotOutput(ns("FW_plot"))
+                                                      #plotOutput(ns("FW_plot"))
+                                                      materialSwitch(ns("FW_plot_interact"),"Interactive plot", value=FALSE, status="info"),
+                                                      uiOutput(ns("FW_plotc"))
                                                     ),
+                                                    #bslib::card(DT::dataTableOutput(ns("FW_selected_obs_DT"))),
                                                     bslib::card(DT::dataTableOutput(ns("FW_sens_clusters_DT")))
                                                     )
                              ),
@@ -161,21 +167,68 @@ mod_gxe_ui <- function(id){
             )
           )
         )
+      ),
+      bslib::nav_panel(
+        ## GGE panel ####
+        title = "GGE",
+        bslib::layout_sidebar(
+          ### Sidebar ####
+          sidebar=bslib::sidebar(
+            width = 350,
+            actionBttn(ns("GGE_run"), "Run GGE analysis"),
+            pickerInput(ns("GGE_picker_plot_type"),
+                        label="Plot type",
+                        choices = c(`1-A basic biplot`=1,
+                                    `2-Mean performance vs. stability`=2,
+                                    `3-Which-won-where`=3,
+                                    `4-Discriminativeness vs. representativeness`=4,
+                                    `5-Examine an environment`=5,
+                                    `6-Ranking environments`=6,
+                                    `7-Examine a genotype`=7,
+                                    `8-Ranking genotype`=8,
+                                    `9-Compare two genotypes`=9,
+                                    `10- Relationship among environments`=10),
+                        selected = 1),
+            pickerInput(ns("GGE_picker_env_select"), label="Plot type 5 - Select an environment", multiple = F, choices = c()),
+            pickerInput(ns("GGE_picker_gen_select"), label="Plot type 7&9 - Select a genotype", multiple = F, choices = c()),
+            pickerInput(ns("GGE_picker_gen2_select"), label="Plot type 9 - Select a second genotypes", multiple = F, choices = c())
+          ),
+          bslib::layout_columns(
+            #### Accordion results ####
+            bslib::accordion(id = ns("GGE_accord1"),
+                             bslib::accordion_panel(title = "GGE plot",
+                                                    bslib::layout_sidebar(
+                                                      bslib::card(full_screen = T,height = "800",
+                                                                  plotOutput(ns("GGE_plot"))
+                                                      ),
+                                                      sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,#full_screen = F,
+                                                                  sliderInput(ns("GGE_plot_size.text.gen"), label = "size.text.gen", min = 1, max = 8, value = 3.5, step = 0.5),
+                                                                  sliderInput(ns("GGE_plot_repulsion"), label="plot_repulsion", value = 1, min=1, max=10, step=0.5),
+                                                                  sliderInput(ns("GGE_plot_max_overlaps"), label="plot_max_overlaps", value = 20, min=5, max=50, step=1),
+                                                                  sliderInput(ns("GGE_plot_size.shape"), label="plot_size.shape", value = 2.2, min=1, max=10, step=0.1),
+                                                                  sliderInput(ns("GGE_plot_size.shape.win"), label="plot_size.shape.win", value = 3.2, min=1, max=10, step=0.1),
+                                                                  sliderInput(ns("GGE_plot_size.stroke"), label="plot_size.stroke", value = 0.3, min=1, max=5, step=0.1),
+                                                                  #sliderInput(ns("GGE_plot_col.stroke"), label="plot_col.stroke", value = "black", min=1, max=10, step=0.5),
+                                                                  #sliderInput(ns("GGE_plot_col.gen"), label="plot_col.gen", value = "blue", min=1, max=10, step=0.5),
+                                                                  #sliderInput(ns("GGE_plot_col.env"), label="plot_col.env", value = "forestgreen", min=1, max=10, step=0.5),
+                                                                  #sliderInput(ns("GGE_plot_col.line"), label="plot_col.line", value = "forestgreen", min=1, max=10, step=0.5),
+                                                                  sliderInput(ns("GGE_plot_col.alpha"), label="plot_col.alpha", value = 1, min=0, max=1, step=0.1),
+                                                                  #sliderInput(ns("GGE_plot_col.circle"), label="plot_col.circle", value = "gray", min=1, max=10, step=0.5),
+                                                                  sliderInput(ns("GGE_plot_col.alpha.circle"), label="plot_col.alpha.circle", value = 0.5, min=0, max=1, step=0.1),
+                                                                  sliderInput(ns("GGE_plot_size.text.env"), label="plot_size.text.env", value = 3.5, min=1, max=10, step=0.5),
+                                                                  sliderInput(ns("GGE_plot_size.text.lab"), label="plot_size.text.lab", value = 12, min=1, max=20, step=0.5),
+                                                                  sliderInput(ns("GGE_plot_size.text.win"), label="plot_size.text.win", value = 4.5, min=1, max=10, step=0.5),
+                                                                  sliderInput(ns("GGE_plot_size.line"), label="plot_size.line", value = 0.5, min=0, max=5, step=0.1),
+                                                                  sliderInput(ns("GGE_plot_axis_expand"), label="plot_axis_expand", value = 1.2, min=0, max=2, step=0.1))
+                                                    )
+                             ),
+                             bslib::accordion_panel(title = "Analysis summary", 
+                                                    verbatimTextOutput(ns("GGE_text_output")) 
+                             )
+            )
+          )
+        )
       )
-
-                        
-      #bslib::nav_panel(
-      #  title = "Finlay-Wilkinson",
-      #  bslib::card(
-      #    NULL
-      #  )
-      #),
-      #bslib::nav_panel(
-      #  title = "GGE",
-      #  bslib::card(
-      #    NULL
-      #  )
-      #)
     )
   )
 }
@@ -183,6 +236,7 @@ mod_gxe_ui <- function(id){
 # SERVER ####
 #' @export
 mod_gxe_server <- function(id, rv){
+  ns <- NS(id)
   moduleServer(
     id,
     function(input, output, session){
@@ -191,25 +245,44 @@ mod_gxe_server <- function(id, rv){
         req(rv$data_plot)
         req(rv$column_datasource)
         #update trait dropdown
-        trait_choices <- rv$column_datasource[source %in% c("GxE","Means")]$cols
+        trait_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_regexp,cols)]$cols
+        weight_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_wt_regexp,cols)]$cols
         if ("startDate"%in%colnames(rv$study_metadata)){
           rv$data_gxe <- rv$data_plot[unique(rv$study_metadata[,.(studyDbId, study_startYear = year(as.POSIXct(startDate)))]), on=.(studyDbId)]
         } else {
           rv$data_gxe <- rv$data_plot
         }
+        datagef <- lapply(rv$data_gxe, function(a) as.factor(a))
+        env_vars <- names(which(unlist(lapply(datagef[unlist(lapply(datagef, function(a) !all(is.na(a)) & length(levels(a))>1))], function(a) abs(cor(as.numeric(a), as.numeric(datagef$studyDbId)))))==1))
+        
+        updatePickerInput(
+          session, "picker_env_variable",
+          choices = env_vars,
+          selected = character(0)
+        )
         
         updatePickerInput(
           session, "picker_trait",
           choices = trait_choices,
           selected = character(0)
         )
+        updatePickerInput(
+          session, "weight_var",
+          choices = weight_choices,
+          selected = character(0)
+        )
+        
       })
+      
       ## update env picker when trait is chosen ####
-      observeEvent(input$picker_trait,{
+      #observeEvent(input$picker_trait,{
+      observe({
+        req(input$picker_trait)
+        req(input$picker_env_variable)
         ## update environments dropdown
-        envs <- unique(rv$data_gxe[!is.na(get(input$picker_trait)),.(studyDbId, study_name_app)])
+        envs <- unique(rv$data_gxe[!is.na(get(input$picker_trait)),.SD,.SDcols = c("studyDbId", input$picker_env_variable)])
         env_choices <- envs[,studyDbId]
-        names(env_choices) <- envs[,study_name_app]
+        names(env_choices) <- envs[[input$picker_env_variable]]
 
         updatePickerInput(
           session, "picker_env",
@@ -218,6 +291,8 @@ mod_gxe_server <- function(id, rv){
         )
        
       })
+      
+
       ## update pickers when environment is chosen ####
       observeEvent(input$picker_env,{
         ## update env details dropdowns
@@ -336,9 +411,16 @@ mod_gxe_server <- function(id, rv){
         if (!is.null(input$picker_region)){
           setnames(data2TD, old=input$picker_region, new="region")
         }
+        if (input$use_weights){
+          if (!is.null(input$weight_var)){
+            data2TD[,wt:=(1/.SD)^2, .SDcols=input$weight_var]
+          }
+        }        
         rv$TD <- statgenSTA::createTD(data = data2TD[studyDbId%in%input$picker_env],
                                       genotype = input$picker_germplasm_level,
-                                      trial = "study_name_app")
+                                      trial = input$picker_env_variable)
+
+        
         output$TD_boxplot <- renderPlot({
           if (!is.null(input$picker_scenario)){
             #if ("scenarioFull"%in%names(data2TD)){
@@ -409,12 +491,12 @@ mod_gxe_server <- function(id, rv){
       observeEvent(input$mm_run_model,{
         #browser()
         rv$TDVarComp <- switch(input$picker_gxe_mm_env_struct,
-               `1`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait), error=function(e) e)},
-               `2`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, locationYear = TRUE), error=function(e) e)},
-               `3`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, nestingFactor = "year"), error=function(e) e)},
-               `4`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, nestingFactor = "loc"), error=function(e) e)},
-               `5`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, regionLocationYear = TRUE), error=function(e) e)},
-               `6`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, nestingFactor = "scenario"), error=function(e) e)})
+               `1`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)},
+               `2`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, locationYear = TRUE), error=function(e) e)},
+               `3`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "year"), error=function(e) e)},
+               `4`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "loc"), error=function(e) e)},
+               `5`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, regionLocationYear = TRUE), error=function(e) e)},
+               `6`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "scenario"), error=function(e) e)})
         output$MM_text_output <- renderPrint({
           if ("varComp"%in%class(rv$TDVarComp)){
             summary(rv$TDVarComp)
@@ -457,8 +539,10 @@ mod_gxe_server <- function(id, rv){
         req(rv$TDVarComp)
         if (is.null(rv$TDVarComp$nestingFactor)){
           predict_levels <- "genotype"
-          if (rv$TDVarComp$useLocYear){
-            predict_levels <- c("genotype","trial")
+          if (!is.null(rv$TDVarComp$useLocYear)){
+            if (rv$TDVarComp$useLocYear){
+              predict_levels <- c("genotype","trial")
+            }
           }
         } else {
           predict_levels <- c("genotype",rv$TDVarComp$nestingFactor)
@@ -476,17 +560,12 @@ mod_gxe_server <- function(id, rv){
         },rownames= FALSE)
         
       })
-      ### Expand all accordion panels ####
-      #observeEvent(input$expand_MM_accord1,{
-      #  bslib::accordion_panel_set(id="MM_accord1", values=TRUE)
-      #})
-      #observeEvent(input$expand_MM_accord2,{
-      #  bslib::accordion_panel_set(id="MM_accord2", values=TRUE)
-      #})
+      
+      
       ## FW ####
       ### Run FW ####
       observeEvent(input$FW_run,{
-        rv$TDFW <- tryCatch(gxeFw(TD = rv$TD, trait = input$picker_trait), error=function(e) e)
+        rv$TDFW <- tryCatch(gxeFw(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)
         output$FW_text_output <- renderPrint({
           if ("FW"%in%class(rv$TDFW)){
             summary(rv$TDFW)
@@ -497,39 +576,212 @@ mod_gxe_server <- function(id, rv){
       })
       ### FW plot ####
       observe({
-        req(rv$TDFW)
-        output$FW_plot <- renderPlot({
-        #output$FW_plot <- renderPlotly({
-          TDFWplot <- rv$TDFW
-          if (is.null(input$FW_picker_color_by)){
-            #ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type))
-            plot(TDFWplot, plotType = input$FW_picker_plot_type)
+        output$FW_plotc <- renderUI({
+          if (input$FW_plot_interact){
+            plotlyOutput(ns("FW_ploty"))
           } else {
-            if (input$FW_picker_color_by=="sensitivity clusters"){
-              #browser()
-              sensclust <- data.table(rv$TDFW$estimates)
-              sensclust <- sensclust[!is.na(sens)]
-              #browser()
-              sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
-              rv$sensclust <- sensclust
-              TDFWplot$TD <- lapply(TDFWplot$TD, function(a) data.table(a)[sensclust, on=.(genotype)])
-              #ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster"))
-              plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
-            } else {
-              if (input$FW_picker_color_by=="Nothing"){
-                plot(TDFWplot, plotType = input$FW_picker_plot_type)
-              } else {
-                #ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by))
-                plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
-              }
-            }
+              plotOutput(ns("FW_plot"))#,  brush = brushOpts(id=ns("observ_fwplot_brush"), resetOnNew = T))
           }
         })
+      })
+      
+      observe({
+        req(rv$TDFW)
+        if (input$FW_plot_interact){
+            output$FW_ploty <- renderPlotly({
+            TDFWplot <- rv$TDFW
+            if (is.null(input$FW_picker_color_by)){
+              ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type))
+              #plot(TDFWplot, plotType = input$FW_picker_plot_type)
+            } else {
+              if (input$FW_picker_color_by=="sensitivity clusters"){
+                #browser()
+                sensclust <- data.table(rv$TDFW$estimates)
+                sensclust <- sensclust[!is.na(sens)]
+                #browser()
+                sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
+                rv$sensclust <- sensclust
+                TDFWplot$TD <- lapply(TDFWplot$TD, function(a) data.table(a)[sensclust, on=.(genotype)])
+                ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster"))
+                #plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
+              } else {
+                if (input$FW_picker_color_by=="Nothing"){
+                  ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type))
+                } else {
+                  ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by))
+                  #plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
+                }
+              }
+            }
+          })
+        } else {
+          output$FW_plot <- renderPlot({
+            #output$FW_plot <- renderPlotly({
+            TDFWplot <- rv$TDFW
+            if (is.null(input$FW_picker_color_by)){
+              #ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type))
+              rv$fwp <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+            } else {
+              if (input$FW_picker_color_by=="sensitivity clusters"){
+                #browser()
+                sensclust <- data.table(rv$TDFW$estimates)
+                sensclust <- sensclust[!is.na(sens)]
+                #browser()
+                sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
+                rv$sensclust <- sensclust
+                TDFWplot$TD <- lapply(TDFWplot$TD, function(a) data.table(a)[sensclust, on=.(genotype)])
+                #ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster"))
+                rv$fwp <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
+              } else {
+                if (input$FW_picker_color_by=="Nothing"){
+                  rv$fwp <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+                } else {
+                  #ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by))
+                  rv$fwp <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
+                }
+              }
+            }
+          })
+        }
       })
       observe({
         req(rv$sensclust)
         output$FW_sens_clusters_DT <- DT::renderDataTable(rv$sensclust[,.(genotype, sensitivity_cluster, sens, genMean)],rownames= FALSE)
       })
+      
+      #output$FW_selected_obs_DT <- renderTable({
+      #  req(input$observ_fwplot_brush)
+      #  browser()
+      #  rv$obs_fwtable <- brushedPoints(rv$fwp$data,
+      #                                 input$observ_fwplot_brush)
+      #  rv$obs_fwtable
+      #}, width='50%')
+      
+      ## GGE ####
+      ### Run GGE ####
+      observeEvent(input$GGE_run,{
+        req(rv$TD)
+        #browser()
+        rv$TD.metangge <- rbindlist(rv$TD)[,.SD, .SDcols=c("trial","genotype",input$picker_trait)]
+
+        rv$TDGGEmetan <- tryCatch(metan::gge(rv$TD.metangge, env=trial, gen=genotype, resp = input$picker_trait), error=function(e) e)
+        rv$TDGGE <- tryCatch(gxeGGE(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)
+        #browser()
+        
+        updatePickerInput(
+          session, "GGE_picker_gen_select",
+          choices = rv$TDGGEmetan[[1]]$labelgen
+          #selected = character(0)
+        )
+        updatePickerInput(
+          session, "GGE_picker_gen2_select",
+          choices = rv$TDGGEmetan[[1]]$labelgen
+          #selected = character(0)
+        )
+        updatePickerInput(
+          session, "GGE_picker_env_select",
+          choices = rv$TDGGEmetan[[1]]$labelenv
+          #selected = character(0)
+        )
+        
+        
+        
+        output$GGE_text_output <- renderPrint({
+          if ("AMMI"%in%class(rv$TDGGE)){
+            summary(rv$TDGGE)
+          } else {
+            rv$TDGGE
+          }
+        })
+      })
+      ### GGE plot ####
+      observe({
+        req(rv$TDGGEmetan)
+        output$GGE_plot <- renderPlot({
+          #output$FW_plot <- renderPlotly({
+          #browser()
+          TDGGEplot <- rv$TDGGEmetan
+          #browser()
+          if (input$GGE_picker_plot_type==5){
+            metan:::plot.gge(TDGGEplot,
+                             type = input$GGE_picker_plot_type,
+                             sel_env = input$GGE_picker_env_select,
+                             size.text.gen = input$GGE_plot_size.text.gen,
+                             repulsion = input$GGE_plot_repulsion,
+                             max_overlaps = input$GGE_plot_max_overlaps,
+                             size.shape = input$GGE_plot_size.shape,
+                             size.shape.win = input$GGE_plot_size.shape.win,
+                             size.stroke = input$GGE_plot_size.stroke,
+                             col.alpha = input$GGE_plot_col.alpha,
+                             col.alpha.circle = input$GGE_plot_col.alpha.circle,
+                             size.text.env = input$GGE_plot_size.text.env,
+                             size.text.lab = input$GGE_plot_size.text.lab,
+                             size.text.win = input$GGE_plot_size.text.win,
+                             size.line = input$GGE_plot_size.line,
+                             axis_expand = input$GGE_plot_axis_expand
+            )            
+            
+          } else if (input$GGE_picker_plot_type == 7) {
+            metan:::plot.gge(TDGGEplot,
+                             type = input$GGE_picker_plot_type,
+                             sel_gen = input$GGE_picker_gen_select,
+                             size.text.gen = input$GGE_plot_size.text.gen,
+                             repulsion = input$GGE_plot_repulsion,
+                             max_overlaps = input$GGE_plot_max_overlaps,
+                             size.shape = input$GGE_plot_size.shape,
+                             size.shape.win = input$GGE_plot_size.shape.win,
+                             size.stroke = input$GGE_plot_size.stroke,
+                             col.alpha = input$GGE_plot_col.alpha,
+                             col.alpha.circle = input$GGE_plot_col.alpha.circle,
+                             size.text.env = input$GGE_plot_size.text.env,
+                             size.text.lab = input$GGE_plot_size.text.lab,
+                             size.text.win = input$GGE_plot_size.text.win,
+                             size.line = input$GGE_plot_size.line,
+                             axis_expand = input$GGE_plot_axis_expand
+            )
+          } else if (input$GGE_picker_plot_type == 9) {
+            metan:::plot.gge(TDGGEplot,
+                             type = input$GGE_picker_plot_type,
+                             sel_gen1 = input$GGE_picker_gen_select,
+                             sel_gen2 = input$GGE_picker_gen2_select,
+                             size.text.gen = input$GGE_plot_size.text.gen,
+                             repulsion = input$GGE_plot_repulsion,
+                             max_overlaps = input$GGE_plot_max_overlaps,
+                             size.shape = input$GGE_plot_size.shape,
+                             size.shape.win = input$GGE_plot_size.shape.win,
+                             size.stroke = input$GGE_plot_size.stroke,
+                             col.alpha = input$GGE_plot_col.alpha,
+                             col.alpha.circle = input$GGE_plot_col.alpha.circle,
+                             size.text.env = input$GGE_plot_size.text.env,
+                             size.text.lab = input$GGE_plot_size.text.lab,
+                             size.text.win = input$GGE_plot_size.text.win,
+                             size.line = input$GGE_plot_size.line,
+                             axis_expand = input$GGE_plot_axis_expand
+            )
+          } else {
+            metan:::plot.gge(TDGGEplot,
+                             type = input$GGE_picker_plot_type,
+                             size.text.gen = input$GGE_plot_size.text.gen,
+                             repulsion = input$GGE_plot_repulsion,
+                             max_overlaps = input$GGE_plot_max_overlaps,
+                             size.shape = input$GGE_plot_size.shape,
+                             size.shape.win = input$GGE_plot_size.shape.win,
+                             size.stroke = input$GGE_plot_size.stroke,
+                             col.alpha = input$GGE_plot_col.alpha,
+                             col.alpha.circle = input$GGE_plot_col.alpha.circle,
+                             size.text.env = input$GGE_plot_size.text.env,
+                             size.text.lab = input$GGE_plot_size.text.lab,
+                             size.text.win = input$GGE_plot_size.text.win,
+                             size.line = input$GGE_plot_size.line,
+                             axis_expand = input$GGE_plot_axis_expand
+            )
+          }
+
+        })
+          
+      })
+      
+      
     }
   )
 }
