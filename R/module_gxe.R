@@ -248,6 +248,7 @@ mod_gxe_server <- function(id, rv){
         trait_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_regexp,cols)]$cols
         weight_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_wt_regexp,cols)]$cols
         if ("startDate"%in%colnames(rv$study_metadata)){
+          rv$study_metadata[, studyDbId := as.numeric(studyDbId)]
           rv$data_gxe <- rv$data_plot[unique(rv$study_metadata[,.(studyDbId, study_startYear = year(as.POSIXct(startDate)))]), on=.(studyDbId)]
         } else {
           rv$data_gxe <- rv$data_plot

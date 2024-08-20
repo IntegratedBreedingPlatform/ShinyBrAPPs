@@ -143,7 +143,9 @@ mod_get_extradata_server <- function(id, rv){
                 germplasm_data_2,
                 by = "germplasmDbId")
             }
-            column_datasource <- rbindlist(list(column_datasource, germplasm_cols), use.names = T, fill = T)
+            if (!is.null(germplasm_cols)) {
+              column_datasource <- rbindlist(list(column_datasource, germplasm_cols), use.names = T, fill = T)
+            }
           }
 
           # for columns that are not typed (environmentParameters for example) assign type manually
@@ -167,7 +169,7 @@ mod_get_extradata_server <- function(id, rv){
           rv$data_plot <- data_plot
 
           rv$column_datasource <- column_datasource
-          rv$ontology_variables <- ontology_variables
+          #rv$ontology_variables <- ontology_variables
         })
       })
 
