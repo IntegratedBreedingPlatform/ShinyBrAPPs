@@ -275,3 +275,32 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
   study_metadata[, loaded:=F]
   return(data.table(study_metadata))
 }
+
+# Modal for group creation
+# can be called from scatterplot or groups_sidebar modules
+# parent_session enables to get the app server namespace and get modal elements from the 2 modules
+#' @export
+groupModal <- function(rv, parent_session, modal_title, group_description) {
+  req(rv$selection[,.N]>0)
+  ns <- parent_session$ns
+  modalDialog(
+    title = modal_title,
+    fade = F,
+    tagList(
+      tags$label(paste(rv$selection[,N]," selected germplasms")),
+      tags$p(rv$selection[,germplasmNames_label]),
+      textInput(ns("modal_create_group_text_input_label"), label = "Group Name", value = paste("Group", rv$selection[,group_id]), placeholder = "Group Label"),
+      textAreaInput(
+        ns("modal_create_group_text_input_descr"), 
+        label = "Group Description", 
+        placeholder = "Group Description", 
+        resize = "vertical",
+        value = group_description
+      )
+    ),
+    footer = tagList(
+      modalButton("Cancel"),
+      actionButton(ns("modal_create_group_go"), label = "Create", css.class = "btn btn-info")
+    )
+  )
+}

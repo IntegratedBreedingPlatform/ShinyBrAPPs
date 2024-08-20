@@ -18,8 +18,34 @@ mod_get_extradata_server <- function(id, rv){
 
         isolate({
           data_tmp <- rv$data
+          
+          ### make data source register
+          # - Germplasm
+          # - Cross Environment Means (GxE)
+          # - Means (BLUxs)
+          # - Environment
+          # - Plot
+          
+          column_datasource <- unique(data_tmp[, .(cols = observationVariableName, type = scale.dataType)])[, source := "GxE"]
+          column_datasource[grepl("BLUE", cols) | grepl("BLUP", cols) , source := "Means"]
+          column_datasource[, visible := T]
+          
+          # data source "plot"
+          # standard columns characterising the observation units
+          plot_column <- data.table(cols = c("blockNumber", "studyName", "entryType", "observationUnitName", "germplasmName", "germplasmDbId",
+                                             "replicate", "plotNumber","positionCoordinateX", "positionCoordinateY", "observationLevel",
+                                             "observationCode", "observationTimeStamp", "locationName")
+                                    )[, source := "plot"][, visible := T]
+          plot_column[cols %in% c("studyName", "locationName"), source := "environment"]
+          types <- data.table(cols = colnames(data_tmp) , type = sapply(data_tmp, class))
+          types[type =="character", type := "Text"]
+          types[type =="numeric", type := "Numerical"]
+          types[cols %in% c("replicate", "plotNumber","blockNumber"), type := "Text"]
+          plot_column <- merge(plot_column, types)
 
-          ### Data source 1: GET /brapi/v1/studies/{studyDbId}/observationunits
+          column_datasource <- rbindlist(list(column_datasource, plot_column), use.names = T)
+
+          ### observations POST /brapi/v2/search/observationunits (with include_observations)
           ## 1 trait per column
           formul <- paste(
             paste(
@@ -35,75 +61,31 @@ mod_get_extradata_server <- function(id, rv){
             value.var = "observationValue"
           )
           
-          # remove observationunits with observationLevels=SUMMARY_STATISTICS (because no germplasmDbId for these observations)
-          #data_plot <- data_plot[observationLevel != "SUMMARY_STATISTICS"]
-
-          ### Data source 2: Environment  GET /brapi/v2/studies
-          ## extract envrionment parameters from rv$study_metadata
+          ### Data source "environment"
+          ## extract environment parameters from rv$study_metadata
           if(length(grep("environmentParameters", names(rv$study_metadata)))){
             environmentParameters <- dcast(data = unique(rv$study_metadata[,grep("environmentParameters|studyDbId", names(rv$study_metadata)), with = F]),
                                            formula = "studyDbId ~ environmentParameters.parameterName",
                                            value.var = "environmentParameters.value")
             environmentParameters[,studyDbId:=as.numeric(studyDbId)]
+            env_cols <- unique(rv$study_metadata[, .(cols = environmentParameters.parameterName, type = NA, source = "environment", visible = T)])
             data_plot <- merge(data_plot, environmentParameters, by = "studyDbId")
           }else{
             environmentParameters <- unique(rv$study_metadata[,studyDbId])
             showNotification("No environment parameters in study metadata", type = "warning", duration = notification_duration)
           }
-
-          ### make data source register
-          # - Germplasm
-          # - Cross Environment Means (GxE)
-          # - Means (BLUxs)
-          # - Environment
-          # - Plot
-
-          ## plot (default)
-          column_datasource <- data.table(
-            cols = names(data_plot),
-            source = "plot"
-          )
-
-          ## Observations
-          traits <- rv$data[, unique(observationVariableName)]
-          column_datasource[cols %in% traits, source := "GxE"]
-          column_datasource[grepl("BLUE", cols) | grepl("BLUP", cols) , source := "Means"]
-
-          ## environment
-          column_datasource[cols %in% names(environmentParameters) & cols != "studyDbId", source := "environment"]
-          column_datasource[grep("study|location|trial",cols), source := "environment"]
-
-          ## germplasm
+          
+          column_datasource <- rbindlist(list(column_datasource, env_cols), use.names = T)
+          
+          ### data source "germplasm"
           column_datasource[grepl("germplasm", cols), source := "germplasm"]
-
-          ## assign column types
-          # - to all columns except observationVariableNames
-          # - to observationVariableNames
-
-          studyIds <- rv$data[,unique(studyDbId)]
-          withProgress(message = "GET brapi/v2/variables?studyDbId", value = 0, {
-            ontology_variables <- rbindlist(l = lapply(studyIds, function(studyId){
-              incProgress(
-                1/length(studyIds),
-                detail = paste0("studyDbId=", studyId)
-              )
-              tryCatch({
-                brapirv2::brapi_get_variables(con = rv$con, studyDbId = as.character(studyId))
-              }, error = function(e)({
-                showNotification("Could not get ontology data", type = "error", duration = notification_duration)
-              }))
-            }), use.names = T, fill = T)
-          })
-
-          column_types2 <- rbindlist(list(column_types[,.(column, type)], unique(ontology_variables[,.(column = observationVariableName, type = scale.dataType)])), fill = T)
-          column_datasource <- merge.data.table(column_datasource, column_types2[,.(column, type)], by.x = "cols", by.y = "column", all.x = T)
-
-          ### data source 3: GET /brapi/v1/germplasm
+          column_datasource[cols == "germplasmDbId", visible := F]  #used in custom_input_genotype_groups
           ## add germplasm info
           germplasms <- data_plot[,unique(germplasmDbId)]
           withProgress(message = "POST brapi/v2/search/attributevalues/", value = 0, {
             # get study_metadata
             tryCatch({
+              # get attributeValues
               incProgress(
                 1/2,
                 detail = paste("POST brapi/v2/search/attributevalues/ of", length(germplasms), "genotypes")
@@ -113,9 +95,40 @@ mod_get_extradata_server <- function(id, rv){
                 2/2,
                 detail = paste0("GET brapi/v2/search/attributevalues/", searchResultsDbId)
               )
-              # res <- brapirv2::brapi_get_search_attributevalues_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(1344))
-              # # res <- brapirv2::brapi_get_search_attributevalues_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId))
               germplasm_data <- as.data.table(brapirv2::brapi_get_search_attributevalues_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId)))
+            
+              if (nrow(germplasm_data) > 0) {
+                # get attributes datatype
+                incProgress(
+                  1/2,
+                  detail = paste("POST brapi/v2/search/attributes/")
+                )
+                searchResultsDbId <- brapirv2::brapi_post_search_attributes(con = rv$con, attributeDbIds = unique(germplasm_data$attributeDbId))
+                incProgress(
+                  2/2,
+                  detail = paste0("GET brapi/v2/search/attributes/", searchResultsDbId)
+                )
+                server_url <- paste0(rv$con$protocol, rv$con$db, ":", rv$con$port, "/", rv$con$apipath, "/", rv$con$commoncropname, "/brapi/v2")
+                callurl <- paste0(server_url, "/search/attribute/", as.character(searchResultsDbId))
+                resp <-   httr::GET(url = callurl,
+                                    httr::timeout(25),
+                                    httr::add_headers(
+                                      "Authorization" = paste("Bearer", rv$con$token),
+                                      "Content-Type"= "application/json",
+                                      "accept"= "*/*"
+                                    )
+                )
+                cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
+                if (resp$status_code == 200) {
+                  res <- jsonlite::fromJSON(cont)$result$data
+                  germplasm_cols <- as.data.table(tidyr::unnest(res,cols = c("scale"), names_sep = ".")
+                                                  )[,.(cols = attributeName, type = scale.dataType)
+                                                    ][, source := "germplasm"
+                                                      ][, visible := T]
+                } else {
+                  germplasm_cols <- data.table(cols = unique(germplasm_data$attributeName), type = NA, source = "germplasm", visible = T)
+                }
+              }
             }, error = function(e)({
               showNotification("Could not get germplasm data", type = "error", duration = notification_duration)
             }))
@@ -130,20 +143,10 @@ mod_get_extradata_server <- function(id, rv){
                 germplasm_data_2,
                 by = "germplasmDbId")
             }
-
-            ## update rv$column_datasource with new column names
-            newcols <- data.table(
-              cols = germplasm_data_2[, names(germplasm_data_2)[!names(germplasm_data_2)%in% column_datasource[, unique(cols)] ]],
-              source = "germplasm"
-            )
-            column_datasource <- rbindlist(list(column_datasource, newcols), use.names = T, fill = T)
+            column_datasource <- rbindlist(list(column_datasource, germplasm_cols), use.names = T, fill = T)
           }
 
-          ##
-          # s <-  brapirv2::brapi_post_search_variables(con = rv$con) #studyDbId = rv$study_metadata[,unique(studyDbId)])
-          # study_ontology <- brapirv2::brapi_get_search_variables_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(s))
-
-          # for observationVariableNames that are not typed (e.g. not in the ontology) assign type manually
+          # for columns that are not typed (environmentParameters for example) assign type manually
           # check if the variable can be safely converted to num and then convert. Assign type "Text" otherwise
           nothing <- lapply(column_datasource[is.na(type), cols], function(col){
             if(all(check.numeric(data_plot[,eval(as.name(col))]))){
@@ -159,12 +162,6 @@ mod_get_extradata_server <- function(id, rv){
           nothing <- lapply(column_datasource[type=="Numerical", cols], function(col){
             data_plot[,eval(col) := as.numeric(eval(as.name(col)))]
           })
-          
-          hidden_cols <- c("scale.dataType", "entryNumber", "environmentNumber", "germplasmDbId", "observationUnitDbId", "studyDbId", "programDbId",
-                           "programName", "study_name_BMS", "study_name_abbrev_app", "study_name_app", "environment_number", "entryNumber", 
-                           "locationDbId", "location_name", "location_abbrev", "trialDbId", "trialName")
-          column_datasource <- column_datasource[, visible := T]
-          column_datasource <- column_datasource[cols %in% hidden_cols, visible := F]
           
           rv$environmentParameters <- environmentParameters
           rv$data_plot <- data_plot

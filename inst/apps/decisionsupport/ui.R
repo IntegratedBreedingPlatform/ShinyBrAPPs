@@ -32,16 +32,28 @@ ui <- fluidPage(
         mod_get_studydata_ui("get_studydata"),
         mod_get_extradata_ui("get_extradata"),
         bslib::page_navbar(
-          selected = "Studies",
+          sidebar = bslib::sidebar(
+            id = "groups_sidebar",
+            position = "right",
+            open = F,
+            width = 300,
+            mod_groups_sidebar_ui("groups_sidebar")
+          ),
+          selected = "Scatter",
           #position = "fixed-top",
           bslib::nav_panel(
-            title = "Studies",
+            title = "Scatter",
             mod_scatterplot_ui("scatterplot")
           ),
           bslib::nav_panel(
             title = "GxE",
             mod_gxe_ui("gxe")
-          )
+          ),
+          # bslib::nav_spacer(),
+          # bslib::nav_menu(
+          #   title = "About",
+          #   bslib::nav_item(tags$a(shiny::icon("github"), "ShinyBrAPPs", href = "https://github.com/IntegratedBreedingPlatform/ShinyBrAPPs/", target = "_blank"))
+          # )
         )
       )
   ),
