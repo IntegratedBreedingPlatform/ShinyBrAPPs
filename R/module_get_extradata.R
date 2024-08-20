@@ -32,7 +32,7 @@ mod_get_extradata_server <- function(id, rv){
           
           # data source "plot"
           # standard columns characterising the observation units
-          plot_column <- data.table(cols = c("blockNumber", "studyName", "entryType", "observationUnitName", "germplasmName", 
+          plot_column <- data.table(cols = c("blockNumber", "studyName", "entryType", "observationUnitName", "germplasmName", "germplasmDbId",
                                              "replicate", "plotNumber","positionCoordinateX", "positionCoordinateY", "observationLevel",
                                              "observationCode", "observationTimeStamp", "locationName")
                                     )[, source := "plot"][, visible := T]
@@ -79,6 +79,7 @@ mod_get_extradata_server <- function(id, rv){
           
           ### data source "germplasm"
           column_datasource[grepl("germplasm", cols), source := "germplasm"]
+          column_datasource[cols == "germplasmDbId", visible := F]  #used in custom_input_genotype_groups
           ## add germplasm info
           germplasms <- data_plot[,unique(germplasmDbId)]
           withProgress(message = "POST brapi/v2/search/attributevalues/", value = 0, {
@@ -123,8 +124,7 @@ mod_get_extradata_server <- function(id, rv){
                   germplasm_cols <- as.data.table(tidyr::unnest(res,cols = c("scale"), names_sep = ".")
                                                   )[,.(cols = attributeName, type = scale.dataType)
                                                     ][, source := "germplasm"
-                                                      ][, visible := T
-                                                        ][cols == "germplasmDbId", visible := F]
+                                                      ][, visible := T]
                 } else {
                   germplasm_cols <- data.table(cols = unique(germplasm_data$attributeName), type = NA, source = "germplasm", visible = T)
                 }

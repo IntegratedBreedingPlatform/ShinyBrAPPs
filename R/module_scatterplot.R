@@ -1,4 +1,5 @@
 #' @export
+# UI ####
 mod_scatterplot_ui <- function(id){
   ns <- NS(id)
   
@@ -17,6 +18,7 @@ mod_scatterplot_ui <- function(id){
     ),
     
     bslib::layout_sidebar(
+      ## Param sidebar ####
       sidebar = bslib::sidebar(
         width = 350,
          pickerInput(
@@ -56,6 +58,7 @@ mod_scatterplot_ui <- function(id){
           column(6, awesomeCheckbox(ns("express_Y_relative"), label = "relatively to genotype"), inline = T),
           column(6, hidden(pickerInput(ns("ref_genotype_Y"), "Reference", choices = NULL, inline = T)))
         ),
+        ### Options card ####
          div(
            bslib::card(
              bslib::card_header(
@@ -103,11 +106,9 @@ mod_scatterplot_ui <- function(id){
            )
          )
       ),
-
+      ## Plot card ####
       bslib::card(height = "800px",
         full_screen = TRUE,
-        bslib::layout_sidebar(
-
          plotlyOutput(
            ns("scatterplot"), width = "100%", height = "600px"
            # click = ns("scatterplot_click"),
@@ -132,59 +133,15 @@ mod_scatterplot_ui <- function(id){
              12,
              uiOutput(ns("regression_output"))
            )
-         ),
-         sidebar = bslib::sidebar(
-           id = ns("groups_sidebar"),
-           position = "right",
-           open = F,
-           width = 300,
-           fluidRow(
-             column(12,uiOutput(ns("ui_groups")))
-           ),
-           fluidRow(
-             column(12,
-                bslib::card(
-                  class = ns("at_least_one_group_selected"),
-                  bslib::card_header(
-                    h4('Actions ', icon('screwdriver-wrench'))
-                  ),
-                  bslib::card_body(
-                    #title = span('Options ', icon('screwdriver-wrench')),
-                    #width = 12,
-                    #h4('Actions ', icon('screwdriver-wrench')),
-                    actionButton(ns("action__seplot_creation_params"),label = "Visualize like at group creation", block = T, css.class = paste("btn btn-info", ns("one_group_selected"))),
-                    actionButton(ns("action_groups_union"),label = "Union", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
-                    actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
-                    actionButton(ns("action_groups_complement"),label = "Complement", block = T, css.class = paste("btn btn-info", ns("at_least_one_group_selected"))),
-                    actionButton(ns("action_groups_delete"),label = "Delete", block = T, css.class =paste("btn btn-info", ns("at_least_one_group_selected")))
-                  )
-                ),
-                bslib::card(
-                  id = ns("export_box"),
-                  bslib::card_header(
-                    h4('Export ')
-                  ),
-                  bslib::card_body(
-                    downloadButton(ns("action_groups_export_group_details"),label = "Export Group Details", class = "btn-block btn-primary"),
-                    actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome"),
-                    actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome")
-                  )
-                )
-              )
-            )
-          )
-        )
+         )
       )
-    ),
-    # bsModal(ns("modal_export_group_as_list"), "Export Group as List", NULL, size = "l",
-    #         uiOutput(ns("modal_export_group_as_list_ui"))),
-    # bsModal(ns("modal_export_group_mark_as_selection"), "Mark as Selection", NULL, size = "l",
-    #         uiOutput(ns("modal_export_group_mark_as_selection_ui")))
+    )
   )
 }
 
 #' @export
-mod_scatterplot_server <- function(id, rv){
+# SERVER ####
+mod_scatterplot_server <- function(id, rv, parent_session){
   no_selection <- list("-----------" = "")
   
   moduleServer(
@@ -193,7 +150,9 @@ mod_scatterplot_server <- function(id, rv){
       ns <- session$ns
       rv_plot <- reactiveValues()
       
-      rv_plot$groups <- data.table()
+      rv$groups <- data.table()
+      rv$visu_as_group <- NULL
+      
       rv_plot$draw_regression <- F
       rv_plot$draw_clusters <- F
       rv_plot$counter_hca <- 0
@@ -224,6 +183,7 @@ mod_scatterplot_server <- function(id, rv){
         }
       }
       
+      ## Update env ####
       observe({
         req(rv$data_plot)
         req(rv$column_datasource)
@@ -252,7 +212,7 @@ mod_scatterplot_server <- function(id, rv){
         )
       })
       
-      
+      ## Update germplasm refs ####
       observe({
         req(rv$data_plot)
         ## update group of germplasms
@@ -275,7 +235,7 @@ mod_scatterplot_server <- function(id, rv){
         )
       })
       
-      ## update variable selectors
+      ## Update variable selectors ####
       observe({
         req(rv$data_plot)
         req(rv$column_datasource)
@@ -397,7 +357,8 @@ mod_scatterplot_server <- function(id, rv){
         )
       })
       
-      ## update colour aggreg functions (colour can be num or categorical)
+      ## update colour aggreg functions ####
+      # (colour can be num or categorical)
       observeEvent(input$picker_COLOUR, {
         req(input$picker_COLOUR)
         COLOUR_is_num <- rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"]
@@ -409,7 +370,7 @@ mod_scatterplot_server <- function(id, rv){
         )
       })
       
-      ## toggle draw regression button
+      ## toggle draw regression button ####
       observeEvent(c(input$express_X_as_ranks, input$express_Y_as_ranks),{
         if(!is.null(input$express_X_as_ranks) && input$express_X_as_ranks
            && !is.null(input$express_Y_as_ranks) && input$express_Y_as_ranks){
@@ -422,6 +383,7 @@ mod_scatterplot_server <- function(id, rv){
         }
       })
       
+      ## update as ranks ####
       observeEvent({
         list(input$express_X_as_ranks, input$express_X_relative)
         }, {
@@ -472,7 +434,7 @@ mod_scatterplot_server <- function(id, rv){
         shinyjs::toggle("ref_genotype_Y", condition = !is.null(rv_plot$selected_express_Y) && rv_plot$selected_express_Y == "relative")
       })
       
-      ## aggreg dataset
+      ## aggreg dataset ####
       observe({
         #browser()
         req(rv$data_plot)
@@ -590,13 +552,13 @@ mod_scatterplot_server <- function(id, rv){
         rv$data_plot_aggr <- data_plot_aggr
       })
       
+      ## go regression ####
       observeEvent(input$go_regression, {
         rv_plot$draw_regression <- !rv_plot$draw_regression
       })
       
+      ## Plot ####
       output$scatterplot <- renderPlotly({
-        
-        #browser()
         req(rv$data_plot_aggr)
         req((is.null(input$express_X_as) ||  length(input$express_X_as) == 1 )
             && (is.null(input$express_Y_as) ||  length(input$express_Y_as) == 1))
@@ -737,6 +699,7 @@ mod_scatterplot_server <- function(id, rv){
           )
       })
       
+      ## Selection ####
       observeEvent(event_data("plotly_click", source = "A"),{
         rv_plot$plot_selection <- as.data.table(event_data("plotly_click", source = "A"))
       })
@@ -747,7 +710,7 @@ mod_scatterplot_server <- function(id, rv){
         shinyjs::toggle(selector = paste0(".",ns("ui_create_group")), condition = rv_plot$plot_selection[,.N]>0)
         req(dim(rv_plot$plot_selection)[1]>0)
         germplasms <- unique(rv$data_plot[germplasmDbId %in% rv_plot$plot_selection[,unique(key)], .(germplasmDbId, germplasmName)])
-        group_id <- ifelse(is.null(rv_plot$groups$group_id) || length(rv_plot$groups$group_id) == 0, 1, max(rv_plot$groups$group_id) + 1)
+        group_id <- ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1)
         selection_data <- data.table(
           group_id = group_id,
           N = germplasms[,.N],
@@ -787,367 +750,8 @@ mod_scatterplot_server <- function(id, rv){
         }else{
           paste(unlist(germplasmNames), collapse = ", ")
         }]
-        rv_plot$selection <- selection_data
+        rv$selection <- selection_data
       })
-      
-      observeEvent(input$go_create_group,{
-        if(rv_plot$selection[,.N]>0){
-          showModal(groupModal("Create new group", paste0(
-            "Visualization at group creation:\nX=",input$picker_X,", \nY=",input$picker_Y,
-            if(isTruthy(input$picker_COLOUR)) paste(", \nColour=", input$picker_COLOUR),
-            if(isTruthy(input$picker_SHAPE)) paste(", \nShape=", input$picker_SHAPE),
-            if(isTruthy(input$picker_SIZE)) paste(", \nSize=", input$picker_SIZE)
-          )))
-        }
-      })
-      
-      groupModal <- function(modal_title, group_description) {
-        req(rv_plot$selection[,.N]>0)
-        modalDialog(
-          title = modal_title,
-          fade = F,
-          tagList(
-            tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
-            tags$p(rv_plot$selection[,germplasmNames_label]),
-            textInput(ns("modal_create_group_text_input_label"), label = "Group Name", value = paste("Group", rv_plot$selection[,group_id]), placeholder = "Group Label"),
-            textAreaInput(
-              ns("modal_create_group_text_input_descr"), 
-              label = "Group Description", 
-              placeholder = "Group Description", 
-              resize = "vertical",
-              value = group_description
-            )
-          ),
-          footer = tagList(
-            modalButton("Cancel"),
-            actionButton(ns("modal_create_group_go"), label = "Create", css.class = "btn btn-info")
-          )
-        )
-      }
-      
-      observeEvent(input$modal_create_group_go, {
-        rv_plot$selection[, group_name := input$modal_create_group_text_input_label]
-        rv_plot$selection[, group_desc := input$modal_create_group_text_input_descr]
-        rv_plot$groups <- rbindlist(list(
-          rv_plot$groups,
-          rv_plot$selection
-        ), fill = T, use.names = T)
-        
-        ## update selectors (shape, colour)
-        data_plot <- copy(rv$data_plot) # to avoid issues related to assignment by reference
-        data_plot[germplasmDbId %in% rv_plot$selection[,unlist(germplasmDbIds)], eval(input$modal_create_group_text_input_label) := paste0('In "', input$modal_create_group_text_input_label,'"')]
-        data_plot[!(germplasmDbId %in% rv_plot$selection[,unlist(germplasmDbIds)]), eval(input$modal_create_group_text_input_label) := paste0('Not in "', input$modal_create_group_text_input_label,'"')]
-        rv$column_datasource <- rbindlist(
-          list(
-            rv$column_datasource,
-            data.table(cols = input$modal_create_group_text_input_label, source = "group", type = "Text", visible = T)
-          )
-        )
-        rv$data_plot <- data_plot
-        
-        rv_plot$selection <- data.table()
-        rv_plot$plot_selection <- data.table()
-        
-        removeModal()
-        #toggleModal(session, "modal_create_group", toggle = "close")
-      })
-      
-      
-      observeEvent(rv_plot$groups$group_id,{
-        if (!is.null(rv_plot$groups) && nrow(rv_plot$groups)>0) {
-          bslib::toggle_sidebar(
-            id = "groups_sidebar",
-            open = T
-          )
-        } else {
-          bslib::toggle_sidebar(
-            id = "groups_sidebar",
-            open = F
-          )
-        }
-        req(rv_plot$groups)
-        req(length(rv_plot$groups) > 0)
-        output$ui_groups <- renderUI({
-          group_selector(input_id = ns("group_sel_input"), group_table = rv_plot$groups, column_datasource = rv$column_datasource, data_plot = rv$data_plot, panel_style = "info")
-        })
-      }, ignoreNULL = TRUE)
-      
-      observe({
-        shinyjs::toggle(selector = paste0(".",ns("at_least_one_group_selected")), condition = length(input$group_sel_input)>0)
-        shinyjs::toggle(selector = paste0(".",ns("create_new_groups_from_groups")), condition = length(input$group_sel_input)>1)
-        shinyjs::toggle(selector = paste0(".",ns("one_group_selected")), condition = length(input$group_sel_input)==1)
-        shinyjs::toggle(id = "export_box", condition = length(input$group_sel_input)==1)
-      })
-      
-      ## Create new groups
-      observeEvent(input$action_groups_union,{
-        union_germplasms_id <- rv_plot$groups[group_id %in% input$group_sel_input, unlist(germplasmDbIds)]
-        germplasms <- unique(rv$data[germplasmDbId %in% union_germplasms_id, .(germplasmDbId, germplasmName)])
-        group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
-        selection_data <- data.table(
-          group_id = group_id,
-          N = germplasms[,.N],
-          germplasmDbIds = list(germplasms$germplasmDbId),
-          germplasmNames = list(germplasms$germplasmName)
-        )
-        selection_data[,germplasmNames_label := if(N>6){
-          paste(
-            paste(unlist(germplasmNames)[1:5], collapse = ", "),
-            paste("and", N - 5, "others")
-          )
-        }else{
-          paste(unlist(germplasmNames), collapse = ", ")
-        }]
-        rv_plot$selection <- selection_data
-        
-        showModal(groupModal("Create new group from Union", 
-                             paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∪ ")))
-      })
-      observeEvent(input$action_groups_intersect,{
-        toggleModal(session, "modal_create_group")
-        intersect_germplasms_id <- Reduce(intersect, rv_plot$groups[group_id %in% input$group_sel_input, germplasmDbIds])
-        germplasms <- unique(rv$data[germplasmDbId %in% intersect_germplasms_id, .(germplasmDbId, germplasmName)])
-        group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
-        selection_data <- data.table(
-          group_id = group_id,
-          N = germplasms[,.N],
-          germplasmDbIds = list(germplasms$germplasmDbId),
-          germplasmNames = list(germplasms$germplasmName)
-        )
-        selection_data[,germplasmNames_label := if(N>6){
-          paste(
-            paste(unlist(germplasmNames)[1:5], collapse = ", "),
-            paste("and", N - 5, "others")
-          )
-        }else{
-          paste(unlist(germplasmNames), collapse = ", ")
-        }]
-        rv_plot$selection <- selection_data
-        
-        if(rv_plot$selection[1,N>0]){
-          showModal(
-            groupModal(
-              "Create new group from Complement",
-              paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∩ ")
-            )
-          )
-        } else {
-          showModal(modalDialog(tags$label("This intersection results in an empty group.")))
-        }
-       
-      })
-      observeEvent(input$action_groups_complement,{
-        toggleModal(session, "modal_create_group")
-        union_germplasms_id <- rv_plot$groups[group_id %in% input$group_sel_input, unlist(germplasmDbIds)]
-        germplasms <- unique(rv$data[!(germplasmDbId %in% union_germplasms_id), .(germplasmDbId, germplasmName)])
-        group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
-        selection_data <- data.table(
-          group_id = group_id,
-          N = germplasms[,.N],
-          germplasmDbIds = list(germplasms$germplasmDbId),
-          germplasmNames = list(germplasms$germplasmName)
-        )
-        selection_data[,germplasmNames_label := if(N>6){
-          paste(
-            paste(unlist(germplasmNames)[1:5], collapse = ", "),
-            paste("and", N - 5, "others")
-          )
-        }else{
-          paste(unlist(germplasmNames), collapse = ", ")
-        }]
-        rv_plot$selection <- selection_data
-        
-        showModal(
-          groupModal(
-            "Create new group from Complement",
-            paste("Complement of (", paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∪ "), ")")
-          )
-        )
-      })
-      
-      observeEvent(input$action_groups_plot_creation_params,{
-        plot_params <- rv_plot$groups[group_id == input$group_sel_input,plot_params][[1]]
-        
-        updateMaterialSwitch(session, "switch_aggregate", value = plot_params$switch_aggregate)
-        updatePickerInput(session, "aggregate_by", selected = plot_params$aggregate_by)
-        
-        updatePickerInput(session, "picker_X", selected = plot_params$picker_X)
-        updatePickerInput(session, "aggreg_fun_X", selected = plot_params$aggreg_fun_X)
-        updateRadioButtons(session, "express_X_as", selected = plot_params$express_X_as)
-        updatePickerInput(session, "ref_genotype_X", selected = plot_params$ref_genotype_X)
-        updateCheckboxInput(session, "ranking_order_X", value = plot_params$ranking_order_X)
-        
-        updatePickerInput(session, "picker_Y", selected = plot_params$picker_Y)
-        updatePickerInput(session, "aggreg_fun_Y", selected = plot_params$aggreg_fun_Y)
-        updateRadioButtons(session, "express_Y_as", selected = plot_params$express_Y_as)
-        updatePickerInput(session, "ref_genotype_Y", selected = plot_params$ref_genotype_Y)
-        updateCheckboxInput(session, "ranking_order_Y", value = plot_params$ranking_order_Y)
-        
-        updateMaterialSwitch(session, "switch_SHAPE", value = plot_params$switch_SHAPE)
-        updatePickerInput(session, "picker_SHAPE", selected = plot_params$picker_SHAPE)
-        updatePickerInput(session, "aggreg_fun_SHAPE", selected = plot_params$aggreg_fun_SHAPE)
-        
-        updateMaterialSwitch(session, "switch_COLOUR", value = plot_params$switch_COLOUR)
-        updatePickerInput(session, "picker_COLOUR", selected = plot_params$picker_COLOUR)
-        updatePickerInput(session, "aggreg_fun_COLOUR", selected = plot_params$aggreg_fun_COLOUR)
-        
-        updateMaterialSwitch(session, "switch_SIZE", value = plot_params$switch_SIZE)
-        updatePickerInput(session, "picker_SIZE", selected = plot_params$picker_SIZE)
-        updatePickerInput(session, "aggreg_fun_SIZE", selected = plot_params$aggreg_fun_SIZE)
-      })
-      
-      observeEvent(input$action_groups_delete,{
-        
-        ## update selectors (shape, colour)
-        for(k in input$group_sel_input){
-          rv$data_plot[,eval(rv_plot$groups[group_id == k, group_name]) := NULL]
-        }
-        rv$column_datasource <- rv$column_datasource[!(cols %in% rv_plot$groups[group_id %in% input$group_sel_input, group_name])]
-        
-        ## delete groups
-        rv_plot$groups <- rv_plot$groups[!(group_id %in% input$group_sel_input)]
-      })      
-      
-      observeEvent(input$action_groups_export_as_list,{
-        showModal(modalDialog(
-          fade = F,
-          title = "Export Group as List",
-          tagList(
-            textInput(
-              ns("listName"),
-              label = "Group Name",
-              value = rv_plot$groups[group_id == input$group_sel_input, group_name],
-              placeholder = "Human readable name of a List",
-              width = "100%"
-            ),
-            textAreaInput(
-              ns("listDescription"),
-              label = "List description",
-              value = rv_plot$groups[group_id == input$group_sel_input, group_desc],
-              placeholder = "Description of a List",
-              width = "100%"
-            )
-          ),
-          easyClose = TRUE,
-          footer = tagList(
-            modalButton("Cancel"),
-            actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-info")
-          )
-        ))
-      })
-      
-      # observeEvent(c(input$listDescription, input$listName), {
-      #   if(input$listName != "" & input$listDescription != ""){
-      #     output$go_create_list_ui <- renderUI({actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-primary")})
-      #   }else{
-      #     output$go_create_list_ui <- renderUI({actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-primary", disabled = "")})
-      #   }
-      # })
-      
-      observeEvent(input$go_create_list,{
-        removeModal()
-        req(length(input$group_sel_input)==1)
-        tryCatch({
-          brapirv2::brapi_post_lists(
-            con = rv$con,
-            data = rv_plot$groups[group_id == input$group_sel_input, germplasmDbIds][[1]],
-            listSize = rv_plot$groups[group_id == input$group_sel_input, N],
-            dateCreated = as.character(Sys.Date()), # XXX
-            dateModified = as.character(Sys.Date()), # XXX
-            listName = input$listName,
-            listDescription= input$listDescription,
-            listOwnerName = "Admin Admin", # XXX
-            listOwnerPersonDbId = "1", # XXX
-            listSource = "test", # XXX
-            listType = "germplasm"
-          )
-          showNotification("List posted", type = "message", duration = notification_duration)
-        }, error = function(e)({
-          showNotification("Could not post list", type = "error", duration = notification_duration)
-        }))
-      })
-      
-      #Function to retrieve variables of selection type :
-      # First, filter on traitClass = selection_trait_class (config param) in WS 
-      # Then, get variables with traitName = selection_trait_name (config param)
-      getSelectionVariables <- function(studyDbIds) {
-        res <- brapirv2::brapi_post_search_variables(
-          con = rv$con, 
-          studyDbId = studyDbIds,
-          traitClasses = selection_traitClass
-        )
-        var <- data.table(brapirv2::brapi_get_search_variables_searchResultsDbId(rv$con, res$searchResultsDbId))
-        var <- var[trait.traitName == selection_traitName, .(observationVariableDbId, observationVariableName)]
-      }
-      
-      
-      observeEvent(input$action_groups_mark_as_selection,{
-        req(length(input$group_sel_input)==1)
-        envs <- unique(rv$data_plot[,.(studyDbId, study_name_app)])
-        env_choices <- envs[,studyDbId]
-        names(env_choices) <- envs[,study_name_app]
-        
-        #TODO propose only variables that are selection type
-        variables <- getSelectionVariables(env_choices)
-        variable_choices <- variables[, observationVariableDbId]
-        names(variable_choices) <- variables[, observationVariableName]
-        
-        
-        showModal(modalDialog(
-          fade = F,
-          title = "Export Group as List",
-          tagList(
-            awesomeCheckboxGroup(
-              inputId = ns("mark_as_sel_envs"),
-              label = "Environments",
-              choices = env_choices,
-              selected = env_choices,
-              width = "100%"
-            ),
-            pickerInput(
-              inputId = ns("mark_as_sel_var_to_use"),
-              label = "Variable to use",
-              choices = variable_choices,
-              inline = T
-            ),
-            # pickerInput(
-            #   inputId = ns("mark_as_sel_trait_classes"),
-            #   label = "Filter Variable by Trait Class",
-            #   choices = trait_classes,
-            #   inline = T
-            # ),
-            awesomeRadio(
-              ns("mark_as_sel_all_plots_radio"),
-              label = "",
-              choices = list(`Mark all plots` = "all", `Mark the first replicate of each plot` = "rep1"),
-              selected = "rep1",
-              status = "primary"
-            ),
-            #uiOutput(ns("mark_as_sel_info")),
-          ),
-          easyClose = TRUE,
-          footer = tagList(
-            modalButton("Cancel"),
-            actionButton(ns("action_groups_mark_as_selection_go"),
-                         "OK", style = "primary")
-          )
-        ))
-      })
-      
-      
-      
-      output$action_groups_export_group_details <- downloadHandler(
-        filename = function() {
-          paste0("group_", input$group_sel_input, ".csv")
-        },
-        content = function(file) {
-          group_detail <- unique(rv$data_plot[
-            germplasmDbId %in% unlist(rv_plot$groups[group_id%in%input$group_sel_input, germplasmDbIds]),
-            .SD, .SD = rv$column_datasource[source == "germplasm", cols]
-          ])
-          write.csv(group_detail, file, row.names = F)
-        }
-      )
       
       observeEvent(input$mark_as_sel_trait_classes,{
         req(input$mark_as_sel_trait_classes)
@@ -1171,7 +775,7 @@ mod_scatterplot_server <- function(id, rv){
         
         as_sel_data <- rv$data[
           observationLevel == "PLOT" & studyDbId %in% input$mark_as_sel_envs &
-            germplasmDbId %in% rv_plot$groups[group_id == input$group_sel_input, germplasmDbIds][[1]]
+            germplasmDbId %in% rv$groups[group_id == input$group_sel_input, germplasmDbIds][[1]]
         ]
         if(input$mark_as_sel_all_plots_radio=="rep1" & as_sel_data[replicate=="1",.N]>0){
           as_sel_data <- as_sel_data[replicate == "1"]
@@ -1198,48 +802,7 @@ mod_scatterplot_server <- function(id, rv){
         rv_plot$as_sel_data <- as_sel_data
       })
       
-      observeEvent(input$action_groups_mark_as_selection_go,{
-        req(rv_plot$as_sel_data[,.N]>0)
-        withProgress(message = "POST brapi/v2/observations", value = 0, {
-          lapply(rownames(rv_plot$as_sel_data), function(x){
-            row_id <- as.numeric(x)
-            incProgress(1/length(rownames(rv_plot$as_sel_data)))
-            a <- tryCatch({
-              brapirv2::brapi_post_observations(
-                con = rv$con,
-                studyDbId = as.character(rv_plot$as_sel_data[row_id, studyDbId]),
-                germplasmDbId = as.character(rv_plot$as_sel_data[row_id, germplasmDbId]),
-                observationUnitDbId = as.character(rv_plot$as_sel_data[row_id, observationUnitDbId]),
-                observationVariableDbId = as.character(rv_plot$as_sel_data[row_id, observationVariableDbId]),
-                value = as.character(rv_plot$as_sel_data[row_id, observationValue]),
-                additionalInfo = list() # otherwise error message: "Argument: \"additionalInfo\" should be provided as a list, see the help page on how the list should be constructed."
-              )
-            }, error = function(e)({e})
-            )
-            mess <- a$message
-            if(!is.null(mess)){
-              showNotification(
-                ui =
-                  tagList(
-                    tags$p("Could not post observation"),
-                    tags$code(paste0(
-                      '{ "studyDbId":"', as.character(rv_plot$as_sel_data[row_id, studyDbId]),'",',
-                      '"germplasmDbId":"', as.character(rv_plot$as_sel_data[row_id, germplasmDbId]),'",',
-                      '"observationUnitDbId":"', as.character(rv_plot$as_sel_data[row_id, observationUnitDbId]),'",',
-                      '"observationVariableDbId":"', as.character(rv_plot$as_sel_data[row_id, observationVariableDbId]),'",',
-                      '"value":"', as.character(rv_plot$as_sel_data[row_id, observationValue]),'"'
-                    )),
-                    tags$code(mess)
-                  ),
-                type = "error", duration = notification_duration
-              )
-            }
-          })
-        })
-        removeModal()
-        rv_plot$as_sel_data <- NULL
-      })
-      
+      #TODO move cluster part outside of scatterplot to use it also in GxE ?
       output$ui_clusters <- renderUI({
         if(input$aggregate_by == "germplasm" & input$switch_aggregate == T){
           req(rv$data_plot_aggr)
@@ -1256,6 +819,7 @@ mod_scatterplot_server <- function(id, rv){
         }
       })
       
+      ## go clustering ####
       observeEvent(input$go_clustering,{
         req(rv$data_plot_aggr)
         req(input$n_clusters)
@@ -1341,6 +905,7 @@ mod_scatterplot_server <- function(id, rv){
         })
       })
       
+      ## download cluster ####
       output$download_clusters <- downloadHandler(
         filename = function() {
           paste0("clusters_", Sys.Date(), ".csv")
@@ -1369,6 +934,8 @@ mod_scatterplot_server <- function(id, rv){
           rv_plot$draw_clusters <- F
         }
       })
+      
+      ## group from cluster ####
       observeEvent(input$create_groups_from_clusters,{
         shinyjs::disable("create_groups_from_clusters")
         shinyjs::addClass("create_groups_from_clusters", "active")
@@ -1416,11 +983,11 @@ mod_scatterplot_server <- function(id, rv){
         }else{
           paste(unlist(germplasmNames), collapse = ", ")
         }]
-        group_id_start <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
+        group_id_start <- ifelse(is.null(rv$groups$group_id), 1, max(rv$groups$group_id) + 1)
         group_ids <- group_id_start:(group_id_start+clusters[,.N] -1)
         clusters[, group_id := group_ids]
-        rv_plot$groups <- rbindlist(list(
-          rv_plot$groups,
+        rv$groups <- rbindlist(list(
+          rv$groups,
           clusters
         ), fill = T, use.names = T)
         
@@ -1441,10 +1008,53 @@ mod_scatterplot_server <- function(id, rv){
         
       })
       
-      # observeEvent(input$toggleButton, {
-      #   browser()
-      #   session$sendCustomMessage(type = "toggle", message = list(id = "collapseCardBody"))
-      # })
+      ## create group ####
+      observeEvent(input$go_create_group,{
+        if(rv$selection[,.N]>0){
+          showModal(groupModal(rv, parent_session, "Create new group", paste0(
+            "Visualization at group creation:\nX=",input$picker_X,", \nY=",input$picker_Y,
+            if(isTruthy(input$picker_COLOUR)) paste(", \nColour=", input$picker_COLOUR),
+            if(isTruthy(input$picker_SHAPE)) paste(", \nShape=", input$picker_SHAPE),
+            if(isTruthy(input$picker_SIZE)) paste(", \nSize=", input$picker_SIZE)
+          )))
+        }
+      })
+      
+      ## update params from group ####
+      observeEvent(rv$visu_as_group,{
+        plot_params <- rv$groups[group_id == rv$visu_as_group, plot_params][[1]]
+        
+        updateMaterialSwitch(session, "switch_aggregate", value = plot_params$switch_aggregate)
+        updatePickerInput(session, "aggregate_by", selected = plot_params$aggregate_by)
+        
+        updatePickerInput(session, "picker_X", selected = plot_params$picker_X)
+        updatePickerInput(session, "aggreg_fun_X", selected = plot_params$aggreg_fun_X)
+        updateRadioButtons(session, "express_X_as", selected = plot_params$express_X_as)
+        updatePickerInput(session, "ref_genotype_X", selected = plot_params$ref_genotype_X)
+        updateCheckboxInput(session, "ranking_order_X", value = plot_params$ranking_order_X)
+        
+        updatePickerInput(session, "picker_Y", selected = plot_params$picker_Y)
+        updatePickerInput(session, "aggreg_fun_Y", selected = plot_params$aggreg_fun_Y)
+        updateRadioButtons(session, "express_Y_as", selected = plot_params$express_Y_as)
+        updatePickerInput(session, "ref_genotype_Y", selected = plot_params$ref_genotype_Y)
+        updateCheckboxInput(session, "ranking_order_Y", value = plot_params$ranking_order_Y)
+        
+        updateMaterialSwitch(session, "switch_SHAPE", value = plot_params$switch_SHAPE)
+        updatePickerInput(session, "picker_SHAPE", selected = plot_params$picker_SHAPE)
+        updatePickerInput(session, "aggreg_fun_SHAPE", selected = plot_params$aggreg_fun_SHAPE)
+        
+        updateMaterialSwitch(session, "switch_COLOUR", value = plot_params$switch_COLOUR)
+        updatePickerInput(session, "picker_COLOUR", selected = plot_params$picker_COLOUR)
+        updatePickerInput(session, "aggreg_fun_COLOUR", selected = plot_params$aggreg_fun_COLOUR)
+        
+        updateMaterialSwitch(session, "switch_SIZE", value = plot_params$switch_SIZE)
+        updatePickerInput(session, "picker_SIZE", selected = plot_params$picker_SIZE)
+        updatePickerInput(session, "aggreg_fun_SIZE", selected = plot_params$aggreg_fun_SIZE)
+        
+        rv$visu_as_group <- NULL
+      })
+      
+      return(rv)
     }
   )
 }
