@@ -82,6 +82,7 @@ mod_get_extradata_server <- function(id, rv){
           column_datasource[cols == "germplasmDbId", visible := F]  #used in custom_input_genotype_groups
           ## add germplasm info
           germplasms <- data_plot[,unique(germplasmDbId)]
+          germplasm_cols <- NULL
           withProgress(message = "POST brapi/v2/search/attributevalues/", value = 0, {
             # get study_metadata
             tryCatch({
@@ -120,9 +121,8 @@ mod_get_extradata_server <- function(id, rv){
                 )
                 cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
                 if (resp$status_code == 200) {
-                  res <- jsonlite::fromJSON(cont)$result$data
-                  germplasm_cols <- as.data.table(tidyr::unnest(res,cols = c("scale"), names_sep = ".")
-                                                  )[,.(cols = attributeName, type = scale.dataType)
+                  res <- jsonlite::fromJSON(cont, flatten = T)$result$data
+                  germplasm_cols <- as.data.table(res)[,.(cols = attributeName, type = scale.dataType)
                                                     ][, source := "germplasm"
                                                       ][, visible := T]
                 } else {
