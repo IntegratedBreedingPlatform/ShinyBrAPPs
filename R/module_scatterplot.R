@@ -802,7 +802,6 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         rv_plot$as_sel_data <- as_sel_data
       })
       
-      #TODO move cluster part outside of scatterplot to use it also in GxE ?
       output$ui_clusters <- renderUI({
         if(input$aggregate_by == "germplasm" & input$switch_aggregate == T){
           req(rv$data_plot_aggr)
@@ -975,14 +974,12 @@ mod_scatterplot_server <- function(id, rv, parent_session){
             )
           )
         ),cluster]
-        clusters[,germplasmNames_label := if(N>6){
-          paste(
+        clusters[N>6 ,germplasmNames := paste(
             paste(unlist(germplasmNames)[1:5], collapse = ", "),
             paste("and", N - 5, "others")
-          )
-        }else{
-          paste(unlist(germplasmNames), collapse = ", ")
-        }]
+        )]
+        clusters[N <= 6, germplasmNames := paste(unlist(germplasmNames), collapse = ", ")]
+        
         group_id_start <- ifelse(is.null(rv$groups$group_id), 1, max(rv$groups$group_id) + 1)
         group_ids <- group_id_start:(group_id_start+clusters[,.N] -1)
         clusters[, group_id := group_ids]
@@ -1001,7 +998,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         rv$column_datasource <- rbindlist(
           list(
             rv$column_datasource,
-            data.table(cols = clusters[,unique(group_name)], source = "group", type = "Text")
+            data.table(cols = clusters[,unique(group_name)], source = "group", type = "Text", visible = T)
           )
         )
         rv$data_plot <- data_plot
