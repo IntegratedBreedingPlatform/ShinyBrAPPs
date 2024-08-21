@@ -63,8 +63,15 @@ mod_scatterplot_ui <- function(id){
            bslib::card(
              bslib::card_header(
                h4('Options ', icon('screwdriver-wrench')),
-               #class = "d-flex justify-content-between",
-               #actionButton(ns("reset"), "Reset", class = "btn-info")
+               class = "d-flex justify-content-between",
+               actionBttn(
+                 inputId = ns("reset"),
+                 label = NULL,
+                 style = "border", 
+                 color = "primary",
+                 icon = icon("refresh"),
+                 size = "xs"
+              )
              ),
              bslib::card_body(
                fluidRow(
@@ -341,20 +348,19 @@ mod_scatterplot_server <- function(id, rv, parent_session){
           choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
           selected = val_picker_Y
         )
-        
         updatePickerInput(
           session = session, inputId = "picker_SIZE",
-          choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
+          choices = c(no_selection, setNames(num_var_choices[,cols], num_var_choices[,source])),
           selected = val_picker_SIZE
         )
         updatePickerInput(
           session = session, inputId = "picker_SHAPE",
-          choices = setNames(var_choices_SHAPE[,cols], var_choices_SHAPE[,source]),
+          choices = c(no_selection, setNames(var_choices_SHAPE[,cols], var_choices_SHAPE[,source])),
           selected = val_picker_SHAPE
         )
         updatePickerInput(
           session = session, inputId = "picker_COLOUR",
-          choices = setNames(var_choices_COLOUR[,cols], var_choices_COLOUR[,source]),
+          choices = c(no_selection, setNames(var_choices_COLOUR[,cols], var_choices_COLOUR[,source])),
           selected = val_picker_COLOUR
         )
       })
