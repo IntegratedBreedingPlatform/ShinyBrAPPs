@@ -259,7 +259,7 @@ mod_gxe_server <- function(id, rv){
           rv$data_gxe <- rv$data_plot
         }
         datagef <- lapply(rv$data_gxe, function(a) as.factor(a))
-        env_vars <- names(which(unlist(lapply(datagef[unlist(lapply(datagef, function(a) !all(is.na(a)) & length(levels(a))>1))], function(a) abs(cor(as.numeric(a), as.numeric(datagef$studyDbId)))))==1))
+        env_vars <- names(which(unlist(lapply(datagef[unlist(lapply(datagef, function(a) !all(is.na(a)) & length(levels(a))>1))], function(a) abs(cor(as.numeric(a), as.numeric(datagef$studyDbId), use = "pairwise.complete.obs"))))==1))
         
         if (!is.null(input$picker_env_variable)){
           updatePickerInput(
