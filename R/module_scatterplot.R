@@ -62,7 +62,9 @@ mod_scatterplot_ui <- function(id){
          div(
            bslib::card(
              bslib::card_header(
-               h4('Options ', icon('screwdriver-wrench'))
+               h4('Options ', icon('screwdriver-wrench')),
+               #class = "d-flex justify-content-between",
+               #actionButton(ns("reset"), "Reset", class = "btn-info")
              ),
              bslib::card_body(
                fluidRow(
@@ -434,6 +436,25 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         shinyjs::toggle("ref_genotype_Y", condition = !is.null(rv_plot$selected_express_Y) && rv_plot$selected_express_Y == "relative")
       })
       
+      ## reset options ####
+      observeEvent(input$reset, {
+        updatePickerInput(
+          session = session, inputId = "picker_SIZE",
+          #choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
+          selected = ""
+        )
+        updatePickerInput(
+          session = session, inputId = "picker_SHAPE",
+          #choices = setNames(var_choices_SHAPE[,cols], var_choices_SHAPE[,source]),
+          selected = ""
+        )
+        updatePickerInput(
+          session = session, inputId = "picker_COLOUR",
+          #choices = setNames(var_choices_COLOUR[,cols], var_choices_COLOUR[,source]),
+          selected = ""
+        )
+      })
+      
       ## aggreg dataset ####
       observe({
         #browser()
@@ -456,7 +477,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         #req(input$picker_SHAPE %in% names(rv$data_plot))
         #req(input$aggreg_fun_COLOUR)
         #req(aggreg_functions[fun == input$aggreg_fun_COLOUR, for_num] == rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"])
-        
+
         data_plot_aggr <- rv$data_plot[
           studyDbId %in% input$env,
           .(
@@ -569,7 +590,6 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         rv_plot$draw_clusters
         
         d <- rv$data_plot_aggr
-        
         if(rv_plot$draw_clusters==T){
           if("cluster" %in% names(d)){d[,cluster := NULL]}
           d <- merge.data.table(x = d, y = rv_plot$clusters[,.(germplasmName, cluster)], by = "germplasmName")
@@ -661,7 +681,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
           ) +
           scale_shape(name = input$picker_SHAPE) +
           scale_size(name = input$picker_SIZE) +
-          if (isTruthy(input$picker_COLOUR)) scale_color_custom(
+          if (isTruthy(input$picker_COLOUR) | rv_plot$draw_clusters == T) scale_color_custom(
             is_num = if (rv_plot$draw_clusters == TRUE) { FALSE } else { rv$column_datasource[cols == isolate(input$picker_COLOUR), type == "Numerical"] },
             name = if (rv_plot$draw_clusters == TRUE) { "cluster" } else { isolate(input$picker_COLOUR) }
           ) else NULL +
@@ -974,11 +994,11 @@ mod_scatterplot_server <- function(id, rv, parent_session){
             )
           )
         ),cluster]
-        clusters[N>6 ,germplasmNames := paste(
+        clusters[N>6 ,germplasmNames_label := paste(
             paste(unlist(germplasmNames)[1:5], collapse = ", "),
             paste("and", N - 5, "others")
         )]
-        clusters[N <= 6, germplasmNames := paste(unlist(germplasmNames), collapse = ", ")]
+        clusters[N <= 6, germplasmNames_label := paste(unlist(germplasmNames), collapse = ", ")]
         
         group_id_start <- ifelse(is.null(rv$groups$group_id), 1, max(rv$groups$group_id) + 1)
         group_ids <- group_id_start:(group_id_start+clusters[,.N] -1)
@@ -999,7 +1019,8 @@ mod_scatterplot_server <- function(id, rv, parent_session){
           list(
             rv$column_datasource,
             data.table(cols = clusters[,unique(group_name)], source = "group", type = "Text", visible = T)
-          )
+          ), 
+          use.names = T
         )
         rv$data_plot <- data_plot
         
