@@ -25,7 +25,8 @@ server <- function(input, output, session){
       list(
         rv$column_datasource,
         data.table(cols = input$modal_create_group_text_input_label, source = "group", type = "Text", visible = T)
-      )
+      ),
+      use.names = T
     )
     rv$data_plot <- data_plot
     
