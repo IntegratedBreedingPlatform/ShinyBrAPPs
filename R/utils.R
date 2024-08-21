@@ -51,27 +51,19 @@ get_env_data <- function(con = NULL,
 
   try({
     if (is.null(obs_unit_level)) {
-      study_obs <- as.data.table(brapirv2::brapi_get_observationunits(
-        con = con,
-        studyDbId = studyDbId,
+      res <- brapirv2::brapi_post_search_observationunits(
+        con = con, 
+        studyDbIds = studyDbId,
         includeObservations = T)
-      )
     } else {
       obs_levels <- data.frame(levelName = obs_unit_level)
-      
       res <- brapirv2::brapi_post_search_observationunits(
         con = con, 
         studyDbIds = studyDbId,
         observationLevels = obs_levels,
         includeObservations = T)
-      study_obs <- as.data.table(brapirv2::brapi_get_search_observationunits_searchResultsDbId(con, as.character(res)))
-      # study_obs2 <- as.data.table(brapirv2::brapi_get_observationunits(
-      #   con = con,
-      #   studyDbId = studyDbId,
-      #   observationUnitLevelName = "PLOT",
-      #   includeObservations = T)
-      # )
     }
+    study_obs <- as.data.table(brapirv2::brapi_get_search_observationunits_searchResultsDbId(con, as.character(res)))
 
     if (!"observations.observationDbId" %in% colnames(study_obs)) {
       study_obs <- NULL
