@@ -402,7 +402,7 @@ mod_gxe_server <- function(id, rv){
         updatePickerInput(
           session, "FW_picker_color_by",
           choices = c("Nothing",input$picker_germplasm_attr,"sensitivity clusters"),
-          selected = character(0)
+          selected = "Nothing"
         )
       }
       )
