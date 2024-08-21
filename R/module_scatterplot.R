@@ -980,7 +980,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         )]
         clusters[N <= 6, germplasmNames := paste(unlist(germplasmNames), collapse = ", ")]
         
-        group_id_start <- ifelse(is.null(rv$groups$group_id), 1, max(rv$groups$group_id) + 1)
+        group_id_start <- ifelse(length(rv$groups$group_id)==0, 1, max(rv$groups$group_id) + 1)
         group_ids <- group_id_start:(group_id_start+clusters[,.N] -1)
         clusters[, group_id := group_ids]
         rv$groups <- rbindlist(list(
