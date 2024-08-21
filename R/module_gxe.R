@@ -422,7 +422,7 @@ mod_gxe_server <- function(id, rv){
         req(input$picker_trait)
         req(input$picker_env)
         #browser()
-        data2TD <- copy(rv$data_gxe)
+        data2TD <- copy(rv$data_gxe[observationLevel=="MEANS"])
         if (input$picker_germplasm_level=="germplasmDbId"){
           data2TD[, genotype:=paste0(germplasmDbId," (",germplasmName,")")]
         } else {
@@ -449,6 +449,7 @@ mod_gxe_server <- function(id, rv){
             data2TD[,wt:=(1/.SD)^2, .SDcols=input$weight_var]
           }
         }        
+        #browser()
         rv$TD <- statgenSTA::createTD(data = data2TD[studyDbId%in%input$picker_env],
                                       genotype = "genotype",
                                       trial = input$picker_env_variable)
