@@ -66,7 +66,8 @@ mod_gxe_ui <- function(id){
                                   `Trials are nested within locations`=4,
                                   `Trials correspond to locations within regions across years`=5,
                                   `Trials are nested within scenarios`=6)),
-          actionBttn(ns("mm_run_model"),"Run model")
+          actionBttn(ns("mm_run_model"),"Run model"),
+          shiny::downloadButton(ns("MM_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
         ),
         # bslib::layout_columns(
         #   bslib::card(full_screen = TRUE,
@@ -142,7 +143,8 @@ mod_gxe_ui <- function(id){
             pickerInput(ns("FW_picker_color_by"), label="Color by", multiple = F, choices = c("Nothing","sensitivity clusters")),
             #materialSwitch(ns("FW_cluster_sensitivity"), "Color by sensitivity clusters", value = FALSE, status = "info"),
             numericInput(ns("FW_cluster_sensitivity_nb"),"Number of clusters", min = 2, max = 8, step = 1, value = 2),
-            pickerInput(ns("FW_picker_cluster_on"), label="Cluster on", choices = c(sensitivity="sens", `genotype means`="genMean"), multiple = TRUE, selected = "sens")
+            pickerInput(ns("FW_picker_cluster_on"), label="Cluster on", choices = c(sensitivity="sens", `genotype means`="genMean"), multiple = TRUE, selected = "sens"),
+            shiny::downloadButton(ns("FW_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
           ),
           bslib::layout_columns(
             #### Accordion results ####
@@ -192,7 +194,9 @@ mod_gxe_ui <- function(id){
                         selected = 1),
             pickerInput(ns("GGE_picker_env_select"), label="Plot type 5 - Select an environment", multiple = F, choices = c()),
             pickerInput(ns("GGE_picker_gen_select"), label="Plot type 7&9 - Select a genotype", multiple = F, choices = c()),
-            pickerInput(ns("GGE_picker_gen2_select"), label="Plot type 9 - Select a second genotypes", multiple = F, choices = c())
+            pickerInput(ns("GGE_picker_gen2_select"), label="Plot type 9 - Select a second genotypes", multiple = F, choices = c()),
+            shiny::downloadButton(ns("GGE_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
+            
           ),
           bslib::layout_columns(
             #### Accordion results ####
@@ -948,7 +952,46 @@ mod_gxe_server <- function(id, rv){
           
       })
       
-      
+
+    ## MM Report ####
+        output$MM_report <- downloadHandler(
+          filename = function() {
+            paste("GxE_MM-", Sys.Date(), ".html", sep="")
+          },
+          content = function(file) {
+            rmarkdown::render(
+              input="reports/GxE_MM.Rmd", output_file = file,
+              params = list(data=rv$TD, trait=input$picker_trait, env_struct=input$picker_gxe_mm_env_struct)
+            )
+          }
+        )
+      ## FW Report ####
+      output$FW_report <- downloadHandler(
+        filename = function() {
+          paste("GxE_FW-", Sys.Date(), ".html", sep="")
+        },
+        content = function(file) {
+          rmarkdown::render(
+            input="reports/GxE_FW.Rmd", output_file = file,
+            params = list(data=rv$TD, trait=input$picker_trait, colorby=input$FW_picker_color_by)
+          )
+        }
+      )
+      ## GGE Report ####
+      output$GGE_report <- downloadHandler(
+        filename = function() {
+          paste("GxE_GGE-", Sys.Date(), ".html", sep="")
+        },
+        content = function(file) {
+          if (is.null(rv$TD.metangge)){
+            showNotification("Please Run analysis once first", type = "warning", duration = notification_duration)
+          } else {
+            rmarkdown::render(
+              input="reports/GxE_GGE.Rmd", output_file = file
+            )
+          }
+        }
+      )
     }
   )
 }

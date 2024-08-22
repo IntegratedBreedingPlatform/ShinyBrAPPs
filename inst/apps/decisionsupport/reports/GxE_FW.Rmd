@@ -1,0 +1,183 @@
+---
+title: "GxE Finlay-Wilkinson Analysis Report"
+output: html_document
+date: "`r format(Sys.time(), '%d %B, %Y - %H:%M:%S')`"
+params: 
+    colorby: null
+    trait: null
+    data: null
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(statgenGxE)
+```
+
+## Studies :
+```{r}
+knitr::kable(unique(data.table(rbindlist(params$data))[,.(trial,locationName,studyDbId,studyName)]))
+```
+
+## Trait : `r params$trait`
+## Analysis output
+```{r, echo=FALSE}
+TDFW <- tryCatch(gxeFw(TD =params$data, trait = params$trait), error=function(e) e)
+summary(TDFW)
+```
+
+## FW plot
+```{r, echo=FALSE, fig.show='hide', eval=FALSE}
+            TDFWplot <- rv$TDFWplot
+              if (input$FW_picker_color_by=="sensitivity clusters"){
+                p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
+                if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
+                  selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
+                  p2 <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
+                      ggnewscale::new_scale_color() + 
+                      ggplot2::geom_line(data=p$data[p$data$genotype%in%selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                      geom_point(data=p$data[p$data$genotype%in%selected_genotypes,], aes(color=genotype), size=3)
+                  }
+              } else {
+                if (input$FW_picker_color_by=="Nothing"){
+                  p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+                  if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
+                    rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
+                    p2 <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
+                        ggnewscale::new_scale_color() + 
+                        ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                        geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
+                  }
+                } else {
+                  p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
+                  if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
+                    rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
+                    p2 <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
+                        ggnewscale::new_scale_color() + 
+                        ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                        geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
+                  }
+                  
+                }
+              }
+```
+```{r, fig.height=10, fig.width=10, eval=FALSE}
+            if (input$FW_picker_plot_type=="scatter"){
+              if (input$FW_picker_color_by!="Nothing") {
+                
+                p1Gtable <- ggplot2::ggplot_gtable(ggplot2::ggplot_build(p$p1 + ggplot2::theme(legend.position = "right")))
+                legendPos <- sapply(X = p1Gtable$grobs, FUN = `[[`, 
+                                    "name") == "guide-box"
+                legend <- p1Gtable$grobs[[which(legendPos)]]
+              }
+              else {
+                legend <- NULL
+              }
+              pEmpty <- ggplot2::ggplot() + ggplot2::theme(panel.background = ggplot2::element_blank())
+              p1Gr <- ggplot2::ggplotGrob(p$p1)
+              p2Gr <- ggplot2::ggplotGrob(p$p2)
+              p3Gr <- ggplot2::ggplotGrob(p$p3)
+              pEmpty <- ggplot2::ggplotGrob(pEmpty)
+              c1 <- gridExtra::gtable_rbind(p1Gr, p2Gr)
+              c2 <- gridExtra::gtable_rbind(pEmpty, p3Gr)
+              tot <- gridExtra::gtable_cbind(c1, c2)
+                p <- gridExtra::grid.arrange(tot, right = legend, 
+                                             top = paste("Finlay & Wilkinson analysis for", input$picker_trait))
+            }
+if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
+  print(p)
+  print(p2)
+} else {
+  print(p)
+}
+```
+
+
+```{r, echo=FALSE, fig.show='hide', eval=TRUE, message=FALSE, warning=FALSE}
+allps <- lapply(c("scatter", "line", "trellis", "scatterFit"), function(ptype){
+              TDFWplot <- rv$TDFWplot
+              if (input$FW_picker_color_by=="sensitivity clusters"){
+                p <- plot(TDFWplot, plotType = ptype, colorGenoBy="sensitivity_cluster")
+                if (!is.null(input$FW_sens_clusters_DT_rows_selected) & ptype=="line"){
+                  selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
+                  p2 <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
+                      ggnewscale::new_scale_color() + 
+                      ggplot2::geom_line(data=p$data[p$data$genotype%in%selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                      geom_point(data=p$data[p$data$genotype%in%selected_genotypes,], aes(color=genotype), size=3)
+                  }
+              } else {
+                if (input$FW_picker_color_by=="Nothing"){
+                  p <- plot(TDFWplot, plotType = ptype)
+                  if (!is.null(input$FW_sens_clusters_DT_rows_selected) & ptype=="line"){
+                    rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
+                    p2 <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
+                        ggnewscale::new_scale_color() + 
+                        ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                        geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
+                  }
+                } else {
+                  p <- plot(TDFWplot, plotType = ptype, colorGenoBy=input$FW_picker_color_by)
+                  if (!is.null(input$FW_sens_clusters_DT_rows_selected) & ptype=="line"){
+                    rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
+                    p2 <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
+                        ggnewscale::new_scale_color() + 
+                        ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                        geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
+                  }
+                }
+              }
+              if (!is.null(input$FW_sens_clusters_DT_rows_selected) & ptype=="line"){
+                return(list(p1=p,p2=p2))
+              } else {
+                return(p)
+              }
+})
+
+```
+### scatter plot
+```{r, fig.height=10, fig.width=10, eval=TRUE, message=FALSE, warning=FALSE, results='hide'}
+p <- allps[[1]]
+            
+              if (input$FW_picker_color_by!="Nothing") {
+                p1Gtable <- ggplot2::ggplot_gtable(ggplot2::ggplot_build(p$p1 + ggplot2::theme(legend.position = "right")))
+                legendPos <- sapply(X = p1Gtable$grobs, FUN = `[[`, 
+                                    "name") == "guide-box"
+                legend <- p1Gtable$grobs[[which(legendPos)]]
+              } else {
+                legend <- NULL
+              }
+              pEmpty <- ggplot2::ggplot() + ggplot2::theme(panel.background = ggplot2::element_blank())
+              p1Gr <- ggplot2::ggplotGrob(p$p1)
+              p2Gr <- ggplot2::ggplotGrob(p$p2)
+              p3Gr <- ggplot2::ggplotGrob(p$p3)
+              pEmpty <- ggplot2::ggplotGrob(pEmpty)
+              c1 <- gridExtra::gtable_rbind(p1Gr, p2Gr)
+              c2 <- gridExtra::gtable_rbind(pEmpty, p3Gr)
+              tot <- gridExtra::gtable_cbind(c1, c2)
+                p <- gridExtra::grid.arrange(tot, right = legend, 
+                                             top = paste("Finlay & Wilkinson analysis for", input$picker_trait))
+            
+  print(p)
+```
+
+### line plot
+```{r, fig.height=10, fig.width=10, eval=TRUE, message=FALSE, warning=FALSE}
+p <- allps[[2]]
+if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
+  print(p$p1)
+  print(p$p2)
+} else {
+  print(p)
+}
+```
+
+### trellis plot
+```{r, fig.height=10, fig.width=10, eval=TRUE, message=FALSE, warning=FALSE}
+p <- allps[[3]]
+  print(p)
+```
+
+### scatterFit plot
+```{r, fig.height=10, fig.width=10, eval=TRUE, message=FALSE, warning=FALSE}
+p <- allps[[4]]
+  print(p)
+```
