@@ -140,7 +140,7 @@ mod_gxe_ui <- function(id){
             pickerInput(ns("FW_picker_plot_type"),
                         label="Plot type",
                         choices = c("scatter", "line", "trellis", "scatterFit"), selected = "line"),
-            pickerInput(ns("FW_picker_color_by"), label="Color by", multiple = F, choices = c("Nothing","sensitivity clusters")),
+            pickerInput(ns("FW_picker_color_by"), label="Color by", multiple = F, choices = c("Nothing","sensitivity clusters"), selected = "Nothing"),
             #materialSwitch(ns("FW_cluster_sensitivity"), "Color by sensitivity clusters", value = FALSE, status = "info"),
             numericInput(ns("FW_cluster_sensitivity_nb"),"Number of clusters", min = 2, max = 8, step = 1, value = 2),
             pickerInput(ns("FW_picker_cluster_on"), label="Cluster on", choices = c(sensitivity="sens", `genotype means`="genMean"), multiple = TRUE, selected = "sens"),
@@ -241,6 +241,16 @@ mod_gxe_ui <- function(id){
             )
           )
         )
+      ),
+      bslib::nav_panel(
+        ## AMMI panel ####
+        title = "AMMI",
+        bslib::layout_sidebar(
+          ### Sidebar ####
+          sidebar=bslib::sidebar(
+            width = 350,
+          )
+        )
       )
     )
   )
@@ -253,6 +263,8 @@ mod_gxe_server <- function(id, rv){
   moduleServer(
     id,
     function(input, output, session){
+      
+      bslib::accordion_panel_close("GGE_adv_settings_acc", values="advs", session = session)
       ## observe data and update Trit picker ####
       rv$selected_genotypes <- NULL
       observe({
@@ -267,9 +279,9 @@ mod_gxe_server <- function(id, rv){
         } else {
           rv$data_gxe <- rv$data_plot
         }
+        #attempt to identify variables that are redundant with studyDbId to use as choices for picker_env_variable
         datagef <- lapply(rv$data_gxe, function(a) as.factor(a))
-        env_vars <- names(which(unlist(lapply(datagef[unlist(lapply(datagef, function(a) !all(is.na(a)) & length(levels(a))>1))], function(a) abs(cor(as.numeric(a), as.numeric(datagef$studyDbId), use = "pairwise.complete.obs"))))==1))
-        
+        env_vars <- names(which(unlist(lapply(datagef[unlist(lapply(datagef, function(a) !all(is.na(a)) & length(levels(a))>1))], function(a) abs(cor(as.numeric(a), as.numeric(datagef$studyDbId), use = "na.or.complete"))))==1))
         if (!is.null(input$picker_env_variable)){
           updatePickerInput(
             session, "picker_env_variable",
@@ -437,21 +449,25 @@ mod_gxe_server <- function(id, rv){
         } else {
           data2TD[, genotype:=germplasmName]
         }
-        if (length(input$picker_scenario)>1){ #& input$check_combine_scenario){
+        if (length(input$picker_scenario)>=1){ #& input$check_combine_scenario){
           data2TD[, scenario:= do.call(paste0, .SD), .SDcols = input$picker_scenario]
-        } else {
-          if (length(input$picker_scenario)==1){
-            setnames(data2TD, old=input$picker_scenario, new="scenario")
-          }
-        }
+        } #else {
+        #  if (length(input$picker_scenario)==1){
+        #    data2TD[, scenario:= do.call(paste0, .SD), .SDcols = input$picker_scenario]
+        #    #setnames(data2TD, old=input$picker_scenario, new="scenario")
+        #  }
+        #}
         if (!is.null(input$picker_year)){
-          setnames(data2TD, old=input$picker_year, new="year")
+          data2TD[, year:= .SD, .SDcols = input$picker_year]
+          #setnames(data2TD, old=input$picker_year, new="year")
         }
         if (!is.null(input$picker_location)){
-          setnames(data2TD, old=input$picker_location, new="loc")
+          data2TD[, loc:= .SD, .SDcols = input$picker_location]
+          #setnames(data2TD, old=input$picker_location, new="loc")
         }
         if (!is.null(input$picker_region)){
-          setnames(data2TD, old=input$picker_region, new="region")
+          data2TD[, region:= .SD, .SDcols = input$picker_region]
+          #setnames(data2TD, old=input$picker_region, new="region")
         }
         if (input$use_weights){
           if (!is.null(input$weight_var)){
@@ -533,51 +549,57 @@ mod_gxe_server <- function(id, rv){
       ### Run MM model ####
       observeEvent(input$mm_run_model,{
         #browser()
-        rv$TDVarComp <- switch(input$picker_gxe_mm_env_struct,
-               `1`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)},
-               `2`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, locationYear = TRUE), error=function(e) e)},
-               `3`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "year"), error=function(e) e)},
-               `4`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "loc"), error=function(e) e)},
-               `5`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, regionLocationYear = TRUE), error=function(e) e)},
-               `6`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "scenario"), error=function(e) e)})
-        output$MM_text_output <- renderPrint({
-          if ("varComp"%in%class(rv$TDVarComp)){
-            summary(rv$TDVarComp)
-          } else {
-            rv$TDVarComp
-          }
-        })
-        output$MM_diagnostics <- renderPrint({
-          if ("varComp"%in%class(rv$TDVarComp)){
-            diagnostics(rv$TDVarComp)
-          } else {
-            "Model failed"
-          }
-        })
-        output$MM_vc <- renderPrint({
-          if ("varComp"%in%class(rv$TDVarComp)){
-            list(`Variance components`=vc(rv$TDVarComp), heritability=herit(rv$TDVarComp))
-          } else {
-            "Model failed"
-          }
-        })
-        output$MM_plot_output <- renderPlot({
-          if ("varComp"%in%class(rv$TDVarComp)){
-            plot(rv$TDVarComp)
-          } else {
-            "Model failed"
-          }
-        })
-        output$MM_predictions <- DT::renderDataTable({
-          if ("varComp"%in%class(rv$TDVarComp)){
-            predict(rv$TDVarComp)
-          } else {
-            data.table()[]
-          }
-        }, rownames= FALSE)
-        bslib::accordion_panel_set(id="MM_accord1", values=TRUE)
-        bslib::accordion_panel_set(id="MM_accord2", values=TRUE)
+        if (any(c(is.null(input$picker_trait),is.null(input$picker_env_variable), is.null(input$picker_germplasm_level)))){
+          misspicks <- c("'Trait'","'Variable to use as Environment'", "'Germplasm level'")[c(is.null(input$picker_trait),is.null(input$picker_env_variable), is.null(input$picker_germplasm_level))] 
+          showNotification(stringmagic::string_magic("{enum ? misspicks}  should be selected first on Data preparation Tab"), type = "error", duration = notification_duration)
+        } else {
+          rv$TDVarComp <- switch(input$picker_gxe_mm_env_struct,
+                                 `1`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)},
+                                 `2`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, locationYear = TRUE), error=function(e) e)},
+                                 `3`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "year"), error=function(e) e)},
+                                 `4`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "loc"), error=function(e) e)},
+                                 `5`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, regionLocationYear = TRUE), error=function(e) e)},
+                                 `6`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "scenario"), error=function(e) e)})
+          output$MM_text_output <- renderPrint({
+            if ("varComp"%in%class(rv$TDVarComp)){
+              summary(rv$TDVarComp)
+            } else {
+              rv$TDVarComp
+            }
+          })
+          output$MM_diagnostics <- renderPrint({
+            if ("varComp"%in%class(rv$TDVarComp)){
+              diagnostics(rv$TDVarComp)
+            } else {
+              "Model failed"
+            }
+          })
+          output$MM_vc <- renderPrint({
+            if ("varComp"%in%class(rv$TDVarComp)){
+              list(`Variance components`=vc(rv$TDVarComp), heritability=herit(rv$TDVarComp))
+            } else {
+              "Model failed"
+            }
+          })
+          output$MM_plot_output <- renderPlot({
+            if ("varComp"%in%class(rv$TDVarComp)){
+              plot(rv$TDVarComp)
+            } else {
+              "Model failed"
+            }
+          })
+          output$MM_predictions <- DT::renderDataTable({
+            if ("varComp"%in%class(rv$TDVarComp)){
+              predict(rv$TDVarComp)
+            } else {
+              data.table()[]
+            }
+          }, rownames= FALSE)
+          bslib::accordion_panel_set(id="MM_accord1", values=TRUE)
+          bslib::accordion_panel_set(id="MM_accord2", values=TRUE)
+        }
       })
+      
       observe({
         req(rv$TDVarComp)
         if (is.null(rv$TDVarComp$nestingFactor)){
@@ -608,60 +630,28 @@ mod_gxe_server <- function(id, rv){
       ## FW ####
       ### Run FW ####
       observeEvent(input$FW_run,{
-        rv$TDFW <- tryCatch(gxeFw(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)
-        rv$TDFWplot <- rv$TDFW
-        output$FW_text_output <- renderPrint({
-          if ("FW"%in%class(rv$TDFW)){
-            summary(rv$TDFW)
-          } else {
-            rv$TDFW
-          }
-        })
+        if (any(c(is.null(input$picker_trait),is.null(input$picker_env_variable), is.null(input$picker_germplasm_level)))){
+          misspicks <- c("'Trait'","'Variable to use as Environment'", "'Germplasm level'")[c(is.null(input$picker_trait),is.null(input$picker_env_variable), is.null(input$picker_germplasm_level))] 
+          showNotification(stringmagic::string_magic("{enum ? misspicks}  should be selected first on Data preparation Tab"), type = "error", duration = notification_duration)
+        } else {
+          rv$TDFW <- tryCatch(gxeFw(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)
+          rv$TDFWplot <- rv$TDFW
+          output$FW_text_output <- renderPrint({
+            if ("FW"%in%class(rv$TDFW)){
+              summary(rv$TDFW)
+            } else {
+              rv$TDFW
+            }
+          })
+        }
       })
       ### FW plot ####
-      #observe({
-      #  output$FW_plotc <- renderUI({
-      #    if (input$FW_plot_interact){
-      #      plotlyOutput(ns("FW_ploty"))
-      #    } else {
-      #        plotOutput(ns("FW_plot"))#,  brush = brushOpts(id=ns("observ_fwplot_brush"), resetOnNew = T))
-      #    }
-      #  })
-      #})
-      
+      #### renderPlot observer ####
       observe({
         req(rv$TDFW)
-        #browser()
-        #if (input$FW_plot_interact){
-        #    output$FW_ploty <- renderPlotly({
-        #    TDFWplot <- rv$TDFW
-        #    if (is.null(input$FW_picker_color_by)){
-        #      ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type))
-        #      #plot(TDFWplot, plotType = input$FW_picker_plot_type)
-        #    } else {
-        #      if (input$FW_picker_color_by=="sensitivity clusters"){
-        #        #browser()
-        #        sensclust <- data.table(rv$TDFW$estimates)
-        #        sensclust <- sensclust[!is.na(sens)]
-        #        #browser()
-        #        sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
-        #        rv$sensclust <- sensclust
-        #        TDFWplot$TD <- lapply(TDFWplot$TD, function(a) data.table(a)[sensclust, on=.(genotype)])
-        #        ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster"))
-        #        #plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
-        #      } else {
-        #        if (input$FW_picker_color_by=="Nothing"){
-        #          ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type))
-        #        } else {
-        #          ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by))
-        #          #plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
-        #        }
-        #      }
-        #    }
-        #  })
-        #} else {
           output$FW_plot <- renderPlot({
             TDFWplot <- rv$TDFWplot
+            #browser()
             if (is.null(input$FW_picker_color_by)){
               p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
             } else {
@@ -670,7 +660,7 @@ mod_gxe_server <- function(id, rv){
                 p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
                 if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
                   selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
-                  p <- p + scale_color_grey(start = 0.8, end = 0.8) +
+                  p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                       ggnewscale::new_scale_color() + 
                       ggplot2::geom_line(data=p$data[p$data$genotype%in%selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                       geom_point(data=p$data[p$data$genotype%in%selected_genotypes,], aes(color=genotype), size=3)
@@ -680,7 +670,7 @@ mod_gxe_server <- function(id, rv){
                   p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
                   if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
                     rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
-                    p <- p + scale_color_grey(start = 0.8, end = 0.8) +
+                    p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                         ggnewscale::new_scale_color() + 
                         ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                         geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
@@ -690,7 +680,7 @@ mod_gxe_server <- function(id, rv){
                   p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
                   if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
                     rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
-                    p <- p + scale_color_grey(start = 0.8, end = 0.8) +
+                    p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                         ggnewscale::new_scale_color() + 
                         ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                         geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
@@ -699,15 +689,42 @@ mod_gxe_server <- function(id, rv){
                 }
               }
             }
-            p
+            #Following is required because statgenGxE:::plot.FW return a list of
+            #three ggplots in case of plotType="scatter"
+            #need to restore legend on first plot and capture it
+            #and to grid.arrange the 3 plots
+            if (input$FW_picker_plot_type=="scatter"){
+              if (input$FW_picker_color_by!="Nothing") {
+                p1Gtable <- ggplot2::ggplot_gtable(ggplot2::ggplot_build(p$p1 + ggplot2::theme(legend.position = "right")))
+                legendPos <- sapply(X = p1Gtable$grobs, FUN = `[[`, 
+                                    "name") == "guide-box"
+                legend <- p1Gtable$grobs[[which(legendPos)]]
+              }
+              else {
+                legend <- NULL
+              }
+              pEmpty <- ggplot2::ggplot() + ggplot2::theme(panel.background = ggplot2::element_blank())
+              p1Gr <- ggplot2::ggplotGrob(p$p1)
+              p2Gr <- ggplot2::ggplotGrob(p$p2)
+              p3Gr <- ggplot2::ggplotGrob(p$p3)
+              pEmpty <- ggplot2::ggplotGrob(pEmpty)
+              c1 <- gridExtra::gtable_rbind(p1Gr, p2Gr)
+              c2 <- gridExtra::gtable_rbind(pEmpty, p3Gr)
+              tot <- gridExtra::gtable_cbind(c1, c2)
+                p <- gridExtra::grid.arrange(tot, right = legend, 
+                                             top = paste("Finlay & Wilkinson analysis for", input$picker_trait))
+            }
+              p
           })
-        #}
       })
+
+      #### compute sensitivity_clusters whenever a picker changes ####
       observeEvent(  eventExpr = {
         input$FW_picker_color_by
         input$FW_cluster_sensitivity_nb
         input$FW_picker_cluster_on
         input$FW_picker_plot_type
+        rv$TDFW
       }, handlerExpr = {
         req(rv$TDFW)
         #browser()
@@ -735,21 +752,7 @@ mod_gxe_server <- function(id, rv){
         shinyjs::addClass("create_groups_from_sensclusters", "active")
         
       })
-      
-      #### Handle genotype selection in DT ####
-      #observeEvent(input$FW_sens_clusters_DT_rows_selected, ignoreNULL = FALSE, {
-      #  req(rv$fwp)
-      #  #browser()
-      #  if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
-      #    rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
-      #    output$FW_plot <- renderPlot({rv$fwp +
-      #        ggnewscale::new_scale_color() + 
-      #        ggplot2::geom_line(data=rv$fwp$data[rv$fwp$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
-      #        geom_point(data=rv$fwp$data[rv$fwp$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)})
-      #   } else {
-      #      output$FW_plot <- renderPlot({rv$fwp})
-      #  }
-      #})
+
       
       #### Handle FW group creation ####
       observeEvent(input$create_groups_from_sensclusters,{
