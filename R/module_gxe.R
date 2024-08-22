@@ -179,6 +179,11 @@ mod_gxe_ui <- function(id){
           sidebar=bslib::sidebar(
             width = 350,
             actionBttn(ns("GGE_run"), "Run GGE analysis"),
+            bslib::accordion(id = ns("GGE_adv_settings_acc"),
+                             bslib::accordion_panel(title = "Advanced settings", value = "advs",
+                                                    pickerInput(ns("GGE_advs_centering"), label = "centering", options = list(container = "body"), choices = c(none=0, global=1, environment=2, double=3), selected = 2),
+                                                    pickerInput(ns("GGE_advs_scaling"), label = "scaling", options = list(container = "body"), choices = c(none=0, sd=1), selected = 0),
+                                                    pickerInput(ns("GGE_advs_svp"), label = "svp", options = list(container = "body"), choices = c(genotype=1, environment=2, symmetrical=3), selected = 2))),
             pickerInput(ns("GGE_picker_plot_type"),
                         label="Plot type",
                         choices = c(`1-A basic biplot`=1,
@@ -807,7 +812,13 @@ mod_gxe_server <- function(id, rv){
         #browser()
         rv$TD.metangge <- rbindlist(rv$TD)[,.SD, .SDcols=c("trial","genotype",input$picker_trait)]
 
-        rv$TDGGEmetan <- tryCatch(metan::gge(rv$TD.metangge, env=trial, gen=genotype, resp = input$picker_trait), error=function(e) e)
+        rv$TDGGEmetan <- tryCatch(metan::gge(rv$TD.metangge,
+                                             env=trial,
+                                             gen=genotype,
+                                             resp = input$picker_trait,
+                                             centering = input$GGE_advs_centering,
+                                             scaling = input$GGE_advs_scaling,
+                                             svp = input$GGE_advs_svp,), error=function(e) e)
         rv$TDGGE <- tryCatch(gxeGGE(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)
         #browser()
         
@@ -818,13 +829,13 @@ mod_gxe_server <- function(id, rv){
         )
         updatePickerInput(
           session, "GGE_picker_gen2_select",
-          choices = rv$TDGGEmetan[[1]]$labelgen
+          choices = rv$TDGGEmetan[[1]]$labelgen[2]
           #selected = character(0)
         )
         updatePickerInput(
           session, "GGE_picker_env_select",
-          choices = rv$TDGGEmetan[[1]]$labelenv
-          #selected = character(0)
+          choices = rv$TDGGEmetan[[1]]$labelenv,
+          selected = rv$TDGGEmetan[[1]]$labelenv
         )
         
         
