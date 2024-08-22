@@ -760,7 +760,7 @@ mod_gxe_server <- function(id, rv){
         shinyjs::disable("create_groups_from_sensclusters")
         shinyjs::addClass("create_groups_from_sensclusters", "active")
         #browser()
-        clusters <- unique(rbindlist(rv$TD)[,.(genotype,germplasmDbId,germplasmName)])[rv$sensclust, on=.(genotype)][order(sensitivity_cluster)][,.(
+        clusters <- unique(rbindlist(rv$TD)[,.(genotype,germplasmDbId,germplasmName)])[rv$sensclust, on=.(genotype=Genotype)][order(sensitivity_cluster)][,.(
           group_name = paste0("FW_cluster.", sensitivity_cluster),
           group_desc = paste0(
             "Clustering method: FW_clusters", tags$b(input$cluster_algo), tags$br(),
