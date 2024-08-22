@@ -161,8 +161,9 @@ mod_gxe_ui <- function(id){
                                                     )),
                              bslib::accordion_panel(title = "Germplasm list and clusters",
                                                     #bslib::card(DT::dataTableOutput(ns("FW_selected_obs_DT"))),
-                                                    bslib::card(DT::dataTableOutput(ns("FW_sens_clusters_DT")),
-                                                                uiOutput(ns("senscluster_results")))
+                                                    bslib::card(
+                                                      bslib::card_body(DT::dataTableOutput(ns("FW_sens_clusters_DT"))),
+                                                      bslib::card_footer(uiOutput(ns("senscluster_results"))))
                              ),
                              bslib::accordion_panel(title = "Analysis summary", 
                                                     verbatimTextOutput(ns("FW_text_output")) 
