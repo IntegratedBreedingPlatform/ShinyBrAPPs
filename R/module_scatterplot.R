@@ -97,7 +97,7 @@ mod_scatterplot_ui <- function(id){
                  ), 
                  column(5, 
                         div(style = "display:inline-block; width: 100%;",
-                            pickerInput(ns("aggreg_fun_COLOUR"),  options = list(container = "body"), choices = c("concatenate unique values"="unique_values")))
+                            pickerInput(ns("aggreg_fun_COLOUR"),  options = list(container = "body"), choices = c("-----------" = "")))
                  )
                ),
                fluidRow(
@@ -108,7 +108,7 @@ mod_scatterplot_ui <- function(id){
                  ),
                  column(5, 
                         div(style = "display:inline-block; width: 100%;",
-                            pickerInput(ns("aggreg_fun_SIZE"),  options = list(container = "body"), choices = c("concatenate unique values"="unique_values")))
+                            pickerInput(ns("aggreg_fun_SIZE"),  options = list(container = "body"), choices = c("mean", "max", "min", "sum")))
                  )
                )
              )
@@ -406,7 +406,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
               updateCheckboxInput(session, "express_X_as_ranks", value = F)
               rv_plot$selected_express_X = "relative"
             } else if (rv_plot$selected_express_X == "relative" && input$express_X_as_ranks) {
-              updateCheckboxInput(session, "express_X_as_relative", value = F)
+              updateCheckboxInput(session, "express_X_relative", value = F)
               rv_plot$selected_express_X = "ranks"
             }
           }
@@ -431,7 +431,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
             updateCheckboxInput(session, "express_Y_as_ranks", value = F)
             rv_plot$selected_express_Y = "relative"
           } else if (rv_plot$selected_express_Y == "relative" && input$express_Y_as_ranks) {
-            updateCheckboxInput(session, "express_Y_as_relative", value = F)
+            updateCheckboxInput(session, "express_Y_relative", value = F)
             rv_plot$selected_express_Y = "ranks"
           }
         }
@@ -463,10 +463,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
       
       ## aggreg dataset ####
       observe({
-        #browser()
         req(rv$data_plot)
-        req((is.null(input$express_X_as) ||  length(input$express_X_as) == 1 )
-            && (is.null(input$express_Y_as) ||  length(input$express_Y_as) == 1))
         if(input$switch_aggregate== T){
           if(input$aggregate_by == "germplasm and environment"){
             group_by_cols <- c("studyName", "germplasmName", "germplasmDbId")
@@ -496,15 +493,17 @@ mod_scatterplot_server <- function(id, rv, parent_session){
             VAR_Y = do.call(what = input$aggreg_fun_Y, args = list(
               x = if(isTruthy(input$picker_Y)) eval(as.name(input$picker_Y)) else NA,
               na.rm = T)),
-            VAR_SHAPE = do.call(what = input$aggreg_fun_SHAPE, args = list(
-              x = if(isTruthy(input$picker_SHAPE)) eval(as.name(input$picker_SHAPE)) else NA,
-              na.rm = T)),
-            VAR_COLOUR = do.call(what = input$aggreg_fun_COLOUR, args = list(
-              x = if(isTruthy(input$picker_COLOUR)) eval(as.name(input$picker_COLOUR)) else NA,
-              na.rm = T)),
-            VAR_SIZE = do.call(what = input$aggreg_fun_SIZE, args = list(
-              x = if(isTruthy(input$picker_SIZE)) eval(as.name(input$picker_SIZE)) else NA,
-              na.rm = T))
+            VAR_SHAPE = ifelse(isTruthy(input$picker_SHAPE) && input$picker_SHAPE != "",
+              do.call(what = input$aggreg_fun_SHAPE, args = list(x = eval(as.name(input$picker_SHAPE)),na.rm = T)),
+              NA),
+            VAR_COLOUR = ifelse(
+              isTruthy(input$picker_COLOUR) && input$picker_COLOUR != "" && input$aggreg_fun_COLOUR != "",
+              do.call(what = input$aggreg_fun_COLOUR, args = list(x = eval(as.name(input$picker_COLOUR)),na.rm = T)),
+              NA),
+            VAR_SIZE = ifelse(
+              isTruthy(input$picker_SIZE) && input$picker_SIZE != "",
+              do.call(what = input$aggreg_fun_SIZE, args = list(x = eval(as.name(input$picker_SIZE)), na.rm = T)),
+              NA)
           ),
           by = group_by_cols
         ]
@@ -512,14 +511,14 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         ## transform X variable
         # - no transformation (default)
         data_plot_aggr[,VAR_X_PLOT:=VAR_X]
-        if (!is.null(input$express_X_as) && input$express_X_as=="as ranks"){
+        if (isTruthy(input$express_X_as_ranks)){
           # - ranking
-          if(input$ranking_order_X == "descending"){
+          if(input$ranking_order_X == F){ #descending
             data_plot_aggr[, VAR_X_PLOT := base::rank(x = -VAR_X, na.last = T, ties.method = "min")]
           }else{
             data_plot_aggr[, VAR_X_PLOT := base::rank(x = VAR_X, na.last = T, ties.method = "min")]
           }
-        } else if(input$switch_aggregate==T && !is.null(input$express_X_as) && input$express_X_as=="relatively to genotype" && !(input$aggregate_by %in% c("plot"))){
+        } else if(input$switch_aggregate==T && isTruthy(input$express_X_relative) && !(input$aggregate_by %in% c("plot"))){
           # - variation to genotype
           req(input$ref_genotype_X)
           if(input$aggregate_by=="germplasm"){
@@ -539,14 +538,14 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         ## transform Y variable
         # - no transformation (default)
         data_plot_aggr[,VAR_Y_PLOT:=VAR_Y]
-        if(!is.null(input$express_Y_as) && input$express_Y_as=="as ranks"){
+        if(isTruthy(input$express_Y_as_ranks)){
           # - ranking
-          if(input$ranking_order_Y == "descending"){
+          if(input$ranking_order_Y == F){ #descending
             data_plot_aggr[, VAR_Y_PLOT := base::rank(x = -VAR_Y, na.last = T, ties.method = "min")]
           }else{
             data_plot_aggr[, VAR_Y_PLOT := base::rank(x = VAR_Y, na.last = T, ties.method = "min")]
           }
-        }else if(input$switch_aggregate==T && !is.null(input$express_Y_as) && input$express_Y_as=="relatively to genotype" && !(input$aggregate_by %in% c("plot"))){
+        }else if(input$switch_aggregate==T && isTruthy(input$express_Y_relative) && !(input$aggregate_by %in% c("plot"))){
           # - variation to genotype
           req(input$ref_genotype_Y)
           if(input$aggregate_by=="germplasm"){
@@ -587,8 +586,6 @@ mod_scatterplot_server <- function(id, rv, parent_session){
       ## Plot ####
       output$scatterplot <- renderPlotly({
         req(rv$data_plot_aggr)
-        req((is.null(input$express_X_as) ||  length(input$express_X_as) == 1 )
-            && (is.null(input$express_Y_as) ||  length(input$express_Y_as) == 1))
         #req(input$picker_COLOUR)
         #req(rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"] == is.numeric(rv$data_plot_aggr[,VAR_COLOUR]))
         
@@ -631,7 +628,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         d[, "Y value" := VAR_Y_PLOT] # workaround for the plotly tooltip
         d[, "Shape scale" := if(isTruthy(input$picker_SHAPE)) VAR_SHAPE else NA] # workaround for the plotly tooltip
         d[, "Colour scale" := if(isTruthy(input$picker_COLOUR)) VAR_COLOUR else NA] # workaround for the plotly tooltip
-        d[, "Size scale" := if(isTruthy(input$picker_SIZE)) VAR_COLOUR else NA] # workaround for the plotly tooltip
+        d[, "Size scale" := if(isTruthy(input$picker_SIZE)) VAR_SIZE else NA] # workaround for the plotly tooltip
         d[, Cluster := if(rv_plot$draw_clusters == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
         
         d <- highlight_key(d)
@@ -659,27 +656,27 @@ mod_scatterplot_server <- function(id, rv, parent_session){
             size = 1
           )
         }
-        
+
         p <- p + geom_point(alpha = 0.5) +
           scale_x_continuous(
-            labels = if(!is.null(input$express_X_as) && input$express_X_as=="relatively to genotype" && isTruthy(input$ref_genotype_X)){scales::percent}else{waiver()},
+            labels = if(isTruthy(input$express_X_relative) && isTruthy(input$ref_genotype_X)){scales::percent}else{waiver()},
             # trans = if(input$express_X_as=="as ranks"){"reverse"}else{"identity"}, # disabled to make regression computation and drawing more simple
-            breaks = if(!is.null(input$express_X_as) && input$express_X_as=="as ranks"){as.numeric(floor(quantile(rv$data_plot_aggr$VAR_X_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
-            name = if(!is.null(input$express_X_as) && input$express_X_as=="as ranks"){
+            breaks = if(isTruthy(input$express_X_as_ranks)){as.numeric(floor(quantile(rv$data_plot_aggr$VAR_X_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
+            name = if(isTruthy(input$express_X_as_ranks)){
               paste(input$picker_X, "(ranks)")
-            }else if(!is.null(input$express_X_as) && input$express_X_as=="relatively to genotype" & isTruthy(input$ref_genotype_X)){
+            }else if(isTruthy(input$express_X_relative) & isTruthy(input$ref_genotype_X)){
               paste0(input$picker_X, " (relative to ", input$ref_genotype_X, ")")
             }else{
               input$picker_X
             }
           ) +
           scale_y_continuous(
-            labels = if(!is.null(input$express_Y_as) && input$express_Y_as=="relatively to genotype" && isTruthy(input$ref_genotype_Y)){scales::percent}else{waiver()},
+            labels = if(isTruthy(input$express_Y_relative) && isTruthy(input$ref_genotype_Y)){scales::percent}else{waiver()},
             # trans = if(input$express_Y_as=="as ranks"){"reverse"}else{"identity"}, # disabled to make regression computation and drawing more simple
-            breaks = if(!is.null(input$express_Y_as) && input$express_Y_as=="as ranks"){as.numeric(floor(quantile(rv$data_plot_aggr$VAR_Y_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
-            name = if(!is.null(input$express_Y_as) && input$express_Y_as=="as ranks"){
+            breaks = if(isTruthy(input$express_Y_as_ranks)){as.numeric(floor(quantile(rv$data_plot_aggr$VAR_Y_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
+            name = if(isTruthy(input$express_Y_as_ranks)){
               paste(input$picker_Y, "(ranks)")
-            }else if(!is.null(input$express_Y_as) && input$express_Y_as=="relatively to genotype" && isTruthy(input$ref_genotype_Y)){
+            }else if(isTruthy(input$express_Y_relative) && isTruthy(input$ref_genotype_Y)){
               paste0(input$picker_Y, " (relative to ", input$ref_genotype_Y, ")")
             }else{
               input$picker_Y
@@ -748,12 +745,14 @@ mod_scatterplot_server <- function(id, rv, parent_session){
               aggregate_by = input$aggregate_by,
               picker_X = input$picker_X,
               aggreg_fun_X = input$aggreg_fun_X,
-              express_X_as = input$express_X_as,
+              express_X_as_ranks = input$express_X_as_ranks,
+              express_X_relative = input$express_X_relative,
               ref_genotype_X = input$ref_genotype_X,
               ranking_order_X = input$ranking_order_X,
               picker_Y = input$picker_Y,
               aggreg_fun_ = input$aggreg_fun_Y,
-              express_Y_as = input$express_Y_as,
+              express_Y_as_ranks = input$express_Y_as_ranks,
+              express_Y_relative = input$express_Y_relative,
               ref_genotype_Y = input$ref_genotype_Y,
               ranking_order_Y = input$ranking_order_Y,
               switch_SHAPE = input$switch_SHAPE,
@@ -980,12 +979,14 @@ mod_scatterplot_server <- function(id, rv, parent_session){
               aggregate_by = input$aggregate_by,
               picker_X = input$picker_X,
               aggreg_fun_X = input$aggreg_fun_X,
-              express_X_as = input$express_X_as,
+              express_X_as_ranks = input$express_X_as_ranks,
+              express_X_relative = input$express_X_relative,
               ref_genotype_X = input$ref_genotype_X,
               ranking_order_X = input$ranking_order_X,
               picker_Y = input$picker_Y,
               aggreg_fun_ = input$aggreg_fun_Y,
-              express_Y_as = input$express_Y_as,
+              express_Y_as_ranks = input$express_Y_as_ranks,
+              express_Y_relative = input$express_Y_relative,
               ref_genotype_Y = input$ref_genotype_Y,
               ranking_order_Y = input$ranking_order_Y,
               switch_SHAPE = input$switch_SHAPE,
@@ -1053,13 +1054,15 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         
         updatePickerInput(session, "picker_X", selected = plot_params$picker_X)
         updatePickerInput(session, "aggreg_fun_X", selected = plot_params$aggreg_fun_X)
-        updateRadioButtons(session, "express_X_as", selected = plot_params$express_X_as)
+        updateCheckboxInput(session, "express_X_as_ranks", value = plot_params$express_X_as_ranks)
+        updateCheckboxInput(session, "express_X_relative", value = plot_params$express_X_relative)
         updatePickerInput(session, "ref_genotype_X", selected = plot_params$ref_genotype_X)
         updateCheckboxInput(session, "ranking_order_X", value = plot_params$ranking_order_X)
         
         updatePickerInput(session, "picker_Y", selected = plot_params$picker_Y)
         updatePickerInput(session, "aggreg_fun_Y", selected = plot_params$aggreg_fun_Y)
-        updateRadioButtons(session, "express_Y_as", selected = plot_params$express_Y_as)
+        updateCheckboxInput(session, "express_Y_as_ranks", value = plot_params$express_Y_as_ranks)
+        updateCheckboxInput(session, "express_Y_relative", value = plot_params$express_Y_relative)
         updatePickerInput(session, "ref_genotype_Y", selected = plot_params$ref_genotype_Y)
         updateCheckboxInput(session, "ranking_order_Y", value = plot_params$ranking_order_Y)
         
