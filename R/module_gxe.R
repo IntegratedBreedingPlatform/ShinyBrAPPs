@@ -659,7 +659,8 @@ mod_gxe_server <- function(id, rv){
                 #browser()
                 p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
                 if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
-                  selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
+                  selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
+                  #browser()
                   p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                       ggnewscale::new_scale_color() + 
                       ggplot2::geom_line(data=p$data[p$data$genotype%in%selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
