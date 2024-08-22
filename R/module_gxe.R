@@ -281,7 +281,7 @@ mod_gxe_server <- function(id, rv){
         }
         #attempt to identify variables that are redundant with studyDbId to use as choices for picker_env_variable
         datagef <- lapply(rv$data_gxe, function(a) as.factor(a))
-        env_vars <- names(which(unlist(lapply(datagef[unlist(lapply(datagef, function(a) !all(is.na(a)) & length(levels(a))>1))], function(a) abs(cor(as.numeric(a), as.numeric(datagef$studyDbId), use = "na.or.complete"))))==1))
+        env_vars <- names(which(unlist(lapply(datagef, function(a) length(levels(as.factor(paste(a, datagef$studyDbId))))==length(levels(datagef$studyDbId)) & length(levels(as.factor(paste(a, datagef$studyDbId))))==length(levels(a))))==TRUE))
         if (!is.null(input$picker_env_variable)){
           updatePickerInput(
             session, "picker_env_variable",
