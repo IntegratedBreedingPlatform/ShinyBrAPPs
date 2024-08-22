@@ -143,7 +143,7 @@ mod_gxe_ui <- function(id){
             pickerInput(ns("FW_picker_color_by"), label="Color by", multiple = F, choices = c("Nothing","sensitivity clusters"), selected = "Nothing"),
             #materialSwitch(ns("FW_cluster_sensitivity"), "Color by sensitivity clusters", value = FALSE, status = "info"),
             numericInput(ns("FW_cluster_sensitivity_nb"),"Number of clusters", min = 2, max = 8, step = 1, value = 2),
-            pickerInput(ns("FW_picker_cluster_on"), label="Cluster on", choices = c(sensitivity="sens", `genotype means`="genMean"), multiple = TRUE, selected = "sens"),
+            pickerInput(ns("FW_picker_cluster_on"), label="Cluster on", choices = c(sensitivity="Sens", `genotype means`="GenMean"), multiple = TRUE, selected = "Sens"),
             shiny::downloadButton(ns("FW_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
           ),
           bslib::layout_columns(
@@ -730,11 +730,11 @@ mod_gxe_server <- function(id, rv){
         #browser()
         if (input$FW_picker_color_by=="sensitivity clusters"){
           sensclust <- data.table(rv$TDFW$estimates)
-          sensclust <- sensclust[!is.na(sens)]
+          sensclust <- sensclust[!is.na(Sens)]
           sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
           rv$sensclust <- sensclust
           rv$TDFWplot <- rv$TDFW
-          rv$TDFWplot$TD <- lapply(rv$TDFWplot$TD, function(a) data.table(a)[sensclust, on=.(genotype)])
+          rv$TDFWplot$TD <- lapply(rv$TDFWplot$TD, function(a) data.table(a)[sensclust, on=.(genotype=Genotype)])
         } else {
           sensclust <- data.table(rv$TDFW$estimates)
           rv$sensclust <- sensclust
