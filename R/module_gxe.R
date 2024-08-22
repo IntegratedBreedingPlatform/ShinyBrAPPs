@@ -670,7 +670,7 @@ mod_gxe_server <- function(id, rv){
                 if (input$FW_picker_color_by=="Nothing"){
                   p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
                   if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
-                    rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
+                    rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
                     p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                         ggnewscale::new_scale_color() + 
                         ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
@@ -680,7 +680,7 @@ mod_gxe_server <- function(id, rv){
                 } else {
                   p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
                   if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
-                    rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
+                    rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
                     p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                         ggnewscale::new_scale_color() + 
                         ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
