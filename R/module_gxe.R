@@ -150,16 +150,17 @@ mod_gxe_ui <- function(id){
                              #actionButton(ns("expand_MM_accord1"),label = "Open all", class = "btn btn-info"),
 
                              bslib::accordion_panel(title = "FW plot",
-                                                    bslib::layout_columns(
+                             #                       bslib::layout_columns(
                                                     bslib::card(full_screen = T, height = "800",
                                                       #plotlyOutput(ns("FW_plot"))
                                                       #plotOutput(ns("FW_plot"))
-                                                      materialSwitch(ns("FW_plot_interact"),"Interactive plot", value=FALSE, status="info"),
-                                                      uiOutput(ns("FW_plotc"))
-                                                    ),
+                                                      #materialSwitch(ns("FW_plot_interact"),"Interactive plot", value=FALSE, status="info"),
+                                                      plotOutput(ns("FW_plot"))
+                                                    )),
+                             bslib::accordion_panel(title = "Germplasm list and clusters",
                                                     #bslib::card(DT::dataTableOutput(ns("FW_selected_obs_DT"))),
-                                                    bslib::card(DT::dataTableOutput(ns("FW_sens_clusters_DT")))
-                                                    )
+                                                    bslib::card(DT::dataTableOutput(ns("FW_sens_clusters_DT")),
+                                                                uiOutput(ns("senscluster_results")))
                              ),
                              bslib::accordion_panel(title = "Analysis summary", 
                                                     verbatimTextOutput(ns("FW_text_output")) 
@@ -198,28 +199,31 @@ mod_gxe_ui <- function(id){
             bslib::accordion(id = ns("GGE_accord1"),
                              bslib::accordion_panel(title = "GGE plot",
                                                     bslib::layout_sidebar(
-                                                      bslib::card(full_screen = T,height = "800",
+                                                      bslib::card(full_screen = T,height = "800",max_height = "800",
                                                                   plotOutput(ns("GGE_plot"))
                                                       ),
                                                       sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,#full_screen = F,
+                                                                             bslib::card(full_screen = F,height = "800",max_height = "800",
+                                                                                         sliderInput(ns("GGE_plot_title_size"), label = "plot_title_size", min = 10, max = 30, value = 12, step = 1),
                                                                   sliderInput(ns("GGE_plot_size.text.gen"), label = "size.text.gen", min = 1, max = 8, value = 3.5, step = 0.5),
                                                                   sliderInput(ns("GGE_plot_repulsion"), label="plot_repulsion", value = 1, min=1, max=10, step=0.5),
                                                                   sliderInput(ns("GGE_plot_max_overlaps"), label="plot_max_overlaps", value = 20, min=5, max=50, step=1),
                                                                   sliderInput(ns("GGE_plot_size.shape"), label="plot_size.shape", value = 2.2, min=1, max=10, step=0.1),
                                                                   sliderInput(ns("GGE_plot_size.shape.win"), label="plot_size.shape.win", value = 3.2, min=1, max=10, step=0.1),
                                                                   sliderInput(ns("GGE_plot_size.stroke"), label="plot_size.stroke", value = 0.3, min=1, max=5, step=0.1),
-                                                                  #sliderInput(ns("GGE_plot_col.stroke"), label="plot_col.stroke", value = "black", min=1, max=10, step=0.5),
-                                                                  #sliderInput(ns("GGE_plot_col.gen"), label="plot_col.gen", value = "blue", min=1, max=10, step=0.5),
-                                                                  #sliderInput(ns("GGE_plot_col.env"), label="plot_col.env", value = "forestgreen", min=1, max=10, step=0.5),
-                                                                  #sliderInput(ns("GGE_plot_col.line"), label="plot_col.line", value = "forestgreen", min=1, max=10, step=0.5),
                                                                   sliderInput(ns("GGE_plot_col.alpha"), label="plot_col.alpha", value = 1, min=0, max=1, step=0.1),
-                                                                  #sliderInput(ns("GGE_plot_col.circle"), label="plot_col.circle", value = "gray", min=1, max=10, step=0.5),
                                                                   sliderInput(ns("GGE_plot_col.alpha.circle"), label="plot_col.alpha.circle", value = 0.5, min=0, max=1, step=0.1),
                                                                   sliderInput(ns("GGE_plot_size.text.env"), label="plot_size.text.env", value = 3.5, min=1, max=10, step=0.5),
                                                                   sliderInput(ns("GGE_plot_size.text.lab"), label="plot_size.text.lab", value = 12, min=1, max=20, step=0.5),
                                                                   sliderInput(ns("GGE_plot_size.text.win"), label="plot_size.text.win", value = 4.5, min=1, max=10, step=0.5),
                                                                   sliderInput(ns("GGE_plot_size.line"), label="plot_size.line", value = 0.5, min=0, max=5, step=0.1),
-                                                                  sliderInput(ns("GGE_plot_axis_expand"), label="plot_axis_expand", value = 1.2, min=0, max=2, step=0.1))
+                                                                  sliderInput(ns("GGE_plot_axis_expand"), label="plot_axis_expand", value = 1.2, min=0, max=2, step=0.1),
+                                                                  colorPickr(ns("GGE_plot_col.stroke"), label="plot_col.stroke", selected = "black", theme = "monolith", update = "changestop", opacity = TRUE),
+                                                                  colorPickr(ns("GGE_plot_col.gen"), label="plot_col.gen", selected = "blue", theme = "monolith", update = "changestop", opacity = TRUE),
+                                                                  colorPickr(ns("GGE_plot_col.env"), label="plot_col.env", selected = "forestgreen", theme = "monolith", update = "changestop", opacity = TRUE),
+                                                                  colorPickr(ns("GGE_plot_col.line"), label="plot_col.line", selected = "forestgreen", theme = "monolith", update = "changestop", opacity = TRUE),
+                                                                  colorPickr(ns("GGE_plot_col.circle"), label="plot_col.circle", selected = "gray", theme = "monolith", update = "changestop"), opacity = TRUE))
+                                                      
                                                     )
                              ),
                              bslib::accordion_panel(title = "Analysis summary", 
@@ -241,6 +245,7 @@ mod_gxe_server <- function(id, rv){
     id,
     function(input, output, session){
       ## observe data and update Trit picker ####
+      rv$selected_genotypes <- NULL
       observe({
         req(rv$data_plot)
         req(rv$column_datasource)
@@ -254,25 +259,48 @@ mod_gxe_server <- function(id, rv){
           rv$data_gxe <- rv$data_plot
         }
         datagef <- lapply(rv$data_gxe, function(a) as.factor(a))
-        env_vars <- names(which(unlist(lapply(datagef[unlist(lapply(datagef, function(a) !all(is.na(a)) & length(levels(a))>1))], function(a) abs(cor(as.numeric(a), as.numeric(datagef$studyDbId)))))==1))
+        env_vars <- names(which(unlist(lapply(datagef[unlist(lapply(datagef, function(a) !all(is.na(a)) & length(levels(a))>1))], function(a) abs(cor(as.numeric(a), as.numeric(datagef$studyDbId), use = "pairwise.complete.obs"))))==1))
         
-        updatePickerInput(
-          session, "picker_env_variable",
-          choices = env_vars,
-          selected = character(0)
-        )
+        if (!is.null(input$picker_env_variable)){
+          updatePickerInput(
+            session, "picker_env_variable",
+            choices = env_vars,
+            selected = input$picker_env_variable
+          )
+        } else {
+          updatePickerInput(
+            session, "picker_env_variable",
+            choices = env_vars,
+            selected = character(0)
+          )
+        }
         
-        updatePickerInput(
-          session, "picker_trait",
-          choices = trait_choices,
-          selected = character(0)
-        )
-        updatePickerInput(
-          session, "weight_var",
-          choices = weight_choices,
-          selected = character(0)
-        )
-        
+        if (!is.null(input$picker_trait)){
+          updatePickerInput(
+            session, "picker_trait",
+            choices = trait_choices,
+            selected = input$picker_trait
+          )
+        } else {
+          updatePickerInput(
+            session, "picker_trait",
+            choices = trait_choices,
+            selected = character(0)
+          )
+        }
+        if (!is.null(input$weight_var)){
+          updatePickerInput(
+            session, "weight_var",
+            choices = weight_choices,
+            selected = input$weight_var
+          )
+        } else {
+          updatePickerInput(
+            session, "weight_var",
+            choices = weight_choices,
+            selected = character(0)
+          )
+        }
       })
       
       ## update env picker when trait is chosen ####
@@ -374,7 +402,7 @@ mod_gxe_server <- function(id, rv){
         updatePickerInput(
           session, "FW_picker_color_by",
           choices = c("Nothing",input$picker_germplasm_attr,"sensitivity clusters"),
-          selected = character(0)
+          selected = "Nothing"
         )
       }
       )
@@ -394,8 +422,12 @@ mod_gxe_server <- function(id, rv){
         req(input$picker_trait)
         req(input$picker_env)
         #browser()
-        data2TD <- copy(rv$data_gxe)
-        data2TD[, germplasmDbId:=paste0(germplasmDbId," (",germplasmName,")")]
+        data2TD <- copy(rv$data_gxe[observationLevel=="MEANS"])
+        if (input$picker_germplasm_level=="germplasmDbId"){
+          data2TD[, genotype:=paste0(germplasmDbId," (",germplasmName,")")]
+        } else {
+          data2TD[, genotype:=germplasmName]
+        }
         if (length(input$picker_scenario)>1){ #& input$check_combine_scenario){
           data2TD[, scenario:= do.call(paste0, .SD), .SDcols = input$picker_scenario]
         } else {
@@ -417,8 +449,9 @@ mod_gxe_server <- function(id, rv){
             data2TD[,wt:=(1/.SD)^2, .SDcols=input$weight_var]
           }
         }        
+        #browser()
         rv$TD <- statgenSTA::createTD(data = data2TD[studyDbId%in%input$picker_env],
-                                      genotype = input$picker_germplasm_level,
+                                      genotype = "genotype",
                                       trial = input$picker_env_variable)
 
         
@@ -567,6 +600,7 @@ mod_gxe_server <- function(id, rv){
       ### Run FW ####
       observeEvent(input$FW_run,{
         rv$TDFW <- tryCatch(gxeFw(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)
+        rv$TDFWplot <- rv$TDFW
         output$FW_text_output <- renderPrint({
           if ("FW"%in%class(rv$TDFW)){
             summary(rv$TDFW)
@@ -576,78 +610,182 @@ mod_gxe_server <- function(id, rv){
         })
       })
       ### FW plot ####
-      observe({
-        output$FW_plotc <- renderUI({
-          if (input$FW_plot_interact){
-            plotlyOutput(ns("FW_ploty"))
-          } else {
-              plotOutput(ns("FW_plot"))#,  brush = brushOpts(id=ns("observ_fwplot_brush"), resetOnNew = T))
-          }
-        })
-      })
+      #observe({
+      #  output$FW_plotc <- renderUI({
+      #    if (input$FW_plot_interact){
+      #      plotlyOutput(ns("FW_ploty"))
+      #    } else {
+      #        plotOutput(ns("FW_plot"))#,  brush = brushOpts(id=ns("observ_fwplot_brush"), resetOnNew = T))
+      #    }
+      #  })
+      #})
       
       observe({
         req(rv$TDFW)
-        if (input$FW_plot_interact){
-            output$FW_ploty <- renderPlotly({
-            TDFWplot <- rv$TDFW
-            if (is.null(input$FW_picker_color_by)){
-              ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type))
-              #plot(TDFWplot, plotType = input$FW_picker_plot_type)
-            } else {
-              if (input$FW_picker_color_by=="sensitivity clusters"){
-                #browser()
-                sensclust <- data.table(rv$TDFW$estimates)
-                sensclust <- sensclust[!is.na(sens)]
-                #browser()
-                sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
-                rv$sensclust <- sensclust
-                TDFWplot$TD <- lapply(TDFWplot$TD, function(a) data.table(a)[sensclust, on=.(genotype)])
-                ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster"))
-                #plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
-              } else {
-                if (input$FW_picker_color_by=="Nothing"){
-                  ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type))
-                } else {
-                  ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by))
-                  #plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
-                }
-              }
-            }
-          })
-        } else {
+        #browser()
+        #if (input$FW_plot_interact){
+        #    output$FW_ploty <- renderPlotly({
+        #    TDFWplot <- rv$TDFW
+        #    if (is.null(input$FW_picker_color_by)){
+        #      ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type))
+        #      #plot(TDFWplot, plotType = input$FW_picker_plot_type)
+        #    } else {
+        #      if (input$FW_picker_color_by=="sensitivity clusters"){
+        #        #browser()
+        #        sensclust <- data.table(rv$TDFW$estimates)
+        #        sensclust <- sensclust[!is.na(sens)]
+        #        #browser()
+        #        sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
+        #        rv$sensclust <- sensclust
+        #        TDFWplot$TD <- lapply(TDFWplot$TD, function(a) data.table(a)[sensclust, on=.(genotype)])
+        #        ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster"))
+        #        #plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
+        #      } else {
+        #        if (input$FW_picker_color_by=="Nothing"){
+        #          ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type))
+        #        } else {
+        #          ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by))
+        #          #plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
+        #        }
+        #      }
+        #    }
+        #  })
+        #} else {
           output$FW_plot <- renderPlot({
-            #output$FW_plot <- renderPlotly({
-            TDFWplot <- rv$TDFW
+            TDFWplot <- rv$TDFWplot
             if (is.null(input$FW_picker_color_by)){
-              #ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type))
-              rv$fwp <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+              p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
             } else {
               if (input$FW_picker_color_by=="sensitivity clusters"){
                 #browser()
-                sensclust <- data.table(rv$TDFW$estimates)
-                sensclust <- sensclust[!is.na(sens)]
-                #browser()
-                sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
-                rv$sensclust <- sensclust
-                TDFWplot$TD <- lapply(TDFWplot$TD, function(a) data.table(a)[sensclust, on=.(genotype)])
-                #ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster"))
-                rv$fwp <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
+                p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
+                if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
+                  selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
+                  p <- p + scale_color_grey(start = 0.8, end = 0.8) +
+                      ggnewscale::new_scale_color() + 
+                      ggplot2::geom_line(data=p$data[p$data$genotype%in%selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                      geom_point(data=p$data[p$data$genotype%in%selected_genotypes,], aes(color=genotype), size=3)
+                  }
               } else {
                 if (input$FW_picker_color_by=="Nothing"){
-                  rv$fwp <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+                  p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+                  if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
+                    rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
+                    p <- p + scale_color_grey(start = 0.8, end = 0.8) +
+                        ggnewscale::new_scale_color() + 
+                        ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                        geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
+                  }
+                  
                 } else {
-                  #ggplotly(plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by))
-                  rv$fwp <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
+                  p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
+                  if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
+                    rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
+                    p <- p + scale_color_grey(start = 0.8, end = 0.8) +
+                        ggnewscale::new_scale_color() + 
+                        ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                        geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
+                  }
+                  
                 }
               }
             }
+            p
           })
+        #}
+      })
+      observeEvent(  eventExpr = {
+        input$FW_picker_color_by
+        input$FW_cluster_sensitivity_nb
+        input$FW_picker_cluster_on
+        input$FW_picker_plot_type
+      }, handlerExpr = {
+        req(rv$TDFW)
+        #browser()
+        if (input$FW_picker_color_by=="sensitivity clusters"){
+          sensclust <- data.table(rv$TDFW$estimates)
+          sensclust <- sensclust[!is.na(sens)]
+          sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
+          rv$sensclust <- sensclust
+          rv$TDFWplot <- rv$TDFW
+          rv$TDFWplot$TD <- lapply(rv$TDFWplot$TD, function(a) data.table(a)[sensclust, on=.(genotype)])
+        } else {
+          sensclust <- data.table(rv$TDFW$estimates)
+          rv$sensclust <- sensclust
         }
       })
+      
+      #### Render FW sensclusters DT ####
       observe({
         req(rv$sensclust)
-        output$FW_sens_clusters_DT <- DT::renderDataTable(rv$sensclust[,.(genotype, sensitivity_cluster, sens, genMean)],rownames= FALSE)
+        output$FW_sens_clusters_DT <- DT::renderDataTable(rv$sensclust,rownames= FALSE, selection = 'multiple')
+        output$senscluster_results <- renderUI({
+            shiny::actionButton(ns("create_groups_from_sensclusters"), "Create groups from clusters", icon = icon(NULL), class = "btn btn-info")
+        })
+        shinyjs::enable("create_groups_from_sensclusters")
+        shinyjs::addClass("create_groups_from_sensclusters", "active")
+        
+      })
+      
+      #### Handle genotype selection in DT ####
+      #observeEvent(input$FW_sens_clusters_DT_rows_selected, ignoreNULL = FALSE, {
+      #  req(rv$fwp)
+      #  #browser()
+      #  if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
+      #    rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$genotype
+      #    output$FW_plot <- renderPlot({rv$fwp +
+      #        ggnewscale::new_scale_color() + 
+      #        ggplot2::geom_line(data=rv$fwp$data[rv$fwp$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+      #        geom_point(data=rv$fwp$data[rv$fwp$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)})
+      #   } else {
+      #      output$FW_plot <- renderPlot({rv$fwp})
+      #  }
+      #})
+      
+      #### Handle FW group creation ####
+      observeEvent(input$create_groups_from_sensclusters,{
+        shinyjs::disable("create_groups_from_sensclusters")
+        shinyjs::addClass("create_groups_from_sensclusters", "active")
+        #browser()
+        clusters <- unique(rbindlist(rv$TD)[,.(genotype,germplasmDbId,germplasmName)])[rv$sensclust, on=.(genotype)][order(sensitivity_cluster)][,.(
+          group_name = paste0("FW_cluster.", sensitivity_cluster),
+          group_desc = paste0(
+            "Clustering method: FW_clusters", tags$b(input$cluster_algo), tags$br(),
+            "Cluster: ", tags$b(sensitivity_cluster,"/", input$n_clusters), tags$br(),
+            "Timestamp: ", tags$b(Sys.time())
+          ),
+          germplasmDbIds = list(germplasmDbId),
+          germplasmNames = list(germplasmName),
+          .N),sensitivity_cluster]
+        clusters[N>6 ,germplasmNames := paste(
+          paste(unlist(germplasmNames)[1:5], collapse = ", "),
+          paste("and", N - 5, "others")
+        )]
+        clusters[N <= 6, germplasmNames := paste(unlist(germplasmNames), collapse = ", ")]
+        
+        group_id_start <- ifelse(length(rv$groups$group_id)==0, 1, max(rv$groups$group_id) + 1)
+        group_ids <- group_id_start:(group_id_start+clusters[,.N] -1)
+        clusters[, group_id := group_ids]
+        rv$groups <- rbindlist(list(
+          rv$groups,
+          clusters
+        ), fill = T, use.names = T)
+        
+        ## update selectors (shape, colour)
+        data_plot <- copy(rv$data_plot) # to avoid reactivity issues related to assignment by reference
+        for(id in clusters[,unique(group_id)]){
+          group_name <- clusters[group_id == id,group_name]
+          data_plot[germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)], eval(group_name) := paste0('In "', group_name,'"')]
+          data_plot[!(germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)]), eval(group_name) := paste0('Not in "', group_name,'"')]
+        }
+        rv$column_datasource <- rbindlist(
+          list(
+            rv$column_datasource,
+            data.table(cols = clusters[,unique(group_name)], source = "group", type = "Text", visible = T)
+          )
+        )
+        rv$data_plot <- data_plot
+        
       })
       
       #output$FW_selected_obs_DT <- renderTable({
@@ -719,7 +857,14 @@ mod_gxe_server <- function(id, rv){
                              size.text.lab = input$GGE_plot_size.text.lab,
                              size.text.win = input$GGE_plot_size.text.win,
                              size.line = input$GGE_plot_size.line,
-                             axis_expand = input$GGE_plot_axis_expand
+                             axis_expand = input$GGE_plot_axis_expand,
+                             col.stroke = input$GGE_plot_col.stroke,
+                             col.gen = input$GGE_plot_col.gen,
+                             col.env = input$GGE_plot_col.env,
+                             col.line = input$GGE_plot_col.line,
+                             col.circle = input$GGE_plot_col.circle,
+                             plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
+                                                                                 plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
             )            
             
           } else if (input$GGE_picker_plot_type == 7) {
@@ -738,7 +883,14 @@ mod_gxe_server <- function(id, rv){
                              size.text.lab = input$GGE_plot_size.text.lab,
                              size.text.win = input$GGE_plot_size.text.win,
                              size.line = input$GGE_plot_size.line,
-                             axis_expand = input$GGE_plot_axis_expand
+                             axis_expand = input$GGE_plot_axis_expand,
+                             col.stroke = input$GGE_plot_col.stroke,
+                             col.gen = input$GGE_plot_col.gen,
+                             col.env = input$GGE_plot_col.env,
+                             col.line = input$GGE_plot_col.line,
+                             col.circle = input$GGE_plot_col.circle,
+                             plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
+                                                                                 plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
             )
           } else if (input$GGE_picker_plot_type == 9) {
             metan:::plot.gge(TDGGEplot,
@@ -757,7 +909,14 @@ mod_gxe_server <- function(id, rv){
                              size.text.lab = input$GGE_plot_size.text.lab,
                              size.text.win = input$GGE_plot_size.text.win,
                              size.line = input$GGE_plot_size.line,
-                             axis_expand = input$GGE_plot_axis_expand
+                             axis_expand = input$GGE_plot_axis_expand,
+                             col.stroke = input$GGE_plot_col.stroke,
+                             col.gen = input$GGE_plot_col.gen,
+                             col.env = input$GGE_plot_col.env,
+                             col.line = input$GGE_plot_col.line,
+                             col.circle = input$GGE_plot_col.circle,
+                             plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
+                                                                                 plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
             )
           } else {
             metan:::plot.gge(TDGGEplot,
@@ -774,7 +933,14 @@ mod_gxe_server <- function(id, rv){
                              size.text.lab = input$GGE_plot_size.text.lab,
                              size.text.win = input$GGE_plot_size.text.win,
                              size.line = input$GGE_plot_size.line,
-                             axis_expand = input$GGE_plot_axis_expand
+                             axis_expand = input$GGE_plot_axis_expand,
+                             col.stroke = input$GGE_plot_col.stroke,
+                             col.gen = input$GGE_plot_col.gen,
+                             col.env = input$GGE_plot_col.env,
+                             col.line = input$GGE_plot_col.line,
+                             col.circle = input$GGE_plot_col.circle,
+                             plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
+                                                                                 plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
             )
           }
 
