@@ -18,9 +18,7 @@ mod_get_extradata_server <- function(id, rv){
 
         isolate({
           data_tmp <- rv$data[,!c("observationTimeStamp")]
-          
-          browser()
-          
+
           ### make data source register
           # - Germplasm
           # - Cross Environment Means (GxE)
@@ -169,8 +167,6 @@ mod_get_extradata_server <- function(id, rv){
           
           rv$environmentParameters <- environmentParameters
           rv$data_plot <- data_plot
-          
-          browser()
 
           rv$column_datasource <- column_datasource
           #rv$ontology_variables <- ontology_variables
