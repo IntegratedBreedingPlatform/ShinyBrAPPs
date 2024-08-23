@@ -57,6 +57,9 @@ mod_gxe_ui <- function(id){
           #   h4('Options ', icon('screwdriver-wrench'))
           # ),
             width = 350,
+            div(style="display: flex;",
+                actionBttn(ns("mm_run_model"),"Run model", block = TRUE),
+                a(href="https://biometris.github.io/statgenGxE/articles/statgenGxE.html#vcomp",icon("fas fa-question-circle"), target="_blank")),
             pickerInput(ns("picker_gxe_mm_env_struct"),
                       label = "Environment structure",
                       options = list(container = "body"), 
@@ -66,7 +69,6 @@ mod_gxe_ui <- function(id){
                                   `Trials are nested within locations`=4,
                                   `Trials correspond to locations within regions across years`=5,
                                   `Trials are nested within scenarios`=6)),
-          actionBttn(ns("mm_run_model"),"Run model"),
           shiny::downloadButton(ns("MM_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
         ),
         # bslib::layout_columns(
@@ -136,7 +138,10 @@ mod_gxe_ui <- function(id){
           ### Sidebar ####
           sidebar=bslib::sidebar(
             width = 350,
-            actionBttn(ns("FW_run"), "Run FW analysis"),
+            div(style="display: flex;",
+            actionBttn(ns("FW_run"), "Run FW analysis", block = TRUE),
+            a(href="https://biometris.github.io/statgenGxE/articles/statgenGxE.html#fw",icon("fas fa-question-circle"), target="_blank")),
+            
             pickerInput(ns("FW_picker_plot_type"),
                         label="Plot type",
                         choices = c("scatter", "line", "trellis", "scatterFit"), selected = "line"),
@@ -179,7 +184,9 @@ mod_gxe_ui <- function(id){
           ### Sidebar ####
           sidebar=bslib::sidebar(
             width = 350,
-            actionBttn(ns("GGE_run"), "Run GGE analysis"),
+            div(style="display: flex;",
+                actionBttn(ns("GGE_run"), "Run GGE analysis", block = TRUE),
+                a(href="https://tiagoolivoto.github.io/metan/articles/vignettes_gge.html",icon("fas fa-question-circle"), target="_blank")),
             bslib::accordion(id = ns("GGE_adv_settings_acc"),
                              bslib::accordion_panel(title = "Advanced settings", value = "advs",
                                                     pickerInput(ns("GGE_advs_centering"), label = "centering", options = list(container = "body"), choices = c(none=0, global=1, environment=2, double=3), selected = 2),
@@ -213,7 +220,7 @@ mod_gxe_ui <- function(id){
                                                                   plotOutput(ns("GGE_plot"))
                                                       ),
                                                       sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,#full_screen = F,
-                                                                             bslib::card(full_screen = F,height = "800",max_height = "800",
+                                                                             bslib::card(full_screen = F,height = "735",max_height = "735",
                                                                                          sliderInput(ns("GGE_plot_title_size"), label = "plot_title_size", min = 10, max = 30, value = 12, step = 1),
                                                                   sliderInput(ns("GGE_plot_size.text.gen"), label = "size.text.gen", min = 1, max = 8, value = 3.5, step = 0.5),
                                                                   sliderInput(ns("GGE_plot_repulsion"), label="plot_repulsion", value = 1, min=1, max=10, step=0.5),
@@ -250,6 +257,49 @@ mod_gxe_ui <- function(id){
           ### Sidebar ####
           sidebar=bslib::sidebar(
             width = 350,
+            div(style="display: flex;",
+                actionBttn(ns("AMMI_run"), "Run AMMI analysis", block = TRUE),
+                a(href="https://biometris.github.io/statgenGxE/articles/statgenGxE.html#am",icon("fas fa-question-circle"), target="_blank")),
+            pickerInput(ns("AMMI_nPC"),
+                        label="Number of PC",
+                        choices = c("Auto"), selected = "Auto"),
+            materialSwitch(ns("AMMI_center"), "center", value = TRUE, status = "info"),
+            pickerInput(ns("AMMI_excludeGeno"), label="Exclude genotypes", multiple = T, choices = c(), options = pickerOptions(liveSearch = TRUE)),
+            materialSwitch(ns("AMMI_byYear"), "Run by year", value = FALSE, status = "info"),
+            hr(style = "border-top: 1px solid #000000;"),
+            pickerInput(ns("AMMI_plotType"), label="Plot type", choices = c("AMMI1", "AMMI2"), selected = "AMMI1"),
+            pickerInput(ns("AMMI_primAxis"), label="Primary axis", choices = c()),
+            pickerInput(ns("AMMI_secAxis"), label="Second axis", choices = c()),
+            materialSwitch(ns("AMMI_plotGeno"), "Plot genotypes", value = TRUE, status = "info"),
+            sliderInput(ns("AMMI_scale"), label = "scale", min = 0, max = 1, value = 1, step=0.1),
+            materialSwitch(ns("AMMI_plotConvHull"), "Plot convex hull around the genotypes", value = FALSE, status = "info"),
+            pickerInput(ns("AMMI_colorGenoBy"), label="Color genotypes by", choices = "Nothing", selected = "Nothing"),
+            pickerInput(ns("AMMI_colorEnvBy"), label="Color environments by", choices = c()),
+            pickerInput(ns("AMMI_rotatePC"), label="Rotate PC", choices = c()),
+            shiny::downloadButton(ns("AMMI_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
+            
+          ),
+          bslib::layout_columns(
+            #### Accordion results ####
+            bslib::accordion(id = ns("AMMI_accord1"),
+                             bslib::accordion_panel(title = "AMMI plot",
+                                                   bslib::layout_sidebar(
+                                                     bslib::card(full_screen = T,height = "800",max_height = "800",
+                                                                 plotOutput(ns("AMMI_plot"))
+                                                     ),
+                                                     sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,
+                                                                            bslib::card(full_screen = F,height = "735",max_height = "735",
+                                                                                        sliderInput(ns("AMMI_plot_sizeGeno"), label = "sizeGeno", min = 0, max = 10, value = 0, step = 1),
+                                                                                        sliderInput(ns("AMMI_plot_sizeEnv"), label = "sizeEnv", min = 0, max = 10, value = 3, step = 1),
+                                                                                        sliderInput(ns("AMMI_plot_envFactor"), label = "envFactor", min = 0, max = 5, value = 1, step = 0.1),
+                                                                                        textInput(ns("AMMI_plot_title"),label = "Title",value = NULL))
+                                                                            )
+                                                     )
+                             ),
+                             bslib::accordion_panel(title = "Analysis summary", 
+                                                    verbatimTextOutput(ns("AMMI_text_output")) 
+                             )
+            )
           )
         )
       )
@@ -276,7 +326,7 @@ mod_gxe_server <- function(id, rv){
         weight_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_wt_regexp,cols)]$cols
         if ("startDate"%in%colnames(rv$study_metadata)){
           rv$study_metadata[, studyDbId := as.numeric(studyDbId)]
-          rv$data_gxe <- rv$data_plot[unique(rv$study_metadata[,.(studyDbId, study_startYear = year(as.POSIXct(startDate)))]), on=.(studyDbId)]
+          rv$data_gxe <- rv$data_plot[unique(rv$study_metadata[studyDbId%in%unique(rv$data_plot$studyDbId),.(studyDbId, study_startYear = year(as.POSIXct(startDate)))]), on=.(studyDbId)]
         } else {
           rv$data_gxe <- rv$data_plot
         }
@@ -370,6 +420,11 @@ mod_gxe_server <- function(id, rv){
           choices = env_details,
           selected = character(0)
         )
+        updatePickerInput(
+          session, "AMMI_colorEnvBy",
+          choices = env_details,
+          selected = character(0)
+        )
         
         germplasm_attr <- rv$column_datasource[source == "germplasm" & visible == T,]$cols
         updatePickerInput(
@@ -426,6 +481,12 @@ mod_gxe_server <- function(id, rv){
           choices = c("Nothing",input$picker_germplasm_attr,"sensitivity clusters"),
           selected = "Nothing"
         )
+        updatePickerInput(
+          session, "AMMI_colorGenoBy",
+          choices = c("Nothing",input$picker_germplasm_attr),
+          selected = "Nothing"
+        )
+        
       }
       )
       ## 
@@ -480,6 +541,28 @@ mod_gxe_server <- function(id, rv){
                                       genotype = "genotype",
                                       trial = input$picker_env_variable)
 
+        
+        #Update number of AMMI PCs picker as the smallest of the number of genotypes or environments minus one
+        updatePickerInput(
+          session, "AMMI_nPC",
+          choices = c("Auto",c(2:min(length(rv$TD)-1, length(unique(rbindlist(rv$TD)$genotype))-1))),
+          selected = "Auto"
+        )
+        #Update excludeGeno AMMI picker
+        updatePickerInput(
+          session, "AMMI_excludeGeno",
+          choices = as.character(unique(rbindlist(rv$TD)$genotype)),
+          selected = character(0)
+        )
+        #Update rotatePC AMMI picker
+        updatePickerInput(
+          session, "AMMI_rotatePC",
+          choices = as.character(unique(rbindlist(rv$TD)$trial)),
+          selected = character(0)
+        )
+        
+        
+        
         
         output$TD_boxplot <- renderPlot({
           if (!is.null(input$picker_scenario)){
@@ -968,7 +1051,73 @@ mod_gxe_server <- function(id, rv){
           
       })
       
+      ## AMMI ####
+      ### Make sur year exists in TD if byYear is chosen ####
+      observeEvent(input$AMMI_byYear,{
+        if(input$AMMI_byYear & !any(colnames(rbindlist(rv$TD))=="year"))
+          isolate({
+            showNotification("Select an env. detail to use as year in Data preparation Tab", type = "warning", duration = notification_duration)
+            updatePickerInput(
+              session, "AMMI_byYear",
+              selected = FALSE
+            )
+          })
+      })
+      
+      ### Run AMMI ####
+      observeEvent(input$AMMI_run,{
+        req(rv$TD)
+        #browser()
+        rv$TDAMMI <- tryCatch(gxeAmmi(TD = rv$TD,
+                                      trait = input$picker_trait,
+                                      nPC = switch((input$AMMI_nPC=="Auto")+1,  as.numeric(input$AMMI_nPC,NULL)),
+                                      byYear = input$AMMI_byYear,
+                                      center = input$AMMI_center,
+                                      excludeGeno = input$AMMI_excludeGeno,
+                                      useWt = input$use_weights), error=function(e) e)
+        #browser()
+        output$AMMI_text_output <- renderPrint({
+          if ("AMMI"%in%class(rv$TDAMMI)){
+            summary(rv$TDAMMI)
+          } else {
+            rv$TDAMMI
+          }
+        })
+      })
 
+      ### AMMI plot ####
+      observe({
+        req(rv$TDAMMI)
+        #browser()
+        #Update rotatePC AMMI picker
+        updatePickerInput(
+          session, "AMMI_primAxis",
+          choices = colnames(rv$TDAMMI$envScores),
+          selected = colnames(rv$TDAMMI$envScores)[1]
+        )
+        updatePickerInput(
+          session, "AMMI_secAxis",
+          choices = colnames(rv$TDAMMI$envScores),
+          selected = colnames(rv$TDAMMI$envScores)[2]
+        )
+        
+        output$AMMI_plot <- renderPlot({
+          statgenGxE:::plot.AMMI(rv$TDAMMI,
+                                 plotType = input$AMMI_plotType,
+                                 scale = input$AMMI_scale,
+                                 plotGeno = input$AMMI_plotGeno,
+                                 colorGenoBy = switch((input$AMMI_colorGenoBy=="Nothing")+1,  input$AMMI_colorGenoBy, NULL),
+                                 plotConvHull = input$AMMI_plotConvHull,
+                                 colorEnvBy = input$AMMI_colorEnvBy,
+                                 rotatePC = input$AMMI_rotatePC,
+                                 primAxis = input$AMMI_primAxis,
+                                 secAxis = input$AMMI_secAxis,
+                                 envFactor = input$AMMI_plot_envFactor,
+                                 sizeGeno = input$AMMI_plot_sizeGeno,
+                                 sizeEnv = input$AMMI_plot_sizeEnv,
+                                 title = switch((input$AMMI_plot_title=="")+1,  input$AMMI_plot_title, NULL))
+        })
+      })
     ## MM Report ####
         output$MM_report <- downloadHandler(
           filename = function() {
@@ -1006,6 +1155,21 @@ mod_gxe_server <- function(id, rv){
               input="reports/GxE_GGE.Rmd", output_file = file
             )
           }
+        }
+      )
+      ## AMMI Report ####
+      output$AMMI_report <- downloadHandler(
+        filename = function() {
+          paste("GxE_AMMI-", Sys.Date(), ".html", sep="")
+        },
+        content = function(file) {
+          #if (is.null(rv$TDAMMI)){
+          #  showNotification("Please Run analysis once first", type = "warning", duration = notification_duration)
+          #} else {
+            rmarkdown::render(
+              input="reports/GxE_AMMI.Rmd", output_file = file
+            )
+          #}
         }
       )
     }
