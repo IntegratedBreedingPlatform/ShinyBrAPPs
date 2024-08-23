@@ -13,12 +13,12 @@ knitr::opts_chunk$set(echo = FALSE)
 library(statgenGxE)
 ```
 
-## Studies :
+## Studies:
 ```{r}
 knitr::kable(unique(data.table(rbindlist(params$data))[,.(trial,loc,studyDbId,studyName)]))
 ```
 
-## Trait : `r params$trait`
+## Trait: `r params$trait`
 ## Model output
 ```{r, echo=FALSE}
 TDVarComp <- switch(params$env_struct,

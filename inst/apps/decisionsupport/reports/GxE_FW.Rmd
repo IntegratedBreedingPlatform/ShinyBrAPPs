@@ -13,12 +13,12 @@ knitr::opts_chunk$set(echo = FALSE)
 library(statgenGxE)
 ```
 
-## Studies :
+## Studies:
 ```{r}
 knitr::kable(unique(data.table(rbindlist(params$data))[,.(trial,locationName,studyDbId,studyName)]))
 ```
 
-## Trait : `r params$trait`
+## Trait: `r params$trait`
 ## Analysis output
 ```{r, echo=FALSE}
 TDFW <- tryCatch(gxeFw(TD =params$data, trait = params$trait), error=function(e) e)

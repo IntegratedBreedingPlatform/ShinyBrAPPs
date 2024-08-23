@@ -10,12 +10,12 @@ library(statgenGxE)
 library(metan)
 ```
 
-## Studies :
+## Studies:
 ```{r}
 knitr::kable(unique(data.table(rbindlist(rv$TD))[,.(trial,locationName,studyDbId,studyName)]))
 ```
 
-## Trait : `r input$picker_trait`
+## Trait: `r input$picker_trait`
 ## Analysis output
 ```{r, echo=FALSE}
 TD.metangge <- rbindlist(rv$TD)[,.SD, .SDcols=c("trial","genotype",input$picker_trait)]
