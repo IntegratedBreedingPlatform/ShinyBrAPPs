@@ -17,8 +17,8 @@ mod_get_extradata_server <- function(id, rv){
         }
 
         isolate({
-          data_tmp <- rv$data
-          
+          data_tmp <- rv$data[,!c("observationTimeStamp")]
+
           ### make data source register
           # - Germplasm
           # - Cross Environment Means (GxE)
@@ -34,7 +34,7 @@ mod_get_extradata_server <- function(id, rv){
           # standard columns characterising the observation units
           plot_column <- data.table(cols = c("blockNumber", "studyName", "entryType", "observationUnitName", "germplasmName", "germplasmDbId",
                                              "replicate", "plotNumber","positionCoordinateX", "positionCoordinateY", "observationLevel",
-                                             "observationCode", "observationTimeStamp", "locationName")
+                                             "observationCode", "locationName")
                                     )[, source := "plot"][, visible := T]
           plot_column[cols %in% c("studyName", "locationName"), source := "environment"]
           types <- data.table(cols = colnames(data_tmp) , type = sapply(data_tmp, class))

@@ -28,7 +28,10 @@ server <- function(input, output, session){
       ),
       use.names = T
     )
+    
+    rv$new_group_created <- T #to avoid environments selection reset
     rv$data_plot <- data_plot
+    
     
     rv$selection <- data.table()
     

@@ -161,6 +161,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
       
       rv$groups <- data.table()
       rv$visu_as_group <- NULL
+      rv$new_group_created <- F
       
       rv_plot$draw_regression <- F
       rv_plot$draw_clusters <- F
@@ -191,11 +192,11 @@ mod_scatterplot_server <- function(id, rv, parent_session){
           scale_color_discrete(name = name)
         }
       }
-      
-      ## Update env ####
+     
       observe({
         req(rv$data_plot)
         req(rv$column_datasource)
+
         ## turn numeric variables that should not be numeric into text
         for(col in names(rv$data_plot)[
           rv$data_plot[, lapply(.SD, is.numeric)]==T &
@@ -204,27 +205,20 @@ mod_scatterplot_server <- function(id, rv, parent_session){
           rv$data_plot[, c(col) := list(as.character(eval(as.name(col))))]
         }
         
-        ## update environments
-        envs <- unique(rv$data_plot[,.(studyDbId, study_name_app)])
-        env_choices <- envs[,studyDbId]
-        names(env_choices) <- envs[,study_name_app]
-        
-        # to avoid selected env reinitialized after creating a group
-        if (is.null(input$env)) {
-          env_selected <- env_choices
-        } else {
-          env_selected <- input$env
+        ## Set environments selector ####
+        # don't change environment selection after creating a group
+        if (!rv$new_group_created) {
+          envs <- unique(rv$data_plot[,.(studyDbId, study_name_app)])
+          env_choices <- envs[,studyDbId]
+          names(env_choices) <- envs[,study_name_app]
+          updatePickerInput(
+            session, "env",
+            choices = env_choices,
+            selected = env_choices
+          )
         }
-        updatePickerInput(
-          session, "env",
-          choices = env_choices, selected = env_selected
-        )
-      })
-      
-      ## Update germplasm refs ####
-      observe({
-        req(rv$data_plot)
-        ## update group of germplasms
+        
+        ## Set germplasm refs ####
         germplasmNames <- rv$data_plot[,.(germplasmNames = list(unique(germplasmName))), .(entryType)][order(entryType)]
         updatePickerInput(
           session = session, inputId = "ref_genotype_X",
@@ -242,17 +236,8 @@ mod_scatterplot_server <- function(id, rv, parent_session){
             `live-search` = TRUE
           )
         )
-      })
-      
-      ## Update variable selectors ####
-      observe({
-        req(rv$data_plot)
-        req(rv$column_datasource)
-        rv$column_datasource[,.N]
         
-        print("update variable selectors: debut")
-        
-        #update names of sources
+        ## Set Variables selectors ####
         picker_section_names <- data.table(source=c("GxE",
                                                     "plot",
                                                     "germplasm",
@@ -264,7 +249,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
                                                     "Environment details",
                                                     "Means"))
         column_datasource <- merge(rv$column_datasource, picker_section_names, by = c("source"), all.x = T)[!is.na(rename), source := rename]
-
+        
         num_var_choices <- column_datasource[type == "Numerical" & visible == T,.(cols = list(cols)), source]
         non_num_var_choices <- column_datasource[type != "Numerical" & visible == T,.(cols = list(cols)), source]
         var_choices_all <- column_datasource[visible == T,.(cols = list(cols)), source]
@@ -337,7 +322,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         if(isTruthy(input$picker_SHAPE)){val_picker_SHAPE <- input$picker_SHAPE}
         if(isTruthy(input$picker_COLOUR)){val_picker_COLOUR <- input$picker_COLOUR}
         if(isTruthy(input$picker_SIZE)){val_picker_SIZE <- input$picker_SIZE}
-
+        
         updatePickerInput(
           session = session, inputId = "picker_X",
           choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
@@ -363,6 +348,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
           choices = c(no_selection, setNames(var_choices_COLOUR[,cols], var_choices_COLOUR[,source])),
           selected = val_picker_COLOUR
         )
+
       })
       
       ## update colour aggreg functions ####
