@@ -17,7 +17,9 @@ mod_get_extradata_server <- function(id, rv){
         }
 
         isolate({
-          data_tmp <- rv$data
+          data_tmp <- rv$data[,!c("observationTimeStamp")]
+          
+          browser()
           
           ### make data source register
           # - Germplasm
@@ -34,7 +36,7 @@ mod_get_extradata_server <- function(id, rv){
           # standard columns characterising the observation units
           plot_column <- data.table(cols = c("blockNumber", "studyName", "entryType", "observationUnitName", "germplasmName", "germplasmDbId",
                                              "replicate", "plotNumber","positionCoordinateX", "positionCoordinateY", "observationLevel",
-                                             "observationCode", "observationTimeStamp", "locationName")
+                                             "observationCode", "locationName")
                                     )[, source := "plot"][, visible := T]
           plot_column[cols %in% c("studyName", "locationName"), source := "environment"]
           types <- data.table(cols = colnames(data_tmp) , type = sapply(data_tmp, class))
@@ -167,6 +169,8 @@ mod_get_extradata_server <- function(id, rv){
           
           rv$environmentParameters <- environmentParameters
           rv$data_plot <- data_plot
+          
+          browser()
 
           rv$column_datasource <- column_datasource
           #rv$ontology_variables <- ontology_variables
