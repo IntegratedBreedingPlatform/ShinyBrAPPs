@@ -83,7 +83,7 @@ mod_trialdataxplor_server <- function(id, rv){
         if(!("observationVariableName"%in%names(data_dq))){
           showNotification("No trait data", type = "error", duration = notification_duration)
         }
-
+        #browser()
         
         env_choices <- rv$study_metadata[loaded==T,unique(studyDbId)]
         names(env_choices) <- rv$study_metadata[loaded==T,unique(study_name_app)]
@@ -141,7 +141,7 @@ mod_trialdataxplor_server <- function(id, rv){
                                            labelField='locationName',
                                            searchField=c('studyName',"locationName",'countryName'),
                                            render = I("{option: function(item, escape) {
-                                                   return '<div><strong>'+ escape(item.locationName) + '</strong> (' + escape(item.countryName) + ') ('+ escape(item.N)+ ')</div>';
+                                                   return '<div><strong>'+ escape(item.studyDbId) +'-'+ escape(item.locationName) + '</strong> (' + escape(item.countryName) + ') ('+ escape(item.N)+ ')</div>';
                                         }}"))
        )
      })
@@ -172,8 +172,8 @@ mod_trialdataxplor_server <- function(id, rv){
        req(rv$data_dq[,.N]>0)
        data_dq <- rv$data_dq
        #browser()
-       ct <- dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(locationName,Variable=observationVariableName)],
-                   Variable~locationName, fill = 0)
+       ct <- dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(study=paste0(studyDbId,"-",locationName),Variable=observationVariableName)],
+                   Variable~study, fill = 0)
        output$counts_table <- renderTable(ct)
        vnd <- melt(ct, variable.name = "StudyLocation")[value==0,.(StudyLocation, Variable)]
        rv$var_no_dat <- vnd
@@ -188,7 +188,7 @@ mod_trialdataxplor_server <- function(id, rv){
                                          "T: ",trait.name, "\n",
                                          "M: ",method.methodName,"\n",
                                          "S: ",scale.scaleName)]
-       data_dq[, facetcols := paste0(locationName,"\n",countryName)]
+       data_dq[, facetcols := paste0(studyDbId, "-", locationName,"\n",countryName)]
        loclabels <- unique(data_dq[,.(facetcols,locationName)])
        g<-ggplot(data_dq, aes(y=observationValue, x=replicate)) +
          geom_boxplot(aes(fill=as.factor(replicate))) +
