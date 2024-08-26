@@ -168,7 +168,12 @@ mod_gxe_ui <- function(id){
                                                     #bslib::card(DT::dataTableOutput(ns("FW_selected_obs_DT"))),
                                                     bslib::card(
                                                       bslib::card_body(DT::dataTableOutput(ns("FW_sens_clusters_DT"))),
-                                                      bslib::card_footer(uiOutput(ns("senscluster_results"))))
+                                                      bslib::card_footer(div(style="display: flex;gap: 10px;",
+                                                                             shiny::actionButton(ns("create_groups_from_sensclusters"), "Create groups from clusters", icon = icon(NULL), class = "btn btn-info"),
+                                                                             shiny::actionButton(ns("create_groups_from_selgeno"),label = "Create group from selected genotypes", icon = icon(NULL), class = "btn btn-info")
+                                                                             )
+                                                                         )
+                                                      )
                              ),
                              bslib::accordion_panel(title = "Analysis summary", 
                                                     verbatimTextOutput(ns("FW_text_output")) 
@@ -267,7 +272,7 @@ mod_gxe_ui <- function(id){
             pickerInput(ns("AMMI_excludeGeno"), label="Exclude genotypes", multiple = T, choices = c(), options = pickerOptions(liveSearch = TRUE)),
             materialSwitch(ns("AMMI_byYear"), "Run by year", value = FALSE, status = "info"),
             hr(style = "border-top: 1px solid #000000;"),
-            pickerInput(ns("AMMI_plotType"), label="Plot type", choices = c("AMMI1", "AMMI2"), selected = "AMMI1"),
+            pickerInput(ns("AMMI_plotType"), label="Plot type", choices = c("AMMI1", "AMMI2"), selected = "AMMI2"),
             pickerInput(ns("AMMI_primAxis"), label="Primary axis", choices = c()),
             pickerInput(ns("AMMI_secAxis"), label="Second axis", choices = c()),
             materialSwitch(ns("AMMI_plotGeno"), "Plot genotypes", value = TRUE, status = "info"),
@@ -312,7 +317,7 @@ mod_gxe_ui <- function(id){
 
 # SERVER ####
 #' @export
-mod_gxe_server <- function(id, rv){
+mod_gxe_server <- function(id, rv, parent_session){
   ns <- NS(id)
   moduleServer(
     id,
@@ -746,12 +751,12 @@ mod_gxe_server <- function(id, rv){
                 #browser()
                 p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
                 if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
-                  selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
+                  rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
                   #browser()
                   p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                       ggnewscale::new_scale_color() + 
-                      ggplot2::geom_line(data=p$data[p$data$genotype%in%selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
-                      geom_point(data=p$data[p$data$genotype%in%selected_genotypes,], aes(color=genotype), size=3)
+                      ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                      geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
                   }
               } else {
                 if (input$FW_picker_color_by=="Nothing"){
@@ -829,18 +834,42 @@ mod_gxe_server <- function(id, rv){
         }
       })
       
+      observeEvent(input$FW_sens_clusters_DT_rows_selected, ignoreNULL = FALSE, {
+        #browser()
+        if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
+          shinyjs::enable("create_groups_from_selgeno")
+          #shinyjs::addClass("create_groups_from_selgeno", "active")
+          
+        } else {
+          shinyjs::disable("create_groups_from_selgeno")
+          #shinyjs::removeClass("create_groups_from_selgeno", "active")
+        }
+      })
+      
+      observeEvent(input$create_groups_from_selgeno,{
+        #browser()
+        if(length(rv$selected_genotypes)>0){
+          rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
+                                                               rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]),
+                                                  y=unique(rbindlist(rv$TD)),
+                                                  by.x = "Genotype",
+                                                  by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
+          showModal(groupModal(rv=rv, parent_session = parent_session, modal_title = "Create new group", group_description = "Group manually created from selected genotypes in Finlay Wilkinson analysis"))
+        }
+      })
+      
       #### Render FW sensclusters DT ####
       observe({
         req(rv$sensclust)
-        output$FW_sens_clusters_DT <- DT::renderDataTable(rv$sensclust,rownames= FALSE, selection = 'multiple')
-        output$senscluster_results <- renderUI({
-            shiny::actionButton(ns("create_groups_from_sensclusters"), "Create groups from clusters", icon = icon(NULL), class = "btn btn-info")
-        })
-        shinyjs::enable("create_groups_from_sensclusters")
-        shinyjs::addClass("create_groups_from_sensclusters", "active")
+        output$FW_sens_clusters_DT <- DT::renderDataTable(DT::datatable(rv$sensclust, filter = "top"),rownames= FALSE, selection = 'multiple')
+        if (any(colnames(rv$sensclust)=="sensitivity_cluster")){
+          shinyjs::enable("create_groups_from_sensclusters")
+          #shinyjs::addClass("create_groups_from_sensclusters", "active")
+        } else {
+          shinyjs::disable("create_groups_from_sensclusters")
+        }
         
       })
-
       
       #### Handle FW group creation ####
       observeEvent(input$create_groups_from_sensclusters,{

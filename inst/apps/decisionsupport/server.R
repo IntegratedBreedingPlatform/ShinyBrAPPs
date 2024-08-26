@@ -5,7 +5,7 @@ server <- function(input, output, session){
   rv <- mod_get_extradata_server("get_extradata", rv)
   mod_banner_server("banner", rv)
   rv <- mod_scatterplot_server("scatterplot", rv, session)
-  mod_gxe_server("gxe", rv)
+  mod_gxe_server("gxe", rv, session)
   mod_groups_sidebar_server("groups_sidebar", rv, session)
   
   ## Action when clicking on button create group in modal
