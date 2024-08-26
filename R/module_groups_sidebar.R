@@ -178,7 +178,7 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
           tagList(
             textInput(
               ns("listName"),
-              label = "Group Name",
+              label = "List Name",
               value = rv$groups[group_id == input$group_sel_input, group_name],
               placeholder = "Human readable name of a List",
               width = "100%"
