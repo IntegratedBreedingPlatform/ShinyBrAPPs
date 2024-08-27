@@ -538,10 +538,10 @@ mod_gxe_server <- function(id, rv, parent_session){
           data2TD <- data2TD[!genotype%in%genot_to_excl$genotype]
           #if (exists("genot_to_excl")){
             if (nrow(genot_to_excl)>1){
-              showNotification(paste0("Excluding ", nrow(genot_to_excl)," genotypes"), type = "message")
+              #showNotification(paste0("Excluding ", nrow(genot_to_excl)," genotypes"), type = "message")
               output$TD_excluded_geno <- DT::renderDataTable(data.table(genot_to_excl), rownames= FALSE)
             } else {
-              showNotification(paste0("Using all genotypes"), type = "message")
+              #showNotification(paste0("Using all genotypes"), type = "message")
               output$TD_excluded_geno <- DT::renderDataTable(data.table()[0L], rownames= FALSE)
               
             }
