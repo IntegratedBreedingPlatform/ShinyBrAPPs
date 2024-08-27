@@ -17,3 +17,7 @@
 .space-right  {
 	margin-right: 25px;
 }
+
+.accordion-button {
+  font-size: 1.3rem;
+}
