@@ -4,6 +4,7 @@ mod_gxe_ui <- function(id){
   ns <- NS(id)
   tagList(
     shinyjs::useShinyjs(),
+    chooseSliderSkin("Flat", color = "#1b95b2"),
     bslib::navset_tab(
       bslib::nav_panel(
         ## Data prep panel ####
@@ -27,6 +28,8 @@ mod_gxe_ui <- function(id){
                         choices = c(),
                         multiple = T),
                         #options  = pickerOptions(actionsBox = TRUE)),
+            uiOutput(ns("sliderUI_exclude_geno_nb_env")),
+            #sliderInput(ns("exclude_geno_nb_env"),label = "Exclude genotypes that are present in less than X environments", value = 1, min = 1, max = 10, step = 1 ),
             pickerInput(ns("picker_location"), label = "Choose environment detail to use as location", choices = c()),
             pickerInput(ns("picker_region"), label = "Choose environment detail to use as region", choices = c()),
             pickerInput(ns("picker_year"), label = "Choose environment detail to use as year", choices = c()),
@@ -42,9 +45,15 @@ mod_gxe_ui <- function(id){
             bslib::card(full_screen = TRUE,#height = "33%",
               plotOutput(ns("TD_boxplot"))
             ),
+          bslib::layout_columns(
             bslib::card(full_screen = TRUE,
              plotOutput(ns("TD_scatterplots"))
+            ),
+            bslib::card(full_screen = FALSE,
+                        bslib::card_header("Excluded genotypes"),
+                        DT::dataTableOutput(ns("TD_excluded_geno"))
             )
+          )
           #)
         )
       ),
@@ -295,7 +304,7 @@ mod_gxe_ui <- function(id){
                                                      sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,
                                                                             bslib::card(full_screen = F,height = "735",max_height = "735",
                                                                                         sliderInput(ns("AMMI_plot_sizeGeno"), label = "sizeGeno", min = 0, max = 10, value = 0, step = 1),
-                                                                                        materialSwitch(ns("AMMI_plot_repel"), label = "use_ggrepel", value = FALSE),
+                                                                                        materialSwitch(ns("AMMI_plot_repel"), label = "use_ggrepel", value = FALSE, status = "info"),
                                                                                         sliderInput(ns("AMMI_plot_repulsion"), label="plot_repulsion", value = 1, min=1, max=10, step=0.5),
                                                                                         sliderInput(ns("AMMI_plot_max_overlaps"), label="plot_max_overlaps", value = 20, min=5, max=50, step=1),
                                                                                         sliderInput(ns("AMMI_plot_sizeEnv"), label = "sizeEnv", min = 0, max = 10, value = 3, step = 1),
@@ -440,7 +449,11 @@ mod_gxe_server <- function(id, rv, parent_session){
           choices = germplasm_attr,
           selected = character(0)
         )
+        output$sliderUI_exclude_geno_nb_env <- renderUI({
+          sliderInput(ns("exclude_geno_nb_env"),label = "Exclude genotypes that are present in less than X environments", value = 1, min = 1, max = length(input$picker_env), step = 1 )
+        })
       })
+      
       ## update pickers location, year, region, when one of them is chosen ####
       observeEvent(input$picker_location, {
         env_details <- c(rv$column_datasource[source == "environment" & visible == T,]$cols, "study_startYear")
@@ -519,6 +532,23 @@ mod_gxe_server <- function(id, rv, parent_session){
         } else {
           data2TD[, genotype:=germplasmName]
         }
+        
+        #
+          genot_to_excl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype][N<input$exclude_geno_nb_env]
+          data2TD <- data2TD[!genotype%in%genot_to_excl$genotype]
+          #if (exists("genot_to_excl")){
+            if (nrow(genot_to_excl)>1){
+              showNotification(paste0("Excluding ", nrow(genot_to_excl)," genotypes"), type = "message")
+              output$TD_excluded_geno <- DT::renderDataTable(data.table(genot_to_excl), rownames= FALSE)
+            } else {
+              showNotification(paste0("Using all genotypes"), type = "message")
+              output$TD_excluded_geno <- DT::renderDataTable(data.table()[0L], rownames= FALSE)
+              
+            }
+            
+          #}
+          
+        #}
         if (length(input$picker_scenario)>=1){ #& input$check_combine_scenario){
           data2TD[, scenario:= do.call(paste0, .SD), .SDcols = input$picker_scenario]
         } #else {
