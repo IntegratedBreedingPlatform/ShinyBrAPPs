@@ -296,3 +296,21 @@ groupModal <- function(rv, parent_session, modal_title, group_description) {
     )
   )
 }
+
+
+whoami_bmsapi <- function(con){
+  progs <- brapi_get_programs(con)
+  aprogr <- progs$programDbId[1]
+  server_url <- paste0(con$protocol, con$db, ":", con$port, "/", con$apipath)
+  callurl <- paste0(server_url, "/users/filter?cropName=",con$commoncropname,"&programUUID=",aprogr)
+  resp <-   httr::GET(url = callurl,
+                      httr::timeout(25),
+                      httr::add_headers(
+                        "Authorization" = paste("Bearer", con$token),
+                        "Content-Type"= "application/json",
+                        "accept"= "*/*"
+                      ))
+  cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
+  uname <- strsplit(con$token,split = ":")[[1]][1]
+  return(data.table(jsonlite::fromJSON(cont))[username==uname])
+}

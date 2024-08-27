@@ -212,6 +212,7 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
         removeModal()
         req(length(input$group_sel_input)==1)
         tryCatch({
+          userinfo <- whoami_bmsapi(rv$con)
           brapirv2::brapi_post_lists(
             con = rv$con,
             data = rv$groups[group_id == input$group_sel_input, germplasmDbIds][[1]],
@@ -220,8 +221,8 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
             dateModified = as.character(Sys.Date()), # XXX
             listName = input$listName,
             listDescription= input$listDescription,
-            listOwnerName = "Admin Admin", # XXX
-            listOwnerPersonDbId = "1", # XXX
+            listOwnerName = paste(userinfo$firstName,userinfo$username), # XXX
+            listOwnerPersonDbId = as.character(userinfo$id), # XXX
             listSource = "test", # XXX
             listType = "germplasm"
           )
