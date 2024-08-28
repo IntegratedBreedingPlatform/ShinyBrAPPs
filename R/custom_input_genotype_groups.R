@@ -69,7 +69,7 @@ group_selector <- function(input_id, group_table, column_datasource, data_plot, 
               div(
                 class = "panel-body",
                 tags$label("Description:"),
-                tags$p(group_table[group_id==id, group_desc]),
+                tags$div(HTML(group_table[group_id==id, group_desc])),
                 #tags$label("Group Detail:"),
                 DT::datatable(
                   group_detail[,.(germplasmName)],

@@ -939,9 +939,9 @@ mod_gxe_server <- function(id, rv, parent_session){
         clusters <- unique(rbindlist(rv$TD)[,.(genotype,germplasmDbId,germplasmName)])[rv$sensclust, on=.(genotype=Genotype)][order(sensitivity_cluster)][,.(
           group_name = paste0("FW_cluster.", sensitivity_cluster),
           group_desc = paste0(
-            "Clustering method: FW_clusters", tags$b(input$cluster_algo), tags$br(),
-            "Cluster: ", tags$b(sensitivity_cluster,"/", input$n_clusters), tags$br(),
-            "Timestamp: ", tags$b(Sys.time())
+            "Clustering method: FW_clusters on ", paste(input$FW_picker_cluster_on, collapse = ", "), "<br>",
+            "Cluster: ", sensitivity_cluster,"/", input$FW_cluster_sensitivity_nb, "<br>",
+            "Timestamp: ", Sys.time()
           ),
           germplasmDbIds = list(germplasmDbId),
           germplasmNames = list(germplasmName),
