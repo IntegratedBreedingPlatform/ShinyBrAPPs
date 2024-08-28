@@ -171,13 +171,16 @@ mod_gxe_ui <- function(id){
                                                       #plotlyOutput(ns("FW_plot"))
                                                       #plotOutput(ns("FW_plot"))
                                                       #materialSwitch(ns("FW_plot_interact"),"Interactive plot", value=FALSE, status="info"),
-                                                      plotOutput(ns("FW_plot"))
+                                                      plotOutput(ns("FW_plot")),
+                                                      uiOutput(ns("FW_sens_clust_select"))
+                                                      #bslib::card_footer()
                                                     )),
                              bslib::accordion_panel(title = "Germplasm list and clusters",
                                                     #bslib::card(DT::dataTableOutput(ns("FW_selected_obs_DT"))),
                                                     bslib::card(
                                                       bslib::card_body(DT::dataTableOutput(ns("FW_sens_clusters_DT"))),
                                                       bslib::card_footer(div(style="display: flex;gap: 10px;",
+                                                                             shiny::actionButton(inputId = ns("sens_clusters_DT.clearsel"), label = "Deselect all", icon = icon(NULL), class = "btn btn-info"),
                                                                              shiny::actionButton(ns("create_groups_from_sensclusters"), "Create groups from clusters", icon = icon(NULL), class = "btn btn-info"),
                                                                              shiny::actionButton(ns("create_groups_from_selgeno"),label = "Create group from selected genotypes", icon = icon(NULL), class = "btn btn-info")
                                                                              )
@@ -780,6 +783,16 @@ mod_gxe_server <- function(id, rv, parent_session){
               if (input$FW_picker_color_by=="sensitivity clusters"){
                 #browser()
                 p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
+                if (input$FW_sens_clust_select_buttons!="none" & input$FW_picker_plot_type=="line"){
+                  #browser()
+                  stacolors <- getOption("statgen.genoColors")
+                  names(stacolors)<-1:length(stacolors)
+                  p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
+                    ggnewscale::new_scale_color() + 
+                    ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$sensclust[sensitivity_cluster==input$FW_sens_clust_select_buttons, Genotype],], aes(y = fitted, color=sensitivity_cluster), size=1) + scale_color_manual(values = stacolors)
+                  
+                }
+                
                 if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
                   rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
                   #browser()
@@ -796,7 +809,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                     p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                         ggnewscale::new_scale_color() + 
                         ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
-                        geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
+                        geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3) + theme(legend.position = "right")
                   }
                   
                 } else {
@@ -858,12 +871,24 @@ mod_gxe_server <- function(id, rv, parent_session){
           rv$sensclust <- sensclust
           rv$TDFWplot <- rv$TDFW
           rv$TDFWplot$TD <- lapply(rv$TDFWplot$TD, function(a) data.table(a)[sensclust, on=.(genotype=Genotype)])
+          output$FW_sens_clust_select <- renderUI(
+            prettyRadioButtons( 
+              inputId = ns("FW_sens_clust_select_buttons"),
+              label = "Select a cluster to highlight",
+              choices = c("none", sort(unique(sensclust$sensitivity_cluster))),
+              inline = TRUE,
+              shape = "round",
+              status = "primary",
+              fill = TRUE,
+              bigger = TRUE
+            )
+          )
         } else {
           sensclust <- data.table(rv$TDFW$estimates)
           rv$sensclust <- sensclust
+          output$FW_sens_clust_select <- renderUI(expr = NULL)
         }
       })
-      
       observeEvent(input$FW_sens_clusters_DT_rows_selected, ignoreNULL = FALSE, {
         #browser()
         if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
@@ -892,6 +917,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       observe({
         req(rv$sensclust)
         output$FW_sens_clusters_DT <- DT::renderDataTable(DT::datatable(rv$sensclust, filter = "top"),rownames= FALSE, selection = 'multiple')
+        dtproxy <<- dataTableProxy('FW_sens_clusters_DT')
         if (any(colnames(rv$sensclust)=="sensitivity_cluster")){
           shinyjs::enable("create_groups_from_sensclusters")
           #shinyjs::addClass("create_groups_from_sensclusters", "active")
@@ -899,6 +925,10 @@ mod_gxe_server <- function(id, rv, parent_session){
           shinyjs::disable("create_groups_from_sensclusters")
         }
         
+      })
+      
+      observeEvent(input$sens_clusters_DT.clearsel,{
+        selectRows(dtproxy, selected=NULL)
       })
       
       #### Handle FW group creation ####
@@ -937,6 +967,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           data_plot[germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)], eval(group_name) := paste0('In "', group_name,'"')]
           data_plot[!(germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)]), eval(group_name) := paste0('Not in "', group_name,'"')]
         }
+
         rv$column_datasource <- rbindlist(
           list(
             rv$column_datasource,
