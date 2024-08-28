@@ -12,7 +12,7 @@ mod_gxe_ui <- function(id){
         ### Sidebar ####
         bslib::layout_sidebar(
           width = 1/3,
-          height = 800,
+          #height = 800,
           sidebar=bslib::sidebar(#bslib::card(
             # bslib::card_header(
             #   h4('Options ', icon('screwdriver-wrench'))
