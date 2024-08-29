@@ -336,7 +336,7 @@ mod_gxe_server <- function(id, rv, parent_session){
     function(input, output, session){
       
       bslib::accordion_panel_close("GGE_adv_settings_acc", values="advs", session = session)
-      ## observe data and update Trit picker ####
+      ## observe data and update Trait picker ####
       rv$selected_genotypes <- NULL
       observe({
         req(rv$data_plot)
@@ -393,6 +393,17 @@ mod_gxe_server <- function(id, rv, parent_session){
             selected = character(0)
           )
         }
+        
+        colorbychoices <- input$picker_germplasm_attr
+        colorbychoices <- c(colorbychoices,rv$column_datasource[source %in% "group"]$cols)
+        
+        #browser()
+        updatePickerInput(
+          session, "FW_picker_color_by",
+          choices = c("Nothing",colorbychoices, "sensitivity clusters"),
+          selected = "Nothing"
+        )
+        
       })
       
       ## update env picker when trait is chosen ####
@@ -404,7 +415,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         envs <- unique(rv$data_gxe[!is.na(get(input$picker_trait)),.SD,.SDcols = c("studyDbId", input$picker_env_variable)])
         env_choices <- envs[,studyDbId]
         names(env_choices) <- envs[[input$picker_env_variable]]
-
+        rv$traitName <- rv$observationVariables[observationVariableName==input$picker_trait,trait.traitName]
         updatePickerInput(
           session, "picker_env",
           choices = env_choices,
@@ -500,16 +511,16 @@ mod_gxe_server <- function(id, rv, parent_session){
         )
       })
       observeEvent(input$picker_germplasm_attr, {
-        updatePickerInput(
-          session, "FW_picker_color_by",
-          choices = c("Nothing",input$picker_germplasm_attr,"sensitivity clusters"),
-          selected = "Nothing"
-        )
-        updatePickerInput(
-          session, "AMMI_colorGenoBy",
-          choices = c("Nothing",input$picker_germplasm_attr),
-          selected = "Nothing"
-        )
+        #updatePickerInput(
+        #  session, "FW_picker_color_by",
+        #  choices = c("Nothing",input$picker_germplasm_attr,"sensitivity clusters"),
+        #  selected = "Nothing"
+        #)
+        #updatePickerInput(
+        #  session, "AMMI_colorGenoBy",
+        #  choices = c("Nothing",input$picker_germplasm_attr),
+        #  selected = "Nothing"
+        #)
         
       }
       )
@@ -635,7 +646,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                 #if ("scenarioFull"%in%names(data2TD)){
                   plot(rv$TD, plotType = "scatter",
                        traits = input$picker_trait,
-                       colorGenoBy = input$picker_germplasm_attr, 
+                       colorGenoBy = input$picker_germplasm_attr[1], 
                        colorTrialBy = "scenario")
                 #} else {
                 #  plot(rv$TD, plotType = "scatter",
@@ -646,7 +657,7 @@ mod_gxe_server <- function(id, rv, parent_session){
               } else {
                 plot(rv$TD, plotType = "scatter",
                      traits = input$picker_trait,
-                     colorGenoBy = input$picker_germplasm_attr)
+                     colorGenoBy = input$picker_germplasm_attr[1])
               }            
             } else {
               if (!is.null(input$picker_scenario)){
@@ -813,6 +824,9 @@ mod_gxe_server <- function(id, rv, parent_session){
                   }
                   
                 } else {
+                  if (!input$FW_picker_color_by%in%colnames(TDFWplot$TD)){
+                    TDFWplot$TD <- rv$TD
+                  }
                   p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
                   if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
                     rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
@@ -901,18 +915,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         }
       })
       
-      observeEvent(input$create_groups_from_selgeno,{
-        #browser()
-        if(length(rv$selected_genotypes)>0){
-          rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
-                                                               rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]),
-                                                  y=unique(rbindlist(rv$TD)),
-                                                  by.x = "Genotype",
-                                                  by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
-          showModal(groupModal(rv=rv, parent_session = parent_session, modal_title = "Create new group", group_description = "Group manually created from selected genotypes in Finlay Wilkinson analysis"))
-        }
-      })
-      
+
       #### Render FW sensclusters DT ####
       observe({
         req(rv$sensclust)
@@ -935,11 +938,16 @@ mod_gxe_server <- function(id, rv, parent_session){
       observeEvent(input$create_groups_from_sensclusters,{
         shinyjs::disable("create_groups_from_sensclusters")
         shinyjs::addClass("create_groups_from_sensclusters", "active")
-        #browser()
+        if (nrow(rv$groups)==0){
+          clustering_id <- 1
+        } else {
+          clustering_id <- ifelse(length(rv$groups[!is.na(clustering_id)]$clustering_id)==0, 1, max(rv$groups[!is.na(clustering_id)]$clustering_id) + 1)
+        }
+        
         clusters <- unique(rbindlist(rv$TD)[,.(genotype,germplasmDbId,germplasmName)])[rv$sensclust, on=.(genotype=Genotype)][order(sensitivity_cluster)][,.(
-          group_name = paste0("FW_cluster.", sensitivity_cluster),
+          group_name = paste0("cl",clustering_id,"_FW@",input$picker_trait,".", sensitivity_cluster),
           group_desc = paste0(
-            "Clustering method: FW_clusters on ", paste(input$FW_picker_cluster_on, collapse = ", "), "<br>",
+            "Clustering method: FW clusters on ",input$picker_trait, " variable, using ", paste(input$FW_picker_cluster_on, collapse = ", "), "<br>",
             "Cluster: ", sensitivity_cluster,"/", input$FW_cluster_sensitivity_nb, "<br>",
             "Timestamp: ", Sys.time()
           ),
@@ -949,12 +957,13 @@ mod_gxe_server <- function(id, rv, parent_session){
         clusters[N>6 ,germplasmNames := paste(
           paste(unlist(germplasmNames)[1:5], collapse = ", "),
           paste("and", N - 5, "others")
-        )]
+        ), sensitivity_cluster]
         clusters[N <= 6, germplasmNames := paste(unlist(germplasmNames), collapse = ", ")]
         
         group_id_start <- ifelse(length(rv$groups$group_id)==0, 1, max(rv$groups$group_id) + 1)
         group_ids <- group_id_start:(group_id_start+clusters[,.N] -1)
         clusters[, group_id := group_ids]
+        clusters[, clustering_id := clustering_id]
         rv$groups <- rbindlist(list(
           rv$groups,
           clusters
@@ -962,20 +971,44 @@ mod_gxe_server <- function(id, rv, parent_session){
         
         ## update selectors (shape, colour)
         data_plot <- copy(rv$data_plot) # to avoid reactivity issues related to assignment by reference
-        for(id in clusters[,unique(group_id)]){
-          group_name <- clusters[group_id == id,group_name]
-          data_plot[germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)], eval(group_name) := paste0('In "', group_name,'"')]
-          data_plot[!(germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)]), eval(group_name) := paste0('Not in "', group_name,'"')]
-        }
+        ## Revoir ca pour ne créer qu'un seule varaible dans data.plot avec les numéros de clusters
+        #browser()
+        #for(id in clusters[,unique(group_id)]){
+        #  group_name <- clusters[group_id == id,group_name]
+        #  data_plot[germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)], eval(group_name) := paste0('In "', group_name,'"')]
+        #  data_plot[!(germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)]), eval(group_name) := paste0('Not in "', group_name,'"')]
+        #}
+        data_plot <- setnames(data_plot[clusters[,.(germplasmDbId=unlist(germplasmDbIds)),sensitivity_cluster],on=.(germplasmDbId)],old = "sensitivity_cluster",new = paste0("cl",clustering_id,"_FW@",input$picker_trait))[]
 
         rv$column_datasource <- rbindlist(
           list(
             rv$column_datasource,
-            data.table(cols = clusters[,unique(group_name)], source = "group", type = "Text", visible = T)
+            #data.table(cols = clusters[,unique(group_name)],  type = "Text", source = "group", visible = T)
+            data.table(cols = paste0("cl",clustering_id,"_FW@",input$picker_trait) ,  type = "Text", source = "group", visible = T)
           )
         )
         rv$data_plot <- data_plot
+
         
+      })
+      
+      observeEvent(input$create_groups_from_selgeno,{
+        #browser()
+        if(length(rv$selected_genotypes)>0){
+          #browser()
+          rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
+                                                               rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]),
+                                                  y=unique(rbindlist(rv$TD)),
+                                                  by.x = "Genotype",
+                                                  by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
+          showModal(groupModal(rv=rv, 
+                               parent_session = parent_session, 
+                               modal_title = "Create new group", 
+                               group_description = paste0("Group manually created from selected genotypes in Finlay Wilkinson analysis of ", input$picker_trait, " variable"),
+                               group_prefix =paste0("M_FW@",input$picker_trait,".")
+                               )
+                    )
+        }
       })
       
       #output$FW_selected_obs_DT <- renderTable({
@@ -1010,8 +1043,8 @@ mod_gxe_server <- function(id, rv, parent_session){
         )
         updatePickerInput(
           session, "GGE_picker_gen2_select",
-          choices = rv$TDGGEmetan[[1]]$labelgen[2]
-          #selected = character(0)
+          choices = rv$TDGGEmetan[[1]]$labelgen,
+          selected = rv$TDGGEmetan[[1]]$labelgen[2]
         )
         updatePickerInput(
           session, "GGE_picker_env_select",

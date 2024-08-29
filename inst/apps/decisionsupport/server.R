@@ -12,6 +12,7 @@ server <- function(input, output, session){
   observeEvent(input$modal_create_group_go, {
     rv$selection[, group_name := input$modal_create_group_text_input_label]
     rv$selection[, group_desc := input$modal_create_group_text_input_descr]
+    rv$selection[, clustering_id := NA]
     rv$groups <- rbindlist(list(
       rv$groups,
       rv$selection

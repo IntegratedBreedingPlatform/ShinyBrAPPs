@@ -272,7 +272,7 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
 # can be called from scatterplot or groups_sidebar modules
 # parent_session enables to get the app server namespace and get modal elements from the 2 modules
 #' @export
-groupModal <- function(rv, parent_session, modal_title, group_description) {
+groupModal <- function(rv, parent_session, modal_title, group_description, group_prefix="M_Group") {
   req(rv$selection[,.N]>0)
   ns <- parent_session$ns
   modalDialog(
@@ -281,7 +281,7 @@ groupModal <- function(rv, parent_session, modal_title, group_description) {
     tagList(
       tags$label(paste(rv$selection[,N]," selected germplasms")),
       tags$p(rv$selection[,germplasmNames_label]),
-      textInput(ns("modal_create_group_text_input_label"), label = "Group Name", value = paste("Group", rv$selection[,group_id]), placeholder = "Group Label"),
+      textInput(ns("modal_create_group_text_input_label"), label = "Group Name", value = paste(group_prefix, rv$selection[,group_id]), placeholder = "Group Label"),
       textAreaInput(
         ns("modal_create_group_text_input_descr"), 
         label = "Group Description", 

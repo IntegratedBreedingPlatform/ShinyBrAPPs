@@ -949,8 +949,14 @@ mod_scatterplot_server <- function(id, rv, parent_session){
       observeEvent(input$create_groups_from_clusters,{
         shinyjs::disable("create_groups_from_clusters")
         shinyjs::addClass("create_groups_from_clusters", "active")
+        if (nrow(rv$groups)==0){
+          clustering_id <- 1
+        } else {
+          clustering_id <- ifelse(length(rv$groups[!is.na(clustering_id)]$clustering_id)==0, 1, max(rv$groups[!is.na(clustering_id)]$clustering_id) + 1)
+        }
+        
         clusters <- rv_plot$clusters[order(cluster)][,.(
-          group_name = paste0(unique(method), unique(counter), ".", cluster),
+          group_name = paste0("cl",clustering_id,"_",unique(method), ".", cluster),
           group_desc = paste0(
             "Clustering method: ", tags$b(input$cluster_algo), tags$br(),
             "Cluster: ", tags$b(cluster,"/", input$n_clusters), tags$br(),
@@ -996,6 +1002,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         group_id_start <- ifelse(length(rv$groups$group_id)==0, 1, max(rv$groups$group_id) + 1)
         group_ids <- group_id_start:(group_id_start+clusters[,.N] -1)
         clusters[, group_id := group_ids]
+        clusters[, clustering_id := clustering_id]
         rv$groups <- rbindlist(list(
           rv$groups,
           clusters
@@ -1003,15 +1010,20 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         
         ## update selectors (shape, colour)
         data_plot <- copy(rv$data_plot) # to avoid reactivity issues related to assignment by reference
-        for(id in clusters[,unique(group_id)]){
-          group_name <- clusters[group_id == id,group_name]
-          data_plot[germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)], eval(group_name) := paste0('In "', group_name,'"')]
-          data_plot[!(germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)]), eval(group_name) := paste0('Not in "', group_name,'"')]
-        }
+        #for(id in clusters[,unique(group_id)]){
+        #  group_name <- clusters[group_id == id,group_name]
+        #  data_plot[germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)], eval(group_name) := paste0('In "', group_name,'"')]
+        #  data_plot[!(germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)]), eval(group_name) := paste0('Not in "', group_name,'"')]
+        #}
+        
+        data_plot <- setnames(data_plot[clusters[,.(germplasmDbId=unlist(germplasmDbIds)),cluster],on=.(germplasmDbId)],old = "cluster",new = paste0("cl",clustering_id,"_",unique(rv_plot$clusters$method)))[]
+        
         rv$column_datasource <- rbindlist(
           list(
             rv$column_datasource,
-            data.table(cols = clusters[,unique(group_name)], source = "group", type = "Text", visible = T)
+            #data.table(cols = clusters[,unique(group_name)], source = "group", type = "Text", visible = T)
+            data.table(cols = paste0("cl",clustering_id,"_",unique(rv_plot$clusters$method)) ,  type = "Text", source = "group", visible = T)
+            
           ), 
           use.names = T
         )
