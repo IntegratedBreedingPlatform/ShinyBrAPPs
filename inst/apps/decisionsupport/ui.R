@@ -36,7 +36,7 @@ ui <- fluidPage(
             id = "groups_sidebar",
             position = "right",
             open = F,
-            width = 300,
+            width = 400,
             mod_groups_sidebar_ui("groups_sidebar")
           ),
           selected = "Scatter",

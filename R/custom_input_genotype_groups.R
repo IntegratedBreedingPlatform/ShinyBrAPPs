@@ -27,7 +27,7 @@ group_selector <- function(input_id, group_table, column_datasource, data_plot, 
             class = paste0("panel panel-", panel_style),
             value = paste0("value-",id),
             div(
-              class = "panel-heading d-flex",
+              class = "panel-heading",
               role = "tab",
               id = paste0("heading_", ns(id)),
               tags$input(id = ns(id), type = "checkbox", class = "group_checkbox", group_id = id, value = id),
@@ -40,6 +40,7 @@ group_selector <- function(input_id, group_table, column_datasource, data_plot, 
                   group_table[group_id==id, group_name]
                 )
               ),
+              div(class = "d-flex",
               tags$p(
                 class = "me-auto",
                 paste0(group_table[group_id==id, N], " genotype", ifelse(group_table[group_id==id, N]>1,"s", "")),
@@ -54,7 +55,7 @@ group_selector <- function(input_id, group_table, column_datasource, data_plot, 
                                  ,'")'),
                 style = "color: inherit; text-decoration: none; cursor: grab;",
                 span(class = "copiedNotif", id = paste0("copied-notif-genotype-names-", id), `aria-hidden`="true", "Copied!", style = "display:none;"),
-              )
+              ))
               
               # tags$button(
               #   class = "btn btn-primary", type = "button",
