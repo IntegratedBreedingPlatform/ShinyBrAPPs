@@ -415,7 +415,6 @@ mod_gxe_server <- function(id, rv, parent_session){
         envs <- unique(rv$data_gxe[!is.na(get(input$picker_trait)),.SD,.SDcols = c("studyDbId", input$picker_env_variable)])
         env_choices <- envs[,studyDbId]
         names(env_choices) <- envs[[input$picker_env_variable]]
-        rv$traitName <- rv$observationVariables[observationVariableName==input$picker_trait,trait.traitName]
         updatePickerInput(
           session, "picker_env",
           choices = env_choices,
