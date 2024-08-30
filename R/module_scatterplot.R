@@ -288,18 +288,18 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         # Work around for pickerInputs with option groups that have only one option.
         # The default behaviour is to display only the group name.
         # Work around: naming the group by the singleton element
-        for(k in 1:num_var_choices[,.N]){
-          cols <- num_var_choices[k,cols][[1]]
-          if(length(cols)==1){num_var_choices[k, source := cols]}
-        }
-        for(k in 1:var_choices_SHAPE[,.N]){
-          cols <- var_choices_SHAPE[k,cols][[1]]
-          if(length(cols)==1){var_choices_SHAPE[k, source := cols]}
-        }
-        for(k in 1:var_choices_COLOUR[,.N]){
-          cols <- var_choices_COLOUR[k,cols][[1]]
-          if(length(cols)==1){var_choices_COLOUR[k, source := cols]}
-        }
+        # for(k in 1:num_var_choices[,.N]){
+        #   cols <- num_var_choices[k,cols][[1]]
+        #   if(length(cols)==1){num_var_choices[k, source := cols]}
+        # }
+        # for(k in 1:var_choices_SHAPE[,.N]){
+        #   cols <- var_choices_SHAPE[k,cols][[1]]
+        #   if(length(cols)==1){var_choices_SHAPE[k, source := cols]}
+        # }
+        # for(k in 1:var_choices_COLOUR[,.N]){
+        #   cols <- var_choices_COLOUR[k,cols][[1]]
+        #   if(length(cols)==1){var_choices_COLOUR[k, source := cols]}
+        # }
         
         # default values or reset previously selected values
         if(isTruthy(input$picker_X)){
@@ -322,30 +322,34 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         if(isTruthy(input$picker_SHAPE)){val_picker_SHAPE <- input$picker_SHAPE}
         if(isTruthy(input$picker_COLOUR)){val_picker_COLOUR <- input$picker_COLOUR}
         if(isTruthy(input$picker_SIZE)){val_picker_SIZE <- input$picker_SIZE}
+
+        num_var_choices <- setNames(lapply(num_var_choices$cols, function(x) as.list(x)), num_var_choices$source)
+        var_choices_SHAPE <- setNames(lapply(var_choices_SHAPE$cols, function(x) as.list(x)), var_choices_SHAPE$source)
+        var_choices_COLOUR <- setNames(lapply(var_choices_COLOUR$cols, function(x) as.list(x)), var_choices_COLOUR$source)
         
         updatePickerInput(
           session = session, inputId = "picker_X",
-          choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
+          choices = num_var_choices,
           selected = val_picker_X
         )
         updatePickerInput(
           session = session, inputId = "picker_Y",
-          choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
+          choices = num_var_choices,
           selected = val_picker_Y
         )
         updatePickerInput(
           session = session, inputId = "picker_SIZE",
-          choices = c(no_selection, setNames(num_var_choices[,cols], num_var_choices[,source])),
+          choices = c(no_selection, num_var_choices),
           selected = val_picker_SIZE
         )
         updatePickerInput(
           session = session, inputId = "picker_SHAPE",
-          choices = c(no_selection, setNames(var_choices_SHAPE[,cols], var_choices_SHAPE[,source])),
+          choices = c(no_selection, var_choices_SHAPE),
           selected = val_picker_SHAPE
         )
         updatePickerInput(
           session = session, inputId = "picker_COLOUR",
-          choices = c(no_selection, setNames(var_choices_COLOUR[,cols], var_choices_COLOUR[,source])),
+          choices = c(no_selection, var_choices_COLOUR),
           selected = val_picker_COLOUR
         )
 
