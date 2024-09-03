@@ -29,7 +29,7 @@ Depends:
     brapirv2,
     SpATS,
     shinyWidgets,
-    shinysky,
+    shinybusy,
     shinyBS,
     varhandle,
     ggpubr,
