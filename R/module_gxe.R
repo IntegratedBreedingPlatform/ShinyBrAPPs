@@ -225,6 +225,7 @@ mod_gxe_ui <- function(id){
             pickerInput(ns("GGE_picker_env_select"), label="Plot type 5 - Select an environment", multiple = F, choices = c()),
             pickerInput(ns("GGE_picker_gen_select"), label="Plot type 7&9 - Select a genotype", multiple = F, choices = c()),
             pickerInput(ns("GGE_picker_gen2_select"), label="Plot type 9 - Select a second genotypes", multiple = F, choices = c()),
+            pickerInput(ns("GGE_colorGenoBy"), label="Color genotypes by", choices = "Nothing", selected = "Nothing"),
             shiny::downloadButton(ns("GGE_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
             
           ),
@@ -252,12 +253,13 @@ mod_gxe_ui <- function(id){
                                                                   sliderInput(ns("GGE_plot_size.text.win"), label="plot_size.text.win", value = 4.5, min=1, max=10, step=0.5),
                                                                   sliderInput(ns("GGE_plot_size.line"), label="plot_size.line", value = 0.5, min=0, max=5, step=0.1),
                                                                   sliderInput(ns("GGE_plot_axis_expand"), label="plot_axis_expand", value = 1.2, min=0, max=2, step=0.1),
-                                                                  colorPickr(ns("GGE_plot_col.stroke"), label="plot_col.stroke", selected = "black", theme = "monolith", update = "changestop", opacity = TRUE),
-                                                                  colorPickr(ns("GGE_plot_col.gen"), label="plot_col.gen", selected = "blue", theme = "monolith", update = "changestop", opacity = TRUE),
+                                                                  colorPickr(ns("GGE_plot_col.stroke"), label="plot_col.stroke", selected = "black", theme = "monolith", update = "changestop", opacity = TRUE, interaction = list(cancel=FALSE,clear=FALSE,save=FALSE)),
+                                                                  spectrumInput(ns("GGE_plot_col.gen"), label="plot_col.gen", selected = "blue", update_on = "dragstop", options=list(`show-alpha`=TRUE)),
+                                                                  #colorPickr(ns("GGE_plot_col.gen"), label="plot_col.gen", selected = "blue", theme = "monolith", update = "changestop", opacity = TRUE),
                                                                   colorPickr(ns("GGE_plot_col.env"), label="plot_col.env", selected = "forestgreen", theme = "monolith", update = "changestop", opacity = TRUE),
                                                                   colorPickr(ns("GGE_plot_col.line"), label="plot_col.line", selected = "forestgreen", theme = "monolith", update = "changestop", opacity = TRUE),
                                                                   colorPickr(ns("GGE_plot_col.circle"), label="plot_col.circle", selected = "gray", theme = "monolith", update = "changestop"), opacity = TRUE))
-                                                      
+                                                                  
                                                     )
                              ),
                              bslib::accordion_panel(title = "Analysis summary", 
@@ -394,16 +396,32 @@ mod_gxe_server <- function(id, rv, parent_session){
           )
         }
         
-        colorbychoices <- input$picker_germplasm_attr
-        colorbychoices <- c(colorbychoices,rv$column_datasource[source %in% "group"]$cols)
-        
-        #browser()
+        #colorbychoices <- input$picker_germplasm_attr
+        #colorbychoices <- c(colorbychoices,rv$column_datasource[source %in% "group"]$cols)
+        colorbychoices <- list(Nothing=c("Nothing"))
+        if (nrow(rv$column_datasource[source %in% "group"])>0){
+          colorbychoices <- c(colorbychoices, list(`Groups and clusters`=as.list(rv$column_datasource[source %in% "group"]$cols)))
+        }
+        if (!is.null(input$picker_germplasm_attr)){
+          colorbychoices <- c(colorbychoices, list(`Germplasm attributes`=as.list(input$picker_germplasm_attr)))
+        }
         updatePickerInput(
-          session, "FW_picker_color_by",
-          choices = c("Nothing",colorbychoices, "sensitivity clusters"),
+          session, "AMMI_colorGenoBy",
+          choices = colorbychoices,
           selected = "Nothing"
         )
-        
+        updatePickerInput(
+          session, "GGE_colorGenoBy",
+          choices = colorbychoices,
+          selected = "Nothing"
+        )
+        colorbychoices <- c(colorbychoices, list(`Compute new clusters`=list("sensitivity clusters")))
+        updatePickerInput(
+          session, "FW_picker_color_by",
+          choices = colorbychoices,
+          #choices = c("Nothing",colorbychoices, "sensitivity clusters"),
+          selected = "Nothing"
+        )
       })
       
       ## update env picker when trait is chosen ####

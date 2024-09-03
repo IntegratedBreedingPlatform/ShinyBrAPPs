@@ -242,12 +242,14 @@ mod_scatterplot_server <- function(id, rv, parent_session){
                                                     "plot",
                                                     "germplasm",
                                                     "environment",
-                                                    "Means"),
+                                                    "Means",
+                                                    "group"),
                                            rename=c("Measured variable",
                                                     "Observation units attributes",
                                                     "Germplasm attributes",
                                                     "Environment details",
-                                                    "Means"))
+                                                    "Means",
+                                                    "Groups and clusters"))
         column_datasource <- merge(rv$column_datasource, picker_section_names, by = c("source"), all.x = T)[!is.na(rename), source := rename]
         
         num_var_choices <- column_datasource[type == "Numerical" & visible == T,.(cols = list(cols)), source]
