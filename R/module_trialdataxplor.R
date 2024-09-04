@@ -9,20 +9,21 @@ mod_trialdataxplor_ui <- function(id){
       #use_waiter(),
       #waiter_on_busy(),
       # Sidebar
-                  navbarPage(title = "", id = ns("tabsetId"),
+      
+      bslib::page_navbar(title = "", id = ns("tabsetId"), 
                              #tabsetPanel(#title = "", id = "tabsetId",
-                             tabPanel("Data counts",value="counts",
+                         bslib::nav_panel("Data counts",value="counts",
                                       div(tableOutput(ns("counts_table")), style = "font-size: 75%;")),
-                             tabPanel("Distributions",value="distrib",
+                         bslib::nav_panel("Distributions",value="distrib",
                                       uiOutput(ns("spinning_boxplot"))),
-                             tabPanel("Observations",value="observ",
-                                      
+                         bslib::nav_panel("Observations",value="observ",
+                                          div(style="display: flex;",
                                       div(style="display: inline-block;vertical-align:middle;",selectInput(ns("obs_trait"), label="Variable", choices=NULL)),
                                       #div(style="display: inline-block;vertical-align:middle; width: 10px;",HTML("<br>")),
                                       div(style="display: inline-block;vertical-align:middle;",selectizeInput(ns("obs_study"), label="Single study", choices=NULL, multiple=FALSE)),
                                       div(style="display: inline-block;vertical-align:middle; width: 50px;",HTML("<br>")),
-                                      div(style="display: inline-block;vertical-align:middle;",uiOutput(ns("copy_obs_table"))),
-                                      
+                                      div(style="display: inline-block;vertical-align:middle;",uiOutput(ns("copy_obs_table")))),
+                                          
                                       fluidRow(
                                         #column(
                                         #  5,
@@ -36,8 +37,9 @@ mod_trialdataxplor_ui <- function(id){
                                         div(tableOutput(ns("selected_obs")), style = "font-size: 75%;"))
                                       #)
                              ),
-                             tabPanel("Data check report",value="check",
-                                      downloadButton(ns("download_check"), label = "Download report"),
+                         bslib::nav_panel("Data check report",value="check",
+                                          div(style="display: flex;",
+                                      downloadButton(ns("download_check"), label = "Download report", icon = icon(NULL))),
                                       h3("Studies with no data:"),
                                       div(tableOutput(ns("study_no_dat")), style = "font-size: 75%;"),
                                       h3("Missing variables per study:"),
@@ -47,7 +49,7 @@ mod_trialdataxplor_ui <- function(id){
                                       div(tableOutput(ns("candidat_out")), style = "font-size: 75%;")
                                       
                              ),
-                             tabPanel("Locations map",value="map",
+                         bslib::nav_panel("Locations map",value="map",
                                       leaflet::leafletOutput(outputId = ns("locationmap"), height = 600))
                              
                   )
