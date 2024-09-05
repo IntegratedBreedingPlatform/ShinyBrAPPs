@@ -31,7 +31,7 @@ mod_get_studydata_ui <- function(id){
                     onInitialize = I('function() { this.setValue(""); }')
                   )
                 ),
-                actionButton(ns("go_trial_metadata"), "Show study metadata", css.class = "btn btn-info"),
+                actionButton(ns("go_trial_metadata"), "Show study metadata", class = "btn btn-info"),
                 bsModal(ns("modal_trial_metadata"), "Study Metadata", ns("go_trial_metadata"), size = "large",
                         dataTableOutput(ns("table_trial_metadata")))
               ),
@@ -50,14 +50,14 @@ mod_get_studydata_ui <- function(id){
                 actionButton(
                   inputId = ns("load_env"),
                   label = "Load Selected",
-                  css.class = "btn btn-primary"
+                  class = "btn btn-primary"
                 ),
                 actionButton(
                   inputId = ns("load_all_env"),
                   label = "Load All",
-                  css.class = "btn btn-primary"
+                  class = "btn btn-primary"
                 ),
-                actionButton(ns("go_study_metadata_ui"), "Show Environment Metadata", css.class = "btn btn-info")
+                actionButton(ns("go_study_metadata_ui"), "Show Environment Metadata", class = "btn btn-info")
                 # bsModal(ns("modal_study_metadata"), "Environment Metadata", ns("go_study_metadata"), size = "large",
                 #         dataTableOutput(ns("table_study_metadata")))
               ),

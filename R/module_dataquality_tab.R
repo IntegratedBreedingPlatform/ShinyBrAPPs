@@ -30,7 +30,7 @@ mod_dataquality_ui <- function(id){
       ),
       column(
         1,
-        shiny::actionLink(ns("envXtrait"), label = "Env x Trait", width = "100%", icon = icon("info"), css.class = "btn btn-info"),
+        shiny::actionLink(ns("envXtrait"), label = "Env x Trait", width = "100%", icon = icon("info"), class = "btn btn-info"),
         bsModal(ns("envXtraitModal"), title = "Environment x Trait", trigger = ns("envXtrait"), size = "large", plotOutput(ns("envXtraitViz")))
       )
     ),

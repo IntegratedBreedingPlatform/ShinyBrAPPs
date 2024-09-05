@@ -16,11 +16,11 @@ mod_groups_sidebar_ui <- function(id){
                  #title = span('Options ', icon('screwdriver-wrench')),
                  #width = 12,
                  #h4('Actions ', icon('screwdriver-wrench')),
-                 actionButton(ns("action_groups_plot_creation_params"),label = "Visualize like at group creation", block = T, css.class = paste("btn btn-info", ns("one_group_selected"))),
-                 actionButton(ns("action_groups_union"),label = "Union", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
-                 actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
-                 actionButton(ns("action_groups_complement"),label = "Complement", block = T, css.class = paste("btn btn-info", ns("at_least_one_group_selected"))),
-                 actionButton(ns("action_groups_delete"),label = "Delete", block = T, css.class =paste("btn btn-info", ns("at_least_one_group_selected")))
+                 actionButton(ns("action_groups_plot_creation_params"),label = "Visualize like at group creation", block = T, class = paste("btn btn-info", ns("one_group_selected"))),
+                 actionButton(ns("action_groups_union"),label = "Union", block = T, class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
+                 actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
+                 actionButton(ns("action_groups_complement"),label = "Complement", block = T, class = paste("btn btn-info", ns("at_least_one_group_selected"))),
+                 actionButton(ns("action_groups_delete"),label = "Delete", block = T, class =paste("btn btn-info", ns("at_least_one_group_selected")))
                )
              ),
              bslib::card(
@@ -30,8 +30,8 @@ mod_groups_sidebar_ui <- function(id){
                ),
                bslib::card_body(
                  downloadButton(ns("action_groups_export_group_details"),label = "Export Group Details", class = "btn-block btn-primary"),
-                 actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome"),
-                 actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome")
+                 actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, class = "btn btn-primary", icon = icon("cloud"), icon.library = "font awesome"),
+                 actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, class = "btn btn-primary", icon = icon("cloud"), icon.library = "font awesome")
                )
              )
       )
@@ -194,16 +194,16 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
           easyClose = TRUE,
           footer = tagList(
             modalButton("Cancel"),
-            actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-info")
+            actionButton(ns("go_create_list"), "Create list", class = "btn btn-info")
           )
         ))
       })
       
       # observeEvent(c(input$listDescription, input$listName), {
       #   if(input$listName != "" & input$listDescription != ""){
-      #     output$go_create_list_ui <- renderUI({actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-primary")})
+      #     output$go_create_list_ui <- renderUI({actionButton(ns("go_create_list"), "Create list", class = "btn btn-primary")})
       #   }else{
-      #     output$go_create_list_ui <- renderUI({actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-primary", disabled = "")})
+      #     output$go_create_list_ui <- renderUI({actionButton(ns("go_create_list"), "Create list", class = "btn btn-primary", disabled = "")})
       #   }
       # })
       

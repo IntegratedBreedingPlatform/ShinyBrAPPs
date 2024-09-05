@@ -128,10 +128,10 @@ mod_scatterplot_ui <- function(id){
          fluidRow(
            column(
              12,
-             hidden(actionButton(ns("go_regression"), "Draw Regression", css.class = "btn btn-info", `aria-pressed`="true", icon = "box")),
+             hidden(actionButton(ns("go_regression"), "Draw Regression", class = "btn btn-info", `aria-pressed`="true", icon = icon("box"))),
              uiOutput(ns("ui_clusters"), inline = T),
              span(class = ns("ui_create_group"), style = "display: none;",
-                  actionButton(ns("go_create_group"), "Create Group", css.class = "btn btn-info")
+                  actionButton(ns("go_create_group"), "Create Group", class = "btn btn-info")
              ),
              bsModal(ns("modal_create_group"), "Create Group", NULL, size = "small",
                      uiOutput(ns("modal_create_group_ui")))
@@ -827,7 +827,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
             label = "Cluster germplasms", status = "info", circle = F, inline = T, up = F, width = "500px",
             radioGroupButtons(ns("cluster_algo"), "Alogrithm", choiceNames = c("K-means", "HCA with Ward distance"), choiceValues = c("kmeans", "hca")),
             numericInput(ns("n_clusters"), label = "Number of clusters", min = 1, max = max_k, step = 1, value = min(3, max_k)),
-            actionButton(ns("go_clustering"), "Cluster", css.class = "btn btn-primary"),
+            actionButton(ns("go_clustering"), "Cluster", class = "btn btn-primary"),
             uiOutput(ns("cluster_results"))
           )
         }else{

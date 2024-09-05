@@ -292,7 +292,7 @@ groupModal <- function(rv, parent_session, modal_title, group_description, group
     ),
     footer = tagList(
       modalButton("Cancel"),
-      actionButton(ns("modal_create_group_go"), label = "Create", css.class = "btn btn-info")
+      actionButton(ns("modal_create_group_go"), label = "Create", class = "btn btn-info")
     )
   )
 }
