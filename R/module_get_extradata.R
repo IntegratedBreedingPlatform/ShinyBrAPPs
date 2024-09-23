@@ -96,7 +96,14 @@ mod_get_extradata_server <- function(id, rv){
                 2/2,
                 detail = paste0("GET brapi/v2/search/attributevalues/", searchResultsDbId)
               )
-              germplasm_data <- as.data.table(brapirv2::brapi_get_search_attributevalues_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId)))
+              germplasm_data <- brapirv2::brapi_get_search_attributevalues_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId))
+              if (attr(germplasm_data, "pagination")$totalPages >1){
+                germplasm_data <- rbind(germplasm_data,rbindlist(lapply(2:attr(germplasm_data, "pagination")$totalPages, function(p){
+                  brapirv2::brapi_get_search_attributevalues_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId), page = p-1)
+                })))
+              } else {
+                germplasm_data <- as.data.table(germplasm_data)
+              }
             
               if (nrow(germplasm_data) > 0) {
                 # get attributes datatype
