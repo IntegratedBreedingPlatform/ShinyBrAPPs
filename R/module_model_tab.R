@@ -273,8 +273,7 @@ mod_model_server <- function(id, rv){
         #
         # NB: choices_model_design is defined in inst/apps/stabrapp/config.R
         # For the following code to work, the item order in choices_model_design has to be: "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"
-        
-        data_filt <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs) & (study_name_app %in% input$select_environments)]
+        data_filt <- rv$data_dq[!(observationDbId %in% rv$excluded_obs) & (study_name_app %in% input$select_environments)]
         has_subBlocks <- data_filt[,.N,.(blockNumber)][,.N]>1
         has_repIds <- data_filt[,.N,.(replicate)][,.N]>1
         has_coords <- data_filt[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1
