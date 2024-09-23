@@ -41,21 +41,30 @@ ui <- fluidPage(
             width = 400,
             mod_groups_sidebar_ui("groups_sidebar")
           ),
-          selected = "Scatter",
+          selected = "GxE Analysis",
           #position = "fixed-top",
           bslib::nav_panel(
-            title = "Scatter",
-            mod_scatterplot_ui("scatterplot")
-          ),
-          bslib::nav_panel(
-            title = "GxE",
+            title = "GxE Analysis",
             mod_gxe_ui("gxe")
           ),
-          # bslib::nav_spacer(),
-          # bslib::nav_menu(
-          #   title = "About",
-          #   bslib::nav_item(tags$a(shiny::icon("github"), "ShinyBrAPPs", href = "https://github.com/IntegratedBreedingPlatform/ShinyBrAPPs/", target = "_blank"))
-          # )
+          bslib::nav_panel(
+            title = "Correlate",
+            mod_scatterplot_ui("scatterplot")
+          ),
+          bslib::nav_spacer(),
+          bslib::nav_panel(
+            title = "About",
+            h2(a("github",href="https://github.com/IntegratedBreedingPlatform/ShinyBrAPPs", target="_blank", icon("github")), align="right"),
+            h1("Decision Support BrAPP"),
+            img(src='img/sticker.png', height="10%", width="10%",  align = "right"),
+            p("description"),
+            h2("Contributors"),
+            p("Jean-François Rami (Maintainer) - rami 'at' cirad.fr"),
+            p("Alice Boizet (Author) - alice.boizet 'at' cirad.fr"),
+            p("Léo Valette (Author)"),
+            p("Mariano Crimi (Author)"),
+            img(src='img/ibpcirad.png', height="15%", width="15%",  align = "left")
+          )
         )
       )
   ),
