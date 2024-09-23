@@ -713,8 +713,8 @@ mod_model_server <- function(id, rv){
         req(input$select_trait_outliers)
         req(rv$fitextr)
         #browser()
-        #stdResR <- as.data.table(extractSTA(STA = rv$fit, traits = input$select_trait_outliers, what = "stdResR"))
-        stdResR <- rbindlist(Map(function(a, n) data.table(n,a$stdResR[,c("genotype", "repId", input$select_trait_outliers)]),rv$fitextr,names(rv$fitextr)))
+        stdResR <- as.data.table(extractSTA(STA = rv$fit, traits = input$select_trait_outliers, what = "stdResR"))
+        #stdResR <- rbindlist(Map(function(a, n) data.table(n,a$stdResR[,c("genotype", "repId", input$select_trait_outliers)]),rv$fitextr,names(rv$fitextr)))
         res_q <- quantile(abs(stdResR[[input$select_trait_outliers]]), probs = seq(0,1,0.01), na.rm = T)
         updateSliderInput(
           session = session, "limit_residual",
