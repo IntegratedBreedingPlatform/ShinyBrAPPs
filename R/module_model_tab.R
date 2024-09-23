@@ -249,7 +249,6 @@ mod_model_server <- function(id, rv){
               }
             }
           }
-
           updatePickerInput(
             session, "select_traits",
             choices = choices_traits,
@@ -547,6 +546,7 @@ mod_model_server <- function(id, rv){
               spatial = ifelse(input$model_engine=="SpATS", input$spatial_opt, F),
               control = cntrl
             )
+            rv$fitextr <- extractSTA(rv$fit)
           },
           error=function(e){ e })
         mess <- a$message
@@ -711,8 +711,10 @@ mod_model_server <- function(id, rv){
       observeEvent(input$select_trait_outliers,{
         req(rv$fit)
         req(input$select_trait_outliers)
-
-        stdResR <- as.data.table(extractSTA(STA = rv$fit, traits = input$select_trait_outliers, what = "stdResR"))
+        req(rv$fitextr)
+        #browser()
+        #stdResR <- as.data.table(extractSTA(STA = rv$fit, traits = input$select_trait_outliers, what = "stdResR"))
+        stdResR <- rbindlist(Map(function(a, n) data.table(n,a$stdResR[,c("genotype", "repId", input$select_trait_outliers)]),rv$fitextr,names(rv$fitextr)))
         res_q <- quantile(abs(stdResR[[input$select_trait_outliers]]), probs = seq(0,1,0.01), na.rm = T)
         updateSliderInput(
           session = session, "limit_residual",
@@ -725,7 +727,7 @@ mod_model_server <- function(id, rv){
         req(rv$fit)
         req(input$select_trait_outliers)
         req(input$limit_residual>0)
-
+        #browser()
         # outliers on all traits (used to get number of outliers for each observationUnit)
         outliersSTA_all <- outlierSTA(
           rv$fit,
@@ -822,39 +824,43 @@ mod_model_server <- function(id, rv){
       ### Metrics
       output$metrics_A_table <- renderDT({
         req(rv$fit)
+        req(rv$fitextr)
 
         ## heritability
-        heritability <- as.data.table(extractSTA(STA = rv$fit, what = "heritability"))
-
+        #heritability <- as.data.table(extractSTA(STA = rv$fit, what = "heritability"))
+        #browser()
+        allex <- rv$fitextr
         if(rv_mod$model_engine%in%c("lme4")){
-          ## CV
-          cv <- as.data.table(extractSTA(STA = rv$fit, what = "CV"))
-
-          ## wald test
-          wald_raw <- extractSTA(STA = rv$fit, what = "wald")
-          wald <- rbindlist(lapply(names(wald_raw), function(env){
-            data.table(
-              trial = env,
-              rbindlist(lapply(names(wald_raw[[env]]$wald), function(trait){
-                data.table(
-                  trait = trait,
-                  wald_raw[[env]]$wald[[trait]]
-                )
-              }))
-            )
-          }))
-
-          cv_melt <- melt(cv, id.vars = "trial", variable.name = "trait", value.name = "CV")
-          heritability_melt <- melt(heritability, id.vars = "trial", variable.name = "trait", value.name = "Heritability")
-
-          metrics <- heritability_melt[cv_melt, on = .(trial, trait)][wald[,.(trial, trait, "Wald p.value" = p.value)], on = .(trial, trait)]
-
+          ### CV
+          #cv <- as.data.table(extractSTA(STA = rv$fit, what = "CV"))
+#
+          ### wald test
+          #wald_raw <- extractSTA(STA = rv$fit, what = "wald")
+          #wald <- rbindlist(lapply(names(wald_raw), function(env){
+          #  data.table(
+          #    trial = env,
+          #    rbindlist(lapply(names(wald_raw[[env]]$wald), function(trait){
+          #      data.table(
+          #        trait = trait,
+          #        wald_raw[[env]]$wald[[trait]]
+          #      )
+          #    }))
+          #  )
+          #}))
+#
+          #cv_melt <- melt(cv, id.vars = "trial", variable.name = "trait", value.name = "CV")
+          #heritability_melt <- melt(heritability, id.vars = "trial", variable.name = "trait", value.name = "Heritability")
+#
+          #metrics <- heritability_melt[cv_melt, on = .(trial, trait)][wald[,.(trial, trait, "Wald p.value" = p.value)], on = .(trial, trait)]
+          metrics <- rbindlist(Map(function(f,t) data.table(Environment=t,Trait=names(f$heritability),Heritability=f$heritability, CV=f$CV, `Wald p.value`=unlist(lapply(f$wald,function(a) a$`p.value`))),allex, names(allex)))
+          
         }else{
-          metrics <- melt(heritability, id.vars = "trial", variable.name = "trait", value.name = "Heritability")
+          metrics <- rbindlist(Map(function(f,t) data.table(Environment=t,Trait=names(f$heritability),Heritability=f$heritability),allex, names(allex)))
+          
+          #metrics <- melt(heritability, id.vars = "trial", variable.name = "trait", value.name = "Heritability")
         }
-        setnames(metrics, "trial", "Environment")
-        setnames(metrics, "trait", "Trait")
-
+        #setnames(metrics, "trial", "Environment")
+        #setnames(metrics, "trait", "Trait")
         rv_mod$metrics_A <- metrics
 
         setkey(metrics, "Environment")
@@ -882,15 +888,19 @@ mod_model_server <- function(id, rv){
         req(rv$fit)
         req(input$select_metrics_B)
         req(input$select_environment_metrics)
-
-        metrics_table <- as.data.table(extractSTA(STA = rv$fit, what = input$select_metrics_B))
+        req(rv$fitextr)
+        #browser()
+        #metrics_table <- as.data.table(extractSTA(STA = rv$fit, what = input$select_metrics_B))
+        metrics_table <- as.data.table(rv$fitextr[[input$select_environment_metrics]][[input$select_metrics_B]])
+        
         entry_types <- unique(rv$data_dq[,.(genotype=germplasmName, entryType)])
         setkey(metrics_table, genotype)
         setkey(entry_types, genotype)
         metrics_table <- entry_types[metrics_table]
-        setnames(metrics_table, "trial", "environment")
+        #setnames(metrics_table, "trial", "environment")
 
-        metrics_table_filt <- metrics_table[environment==input$select_environment_metrics, -c("environment"), with = F]
+        #metrics_table_filt <- metrics_table[environment==input$select_environment_metrics, -c("environment"), with = F]
+        metrics_table_filt <- metrics_table
         rv_mod$metrics_B <- metrics_table_filt
         
         # selected_rows <- input$metrics_A_table_rows_selected
@@ -1035,7 +1045,6 @@ mod_model_server <- function(id, rv){
         tryCatch({
           #Get all BLUEs/BLUPs data
           table_metrics <- extract_all_BLUEs_BLUPs()
-          
           #filter traits and env to push
           if (!is.null(input$metrics_A_table_rows_selected)) {
             selected_rows <- input$metrics_A_table_rows_selected
