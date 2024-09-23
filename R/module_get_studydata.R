@@ -72,7 +72,7 @@ mod_get_studydata_ui <- function(id){
       ),
       div(
         id = ns("get_studydata_by_url"), style = "float:right",
-        shiny::actionButton(ns("go_study_metadata_url"), "Show Environment Metadata")
+        #shiny::actionButton(ns("go_study_metadata_url"), "Show Environment Metadata")
       )
     ),
     # bsModal(ns("modal_study_metadata"), "Environment Metadata", ns("go_study_metadata_ui"), size = "large",
@@ -358,18 +358,18 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           ))
       })
 
-      observeEvent(input$go_study_metadata_url, {
-        showModal(
-          modalDialog(
-            title = "Environments metadata",
-            fade = F,
-            uiOutput(ns("tables_study_metadata")),
-            footer = tagList(
-              modalButton("Close")
-            )
-          )
-        )
-      })
+      #observeEvent(input$go_study_metadata_url, {
+      #  showModal(
+      #    modalDialog(
+      #      title = "Environments metadata",
+      #      fade = F,
+      #      uiOutput(ns("tables_study_metadata")),
+      #      footer = tagList(
+      #        modalButton("Close")
+      #      )
+      #    )
+      #  )
+      #})
 
       output$tables_study_metadata <- renderUI({
         req(rv$study_metadata)
