@@ -950,6 +950,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         rv$TDFW
       }, handlerExpr = {
         req(rv$TDFW)
+        req(input$FW_cluster_sensitivity_nb, input$FW_picker_cluster_on)
         #browser()
         if (input$FW_picker_color_by=="sensitivity clusters"){
           sensclust <- data.table(rv$TDFW$estimates)
