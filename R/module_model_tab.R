@@ -111,11 +111,11 @@ mod_model_ui <- function(id){
                 pickerInput(
                   ns("select_trait_outliers"),"Trait", multiple = F, choices = NULL, width = "100%"
                 )
-              ),
-              column(
-                4,
-                sliderInput(ns("limit_residual"), label = "Threshold for standardized residuals", min = 0, max = 0, value = 0, width = "100%")
-              )
+              )#,
+              #column(
+              #  4,
+              #  sliderInput(ns("limit_residual"), label = "Threshold for standardized residuals", min = 0, max = 0, value = 0, width = "100%")
+              #)
             ),
             fluidRow(
               column(
@@ -534,6 +534,7 @@ mod_model_server <- function(id, rv){
         
         ### fit TD
         a <- tryCatch({
+          withProgress(message = "Fitting model", min=1, max=1, {
             rv$fit <- fitTD(
               TD = rv_mod$TD,
               trials = input$select_environments,
@@ -545,8 +546,15 @@ mod_model_server <- function(id, rv){
               # useCheckId = FALSE,
               spatial = ifelse(input$model_engine=="SpATS", input$spatial_opt, F),
               control = cntrl
-            )
+            )})
+          withProgress(message = "Extracting statistics from fitted models", min=1, max=1,{ 
             rv$fitextr <- extractSTA(rv$fit)
+          })
+          withProgress(message = "Looking for outliers", min=1, max=1,{
+            rv$outliers <-  outlierSTA(rv$fit, 
+                                       what = "random",
+                                       commonFactors = "genotype")
+          })
           },
           error=function(e){ e })
         mess <- a$message
@@ -613,68 +621,31 @@ mod_model_server <- function(id, rv){
         req(input$select_environment_fit)
         req(input$select_trait_fit)
         req(rv$fit)
-
-        output$fit_summary <- renderPrint({
-          # s_all <- summary(
-          #   rv$fit,
-          #   trait = input$select_trait_fit,
-          #   trials = input$select_environment_fit
-          # )
-          s <- lapply(input$select_environment_fit, function(env){
-            summary(
-              rv$fit,
-              trait = input$select_trait_fit,
-              trials = env
-            )
-          })
-          names(s) <- input$select_environment_fit
-          # s["all environments"] <- s_all
-          s
-        })
-
-        output$fit_residuals <- renderPlot({
-          req(rv$fit)
-          req(input$select_environment_fit)
-          plots_envs <- lapply(input$select_environment_fit, function(trial){
-            plot(
-              rv$fit,
-              trait = input$select_trait_fit,
-              trials = trial,
-              output = F
-              # output = F,
-              # what = c("random","fixed")[c(
-              #   !is.null(rv$fit[[trial]]$mRand),
-              #   !is.null(rv$fit[[trial]]$mFixed)
-              # )]
-            )
-          })
-
-          plot_envs <- lapply(1:length(input$select_environment_fit), function(k){
-            do.call("arrangeGrob",
-                    c(
-                      plots_envs[[k]][[input$select_environment_fit[k]]][[input$select_trait_fit]],
-                      ncol=2,
-                      top = paste0("Trial: ", input$select_environment_fit[k],
-                                   "\nTrait: ", input$select_trait_fit)
-                    )
-            )
-          })
-          plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
-          plot(plot_multi_env)
-        },
-        height=length(input$select_environment_fit)*500
-        )
-
-        output$fit_spatial <- renderPlot({
-          req(rv$fit)
-          isolate(req(rv_mod$data_checks$has_coords))
-          req(input$select_environment_fit)
-          plots_envs <- lapply(input$select_environment_fit, function(trial){
-            if(rv$data_dq[observationVariableName == input$select_trait_fit & study_name_app == trial,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
-              p <- plot(
+          output$fit_summary <- renderPrint({
+            # s_all <- summary(
+            #   rv$fit,
+            #   trait = input$select_trait_fit,
+            #   trials = input$select_environment_fit
+            # )
+            s <- lapply(input$select_environment_fit, function(env){
+              summary(
                 rv$fit,
-                plotType = "spatial",
                 trait = input$select_trait_fit,
+                trials = env
+              )
+            })
+            names(s) <- input$select_environment_fit
+            # s["all environments"] <- s_all
+            s
+          })
+          #browser()
+          output$fit_residuals <- renderPlot({
+            req(rv$fit)
+            req(input$select_environment_fit)
+            plots_envs <- lapply(input$select_environment_fit, function(trial){
+              plot(
+                rv$fit,
+                traits = input$select_trait_fit,
                 trials = trial,
                 output = F
                 # output = F,
@@ -683,60 +654,74 @@ mod_model_server <- function(id, rv){
                 #   !is.null(rv$fit[[trial]]$mFixed)
                 # )]
               )
-              p
-            }else{
-              a_STATgen_like_list <- list()
-              a_STATgen_like_list[[trial]][[input$select_trait_fit]][["p1"]] <- ggplot() + geom_text(aes(x = 0, y = 0), label = "no spatial data") + theme_void()
-              a_STATgen_like_list
-            }
-          })
-          plot_envs <- lapply(1:length(input$select_environment_fit), function(k){
-            do.call("arrangeGrob",
-                    c(
-                      plots_envs[[k]][[input$select_environment_fit[k]]][[input$select_trait_fit]],
-                      ncol=2,
-                      top = paste0("Trial: ", input$select_environment_fit[k],
-                                   "\nTrait: ", input$select_trait_fit)
-                    )
-            )
-          })
-          plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
-          plot(plot_multi_env)
-        },
-        height=length(input$select_environment_fit)*500
-        )
+            })
+            
+            plot_envs <- lapply(1:length(input$select_environment_fit), function(k){
+              do.call("arrangeGrob",
+                      c(
+                        plots_envs[[k]][[input$select_environment_fit[k]]][[input$select_trait_fit]],
+                        ncol=2,
+                        top = paste0("Trial: ", input$select_environment_fit[k],
+                                     "\nTrait: ", input$select_trait_fit)
+                      )
+              )
+            })
+            plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
+            plot(plot_multi_env)
+          },
+          height=length(input$select_environment_fit)*500
+          )
+          
+          output$fit_spatial <- renderPlot({
+            req(rv$fit)
+            isolate(req(rv_mod$data_checks$has_coords))
+            req(input$select_environment_fit)
+            plots_envs <- lapply(input$select_environment_fit, function(trial){
+              if(rv$data_dq[observationVariableName == input$select_trait_fit & study_name_app == trial,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
+                p <- plot(
+                  rv$fit,
+                  plotType = "spatial",
+                  traits = input$select_trait_fit,
+                  trials = trial,
+                  output = F
+                  # output = F,
+                  # what = c("random","fixed")[c(
+                  #   !is.null(rv$fit[[trial]]$mRand),
+                  #   !is.null(rv$fit[[trial]]$mFixed)
+                  # )]
+                )
+                p
+              }else{
+                a_STATgen_like_list <- list()
+                a_STATgen_like_list[[trial]][[input$select_trait_fit]][["p1"]] <- ggplot() + geom_text(aes(x = 0, y = 0), label = "no spatial data") + theme_void()
+                a_STATgen_like_list
+              }
+            })
+            plot_envs <- lapply(1:length(input$select_environment_fit), function(k){
+              do.call("arrangeGrob",
+                      c(
+                        plots_envs[[k]][[input$select_environment_fit[k]]][[input$select_trait_fit]],
+                        ncol=2,
+                        top = paste0("Trial: ", input$select_environment_fit[k],
+                                     "\nTrait: ", input$select_trait_fit)
+                      )
+              )
+            })
+            plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
+            plot(plot_multi_env)
+          },
+          height=length(input$select_environment_fit)*500
+          )          
+
       })
 
       ### Outliers
-      observeEvent(input$select_trait_outliers,{
-        req(rv$fit)
-        req(input$select_trait_outliers)
-        req(rv$fitextr)
-        #browser()
-        stdResR <- as.data.table(extractSTA(STA = rv$fit, traits = input$select_trait_outliers, what = "stdResR"))
-        #stdResR <- rbindlist(Map(function(a, n) data.table(n,a$stdResR[,c("genotype", "repId", input$select_trait_outliers)]),rv$fitextr,names(rv$fitextr)))
-        res_q <- quantile(abs(stdResR[[input$select_trait_outliers]]), probs = seq(0,1,0.01), na.rm = T)
-        updateSliderInput(
-          session = session, "limit_residual",
-          max = as.numeric(res_q[101]),
-          value = as.numeric(res_q[100]) # by default, the 1% extreme residuals are returned
-        )
-      })
-      
+
       output$table_outliers <- renderDataTable({
         req(rv$fit)
         req(input$select_trait_outliers)
-        req(input$limit_residual>0)
-        #browser()
-        # outliers on all traits (used to get number of outliers for each observationUnit)
-        outliersSTA_all <- outlierSTA(
-          rv$fit,
-          what = "random",
-          rLimit = input$limit_residual,
-          commonFactors = "genotype",
-          verbose = F
-        )
-        outliers_all <- as.data.table(outliersSTA_all$outliers)
+        req(rv$outliers)
+        outliers_all <- as.data.table(rv$outliers$outliers) #as.data.table(outliersSTA_all$outliers)
         validate(need(outliers_all[,.N]>0 , "No outlier on this trait"))
         
         # outliers for the selected trait
@@ -792,8 +777,8 @@ mod_model_server <- function(id, rv){
         genotype_col_index = which(colnames(outliers) == "genotype") - 1
         env_col_index = which(colnames(outliers) == "environment") - 1
         outlier_col_index = which(colnames(outliers) == "outlier") - 1
-        
-        datatable(
+        dec_cols <- names(which(apply(data.frame(outliers)[,which(!apply(outliers,2,function(a) all(is.na(as.numeric(a)))))],2,function(a) sum(abs(round(as.numeric(a),0)-as.numeric(a)),na.rm = T))>0))
+        formatRound(datatable(
           outliers,
           rownames = F,
           options = list(
@@ -818,7 +803,7 @@ mod_model_server <- function(id, rv){
               )
             )
           )
-        )
+        ),digits = 2, columns = dec_cols)
       })
 
       ### Metrics
@@ -827,44 +812,19 @@ mod_model_server <- function(id, rv){
         req(rv$fitextr)
 
         ## heritability
-        #heritability <- as.data.table(extractSTA(STA = rv$fit, what = "heritability"))
-        #browser()
         allex <- rv$fitextr
         if(rv_mod$model_engine%in%c("lme4")){
           ### CV
-          #cv <- as.data.table(extractSTA(STA = rv$fit, what = "CV"))
-#
-          ### wald test
-          #wald_raw <- extractSTA(STA = rv$fit, what = "wald")
-          #wald <- rbindlist(lapply(names(wald_raw), function(env){
-          #  data.table(
-          #    trial = env,
-          #    rbindlist(lapply(names(wald_raw[[env]]$wald), function(trait){
-          #      data.table(
-          #        trait = trait,
-          #        wald_raw[[env]]$wald[[trait]]
-          #      )
-          #    }))
-          #  )
-          #}))
-#
-          #cv_melt <- melt(cv, id.vars = "trial", variable.name = "trait", value.name = "CV")
-          #heritability_melt <- melt(heritability, id.vars = "trial", variable.name = "trait", value.name = "Heritability")
-#
-          #metrics <- heritability_melt[cv_melt, on = .(trial, trait)][wald[,.(trial, trait, "Wald p.value" = p.value)], on = .(trial, trait)]
           metrics <- rbindlist(Map(function(f,t) data.table(Environment=t,Trait=names(f$heritability),Heritability=f$heritability, CV=f$CV, `Wald p.value`=unlist(lapply(f$wald,function(a) a$`p.value`))),allex, names(allex)))
           
         }else{
           metrics <- rbindlist(Map(function(f,t) data.table(Environment=t,Trait=names(f$heritability),Heritability=f$heritability),allex, names(allex)))
           
-          #metrics <- melt(heritability, id.vars = "trial", variable.name = "trait", value.name = "Heritability")
         }
-        #setnames(metrics, "trial", "Environment")
-        #setnames(metrics, "trait", "Trait")
         rv_mod$metrics_A <- metrics
 
         setkey(metrics, "Environment")
-        dtable <- datatable(
+        dtable <- formatRound(datatable(
           metrics,
           rownames = F,
           options = list(
@@ -874,7 +834,7 @@ mod_model_server <- function(id, rv){
             scrollCollapse = T,
             dom = 't',
             rowsGroup = as.list(c(0))
-          ))
+          )),columns=c("Heritability", "CV", "Wald p.value"), digits=2)
         path <- "www/js/datatables-rowsgroup/"
         dep <- htmltools::htmlDependency(
           "RowsGroup", "2.0.0",
@@ -911,8 +871,7 @@ mod_model_server <- function(id, rv){
         # selected <- match(traits, colnames(metrics_table_filt)) - 1
         # print("selected columns: ")
         # print(selected)
-
-        dtable <- datatable(
+        dtable <- formatRound(datatable(
           metrics_table_filt,
           rownames = F,
           options = list(
@@ -923,7 +882,8 @@ mod_model_server <- function(id, rv){
             dom = 't'
           ),
           #selection = list(mode = 'multiple', selected = selected, target = 'column', selectable = T)
-        )
+        ), columns = colnames(metrics_table_filt)[!colnames(metrics_table_filt)%in%c("genotype","entryType")],
+        digits = 2)
         path <- "www/js/datatables-rowsgroup/"
         dep <- htmltools::htmlDependency(
           "RowsGroup", "2.0.0",
