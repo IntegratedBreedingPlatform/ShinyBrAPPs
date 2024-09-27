@@ -3,6 +3,7 @@
 mod_gxe_ui <- function(id){
   ns <- NS(id)
   tagList(
+    rclipboard::rclipboardSetup(),
     shinyjs::useShinyjs(),
     chooseSliderSkin("Flat", color = "#1b95b2"),
     bslib::navset_tab(
@@ -324,7 +325,57 @@ mod_gxe_ui <- function(id){
             )
           )
         )
+      ),
+      bslib::nav_panel(
+        ## Stability panel ####
+        title = "Stability",
+        bslib::layout_sidebar(
+          ### Sidebar ####
+          sidebar=bslib::sidebar(
+            width = 350,
+            pickerInput(ns("STAB_plots_colorby"),"Color Genotypes by", choices = c())),
+        bslib::accordion(id = ns("STAB_accordsup"),
+                         bslib::accordion_panel(title = "Superiority measure of Lin and Binns",
+                                                bslib::layout_columns(
+                                                  bslib::card(
+                                                    dataTableOutput(ns("STAB_sup")),
+                                                    uiOutput(ns("copy_STABsup_table"))
+                                                  ),
+                                                  bslib::card(
+                                                    plotlyOutput(ns("STAB_sup_plot"))                                                  )
+                                                )
+                                                ),
+                         bslib::accordion_panel(title = "Shukla's stability variance",
+                                                bslib::layout_columns(
+                                                  bslib::card(
+                                                    dataTableOutput(ns("STAB_static")),
+                                                    uiOutput(ns("copy_STABstatic_table"))
+                                                  ),
+                                                  bslib::card(
+                                                    plotlyOutput(ns("STAB_static_plot"))
+                                                  )
+                                                )
+                         ),
+                         bslib::accordion_panel(title = "Wricke's ecovalence",
+                                                bslib::layout_columns(
+                                                  bslib::card(
+                                                    dataTableOutput(ns("STAB_wricke")),
+                                                    uiOutput(ns("copy_STABwricke_table"))
+                                                  ),
+                                                  bslib::card(
+                                                    plotlyOutput(ns("STAB_wricke_plot"))
+                                                  )
+                                                )
+                         )
+        )
+        )),
+      bslib::nav_panel(
+        ## Mega-env panel ####
+        title = "Mega-envs",
+        bslib::layout_sidebar(
+        )
       )
+      
     )
   )
 }
@@ -412,6 +463,11 @@ mod_gxe_server <- function(id, rv, parent_session){
         )
         updatePickerInput(
           session, "GGE_colorGenoBy",
+          choices = colorbychoices,
+          selected = "Nothing"
+        )
+        updatePickerInput(
+          session, "STAB_plots_colorby",
           choices = colorbychoices,
           selected = "Nothing"
         )
@@ -1282,6 +1338,71 @@ mod_gxe_server <- function(id, rv, parent_session){
                                         title = switch((input$AMMI_plot_title=="")+1,  input$AMMI_plot_title, NULL))
           }
         print(p)
+        })
+      })
+    ## Stability ####
+      ### Run Stab ####
+      observe({
+        req(rv$TD)
+       # browser()
+        rv$TDStab <- tryCatch(statgenGxE::gxeStability(TD = rv$TD,
+                                                        trait = input$picker_trait), error=function(e) e)
+        output$STAB_sup <- renderDataTable({
+            formatRound(datatable(rv$TDStab$superiority, rownames = FALSE),
+                        columns = c("Mean", "Superiority"), 
+                        digits=3)
+        })
+        output$STAB_sup_plot <- renderPlotly({
+          ggplotly(ggplot(rv$TDStab$superiority) + 
+                     geom_point(aes(x=Mean, y= sqrt(Superiority), text = Genotype)) +
+                     ylab("Square root of superiority"), source="STAB_sup_plot")
+        })
+        output$STAB_static <- renderDataTable({
+          formatRound(datatable(rv$TDStab$static, rownames = FALSE),
+                                columns = c("Mean", "Static"), 
+                                digits=3)
+        })
+        output$STAB_static_plot <- renderPlotly({
+          ggplotly(ggplot(rv$TDStab$static) + 
+                     geom_point(aes(x=Mean, y= sqrt(Static), text = Genotype)) +
+                     ylab("Square root of Static stability"), source="STAB_static_plot")
+        })
+        
+        output$STAB_wricke <- renderDataTable({
+          formatRound(datatable(rv$TDStab$wricke, rownames = FALSE),
+                                columns = c("Mean", "Wricke"), 
+                                digits=3)
+        })
+        output$STAB_wricke_plot <- renderPlotly({
+          ggplotly(ggplot(rv$TDStab$wricke) + 
+                     geom_point(aes(x=Mean, y= sqrt(Wricke), text = Genotype)) +
+                     ylab("Square root of Wricke ecovalence"), source="STAB_wricke_plot")
+        })
+        
+      })
+      
+      observe({
+        req(nrow(rv$TDStab$superiority)>0)
+        output$copy_STABsup_table <- renderUI({
+          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv$TDStab$superiority),collapse="\t"),
+                                                                          paste(apply(rv$TDStab$superiority,1,paste,collapse="\t"),collapse = "\n"),
+                                                                          sep="\n"))#, shiny::icon("clipboard"))
+        })
+      })
+      observe({
+        req(nrow(rv$TDStab$static)>0)
+        output$copy_STABstatic_table <- renderUI({
+          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv$TDStab$static),collapse="\t"),
+                                                                          paste(apply(rv$TDStab$static,1,paste,collapse="\t"),collapse = "\n"),
+                                                                          sep="\n"))#, shiny::icon("clipboard"))
+        })
+      })
+      observe({
+        req(nrow(rv$TDStab$wricke)>0)
+        output$copy_STABwricke_table <- renderUI({
+          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv$TDStab$wricke),collapse="\t"),
+                                                                          paste(apply(rv$TDStab$wricke,1,paste,collapse="\t"),collapse = "\n"),
+                                                                          sep="\n"))#, shiny::icon("clipboard"))
         })
       })
     ## MM Report ####
