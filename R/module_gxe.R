@@ -290,7 +290,7 @@ mod_gxe_ui <- function(id){
             pickerInput(ns("AMMI_primAxis"), label="Primary axis", choices = c()),
             pickerInput(ns("AMMI_secAxis"), label="Second axis", choices = c()),
             materialSwitch(ns("AMMI_plotGeno"), "Plot genotypes", value = TRUE, status = "info"),
-            sliderInput(ns("AMMI_scale"), label = "scale", min = 0, max = 1, value = 1, step=0.1),
+            sliderInput(ns("AMMI_scale"), label = "scale", min = 0, max = 1, value = 0.5, step=0.1),
             materialSwitch(ns("AMMI_plotConvHull"), "Plot convex hull around the genotypes", value = FALSE, status = "info"),
             pickerInput(ns("AMMI_colorGenoBy"), label="Color genotypes by", choices = "Nothing", selected = "Nothing"),
             pickerInput(ns("AMMI_colorEnvBy"), label="Color environments by", choices = c()),
