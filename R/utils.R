@@ -16,47 +16,130 @@ select_from_layout <- function(d, input_click = NULL, input_brush = NULL){
         (positionCoordinateX-int_x/2>=input_brush$xmin) &
         (positionCoordinateY+int_y/2<=input_brush$ymax) &
         (positionCoordinateY-int_y/2>=input_brush$ymin),
-      observations.observationDbId
+      observationDbId
     ]
     return(obs)
   }else if(!is.null(input_click)){
     obs <- d[
       (abs(input_click$x-positionCoordinateX)<=int_x/2) & (abs(input_click$y-positionCoordinateY)<=int_y/2),
-      observations.observationDbId
+      observationDbId
     ]
     return(obs)
   }
 
 }
 
-#' @export
-get_env_data <- function(con, studyDbId, env_number, loc_name, loc_name_abbrev, stu_name_app, stu_name_abbrev_app){
-  study <- data.table()
-  try({
-    study <- as.data.table(brapirv1::brapi_get_studies_studyDbId_observationunits(con = con, studyDbId = studyDbId))
-    variables <- as.data.table(brapirv2::brapi_get_variables(con = con, studyDbId = studyDbId))
-    variables <- variables[,.(observationVariableDbId, scale.dataType)] 
-    if (any(colnames(study)=="observations.observationVariableDbId")){
-      study <- merge(study,variables, by.x = "observations.observationVariableDbId", by.y = "observationVariableDbId")
-    }
-    
-    if(!("observations.value"%in%names(study))){
-      study[,observations.value:=NA]
-    }
-    
-    study[, locationName:=loc_name]
 
-    study[,study_name_BMS := paste0(
-      env_number, "-",
-      loc_name
-    )]
-    study[,environment_number := env_number]
-    study[,location_name := loc_name]
-    study[,location_abbrev := loc_name_abbrev]
-    study[,study_name_app := stu_name_app]
-    study[,study_name_abbrev_app := stu_name_abbrev_app]
+#' @param con brapi_connection
+#' @param studyDbId 
+#' @param env_number 
+#' @param loc_name 
+#' @param loc_name_abbrev 
+#' @param stu_name_app 
+#' @param stu_name_abbrev_app 
+#' @param obs_unit_level can be a vector, e.g. c('PLOT', 'REP')
+#'
+#' @export
+get_env_data <- function(con = NULL, 
+                         studyDbId = NULL, 
+                         env_number = NULL, 
+                         loc_name = NULL, 
+                         loc_name_abbrev = NULL, 
+                         stu_name_app = NULL, 
+                         stu_name_abbrev_app = NULL, 
+                         obs_unit_level = NULL){
+
+  try({
+    if (is.null(obs_unit_level)) {
+      res <- brapirv2::brapi_post_search_observationunits(
+        con = con, 
+        studyDbIds = studyDbId,
+        includeObservations = T)
+    } else {
+      obs_levels <- data.frame(levelName = obs_unit_level)
+      res <- brapirv2::brapi_post_search_observationunits(
+        con = con, 
+        studyDbIds = studyDbId,
+        observationLevels = obs_levels,
+        includeObservations = T)
+    }
+    study_obs <- as.data.table(brapirv2::brapi_get_search_observationunits_searchResultsDbId(con, as.character(res)))
+
+    if (!"observations.observationDbId" %in% colnames(study_obs)) {
+      study_obs <- NULL
+    } else {
+      
+      #to manage the case when we get MEANS and PLOTS
+      if ("observationUnitPosition.observationLevelRelationships.levelCode" %in% names(study_obs)) {
+        study_obs[, levelCode := `observationUnitPosition.observationLevelRelationships.levelCode`]
+      } else {
+        study_obs[, levelCode := NA]
+      }
+      if ("observationUnitPosition.observationLevelRelationships.levelName" %in% names(study_obs)) {
+        study_obs[, levelName := `observationUnitPosition.observationLevelRelationships.levelName`]
+      } else {
+        study_obs[, levelName := NA]
+      }
+      
+      study_obs <- study_obs[, .(
+        observationUnitDbId,
+        observationUnitName,
+        germplasmDbId, 
+        germplasmName, 
+        studyDbId, 
+        studyName, 
+        programDbId, 
+        programName, 
+        locationDbId, 
+        locationName, 
+        trialDbId, 
+        trialName,
+        observationDbId = `observations.observationDbId`,
+        observationLevel = `observationUnitPosition.observationLevel.levelName`, 
+        observationLevelCode = `observationUnitPosition.observationLevel.levelCode`, 
+        entryType = `observationUnitPosition.entryType`,
+        entryNumber = `additionalInfo.ENTRY_NO`,
+        levelCode,
+        levelName,
+        positionCoordinateX = `observationUnitPosition.positionCoordinateX`,
+        positionCoordinateY = `observationUnitPosition.positionCoordinateY`,
+        observationTimeStamp = `observations.observationTimeStamp`, 
+        observationVariableDbId = `observations.observationVariableDbId`, 
+        observationVariableName = `observations.observationVariableName`, 
+        observationValue = `observations.value`
+      )]
+      
+      grouping_cols <- setdiff(names(study_obs), c("levelCode", "levelName"))
+      
+      study_obs <- study_obs[, .(plotNumber = levelCode[levelName == "PLOT"],
+                                 replicate = levelCode[levelName == "REP"],
+                                 blockNumber = levelCode[levelName == "BLOCK"]),
+                             by = grouping_cols]
+      
+      variables <- as.data.table(brapirv2::brapi_get_variables(con = con, studyDbId = studyDbId))
+      variables <- variables[, .(observationVariableDbId, scale.dataType)] 
+      if (any(colnames(study_obs)=="observationVariableDbId")){
+        study_obs <- merge(study_obs, variables, 
+                       by.x = "observationVariableDbId", 
+                       by.y = "observationVariableDbId")
+      }
+      
+      if(!("observationValue"%in%names(study_obs))){
+        study_obs[,observationValue:=NA]
+      }
+      
+      study_obs[,study_name_BMS := paste0(
+        env_number, "-",
+        loc_name
+      )]
+      study_obs[,environment_number := env_number]
+      study_obs[,location_name := loc_name]
+      study_obs[,location_abbrev := loc_name_abbrev]
+      study_obs[,study_name_app := stu_name_app]
+      study_obs[,study_name_abbrev_app := stu_name_abbrev_app]
+    }
   })
-  return(study)
+  return(study_obs)
 }
 
 #' @export
@@ -183,4 +266,51 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
   )]
   study_metadata[, loaded:=F]
   return(data.table(study_metadata))
+}
+
+# Modal for group creation
+# can be called from scatterplot or groups_sidebar modules
+# parent_session enables to get the app server namespace and get modal elements from the 2 modules
+#' @export
+groupModal <- function(rv, parent_session, modal_title, group_description, group_prefix="M_Group") {
+  req(rv$selection[,.N]>0)
+  ns <- parent_session$ns
+  modalDialog(
+    title = modal_title,
+    fade = F,
+    tagList(
+      tags$label(paste(rv$selection[,N]," selected germplasms")),
+      tags$p(rv$selection[,germplasmNames_label]),
+      textInput(ns("modal_create_group_text_input_label"), label = "Group Name", value = paste(group_prefix, rv$selection[,group_id]), placeholder = "Group Label"),
+      textAreaInput(
+        ns("modal_create_group_text_input_descr"), 
+        label = "Group Description", 
+        placeholder = "Group Description", 
+        resize = "vertical",
+        value = group_description
+      )
+    ),
+    footer = tagList(
+      modalButton("Cancel"),
+      actionButton(ns("modal_create_group_go"), label = "Create", class = "btn btn-info")
+    )
+  )
+}
+
+
+whoami_bmsapi <- function(con){
+  progs <- brapi_get_programs(con)
+  aprogr <- progs$programDbId[1]
+  server_url <- paste0(con$protocol, con$db, ":", con$port, "/", con$apipath)
+  callurl <- paste0(server_url, "/users/filter?cropName=",con$commoncropname,"&programUUID=",aprogr)
+  resp <-   httr::GET(url = callurl,
+                      httr::timeout(25),
+                      httr::add_headers(
+                        "Authorization" = paste("Bearer", con$token),
+                        "Content-Type"= "application/json",
+                        "accept"= "*/*"
+                      ))
+  cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
+  uname <- strsplit(con$token,split = ":")[[1]][1]
+  return(data.table(jsonlite::fromJSON(cont))[username==uname])
 }

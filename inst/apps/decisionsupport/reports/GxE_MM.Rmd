@@ -1,0 +1,54 @@
+---
+title: "GxE Mixed Model Analysis Report"
+output: html_document
+date: "`r format(Sys.time(), '%d %B, %Y - %H:%M:%S')`"
+params: 
+    env_struct: null
+    trait: null
+    data: null
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(statgenGxE)
+```
+
+## Studies:
+```{r}
+knitr::kable(unique(data.table(rbindlist(params$data))[,.(trial,loc,studyDbId,studyName)]))
+```
+
+## Trait: `r params$trait`
+## Model output
+```{r, echo=FALSE}
+TDVarComp <- switch(params$env_struct,
+               `1`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait), error=function(e) e)},
+               `2`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, locationYear = TRUE), error=function(e) e)},
+               `3`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, nestingFactor = "year"), error=function(e) e)},
+               `4`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, nestingFactor = "loc"), error=function(e) e)},
+               `5`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, regionLocationYear = TRUE), error=function(e) e)},
+               `6`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, nestingFactor = "scenario"), error=function(e) e)})
+summary(TDVarComp)
+```
+
+## Diagnostics
+```{r, echo=FALSE}
+diagnostics(TDVarComp)
+```
+
+## Variance components and heritability
+```{r, echo=FALSE}
+vc(TDVarComp)
+herit(TDVarComp)
+```
+
+## Model plot
+```{r, echo=FALSE}
+plot(TDVarComp)
+```
+
+## Predictions
+```{r, echo=FALSE}
+knitr::kable(predict(TDVarComp))
+```
+

@@ -1,0 +1,147 @@
+---
+title: "GxE GGE Analysis Report"
+output: html_document
+date: "`r format(Sys.time(), '%d %B, %Y - %H:%M:%S')`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(statgenGxE)
+library(metan)
+```
+
+## Studies:
+```{r}
+knitr::kable(unique(data.table(rbindlist(rv$TD))[,.(trial,locationName,studyDbId,studyName)]))
+```
+
+## Trait: `r input$picker_trait`
+## Analysis output
+```{r, echo=FALSE}
+TD.metangge <- rbindlist(rv$TD)[,.SD, .SDcols=c("trial","genotype",input$picker_trait)]
+
+TDGGEmetan <- tryCatch(metan::gge(TD.metangge,
+                                     env=trial,
+                                     gen=genotype,
+                                     resp = input$picker_trait,
+                                     centering = input$GGE_advs_centering,
+                                     scaling = input$GGE_advs_scaling,
+                                     svp = input$GGE_advs_svp,), error=function(e) e)
+TDGGE <- tryCatch(gxeGGE(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)
+          if ("AMMI"%in%class(rv$TDGGE)){
+            summary(rv$TDGGE)
+          } 
+
+
+```
+
+## GGE plots
+
+```{r, fig.height=10, fig.width=10, results='hide'}
+TDGGEplot <- TDGGEmetan
+lapply(1:10, function(ptype){
+  if (ptype==5){
+            metan:::plot.gge(TDGGEplot,
+                             type = ptype,
+                             sel_env = input$GGE_picker_env_select,
+                             size.text.gen = input$GGE_plot_size.text.gen,
+                             repulsion = input$GGE_plot_repulsion,
+                             max_overlaps = input$GGE_plot_max_overlaps,
+                             size.shape = input$GGE_plot_size.shape,
+                             size.shape.win = input$GGE_plot_size.shape.win,
+                             size.stroke = input$GGE_plot_size.stroke,
+                             col.alpha = input$GGE_plot_col.alpha,
+                             col.alpha.circle = input$GGE_plot_col.alpha.circle,
+                             size.text.env = input$GGE_plot_size.text.env,
+                             size.text.lab = input$GGE_plot_size.text.lab,
+                             size.text.win = input$GGE_plot_size.text.win,
+                             size.line = input$GGE_plot_size.line,
+                             axis_expand = input$GGE_plot_axis_expand,
+                             col.stroke = input$GGE_plot_col.stroke,
+                             col.gen = input$GGE_plot_col.gen,
+                             col.env = input$GGE_plot_col.env,
+                             col.line = input$GGE_plot_col.line,
+                             col.circle = input$GGE_plot_col.circle,
+                             plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
+                                                                                 plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
+            )            
+            
+          } else if (ptype == 7) {
+            metan:::plot.gge(TDGGEplot,
+                             type = ptype,
+                             sel_gen = input$GGE_picker_gen_select,
+                             size.text.gen = input$GGE_plot_size.text.gen,
+                             repulsion = input$GGE_plot_repulsion,
+                             max_overlaps = input$GGE_plot_max_overlaps,
+                             size.shape = input$GGE_plot_size.shape,
+                             size.shape.win = input$GGE_plot_size.shape.win,
+                             size.stroke = input$GGE_plot_size.stroke,
+                             col.alpha = input$GGE_plot_col.alpha,
+                             col.alpha.circle = input$GGE_plot_col.alpha.circle,
+                             size.text.env = input$GGE_plot_size.text.env,
+                             size.text.lab = input$GGE_plot_size.text.lab,
+                             size.text.win = input$GGE_plot_size.text.win,
+                             size.line = input$GGE_plot_size.line,
+                             axis_expand = input$GGE_plot_axis_expand,
+                             col.stroke = input$GGE_plot_col.stroke,
+                             col.gen = input$GGE_plot_col.gen,
+                             col.env = input$GGE_plot_col.env,
+                             col.line = input$GGE_plot_col.line,
+                             col.circle = input$GGE_plot_col.circle,
+                             plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
+                                                                                 plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
+            )
+          } else if (ptype == 9) {
+            metan:::plot.gge(TDGGEplot,
+                             type = ptype,
+                             sel_gen1 = input$GGE_picker_gen_select,
+                             sel_gen2 = input$GGE_picker_gen2_select,
+                             size.text.gen = input$GGE_plot_size.text.gen,
+                             repulsion = input$GGE_plot_repulsion,
+                             max_overlaps = input$GGE_plot_max_overlaps,
+                             size.shape = input$GGE_plot_size.shape,
+                             size.shape.win = input$GGE_plot_size.shape.win,
+                             size.stroke = input$GGE_plot_size.stroke,
+                             col.alpha = input$GGE_plot_col.alpha,
+                             col.alpha.circle = input$GGE_plot_col.alpha.circle,
+                             size.text.env = input$GGE_plot_size.text.env,
+                             size.text.lab = input$GGE_plot_size.text.lab,
+                             size.text.win = input$GGE_plot_size.text.win,
+                             size.line = input$GGE_plot_size.line,
+                             axis_expand = input$GGE_plot_axis_expand,
+                             col.stroke = input$GGE_plot_col.stroke,
+                             col.gen = input$GGE_plot_col.gen,
+                             col.env = input$GGE_plot_col.env,
+                             col.line = input$GGE_plot_col.line,
+                             col.circle = input$GGE_plot_col.circle,
+                             plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
+                                                                                 plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
+            )
+          } else {
+            metan:::plot.gge(TDGGEplot,
+                             type = ptype,
+                             size.text.gen = input$GGE_plot_size.text.gen,
+                             repulsion = input$GGE_plot_repulsion,
+                             max_overlaps = input$GGE_plot_max_overlaps,
+                             size.shape = input$GGE_plot_size.shape,
+                             size.shape.win = input$GGE_plot_size.shape.win,
+                             size.stroke = input$GGE_plot_size.stroke,
+                             col.alpha = input$GGE_plot_col.alpha,
+                             col.alpha.circle = input$GGE_plot_col.alpha.circle,
+                             size.text.env = input$GGE_plot_size.text.env,
+                             size.text.lab = input$GGE_plot_size.text.lab,
+                             size.text.win = input$GGE_plot_size.text.win,
+                             size.line = input$GGE_plot_size.line,
+                             axis_expand = input$GGE_plot_axis_expand,
+                             col.stroke = input$GGE_plot_col.stroke,
+                             col.gen = input$GGE_plot_col.gen,
+                             col.env = input$GGE_plot_col.env,
+                             col.line = input$GGE_plot_col.line,
+                             col.circle = input$GGE_plot_col.circle,
+                             plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
+                                                                                 plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
+            )
+          }
+})
+```
+

@@ -39,9 +39,9 @@ column_types <- as.data.table(read.table(header = TRUE, text = "
                              NREP Numerical
                  observationLevel      Text
                 observationLevels      Text
-           observations.collector      Text
-observations.observationTimeStamp      Text
-              observations.season      Text
+                        collector      Text
+             observationTimeStamp      Text
+                           season      Text
               observationUnitDbId      Text
               observationUnitName      Text
               observationUnitXRef      Text
@@ -57,8 +57,8 @@ observations.observationTimeStamp      Text
                    study_name_app      Text
                    study_name_BMS      Text
                         studyDbId      Text
-                    studyLocation      Text
-                studyLocationDbId      Text
+                     locationName      Text
+                     locationDbId      Text
                         studyName      Text
                          synonyms      Text
                         trialDbId      Text

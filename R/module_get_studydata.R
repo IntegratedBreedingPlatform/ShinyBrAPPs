@@ -5,6 +5,9 @@ mod_get_studydata_ui <- function(id){
     id = ns("get_studydata"),
     tagList(
       ## UI for study selection (if no GET parameters)
+      tags$style(".modal-dialog 
+                 {max-width: 80%;
+                 width: fit-content !important;}"),
       div(
         id = ns("get_studydata_by_ui"),
         style = "display:none",
@@ -20,6 +23,7 @@ mod_get_studydata_ui <- function(id){
                 textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://bms-uat-test.net/bmsapi", value = "https://bms-uat.ibp.services/bmsapi", width = "100%"),
                 textInput(ns("token"), "Token", placeholder = "Enter Token", value = "", width = "100%"),
                 textInput(ns("cropDb"), "CropDb", value = "maize", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
+                selectInput(ns("picker_obs_unit_level"), label = "Observation unit levels", choices = allowed_obs_unit_levels, selected = allowed_obs_unit_levels, multiple = T, width = "100%"),
                 selectizeInput(
                   ns("trials"), label = "Study", choices = NULL, multiple = FALSE, width = "100%",
                   options = list(
@@ -27,7 +31,7 @@ mod_get_studydata_ui <- function(id){
                     onInitialize = I('function() { this.setValue(""); }')
                   )
                 ),
-                actionButton(ns("go_trial_metadata"), "Show study metadata", css.class = "btn btn-info"),
+                actionButton(ns("go_trial_metadata"), "Show study metadata", class = "btn btn-info"),
                 bsModal(ns("modal_trial_metadata"), "Study Metadata", ns("go_trial_metadata"), size = "large",
                         dataTableOutput(ns("table_trial_metadata")))
               ),
@@ -46,14 +50,14 @@ mod_get_studydata_ui <- function(id){
                 actionButton(
                   inputId = ns("load_env"),
                   label = "Load Selected",
-                  css.class = "btn btn-primary"
+                  class = "btn btn-primary"
                 ),
                 actionButton(
                   inputId = ns("load_all_env"),
                   label = "Load All",
-                  css.class = "btn btn-primary"
+                  class = "btn btn-primary"
                 ),
-                actionButton(ns("go_study_metadata_ui"), "Show Environment Metadata", css.class = "btn btn-info")
+                actionButton(ns("go_study_metadata_ui"), "Show Environment Metadata", class = "btn btn-info")
                 # bsModal(ns("modal_study_metadata"), "Environment Metadata", ns("go_study_metadata"), size = "large",
                 #         dataTableOutput(ns("table_study_metadata")))
               ),
@@ -68,12 +72,12 @@ mod_get_studydata_ui <- function(id){
       ),
       div(
         id = ns("get_studydata_by_url"), style = "float:right",
-        shiny::actionButton(ns("go_study_metadata_url"), "Show Environment Metadata")
+        #shiny::actionButton(ns("go_study_metadata_url"), "Show Environment Metadata")
       )
     ),
-    bsModal(ns("modal_study_metadata"), "Environment Metadata", ns("go_study_metadata_ui"), size = "large",
-            uiOutput(ns("tables_study_metadata"))
-    )
+    # bsModal(ns("modal_study_metadata"), "Environment Metadata", ns("go_study_metadata_ui"), size = "large",
+    #         uiOutput(ns("tables_study_metadata"))
+    # )
   )
 }
 
@@ -148,6 +152,17 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
             rv$study_metadata <- study_metadata
 
+            if (isTruthy(can_filter_obs_unit_level_in_url)) {
+              chosen_levels <- parse_GET_param()$obs_unit_level
+              if (!is.null(chosen_levels)) {
+                rv$obs_unit_level <- intersect(allowed_obs_unit_levels, unlist(strsplit(chosen_levels, ",")))
+              } else {
+                rv$obs_unit_level <- NULL
+              }
+            } else {
+              rv$obs_unit_level <- allowed_obs_unit_levels
+            }
+
           }else{
 
             #### UI MODE
@@ -155,10 +170,13 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             shinyjs::hide(id = "get_studydata_by_url")
 
             ### BrAPI GET trials
-            observeEvent(c(input$apiURL, input$token, input$cropDb),{
+            observeEvent(c(input$apiURL, input$token, input$cropDb, input$picker_obs_unit_level),{
               req(input$apiURL)
               req(input$token)
               req(input$cropDb)
+              req(input$picker_obs_unit_level)
+              
+              rv$obs_unit_level <-  input$picker_obs_unit_level
   
               updateSelectizeInput(
                 session = session, inputId = "trials", choices = "",
@@ -247,6 +265,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
       observeEvent(input$load_env,{
         req(input$environments)
         req(rv$study_metadata)
+        req(rv$study_metadata)
         env_to_load(input$environments)
       })
       observeEvent(input$load_all_env,{
@@ -256,8 +275,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
       observeEvent(env_to_load(),{
         req(env_to_load())
         req(rv$study_metadata)
-        
-
+        study_metadata <- rv$study_metadata
         withProgress(message = "Loading", value = 0, {
           n_studies <- length(env_to_load())
 
@@ -271,10 +289,10 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               loc_name = rv$study_metadata[studyDbId == id,unique(locationName)],
               loc_name_abbrev = rv$study_metadata[studyDbId == id,unique(location_name_abbrev)],
               stu_name_app = rv$study_metadata[studyDbId == id,unique(study_name_app)],
-              stu_name_abbrev_app = rv$study_metadata[studyDbId == id,unique(study_name_abbrev_app)]
+              stu_name_abbrev_app = rv$study_metadata[studyDbId == id,unique(study_name_abbrev_app)],
+              obs_unit_level =rv$obs_unit_level
             )
-
-            rv$study_metadata[studyDbId == id,loaded:=T]
+            if (!is.null(study)) { rv$study_metadata[studyDbId == id,loaded:=T] }
             return(study)
           }), use.names = T,fill = T
           )
@@ -340,9 +358,18 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           ))
       })
 
-      observeEvent(input$go_study_metadata_url, {
-        toggleModal(session, "modal_study_metadata", toggle = "open")
-      })
+      #observeEvent(input$go_study_metadata_url, {
+      #  showModal(
+      #    modalDialog(
+      #      title = "Environments metadata",
+      #      fade = F,
+      #      uiOutput(ns("tables_study_metadata")),
+      #      footer = tagList(
+      #        modalButton("Close")
+      #      )
+      #    )
+      #  )
+      #})
 
       output$tables_study_metadata <- renderUI({
         req(rv$study_metadata)

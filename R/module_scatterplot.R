@@ -1,236 +1,176 @@
 #' @export
+# UI ####
 mod_scatterplot_ui <- function(id){
   ns <- NS(id)
+  
   tagList(
-    fluidRow(
-      column(
-        4,
-        fluidRow(
-          column(
-            12,
-            tags$h4("Environments")
-          )
-        ),
-        fluidRow(
-          column(
-            12,
-            class = "space-left space-bottom",
-            pickerInput(
-              inputId = ns("env"),
-              label = "",
-              choices = NULL,
-              width = "100%",
-              multiple = T,
-              options = list(
-                `actions-box` = TRUE,
-                title = 'Load Environments First',
-                onInitialize = I('function() { this.setValue(""); }')
-              )
-            )
-          )
-        ),
-        fluidRow(
-          column(
-            12,
-            tags$h4("Aggregate observations", style = "display:inline", class = "space-right"),
-            materialSwitch(inputId = ns("switch_aggregate"), label = "", value = F, inline = T, status = "info"),
-          )
-        ),
-        fluidRow(
-          column(
-            12,
-            class = "space-left space-bottom",
-            div(class = ns("ui_aggregate"),
-                pickerInput(ns("aggregate_by"), "Aggregate by", choices =  c("germplasm and environment", "germplasm"), selected = "germplasm", multiple = F)
-            )
-          )
-        ),
-        fluidRow(
-          column(
-            12,
-            tags$h4("X")
-          )
-        ),
-        fluidRow(
-          column(
-            12,
-            class = "space-left space-bottom",
-            div(
-              div(pickerInput(ns("picker_X"), "Variable", choices = NULL),style = "display:inline-block; vertical-align: top; width: 20%"),
-              div(
-                class = ns("ui_aggregate"), style = "display:inline-block; vertical-align: top; width: 20%",
-                pickerInput(ns("aggreg_fun_X"), "Aggregate", choices = c("mean", "max", "min", "sum"))
-              ),
-              div(radioButtons(ns("express_X_as"), "Show values", choices = "", inline = T), style = "display:inline-block; width: 20%;"),
-              div(id = ns("div_ref_genotype_X"), pickerInput(ns("ref_genotype_X"), "Reference", choices = NULL, inline = T), style = "display:inline-block; vertical-align: top; width: 20%"),
-              div(id = ns("div_ranking_order_X"), radioButtons(ns("ranking_order_X"), label = "Ranking order", choices = c("ascending", "descending"), selected = "descending"), style = "display:inline-block; vertical-align: top; width: 20%")
-            )
-          )
-        ),
-        fluidRow(
-          column(
-            12,
-            tags$h4("Y")
-          )
-        ),
-        fluidRow(
-          column(
-            12,
-            class = "space-left space-bottom",
-            div(
-              div(pickerInput(ns("picker_Y"), "Variable", choices = NULL),style = "display:inline-block; vertical-align: top; width: 20%"),
-              div(
-                class = ns("ui_aggregate"), style = "display:inline-block; vertical-align: top; width: 20%",
-                pickerInput(ns("aggreg_fun_Y"), "Aggregate", choices = c("mean", "max", "min", "sum"))
-              ),
-              div(radioButtons(ns("express_Y_as"), "Show values", choices = "", inline = T), style = "display:inline-block; width: 20%;"),
-              div(id = ns("div_ref_genotype_Y"), pickerInput(ns("ref_genotype_Y"), "Reference", choices = NULL, inline = T), style = "display:inline-block; vertical-align: top; width: 20%"),
-              div(id = ns("div_ranking_order_Y"), radioButtons(ns("ranking_order_Y"), label = "Ranking order", choices = c("ascending", "descending"), selected = "descending"), style = "display:inline-block; vertical-align: top; width: 20%")
-            )
-          )
-        ),
-        fluidRow(
-          column(
-            12,
-            tags$h4("Shape", style = "display:inline", class = "space-right"),
-            materialSwitch(inputId = ns("switch_SHAPE"), label = "", value = F, inline = T, status = "info"),
-          )
-        ),
-        fluidRow(
-          column(
-            12,
-            class = "space-left space-bottom",
-            div(
-              id = ns("ui_SHAPE"),
-              pickerInput(ns("picker_SHAPE"), "Variable", choices = NULL, inline = T),
-              div(
-                class = ns("ui_aggregate"), style = "display:inline-block",
-                pickerInput(ns("aggreg_fun_SHAPE"), "Aggregate", choices = c("concatenate unique values"="unique_values"), inline = T)
-              )
-            )
-          )
-        ),
-        fluidRow(
-          column(
-            12,
-            tags$h4("Colour", style = "display:inline", class = "space-right"),
-            materialSwitch(inputId = ns("switch_COLOUR"), label = "", value = F, inline = T, status = "info")
-          )
-        ),
-        fluidRow(
-          column(
-            12,
-            class = "space-left space-bottom",
-            div(
-              id = ns("ui_COLOUR"),
-              pickerInput(ns("picker_COLOUR"), "Variable", choices = NULL, inline = T),
-              div(
-                class = ns("ui_aggregate"), style = "display:inline-block",
-                pickerInput(ns("aggreg_fun_COLOUR"), "Aggregate", choices = NULL, inline = T)
-              )
-            )
-          )
-        ),
-        fluidRow(
-          column(
-            12,
-            tags$h4("Size", style = "display:inline", class = "space-right"),
-            materialSwitch(inputId = ns("switch_SIZE"), label = "", value = F, inline = T, status = "info")
-          )
-        ),
-        fluidRow(
-          column(
-            12,
-            class = "space-left space-bottom",
-            div(
-              id = ns("ui_SIZE"),
-              pickerInput(ns("picker_SIZE"), "Variable", choices = NULL, inline = T),
-              div(
-                class = ns("ui_aggregate"), style = "display:inline-block",
-                pickerInput(ns("aggreg_fun_SIZE"), "Aggregate", choices = c("mean", "max", "min", "sum"), inline = T)
-              )
-            )
-          )
-        )
-      ),
-      column(
-        8,
-        plotlyOutput(
-          ns("scatterplot"), width = "100%", height = "600px"
-          # click = ns("scatterplot_click"),
-          # hover = ns("scatterplot_hover"),
-          # brush = ns("scatterplot_brush")
-        ),
-        bsTooltip(ns("scatterplot"), title = "Tip: press the shift key for multiple mouse selection", placement = "left"),
-        fluidRow(
-          column(
-            12,
-            actionButton(ns("go_regression"), "Draw Regression", css.class = "btn btn-info", `aria-pressed`="true", icon = "box"),
-            uiOutput(ns("ui_clusters"), inline = T),
-            span(class = ns("ui_create_group"), style = "display: none;",
-                 actionButton(ns("go_create_group"), "Create Group", css.class = "btn btn-info")
-            ),
-            bsModal(ns("modal_create_group"), "Create Group", NULL, size = "small",
-                    uiOutput(ns("modal_create_group_ui")))
-          )
-        ),
-        fluidRow(
-          column(
-            12,
-            uiOutput(ns("regression_output"))
-          )
-        )
+    tags$style(
+      HTML(
+        ".nav .nav-item .nav-link { font-size: 20px; }
+        .center-checkbox {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100%; /* Optionnel, pour centrer verticalement dans une colonne pleine hauteur */
+        }
+        ",
       )
     ),
-    fluidRow(
-      column(10,uiOutput(ns("ui_groups"))),
-      column(2,
-             div(
-               class = ns("group_actions"), style = "display: none",
-               tags$label("Vizualize"),
-               div(
-                 class = ns("one_group_selected"), style = "display: none",
-                 actionButton(ns("action_groups_plot_creation_params"),label = "Like at Group Creation", block = T, css.class = "btn btn-info")
+    
+    bslib::layout_sidebar(
+      ## Param sidebar ####
+      sidebar = bslib::sidebar(
+        width = 350,
+         pickerInput(
+           inputId = ns("env"),
+           label = "Environments",
+           choices = NULL,
+           width = "100%",
+           options = list(container = "body"), 
+           multiple = T
+         ),
+         #tags$h4("Aggregate observations", style = "display:inline", class = "space-right"),
+         fluidRow(
+           materialSwitch(inputId = ns("switch_aggregate"), label = "Aggregate observations", value = F, inline = T, status = "info"),
+           pickerInput(ns("aggregate_by"), "Aggregate by",  options = list(container = "body"), choices =  c("germplasm and environment", "germplasm"), selected = "germplasm", multiple = F)
+         ),
+         fluidRow(
+           column(6, pickerInput(ns("picker_X"), "X",  options = list(container = "body"), choices = NULL)),
+           column(6, hidden(pickerInput(ns("aggreg_fun_X"), "Aggregate", choices = c("mean", "max", "min", "sum"))))
+         ),
+         fluidRow(
+           column(6, awesomeCheckbox(ns("express_X_as_ranks"), label = "As ranks")),
+           column(6, hidden(switchInput(ns("ranking_order_X"), onLabel = "asc", offLabel = "desc", size = "mini")))
+         ),
+        fluidRow(
+          column(6, awesomeCheckbox(ns("express_X_relative"), label = "relatively to genotype")),
+          column(6, hidden(pickerInput(ns("ref_genotype_X"), "Reference", choices = NULL, inline = T)))
+        ),
+         fluidRow(
+           column(6, pickerInput(ns("picker_Y"), "Y",  options = list(container = "body"), choices = NULL)),
+           column(6, hidden(pickerInput(ns("aggreg_fun_Y"), "Aggregate", choices = c("mean", "max", "min", "sum"))))
+         ),
+        fluidRow(
+          column(6, awesomeCheckbox(ns("express_Y_as_ranks"), label = "As ranks"), inline = T),
+          column(6, hidden(switchInput(ns("ranking_order_Y"), onLabel = "asc", offLabel = "desc", size = "mini")))
+        ),
+        fluidRow(
+          column(6, awesomeCheckbox(ns("express_Y_relative"), label = "relatively to genotype"), inline = T),
+          column(6, hidden(pickerInput(ns("ref_genotype_Y"), "Reference", choices = NULL, inline = T)))
+        ),
+        ### Options card ####
+         div(
+           bslib::card(
+             bslib::card_header(
+               h4('Options ', icon('screwdriver-wrench')),
+               class = "d-flex justify-content-between",
+               actionBttn(
+                 inputId = ns("reset"),
+                 label = NULL,
+                 style = "border", 
+                 color = "primary",
+                 icon = icon("refresh"),
+                 size = "xs"
+              )
+             ),
+             bslib::card_body(
+               fluidRow(
+                 column(2),
+                 column(5, strong("Variables")),
+                 column(5, hidden(strong("Aggregate", id = ns("aggregate_text"))))
                ),
-               bsTooltip(ns("action_groups_plot_creation_params"), title = "Set the plot parameters as they were at group creation", placement = "left"),
-               tags$label("Create new group"),
-               actionButton(ns("action_groups_union"),label = "Union", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
-               actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, css.class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
-               actionButton(ns("action_groups_complement"),label = "Complement", block = T, css.class = "btn btn-info"),
-               tags$label("Delete Groups"),
-               actionButton(ns("action_groups_delete"),label = "Delete", block = T, css.class = "btn btn-info"),
-               div(
-                 class = ns("one_group_selected"), style = "display: none",
-                 tags$label("Export Group"),
-                 downloadButton(ns("action_groups_export_group_details"),label = "Export Group Details", class = "btn-block btn-primary"),
-                 actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome"),
-                 actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, css.class = "btn btn-primary", icon = "cloud", icon.library = "font awesome")
+               
+               fluidRow(
+                 column(2, strong("Shape")),
+                 column(5, 
+                        div(style = "display:inline-block; width: 100%;",pickerInput(ns("picker_SHAPE"), options = list(container = "body"), choices = c("---" = ""), selected = ""))
+                 ),
+                 column(5, 
+                        div(style = "display:inline-block; width: 100%;",pickerInput(ns("aggreg_fun_SHAPE"),  options = list(container = "body"), choices = c("concatenate unique values"="unique_values")))
+                 )
                ),
-               bsModal(ns("modal_export_group_as_list"), "Export Group as List", NULL, size = "large",
-                       uiOutput(ns("modal_export_group_as_list_ui"))),
-               bsModal(ns("modal_export_group_mark_as_selection"), "Mark as Selection", NULL, size = "large",
-                       uiOutput(ns("modal_export_group_mark_as_selection_ui")))
+               fluidRow(
+                 column(2, strong("Colour")),
+                 column(5, 
+                        div(style = "display:inline-block; width: 100%;",
+                            pickerInput(ns("picker_COLOUR"),  options = list(container = "body"), choices = c("---" = ""), selected = ""))
+                 ), 
+                 column(5, 
+                        div(style = "display:inline-block; width: 100%;",
+                            pickerInput(ns("aggreg_fun_COLOUR"),  options = list(container = "body"), choices = c("-----------" = "")))
+                 )
+               ),
+               fluidRow(
+                 column(2, strong("Size")),
+                 column(5, 
+                        div(style = "display:inline-block; width: 100%;",
+                            pickerInput(ns("picker_SIZE"),  options = list(container = "body"), choices = c("---"= ""), selected = ""))
+                 ),
+                 column(5, 
+                        div(style = "display:inline-block; width: 100%;",
+                            pickerInput(ns("aggreg_fun_SIZE"),  options = list(container = "body"), choices = c("mean", "max", "min", "sum")))
+                 )
+               )
              )
+           )
+         )
+      ),
+      ## Plot card ####
+      bslib::card(height = "800px",
+        full_screen = TRUE,
+         plotlyOutput(
+           ns("scatterplot"), width = "100%", height = "600px"
+           # click = ns("scatterplot_click"),
+           # hover = ns("scatterplot_hover"),
+           # brush = ns("scatterplot_brush")
+         ),
+         bsTooltip(ns("scatterplot"), title = "Tip: press the shift key for multiple mouse selection", placement = "left"),
+         fluidRow(
+           column(
+             12,
+             hidden(actionButton(ns("go_regression"), "Draw Regression", class = "btn btn-info", `aria-pressed`="true", icon = icon("box"))),
+             uiOutput(ns("ui_clusters"), inline = T),
+             span(class = ns("ui_create_group"), style = "display: none;",
+                  actionButton(ns("go_create_group"), "Create Group", class = "btn btn-info")
+             ),
+             bsModal(ns("modal_create_group"), "Create Group", NULL, size = "small",
+                     uiOutput(ns("modal_create_group_ui")))
+           )
+         ),
+         fluidRow(
+           column(
+             12,
+             uiOutput(ns("regression_output"))
+           )
+         )
       )
     )
   )
 }
 
 #' @export
-mod_scatterplot_server <- function(id, rv){
+# SERVER ####
+mod_scatterplot_server <- function(id, rv, parent_session){
+  no_selection <- list("-----------" = "")
+  
   moduleServer(
     id,
     function(input, output, session){
-
       ns <- session$ns
       rv_plot <- reactiveValues()
-
-      rv_plot$groups <- data.table()
+      
+      rv$groups <- data.table()
+      rv$visu_as_group <- NULL
+      rv$new_group_created <- F
+      
       rv_plot$draw_regression <- F
       rv_plot$draw_clusters <- F
       rv_plot$counter_hca <- 0
       rv_plot$counter_kmeans <- 0
-
+      rv_plot$selected_express_X_as <- NULL
+      rv_plot$selected_express_Y_as <- NULL
+      rv_plot$selection_variables <- NULL
+      
       ## function for data aggregation
       aggreg_functions <- data.table(
         fun = c("mean", "max", "min", "sum", "unique_values"),
@@ -252,8 +192,7 @@ mod_scatterplot_server <- function(id, rv){
           scale_color_discrete(name = name)
         }
       }
-
-
+     
       observe({
         req(rv$data_plot)
         req(rv$column_datasource)
@@ -265,21 +204,21 @@ mod_scatterplot_server <- function(id, rv){
         ]){
           rv$data_plot[, c(col) := list(as.character(eval(as.name(col))))]
         }
-
-
-        ## update environments
-        envs <- unique(rv$data_plot[,.(studyDbId, study_name_app)])
-        env_choices <- envs[,studyDbId]
-        names(env_choices) <- envs[,study_name_app]
-        updatePickerInput(
-          session, "env",
-          choices = env_choices, selected = env_choices
-        )
-      })
-
-      observe({
-        req(rv$data_plot)
-        ## update group of germplasms
+        
+        ## Set environments selector ####
+        # don't change environment selection after creating a group
+        if (!rv$new_group_created) {
+          envs <- unique(rv$data_plot[,.(studyDbId, study_name_app)])
+          env_choices <- envs[,studyDbId]
+          names(env_choices) <- envs[,study_name_app]
+          updatePickerInput(
+            session, "env",
+            choices = env_choices,
+            selected = env_choices
+          )
+        }
+        
+        ## Set germplasm refs ####
         germplasmNames <- rv$data_plot[,.(germplasmNames = list(unique(germplasmName))), .(entryType)][order(entryType)]
         updatePickerInput(
           session = session, inputId = "ref_genotype_X",
@@ -297,54 +236,73 @@ mod_scatterplot_server <- function(id, rv){
             `live-search` = TRUE
           )
         )
-      })
-
-      ## update variable selectors
-      observe({
-        input$switch_aggregate
-        req(rv$data_plot)
-        req(rv$column_datasource)
-        rv$column_datasource[,.N]
-
-        print("update variable selectors: debut")
-
-        num_var_choices <- rv$column_datasource[type == "Numerical",.(cols = list(cols)), source]
-        non_num_var_choices <- rv$column_datasource[type != "Numerical",.(cols = list(cols)), source]
-        var_choices_all <- rv$column_datasource[,.(cols = list(cols)), source]
-
+        
+        ## Set Variables selectors ####
+        picker_section_names <- data.table(source=c("GxE",
+                                                    "plot",
+                                                    "germplasm",
+                                                    "environment",
+                                                    "Means",
+                                                    "group"),
+                                           rename=c("Measured variable",
+                                                    "Observation units attributes",
+                                                    "Germplasm attributes",
+                                                    "Environment details",
+                                                    "Means",
+                                                    "Groups and clusters"))
+        column_datasource <- merge(rv$column_datasource, picker_section_names, by = c("source"), all.x = T)[!is.na(rename), source := rename]
+        
+        num_var_choices <- column_datasource[type == "Numerical" & visible == T,.(cols = list(cols)), source]
+        non_num_var_choices <- column_datasource[type != "Numerical" & visible == T,.(cols = list(cols)), source]
+        var_choices_all <- column_datasource[visible == T,.(cols = list(cols)), source]
+        
         if(input$switch_aggregate == T){
-          updateRadioButtons(session, "express_X_as", choices = c("as they are", "as ranks", "relatively to genotype"))
-          updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks", "relatively to genotype"))
+          shinyjs::show("aggregate_by")
+          shinyjs::show("aggreg_fun_X")
+          shinyjs::show("aggreg_fun_Y")
+          shinyjs::show("aggregate_text")
+          shinyjs::show("aggreg_fun_SHAPE")
+          shinyjs::show("aggreg_fun_COLOUR")
+          shinyjs::show("aggreg_fun_SIZE")
+          shinyjs::show("express_X_relative")
+          shinyjs::show("express_Y_relative")
           if(input$aggregate_by == "germplasm and environment"){
-            var_choices_SHAPE <- rv$column_datasource[type != "Numerical" & !(source %in% "plot"),.(cols = list(cols)), source]
-            var_choices_COLOUR <- rv$column_datasource[type == "Numerical" | !(source %in% c("plot")),.(cols = list(cols)), source]
+            var_choices_SHAPE <- column_datasource[visible == T & type != "Numerical" & !(source %in% "Observation units attributes"),.(cols = list(cols)), source]
+            var_choices_COLOUR <- column_datasource[visible == T & (type == "Numerical" | type == "Text") & !(source %in% c("Observation units attributes")),.(cols = list(cols)), source]
           }else if(input$aggregate_by == "germplasm"){
-            var_choices_SHAPE <- rv$column_datasource[type != "Numerical" & !(source %in% c("plot", "environment")),.(cols = list(cols)), source]
-            var_choices_COLOUR <- rv$column_datasource[type == "Numerical" | !(source %in% c("plot", "environment")),.(cols = list(cols)), source]
+            var_choices_SHAPE <- column_datasource[visible == T & type != "Numerical" & !(source %in% c("Observation Unit attributes", "Environment details")),.(cols = list(cols)), source]
+            var_choices_COLOUR <- column_datasource[visible == T & (type == "Numerical" | type == "Text") & !(source %in% c("Observation Unit attributes", "Environment details")),.(cols = list(cols)), source]
           }
         }else{
-          updateRadioButtons(session, "express_X_as", choices = c("as they are", "as ranks"))
-          updateRadioButtons(session, "express_Y_as", choices = c("as they are", "as ranks"))
+          shinyjs::hide("aggregate_by")
+          shinyjs::hide("aggreg_fun_X")
+          shinyjs::hide("aggreg_fun_Y")
+          shinyjs::hide("aggregate_text")
+          shinyjs::hide("aggreg_fun_SHAPE")
+          shinyjs::hide("aggreg_fun_COLOUR")
+          shinyjs::hide("aggreg_fun_SIZE")
+          shinyjs::hide("express_X_relative")
+          shinyjs::hide("express_Y_relative")
           var_choices_SHAPE <- non_num_var_choices
           var_choices_COLOUR <- var_choices_all
         }
-
+        
         # Work around for pickerInputs with option groups that have only one option.
         # The default behaviour is to display only the group name.
         # Work around: naming the group by the singleton element
-        for(k in 1:num_var_choices[,.N]){
-          cols <- num_var_choices[k,cols][[1]]
-          if(length(cols)==1){num_var_choices[k, source := cols]}
-        }
-        for(k in 1:var_choices_SHAPE[,.N]){
-          cols <- var_choices_SHAPE[k,cols][[1]]
-          if(length(cols)==1){var_choices_SHAPE[k, source := cols]}
-        }
-        for(k in 1:var_choices_COLOUR[,.N]){
-          cols <- var_choices_COLOUR[k,cols][[1]]
-          if(length(cols)==1){var_choices_COLOUR[k, source := cols]}
-        }
-
+        # for(k in 1:num_var_choices[,.N]){
+        #   cols <- num_var_choices[k,cols][[1]]
+        #   if(length(cols)==1){num_var_choices[k, source := cols]}
+        # }
+        # for(k in 1:var_choices_SHAPE[,.N]){
+        #   cols <- var_choices_SHAPE[k,cols][[1]]
+        #   if(length(cols)==1){var_choices_SHAPE[k, source := cols]}
+        # }
+        # for(k in 1:var_choices_COLOUR[,.N]){
+        #   cols <- var_choices_COLOUR[k,cols][[1]]
+        #   if(length(cols)==1){var_choices_COLOUR[k, source := cols]}
+        # }
+        
         # default values or reset previously selected values
         if(isTruthy(input$picker_X)){
           val_picker_X <- input$picker_X
@@ -360,41 +318,47 @@ mod_scatterplot_server <- function(id, rv){
             val_picker_Y <- val_picker_X
           }
         }
-        val_picker_SHAPE <- NULL
-        val_picker_COLOUR <- NULL
-        val_picker_SIZE <- NULL
+        val_picker_SHAPE <- ""
+        val_picker_COLOUR <- ""
+        val_picker_SIZE <- ""
         if(isTruthy(input$picker_SHAPE)){val_picker_SHAPE <- input$picker_SHAPE}
         if(isTruthy(input$picker_COLOUR)){val_picker_COLOUR <- input$picker_COLOUR}
         if(isTruthy(input$picker_SIZE)){val_picker_SIZE <- input$picker_SIZE}
 
+        num_var_choices <- setNames(lapply(num_var_choices$cols, function(x) as.list(x)), num_var_choices$source)
+        var_choices_SHAPE <- setNames(lapply(var_choices_SHAPE$cols, function(x) as.list(x)), var_choices_SHAPE$source)
+        var_choices_COLOUR <- setNames(lapply(var_choices_COLOUR$cols, function(x) as.list(x)), var_choices_COLOUR$source)
+        
         updatePickerInput(
           session = session, inputId = "picker_X",
-          choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
+          choices = num_var_choices,
           selected = val_picker_X
         )
         updatePickerInput(
           session = session, inputId = "picker_Y",
-          choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
+          choices = num_var_choices,
           selected = val_picker_Y
         )
         updatePickerInput(
           session = session, inputId = "picker_SIZE",
-          choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
+          choices = c(no_selection, num_var_choices),
           selected = val_picker_SIZE
         )
         updatePickerInput(
           session = session, inputId = "picker_SHAPE",
-          choices = setNames(var_choices_SHAPE[,cols], var_choices_SHAPE[,source]),
+          choices = c(no_selection, var_choices_SHAPE),
           selected = val_picker_SHAPE
         )
         updatePickerInput(
           session = session, inputId = "picker_COLOUR",
-          choices = setNames(var_choices_COLOUR[,cols], var_choices_COLOUR[,source]),
+          choices = c(no_selection, var_choices_COLOUR),
           selected = val_picker_COLOUR
         )
-      })
 
-      ## update colour aggreg functions (colour can be num or categorical)
+      })
+      
+      ## update colour aggreg functions ####
+      # (colour can be num or categorical)
       observeEvent(input$picker_COLOUR, {
         req(input$picker_COLOUR)
         COLOUR_is_num <- rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"]
@@ -405,13 +369,11 @@ mod_scatterplot_server <- function(id, rv){
           choices = choices_fun
         )
       })
-
-      ## toggle ranking order UI
-      observe({shinyjs::toggle("div_ranking_order_X", condition = input$express_X_as=="as ranks")})
-      observe({shinyjs::toggle("div_ranking_order_Y", condition = input$express_Y_as=="as ranks")})
-      ## toggle draw regression button
-      observeEvent(c(input$express_X_as, input$express_Y_as),{
-        if(input$express_Y_as=="as ranks" & input$express_X_as=="as ranks"){
+      
+      ## toggle draw regression button ####
+      observeEvent(c(input$express_X_as_ranks, input$express_Y_as_ranks),{
+        if(!is.null(input$express_X_as_ranks) && input$express_X_as_ranks
+           && !is.null(input$express_Y_as_ranks) && input$express_Y_as_ranks){
           shinyjs::hide("go_regression")
           if(rv_plot$draw_regression == T){
             rv_plot$draw_regression <- F
@@ -420,17 +382,78 @@ mod_scatterplot_server <- function(id, rv){
           shinyjs::show("go_regression")
         }
       })
-      ## toggle genotype reference UI
-      observe({shinyjs::toggle("div_ref_genotype_X", condition = input$express_X_as=="relatively to genotype")})
-      observe({shinyjs::toggle("div_ref_genotype_Y", condition = input$express_Y_as=="relatively to genotype")})
-      ## toggle aes UI
-      observe({shinyjs::toggle(selector = paste0(".",ns("ui_aggregate")), condition = input$switch_aggregate==T)})
-      observe({shinyjs::toggle("ui_SHAPE", condition = input$switch_SHAPE==T)})
-      observe({shinyjs::toggle("ui_COLOUR", condition = input$switch_COLOUR==T)})
-      observe({shinyjs::toggle("ui_SIZE", condition = input$switch_SIZE==T)})
-
-
-      ## aggreg dataset
+      
+      ## update as ranks ####
+      observeEvent({
+        list(input$express_X_as_ranks, input$express_X_relative)
+        }, {
+          if (is.null(rv_plot$selected_express_X)) {
+            if (input$express_X_as_ranks) {
+              rv_plot$selected_express_X = "ranks"
+            } else if (input$express_X_relative) {
+              rv_plot$selected_express_X = "relative"
+            }
+          } else {
+            if (rv_plot$selected_express_X == "ranks" && input$express_X_relative) {
+              updateCheckboxInput(session, "express_X_as_ranks", value = F)
+              rv_plot$selected_express_X = "relative"
+            } else if (rv_plot$selected_express_X == "relative" && input$express_X_as_ranks) {
+              updateCheckboxInput(session, "express_X_relative", value = F)
+              rv_plot$selected_express_X = "ranks"
+            }
+          }
+          if (!input$express_X_as_ranks && !input$express_X_relative) {
+            rv_plot$selected_express_X = NULL
+          }
+          shinyjs::toggle("ranking_order_X", condition = !is.null(rv_plot$selected_express_X) && rv_plot$selected_express_X == "ranks")
+          shinyjs::toggle("ref_genotype_X", condition = !is.null(rv_plot$selected_express_X) && rv_plot$selected_express_X == "relative")
+        })
+      
+      observeEvent({
+        list(input$express_Y_as_ranks, input$express_Y_relative)
+      }, {
+        if (is.null(rv_plot$selected_express_Y)) {
+          if (input$express_Y_as_ranks) {
+            rv_plot$selected_express_Y = "ranks"
+          } else if (input$express_Y_relative) {
+            rv_plot$selected_express_Y = "relative"
+          }
+        } else {
+          if (rv_plot$selected_express_Y == "ranks" && input$express_Y_relative) {
+            updateCheckboxInput(session, "express_Y_as_ranks", value = F)
+            rv_plot$selected_express_Y = "relative"
+          } else if (rv_plot$selected_express_Y == "relative" && input$express_Y_as_ranks) {
+            updateCheckboxInput(session, "express_Y_relative", value = F)
+            rv_plot$selected_express_Y = "ranks"
+          }
+        }
+        if (!input$express_Y_as_ranks && !input$express_Y_relative) {
+          rv_plot$selected_express_Y = NULL
+        }
+        shinyjs::toggle("ranking_order_Y", condition = !is.null(rv_plot$selected_express_Y) && rv_plot$selected_express_Y == "ranks")
+        shinyjs::toggle("ref_genotype_Y", condition = !is.null(rv_plot$selected_express_Y) && rv_plot$selected_express_Y == "relative")
+      })
+      
+      ## reset options ####
+      observeEvent(input$reset, {
+        updatePickerInput(
+          session = session, inputId = "picker_SIZE",
+          #choices = setNames(num_var_choices[,cols], num_var_choices[,source]),
+          selected = ""
+        )
+        updatePickerInput(
+          session = session, inputId = "picker_SHAPE",
+          #choices = setNames(var_choices_SHAPE[,cols], var_choices_SHAPE[,source]),
+          selected = ""
+        )
+        updatePickerInput(
+          session = session, inputId = "picker_COLOUR",
+          #choices = setNames(var_choices_COLOUR[,cols], var_choices_COLOUR[,source]),
+          selected = ""
+        )
+      })
+      
+      ## aggreg dataset ####
       observe({
         req(rv$data_plot)
         if(input$switch_aggregate== T){
@@ -444,11 +467,11 @@ mod_scatterplot_server <- function(id, rv){
         }
         req(input$picker_X %in% names(rv$data_plot))
         req(input$picker_Y %in% names(rv$data_plot))
-        req(input$picker_COLOUR %in% names(rv$data_plot))
-        req(input$picker_SIZE %in% names(rv$data_plot))
-        req(input$picker_SHAPE %in% names(rv$data_plot))
-        req(input$aggreg_fun_COLOUR)
-        req(aggreg_functions[fun == input$aggreg_fun_COLOUR, for_num] == rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"])
+        #req(input$picker_COLOUR %in% names(rv$data_plot))
+        #req(input$picker_SIZE %in% names(rv$data_plot))
+        #req(input$picker_SHAPE %in% names(rv$data_plot))
+        #req(input$aggreg_fun_COLOUR)
+        #req(aggreg_functions[fun == input$aggreg_fun_COLOUR, for_num] == rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"])
 
         data_plot_aggr <- rv$data_plot[
           studyDbId %in% input$env,
@@ -462,30 +485,32 @@ mod_scatterplot_server <- function(id, rv){
             VAR_Y = do.call(what = input$aggreg_fun_Y, args = list(
               x = if(isTruthy(input$picker_Y)) eval(as.name(input$picker_Y)) else NA,
               na.rm = T)),
-            VAR_SHAPE = do.call(what = input$aggreg_fun_SHAPE, args = list(
-              x = if(input$switch_SHAPE) eval(as.name(input$picker_SHAPE)) else NA,
-              na.rm = T)),
-            VAR_COLOUR = do.call(what = input$aggreg_fun_COLOUR, args = list(
-              x = if(input$switch_COLOUR) eval(as.name(input$picker_COLOUR)) else NA,
-              na.rm = T)),
-            VAR_SIZE = do.call(what = input$aggreg_fun_SIZE, args = list(
-              x = if(input$switch_SIZE) eval(as.name(input$picker_SIZE)) else NA,
-              na.rm = T))
+            VAR_SHAPE = ifelse(isTruthy(input$picker_SHAPE) && input$picker_SHAPE != "",
+              do.call(what = input$aggreg_fun_SHAPE, args = list(x = eval(as.name(input$picker_SHAPE)),na.rm = T)),
+              NA),
+            VAR_COLOUR = ifelse(
+              isTruthy(input$picker_COLOUR) && input$picker_COLOUR != "" && input$aggreg_fun_COLOUR != "",
+              do.call(what = input$aggreg_fun_COLOUR, args = list(x = eval(as.name(input$picker_COLOUR)),na.rm = T)),
+              NA),
+            VAR_SIZE = ifelse(
+              isTruthy(input$picker_SIZE) && input$picker_SIZE != "",
+              do.call(what = input$aggreg_fun_SIZE, args = list(x = eval(as.name(input$picker_SIZE)), na.rm = T)),
+              NA)
           ),
           by = group_by_cols
         ]
-
+        
         ## transform X variable
         # - no transformation (default)
         data_plot_aggr[,VAR_X_PLOT:=VAR_X]
-        if(input$express_X_as=="as ranks"){
+        if (isTruthy(input$express_X_as_ranks)){
           # - ranking
-          if(input$ranking_order_X == "descending"){
+          if(input$ranking_order_X == F){ #descending
             data_plot_aggr[, VAR_X_PLOT := base::rank(x = -VAR_X, na.last = T, ties.method = "min")]
           }else{
             data_plot_aggr[, VAR_X_PLOT := base::rank(x = VAR_X, na.last = T, ties.method = "min")]
           }
-        }else if(input$switch_aggregate==T & input$express_X_as=="relatively to genotype" & !(input$aggregate_by %in% c("plot"))){
+        } else if(input$switch_aggregate==T && isTruthy(input$express_X_relative) && !(input$aggregate_by %in% c("plot"))){
           # - variation to genotype
           req(input$ref_genotype_X)
           if(input$aggregate_by=="germplasm"){
@@ -501,18 +526,18 @@ mod_scatterplot_server <- function(id, rv){
           }
           data_plot_aggr[,VAR_X_PLOT := 1 + (reference_value - VAR_X)/reference_value]
         }
-
+        
         ## transform Y variable
         # - no transformation (default)
         data_plot_aggr[,VAR_Y_PLOT:=VAR_Y]
-        if(input$express_Y_as=="as ranks"){
+        if(isTruthy(input$express_Y_as_ranks)){
           # - ranking
-          if(input$ranking_order_Y == "descending"){
+          if(input$ranking_order_Y == F){ #descending
             data_plot_aggr[, VAR_Y_PLOT := base::rank(x = -VAR_Y, na.last = T, ties.method = "min")]
           }else{
             data_plot_aggr[, VAR_Y_PLOT := base::rank(x = VAR_Y, na.last = T, ties.method = "min")]
           }
-        }else if(input$switch_aggregate==T & input$express_Y_as=="relatively to genotype" & !(input$aggregate_by %in% c("plot"))){
+        }else if(input$switch_aggregate==T && isTruthy(input$express_Y_relative) && !(input$aggregate_by %in% c("plot"))){
           # - variation to genotype
           req(input$ref_genotype_Y)
           if(input$aggregate_by=="germplasm"){
@@ -528,7 +553,8 @@ mod_scatterplot_server <- function(id, rv){
           }
           data_plot_aggr[,VAR_Y_PLOT := 1 + (reference_value - VAR_Y)/reference_value]
         }
-
+        
+        
         ## if many SHAPE or COLOR categorical values, make a "other" category
         if(data_plot_aggr[,.N,VAR_SHAPE][,.N]>6){
           other_values <- data_plot_aggr[,.N,VAR_SHAPE][order(N, decreasing = T)][6:.N, VAR_SHAPE]
@@ -540,37 +566,38 @@ mod_scatterplot_server <- function(id, rv){
             data_plot_aggr[VAR_COLOUR%in%other_values, VAR_COLOUR := "other"]
           }
         }
-
+        
         rv$data_plot_aggr <- data_plot_aggr
       })
-
+      
+      ## go regression ####
       observeEvent(input$go_regression, {
         rv_plot$draw_regression <- !rv_plot$draw_regression
       })
-
+      
+      ## Plot ####
       output$scatterplot <- renderPlotly({
         req(rv$data_plot_aggr)
-        req(input$picker_COLOUR)
-        req(rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"] == is.numeric(rv$data_plot_aggr[,VAR_COLOUR]))
-
+        #req(input$picker_COLOUR)
+        #req(rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"] == is.numeric(rv$data_plot_aggr[,VAR_COLOUR]))
+        
         rv_plot$draw_regression
         rv_plot$draw_clusters
-
+        
         d <- rv$data_plot_aggr
-
         if(rv_plot$draw_clusters==T){
           if("cluster" %in% names(d)){d[,cluster := NULL]}
           d <- merge.data.table(x = d, y = rv_plot$clusters[,.(germplasmName, cluster)], by = "germplasmName")
           d[,VAR_COLOUR:=as.factor(cluster)]
         }
-
+        
         reg <- NULL
         if(rv_plot$draw_regression==T){
           try({
             reg <- lm(formula = VAR_Y_PLOT ~ VAR_X_PLOT, data = d, na.action = na.exclude)
           })
-          shinyjs::addClass(id = "go_regression", class = "active")
-          updateActionButton(session, "go_regression", icon = icon("check"))
+          #shinyjs::addClass(id = "go_regression", class = "active")
+          #updateActionButton(session, "go_regression", icon = icon("check"))
           output$regression_output <- renderUI({
             tags$p(
               tags$b("Y"),"=",signif(reg$coefficients[2], digits = 2),tags$b("X"),
@@ -586,22 +613,22 @@ mod_scatterplot_server <- function(id, rv){
           shinyjs::removeClass(id = "go_regression", class = "active")
           output$regression_output <- renderUI("")
         }
-
-
+        
+        
         d[, "Germplasm Name" := germplasmName] # workaround for the plotly tooltip
         d[, "X value" := VAR_X_PLOT] # workaround for the plotly tooltip
         d[, "Y value" := VAR_Y_PLOT] # workaround for the plotly tooltip
-        d[, "Shape scale" := if(input$switch_SHAPE == T) VAR_SHAPE else NA] # workaround for the plotly tooltip
-        d[, "Colour scale" := if(input$switch_COLOUR == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
-        d[, "Size scale" := if(input$switch_SIZE == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
+        d[, "Shape scale" := if(isTruthy(input$picker_SHAPE)) VAR_SHAPE else NA] # workaround for the plotly tooltip
+        d[, "Colour scale" := if(isTruthy(input$picker_COLOUR)) VAR_COLOUR else NA] # workaround for the plotly tooltip
+        d[, "Size scale" := if(isTruthy(input$picker_SIZE)) VAR_SIZE else NA] # workaround for the plotly tooltip
         d[, Cluster := if(rv_plot$draw_clusters == T) VAR_COLOUR else NA] # workaround for the plotly tooltip
-
+        
         d <- highlight_key(d)
         p <- ggplot(d, aes(
           x = VAR_X_PLOT, y = VAR_Y_PLOT,
-          colour = if(input$switch_COLOUR == T | rv_plot$draw_clusters == T) VAR_COLOUR else NULL,
-          shape = if(input$switch_SHAPE == T) VAR_SHAPE else NULL,
-          size = if(input$switch_SIZE == T) VAR_SIZE else NULL,
+          colour = if(isTruthy(input$picker_COLOUR) | rv_plot$draw_clusters == T) VAR_COLOUR else NULL,
+          shape = if(isTruthy(input$picker_SHAPE)) VAR_SHAPE else NULL,
+          size = if(isTruthy(input$picker_SIZE)) VAR_SIZE else NULL,
           key = germplasmDbId,
           germplasmName = `Germplasm Name`,
           x_val = `X value`, # workaround for the plotly tooltip
@@ -611,7 +638,7 @@ mod_scatterplot_server <- function(id, rv){
           Colour = `Colour scale`, # workaround for the plotly tooltip
           Cluster = Cluster # workaround for the plotly tooltip
         ))
-
+        
         if(isTruthy(reg)){
           p <- p + geom_abline(
             slope = reg$coefficients[2],
@@ -624,24 +651,24 @@ mod_scatterplot_server <- function(id, rv){
 
         p <- p + geom_point(alpha = 0.5) +
           scale_x_continuous(
-            labels = if(input$express_X_as=="relatively to genotype" & isTruthy(input$ref_genotype_X)){scales::percent}else{waiver()},
+            labels = if(isTruthy(input$express_X_relative) && isTruthy(input$ref_genotype_X)){scales::percent}else{waiver()},
             # trans = if(input$express_X_as=="as ranks"){"reverse"}else{"identity"}, # disabled to make regression computation and drawing more simple
-            breaks = if(input$express_X_as=="as ranks"){as.numeric(floor(quantile(rv$data_plot_aggr$VAR_X_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
-            name = if(input$express_X_as=="as ranks"){
+            breaks = if(isTruthy(input$express_X_as_ranks)){as.numeric(floor(quantile(rv$data_plot_aggr$VAR_X_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
+            name = if(isTruthy(input$express_X_as_ranks)){
               paste(input$picker_X, "(ranks)")
-            }else if(input$express_X_as=="relatively to genotype" & isTruthy(input$ref_genotype_X)){
+            }else if(isTruthy(input$express_X_relative) & isTruthy(input$ref_genotype_X)){
               paste0(input$picker_X, " (relative to ", input$ref_genotype_X, ")")
             }else{
               input$picker_X
             }
           ) +
           scale_y_continuous(
-            labels = if(input$express_Y_as=="relatively to genotype" & isTruthy(input$ref_genotype_Y)){scales::percent}else{waiver()},
+            labels = if(isTruthy(input$express_Y_relative) && isTruthy(input$ref_genotype_Y)){scales::percent}else{waiver()},
             # trans = if(input$express_Y_as=="as ranks"){"reverse"}else{"identity"}, # disabled to make regression computation and drawing more simple
-            breaks = if(input$express_Y_as=="as ranks"){as.numeric(floor(quantile(rv$data_plot_aggr$VAR_Y_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
-            name = if(input$express_Y_as=="as ranks"){
+            breaks = if(isTruthy(input$express_Y_as_ranks)){as.numeric(floor(quantile(rv$data_plot_aggr$VAR_Y_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
+            name = if(isTruthy(input$express_Y_as_ranks)){
               paste(input$picker_Y, "(ranks)")
-            }else if(input$express_Y_as=="relatively to genotype" & isTruthy(input$ref_genotype_Y)){
+            }else if(isTruthy(input$express_Y_relative) && isTruthy(input$ref_genotype_Y)){
               paste0(input$picker_Y, " (relative to ", input$ref_genotype_Y, ")")
             }else{
               input$picker_Y
@@ -649,21 +676,22 @@ mod_scatterplot_server <- function(id, rv){
           ) +
           scale_shape(name = input$picker_SHAPE) +
           scale_size(name = input$picker_SIZE) +
-          scale_color_custom(
-            is_num = if(rv_plot$draw_clusters == T){F}else{rv$column_datasource[cols == isolate(input$picker_COLOUR), type == "Numerical"]},
-            name = if(rv_plot$draw_clusters == T){"cluster"}else{isolate(input$picker_COLOUR)}
-          ) +
+          if (isTruthy(input$picker_COLOUR) | rv_plot$draw_clusters == T) scale_color_custom(
+            is_num = if (rv_plot$draw_clusters == TRUE) { FALSE } else { rv$column_datasource[cols == isolate(input$picker_COLOUR), type == "Numerical"] },
+            name = if (rv_plot$draw_clusters == TRUE) { "cluster" } else { isolate(input$picker_COLOUR) }
+          ) else NULL +
           theme_minimal() #+
         # theme(legend.position = "bottom") # uneffective with plotyly
-
+        
         # pp <- ggMarginal(p, type = "density", fill =  "black", alpha = 0.05)
         # pp
-
+        
         tooltip_var <- c("germplasmName", "x_val", "y_val", "Shape", "Colour", "Size", "Cluster")
         ggplotly(#height=length(input$studies)*400,
           p,
           dynamicTicks = "TRUE", source = "A", originalData = T,
-          tooltip = tooltip_var[c(T,T,T,input$switch_SHAPE, input$switch_COLOUR, input$switch_SIZE, rv_plot$draw_clusters)]
+          tooltip = tooltip_var[c(T,T,T,isTruthy(input$picker_SHAPE), isTruthy(input$picker_COLOUR), 
+                                  isTruthy(input$picker_SIZE), rv_plot$draw_clusters)]
         ) %>%
           style(hoverlabel = list(bgcolor = grey(0.3))) %>%
           layout(dragmode = "lasso") %>%
@@ -685,7 +713,8 @@ mod_scatterplot_server <- function(id, rv){
             )
           )
       })
-
+      
+      ## Selection ####
       observeEvent(event_data("plotly_click", source = "A"),{
         rv_plot$plot_selection <- as.data.table(event_data("plotly_click", source = "A"))
       })
@@ -696,7 +725,7 @@ mod_scatterplot_server <- function(id, rv){
         shinyjs::toggle(selector = paste0(".",ns("ui_create_group")), condition = rv_plot$plot_selection[,.N]>0)
         req(dim(rv_plot$plot_selection)[1]>0)
         germplasms <- unique(rv$data_plot[germplasmDbId %in% rv_plot$plot_selection[,unique(key)], .(germplasmDbId, germplasmName)])
-        group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
+        group_id <- ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1)
         selection_data <- data.table(
           group_id = group_id,
           N = germplasms[,.N],
@@ -708,12 +737,14 @@ mod_scatterplot_server <- function(id, rv){
               aggregate_by = input$aggregate_by,
               picker_X = input$picker_X,
               aggreg_fun_X = input$aggreg_fun_X,
-              express_X_as = input$express_X_as,
+              express_X_as_ranks = input$express_X_as_ranks,
+              express_X_relative = input$express_X_relative,
               ref_genotype_X = input$ref_genotype_X,
               ranking_order_X = input$ranking_order_X,
               picker_Y = input$picker_Y,
               aggreg_fun_ = input$aggreg_fun_Y,
-              express_Y_as = input$express_Y_as,
+              express_Y_as_ranks = input$express_Y_as_ranks,
+              express_Y_relative = input$express_Y_relative,
               ref_genotype_Y = input$ref_genotype_Y,
               ranking_order_Y = input$ranking_order_Y,
               switch_SHAPE = input$switch_SHAPE,
@@ -736,371 +767,41 @@ mod_scatterplot_server <- function(id, rv){
         }else{
           paste(unlist(germplasmNames), collapse = ", ")
         }]
-        rv_plot$selection <- selection_data
+        rv$selection <- selection_data
       })
-
-      observeEvent(input$go_create_group,{
-        # selection <- rbindlist(list(
-        #   # event_data("plotly_click", source = "A"),
-        #   event_data("plotly_selected", source = "A")
-        # ), use.names = T, fill = T)
-        if(rv_plot$selection[,.N]>0){
-          toggleModal(session, "modal_create_group")
-          # germplasms <- unique(rv$data[germplasmDbId %in% rv$selection[,germplasmDbId], .(germplasmDbId, germplasmName)])
-          # group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
-          output$modal_create_group_ui <- renderUI({
-            req(rv_plot$selection[,.N]>0)
-            tagList(
-              tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
-              tags$p(rv_plot$selection[,germplasmNames_label]),
-              textInput(ns("modal_create_group_text_input_label"), label = "Group Name", value = paste("Group", rv_plot$selection[,group_id]), placeholder = "Group Label"),
-              textAreaInput(ns("modal_create_group_text_input_descr"), label = "Group Description", placeholder = "Group Description", resize = "vertical",
-                            value = paste0(
-                              "Visualization at group creation:\nX=",input$picker_X,", \nY=",input$picker_Y,
-                              if(input$switch_COLOUR==T) paste(", \nColour=", input$picker_COLOUR),
-                              if(input$switch_SHAPE==T) paste(", \nShape=", input$picker_SHAPE),
-                              if(input$switch_SIZE==T) paste(", \nSize=", input$picker_SIZE)
-                            )
-              ),
-              actionButton(ns("modal_create_group_go"), label = "Create", css.class = "btn btn-info")
-            )
-          })
-        }
-      })
-
-      observeEvent(input$modal_create_group_go, {
-        rv_plot$selection[, group_name := input$modal_create_group_text_input_label]
-        rv_plot$selection[, group_desc := input$modal_create_group_text_input_descr]
-        rv_plot$groups <- rbindlist(list(
-          rv_plot$groups,
-          rv_plot$selection
-        ), fill = T, use.names = T)
-
-        ## update selectors (shape, colour)
-        data_plot <- copy(rv$data_plot) # to avoid issues related to assignment by reference
-        data_plot[germplasmDbId %in% rv_plot$selection[,unlist(germplasmDbIds)], eval(input$modal_create_group_text_input_label) := paste0('In "', input$modal_create_group_text_input_label,'"')]
-        data_plot[!(germplasmDbId %in% rv_plot$selection[,unlist(germplasmDbIds)]), eval(input$modal_create_group_text_input_label) := paste0('Not in "', input$modal_create_group_text_input_label,'"')]
-        rv$column_datasource <- rbindlist(
-          list(
-            rv$column_datasource,
-            data.table(cols = input$modal_create_group_text_input_label, source = "group", type = "Text")
-          )
-        )
-        rv$data_plot <- data_plot
-
-        rv_plot$selection <- data.table()
-        rv_plot$plot_selection <- data.table()
-
-        toggleModal(session, "modal_create_group", toggle = "close")
-      })
-      observeEvent(rv_plot$groups$group_id,{
-        req(rv_plot$groups)
-        output$ui_groups <- renderUI({
-          group_selector(input_id = ns("group_sel_input"), group_table = rv_plot$groups, column_datasource = rv$column_datasource, data_plot = rv$data_plot, panel_style = "info")
-        })
-      })
-
-      observe({
-        shinyjs::toggle(selector = paste0(".",ns("group_actions")), condition = length(input$group_sel_input)>0)
-        shinyjs::toggle(selector = paste0(".",ns("create_new_groups_from_groups")), condition = length(input$group_sel_input)>1)
-        shinyjs::toggle(selector = paste0(".",ns("one_group_selected")), condition = length(input$group_sel_input)==1)
-      })
-
-      ## Create new groups
-      observeEvent(input$action_groups_union,{
-        toggleModal(session, "modal_create_group")
-        union_germplasms_id <- rv_plot$groups[group_id %in% input$group_sel_input, unlist(germplasmDbIds)]
-        germplasms <- unique(rv$data[germplasmDbId %in% union_germplasms_id, .(germplasmDbId, germplasmName)])
-        group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
-        selection_data <- data.table(
-          group_id = group_id,
-          N = germplasms[,.N],
-          germplasmDbIds = list(germplasms$germplasmDbId),
-          germplasmNames = list(germplasms$germplasmName)
-        )
-        selection_data[,germplasmNames_label := if(N>6){
-          paste(
-            paste(unlist(germplasmNames)[1:5], collapse = ", "),
-            paste("and", N - 5, "others")
-          )
-        }else{
-          paste(unlist(germplasmNames), collapse = ", ")
-        }]
-        rv_plot$selection <- selection_data
-
-        output$modal_create_group_ui <- renderUI({
-          tagList(
-            tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
-            tags$p(rv_plot$selection[,germplasmNames_label]),
-            textInput(ns("modal_create_group_text_input_label"), label = "group label", value = paste("group", rv_plot$selection[,group_id]), placeholder = "group label"),
-            textAreaInput(ns("modal_create_group_text_input_descr"), label = "group description", placeholder = "group description", resize = "vertical",
-                          value = paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∪ ")),
-            actionButton(ns("modal_create_group_go"), label = "Create")
-          )
-        })
-      })
-      observeEvent(input$action_groups_intersect,{
-        toggleModal(session, "modal_create_group")
-        intersect_germplasms_id <- Reduce(intersect, rv_plot$groups[group_id %in% input$group_sel_input, germplasmDbIds])
-        germplasms <- unique(rv$data[germplasmDbId %in% intersect_germplasms_id, .(germplasmDbId, germplasmName)])
-        group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
-        selection_data <- data.table(
-          group_id = group_id,
-          N = germplasms[,.N],
-          germplasmDbIds = list(germplasms$germplasmDbId),
-          germplasmNames = list(germplasms$germplasmName)
-        )
-        selection_data[,germplasmNames_label := if(N>6){
-          paste(
-            paste(unlist(germplasmNames)[1:5], collapse = ", "),
-            paste("and", N - 5, "others")
-          )
-        }else{
-          paste(unlist(germplasmNames), collapse = ", ")
-        }]
-        rv_plot$selection <- selection_data
-
-        output$modal_create_group_ui <- renderUI({
-          if(rv_plot$selection[1,N>0]){
-            tagList(
-              tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
-              tags$p(rv_plot$selection[,germplasmNames_label]),
-              textInput(ns("modal_create_group_text_input_label"), label = "group label", value = paste("group", rv_plot$selection[,group_id]), placeholder = "group label"),
-              textAreaInput(ns("modal_create_group_text_input_descr"), label = "group description", placeholder = "group description", resize = "vertical",
-                            value = paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∩ ")),
-              actionButton(ns("modal_create_group_go"), label = "Create")
-            )
-          }else{
-            tags$label("This intersection results in an empty group.")
-          }
-        })
-      })
-      observeEvent(input$action_groups_complement,{
-        toggleModal(session, "modal_create_group")
-        union_germplasms_id <- rv_plot$groups[group_id %in% input$group_sel_input, unlist(germplasmDbIds)]
-        germplasms <- unique(rv$data[!(germplasmDbId %in% union_germplasms_id), .(germplasmDbId, germplasmName)])
-        group_id <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
-        selection_data <- data.table(
-          group_id = group_id,
-          N = germplasms[,.N],
-          germplasmDbIds = list(germplasms$germplasmDbId),
-          germplasmNames = list(germplasms$germplasmName)
-        )
-        selection_data[,germplasmNames_label := if(N>6){
-          paste(
-            paste(unlist(germplasmNames)[1:5], collapse = ", "),
-            paste("and", N - 5, "others")
-          )
-        }else{
-          paste(unlist(germplasmNames), collapse = ", ")
-        }]
-        rv_plot$selection <- selection_data
-
-        output$modal_create_group_ui <- renderUI({
-          tagList(
-            tags$label(paste(rv_plot$selection[,N]," selected germplasms")),
-            tags$p(rv_plot$selection[,germplasmNames_label]),
-            textInput(ns("modal_create_group_text_input_label"), label = "Group Name", value = paste("group", rv_plot$selection[,group_id]), placeholder = "Group Name"),
-            textAreaInput(ns("modal_create_group_text_input_descr"), label = "Group Description", placeholder = "Group Description", resize = "vertical",
-                          value = paste("Complement of (", paste(rv_plot$groups[group_id %in% input$group_sel_input, group_name], collapse = " ∪ "), ")")),
-            actionButton(ns("modal_create_group_go"), label = "Create")
-          )
-        })
-      })
-
-      observeEvent(input$action_groups_plot_creation_params,{
-        plot_params <- rv_plot$groups[group_id == input$group_sel_input,plot_params][[1]]
-
-        updateMaterialSwitch(session, "switch_aggregate", value = plot_params$switch_aggregate)
-        updatePickerInput(session, "aggregate_by", selected = plot_params$aggregate_by)
-
-        updatePickerInput(session, "picker_X", selected = plot_params$picker_X)
-        updatePickerInput(session, "aggreg_fun_X", selected = plot_params$aggreg_fun_X)
-        updateRadioButtons(session, "express_X_as", selected = plot_params$express_X_as)
-        updatePickerInput(session, "ref_genotype_X", selected = plot_params$ref_genotype_X)
-        updateCheckboxInput(session, "ranking_order_X", value = plot_params$ranking_order_X)
-
-        updatePickerInput(session, "picker_Y", selected = plot_params$picker_Y)
-        updatePickerInput(session, "aggreg_fun_Y", selected = plot_params$aggreg_fun_Y)
-        updateRadioButtons(session, "express_Y_as", selected = plot_params$express_Y_as)
-        updatePickerInput(session, "ref_genotype_Y", selected = plot_params$ref_genotype_Y)
-        updateCheckboxInput(session, "ranking_order_Y", value = plot_params$ranking_order_Y)
-
-        updateMaterialSwitch(session, "switch_SHAPE", value = plot_params$switch_SHAPE)
-        updatePickerInput(session, "picker_SHAPE", selected = plot_params$picker_SHAPE)
-        updatePickerInput(session, "aggreg_fun_SHAPE", selected = plot_params$aggreg_fun_SHAPE)
-
-        updateMaterialSwitch(session, "switch_COLOUR", value = plot_params$switch_COLOUR)
-        updatePickerInput(session, "picker_COLOUR", selected = plot_params$picker_COLOUR)
-        updatePickerInput(session, "aggreg_fun_COLOUR", selected = plot_params$aggreg_fun_COLOUR)
-
-        updateMaterialSwitch(session, "switch_SIZE", value = plot_params$switch_SIZE)
-        updatePickerInput(session, "picker_SIZE", selected = plot_params$picker_SIZE)
-        updatePickerInput(session, "aggreg_fun_SIZE", selected = plot_params$aggreg_fun_SIZE)
-      })
-
-      observeEvent(input$action_groups_delete,{
-
-        ## update selectors (shape, colour)
-        for(k in input$group_sel_input){
-          rv$data_plot[,eval(rv_plot$groups[group_id == k, group_name]) := NULL]
-        }
-        rv$column_datasource <- rv$column_datasource[!(cols %in% rv_plot$groups[group_id %in% input$group_sel_input, group_name])]
-
-        ## delete groups
-        rv_plot$groups <- rv_plot$groups[!(group_id %in% input$group_sel_input)]
-      })
-
-
-      observeEvent(input$action_groups_export_as_list,{
-        toggleModal(session, "modal_export_group_as_list", toggle = "open")
-        output$modal_export_group_as_list_ui <- renderUI(
-          tagList(
-            textInput(
-              ns("listName"),
-              label = "Group Name",
-              value = rv_plot$groups[group_id == input$group_sel_input, group_name],
-              placeholder = "Human readable name of a List",
-              width = "100%"
-            ),
-            textAreaInput(
-              ns("listDescription"),
-              label = "List description",
-              value = rv_plot$groups[group_id == input$group_sel_input, group_desc],
-              placeholder = "Description of a List",
-              width = "100%"
-            ),
-            uiOutput(ns("go_create_list_ui"))
-          )
-        )
-      })
-
-      observeEvent(c(input$listDescription, input$listName), {
-        if(input$listName != "" & input$listDescription != ""){
-          output$go_create_list_ui <- renderUI({actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-primary")})
-        }else{
-          output$go_create_list_ui <- renderUI({actionButton(ns("go_create_list"), "Create list", css.class = "btn btn-primary", disabled = "")})
-        }
-      })
-
-      observeEvent(input$go_create_list,{
-        toggleModal(session, "modal_export_group_as_list", toggle = "close")
-        req(length(input$group_sel_input)==1)
-        tryCatch({
-          brapirv2::brapi_post_lists(
-            con = rv$con,
-            data = rv_plot$groups[group_id == input$group_sel_input, germplasmDbIds][[1]],
-            listSize = rv_plot$groups[group_id == input$group_sel_input, N],
-            dateCreated = as.character(Sys.Date()), # XXX
-            dateModified = as.character(Sys.Date()), # XXX
-            listName = input$listName,
-            listDescription= input$listDescription,
-            listOwnerName = "Admin Admin", # XXX
-            listOwnerPersonDbId = "1", # XXX
-            listSource = "test", # XXX
-            listType = "germplasm"
-          )
-          showNotification("List posted", type = "message", duration = notification_duration)
-        }, error = function(e)({
-          showNotification("Could not post list", type = "error", duration = notification_duration)
-        }))
-      })
-
-
-      observeEvent(input$action_groups_mark_as_selection,{
-        req(length(input$group_sel_input)==1)
-        toggleModal(session, "modal_export_group_mark_as_selection", toggle = "open")
-        output$modal_export_group_mark_as_selection_ui <- renderUI({
-
-          envs <- unique(rv$data_plot[,.(studyDbId, study_name_app)])
-          env_choices <- envs[,studyDbId]
-          names(env_choices) <- envs[,study_name_app]
-
-          trait_classes <- rv$ontology_variables[,unique(trait.traitClass)]
-
-          tagList(
-            checkboxGroupInput(
-              inputId = ns("mark_as_sel_envs"),
-              label = "Environments",
-              choices = env_choices,
-              selected = env_choices,
-              width = "100%"
-            ),
-            pickerInput(
-              inputId = ns("mark_as_sel_var_to_use"),
-              label = "Variable to use",
-              choices = NULL,
-              inline = T
-            ),
-            pickerInput(
-              inputId = ns("mark_as_sel_trait_classes"),
-              label = "Filter Variable by Trait Class",
-              choices = trait_classes,
-              inline = T
-            ),
-            radioButtons(
-              ns("mark_as_sel_all_plots_radio"),
-              label = "",
-              choiceNames = c("Mark all plots", "Mark the first replicate of each plot"),
-              choiceValues = c("all", "rep1"),
-              selected = "rep1"
-            ),
-            uiOutput(ns("mark_as_sel_info")),
-            actionButton(
-              ns("action_groups_mark_as_selection_go"),
-              "OK", style = "primary"
-            )
-          )
-        })
-      })
-
-
-
-      output$action_groups_export_group_details <- downloadHandler(
-        filename = function() {
-          paste0("group_", input$group_sel_input, ".csv")
-        },
-        content = function(file) {
-          group_detail <- unique(rv$data_plot[
-            germplasmDbId %in% unlist(rv_plot$groups[group_id%in%input$group_sel_input, germplasmDbIds]),
-            .SD, .SD = rv$column_datasource[source == "germplasm", cols]
-          ])
-          write.csv(group_detail, file, row.names = F)
-        }
-      )
-
+      
       observeEvent(input$mark_as_sel_trait_classes,{
         req(input$mark_as_sel_trait_classes)
         vars <- unique(rv$ontology_variables[trait.traitClass == input$mark_as_sel_trait_classes,.(observationVariableDbId, observationVariableName)])
-
+        
         choices_vars <- vars[,observationVariableDbId]
         names(choices_vars) <- vars[,observationVariableName]
-
+        
         updatePickerInput(
           session, "mark_as_sel_var_to_use",
           choices = choices_vars
         )
       })
-
+      
       observeEvent(c(input$mark_as_sel_var_to_use, input$mark_as_sel_all_plots_radio, input$mark_as_sel_envs), {
         rv_plot$as_sel_data <- NULL
         output$mark_as_sel_info <- renderUI("")
-
+        
         req(input$mark_as_sel_var_to_use)
         req(input$mark_as_sel_envs)
-
+        
         as_sel_data <- rv$data[
           observationLevel == "PLOT" & studyDbId %in% input$mark_as_sel_envs &
-            germplasmDbId %in% rv_plot$groups[group_id == input$group_sel_input, germplasmDbIds][[1]]
+            germplasmDbId %in% rv$groups[group_id == input$group_sel_input, germplasmDbIds][[1]]
         ]
         if(input$mark_as_sel_all_plots_radio=="rep1" & as_sel_data[replicate=="1",.N]>0){
           as_sel_data <- as_sel_data[replicate == "1"]
         }
         as_sel_data <- unique(as_sel_data[,.(germplasmDbId, observationUnitDbId, studyDbId)])
-
+        
         as_sel_data[,observationVariableDbId := input$mark_as_sel_var_to_use]
-        as_sel_data[,observations.value := "1"]
-
+        as_sel_data[,observationValue := "1"]
+        
         output$mark_as_sel_info <- renderUI({
           tagList(
             div(
@@ -1114,52 +815,10 @@ mod_scatterplot_server <- function(id, rv){
             )
           )
         })
-
+        
         rv_plot$as_sel_data <- as_sel_data
       })
-
-      observeEvent(input$action_groups_mark_as_selection_go,{
-        req(rv_plot$as_sel_data[,.N]>0)
-        withProgress(message = "POST brapi/v2/observations", value = 0, {
-          lapply(rownames(rv_plot$as_sel_data), function(x){
-            row_id <- as.numeric(x)
-            incProgress(1/length(rownames(rv_plot$as_sel_data)))
-            a <- tryCatch({
-              brapirv2::brapi_post_observations(
-                con = rv$con,
-                studyDbId = as.character(rv_plot$as_sel_data[row_id, studyDbId]),
-                germplasmDbId = as.character(rv_plot$as_sel_data[row_id, germplasmDbId]),
-                observationUnitDbId = as.character(rv_plot$as_sel_data[row_id, observationUnitDbId]),
-                observationVariableDbId = as.character(rv_plot$as_sel_data[row_id, observationVariableDbId]),
-                value = as.character(rv_plot$as_sel_data[row_id, observations.value]),
-                additionalInfo = list() # otherwise error message: "Argument: \"additionalInfo\" should be provided as a list, see the help page on how the list should be constructed."
-              )
-            }, error = function(e)({e})
-            )
-            mess <- a$message
-            if(!is.null(mess)){
-              showNotification(
-                ui =
-                  tagList(
-                    tags$p("Could not post observation"),
-                    tags$code(paste0(
-                      '{ "studyDbId":"', as.character(rv_plot$as_sel_data[row_id, studyDbId]),'",',
-                      '"germplasmDbId":"', as.character(rv_plot$as_sel_data[row_id, germplasmDbId]),'",',
-                      '"observationUnitDbId":"', as.character(rv_plot$as_sel_data[row_id, observationUnitDbId]),'",',
-                      '"observationVariableDbId":"', as.character(rv_plot$as_sel_data[row_id, observationVariableDbId]),'",',
-                      '"value":"', as.character(rv_plot$as_sel_data[row_id, observations.value]),'"'
-                    )),
-                    tags$code(mess)
-                  ),
-                type = "error", duration = notification_duration
-              )
-            }
-          })
-        })
-        toggleModal(session, "modal_export_group_mark_as_selection", toggle = "open")
-        rv_plot$as_sel_data <- NULL
-      })
-
+      
       output$ui_clusters <- renderUI({
         if(input$aggregate_by == "germplasm" & input$switch_aggregate == T){
           req(rv$data_plot_aggr)
@@ -1168,14 +827,15 @@ mod_scatterplot_server <- function(id, rv){
             label = "Cluster germplasms", status = "info", circle = F, inline = T, up = F, width = "500px",
             radioGroupButtons(ns("cluster_algo"), "Alogrithm", choiceNames = c("K-means", "HCA with Ward distance"), choiceValues = c("kmeans", "hca")),
             numericInput(ns("n_clusters"), label = "Number of clusters", min = 1, max = max_k, step = 1, value = min(3, max_k)),
-            actionButton(ns("go_clustering"), "Cluster", css.class = "btn btn-primary"),
+            actionButton(ns("go_clustering"), "Cluster", class = "btn btn-primary"),
             uiOutput(ns("cluster_results"))
           )
         }else{
           span()
         }
       })
-
+      
+      ## go clustering ####
       observeEvent(input$go_clustering,{
         req(rv$data_plot_aggr)
         req(input$n_clusters)
@@ -1260,7 +920,8 @@ mod_scatterplot_server <- function(id, rv){
           )
         })
       })
-
+      
+      ## download cluster ####
       output$download_clusters <- downloadHandler(
         filename = function() {
           paste0("clusters_", Sys.Date(), ".csv")
@@ -1269,11 +930,11 @@ mod_scatterplot_server <- function(id, rv){
           write.csv(rv_plot$clusters, file, row.names = F)
         }
       )
-
+      
       observeEvent(input$draw_clusters, {
         rv_plot$draw_clusters <- !rv_plot$draw_clusters
       })
-
+      
       observeEvent(rv_plot$draw_clusters, {
         if(rv_plot$draw_clusters == T){
           updateActionButton(session, "draw_clusters", icon = icon("check"))
@@ -1289,11 +950,19 @@ mod_scatterplot_server <- function(id, rv){
           rv_plot$draw_clusters <- F
         }
       })
+      
+      ## group from cluster ####
       observeEvent(input$create_groups_from_clusters,{
         shinyjs::disable("create_groups_from_clusters")
         shinyjs::addClass("create_groups_from_clusters", "active")
+        if (nrow(rv$groups)==0){
+          clustering_id <- 1
+        } else {
+          clustering_id <- ifelse(length(rv$groups[!is.na(clustering_id)]$clustering_id)==0, 1, max(rv$groups[!is.na(clustering_id)]$clustering_id) + 1)
+        }
+        
         clusters <- rv_plot$clusters[order(cluster)][,.(
-          group_name = paste0(unique(method), unique(counter), ".", cluster),
+          group_name = paste0("cl",clustering_id,"_",unique(method), ".", cluster),
           group_desc = paste0(
             "Clustering method: ", tags$b(input$cluster_algo), tags$br(),
             "Cluster: ", tags$b(cluster,"/", input$n_clusters), tags$br(),
@@ -1308,12 +977,14 @@ mod_scatterplot_server <- function(id, rv){
               aggregate_by = input$aggregate_by,
               picker_X = input$picker_X,
               aggreg_fun_X = input$aggreg_fun_X,
-              express_X_as = input$express_X_as,
+              express_X_as_ranks = input$express_X_as_ranks,
+              express_X_relative = input$express_X_relative,
               ref_genotype_X = input$ref_genotype_X,
               ranking_order_X = input$ranking_order_X,
               picker_Y = input$picker_Y,
               aggreg_fun_ = input$aggreg_fun_Y,
-              express_Y_as = input$express_Y_as,
+              express_Y_as_ranks = input$express_Y_as_ranks,
+              express_Y_relative = input$express_Y_relative,
               ref_genotype_Y = input$ref_genotype_Y,
               ranking_order_Y = input$ranking_order_Y,
               switch_SHAPE = input$switch_SHAPE,
@@ -1328,38 +999,93 @@ mod_scatterplot_server <- function(id, rv){
             )
           )
         ),cluster]
-        clusters[,germplasmNames_label := if(N>6){
-          paste(
+        clusters[N>6 ,germplasmNames_label := paste(
             paste(unlist(germplasmNames)[1:5], collapse = ", "),
             paste("and", N - 5, "others")
-          )
-        }else{
-          paste(unlist(germplasmNames), collapse = ", ")
-        }]
-        group_id_start <- ifelse(is.null(rv_plot$groups$group_id), 1, max(rv_plot$groups$group_id) + 1)
+        )]
+        clusters[N <= 6, germplasmNames_label := paste(unlist(germplasmNames), collapse = ", ")]
+        
+        group_id_start <- ifelse(length(rv$groups$group_id)==0, 1, max(rv$groups$group_id) + 1)
         group_ids <- group_id_start:(group_id_start+clusters[,.N] -1)
         clusters[, group_id := group_ids]
-        rv_plot$groups <- rbindlist(list(
-          rv_plot$groups,
+        clusters[, clustering_id := clustering_id]
+        rv$groups <- rbindlist(list(
+          rv$groups,
           clusters
         ), fill = T, use.names = T)
-
+        
         ## update selectors (shape, colour)
         data_plot <- copy(rv$data_plot) # to avoid reactivity issues related to assignment by reference
-        for(id in clusters[,unique(group_id)]){
-          group_name <- clusters[group_id == id,group_name]
-          data_plot[germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)], eval(group_name) := paste0('In "', group_name,'"')]
-          data_plot[!(germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)]), eval(group_name) := paste0('Not in "', group_name,'"')]
-        }
+        #for(id in clusters[,unique(group_id)]){
+        #  group_name <- clusters[group_id == id,group_name]
+        #  data_plot[germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)], eval(group_name) := paste0('In "', group_name,'"')]
+        #  data_plot[!(germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)]), eval(group_name) := paste0('Not in "', group_name,'"')]
+        #}
+        
+        data_plot <- setnames(data_plot[clusters[,.(germplasmDbId=unlist(germplasmDbIds)),cluster],on=.(germplasmDbId)],old = "cluster",new = paste0("cl",clustering_id,"_",unique(rv_plot$clusters$method)))[]
+        
         rv$column_datasource <- rbindlist(
           list(
             rv$column_datasource,
-            data.table(cols = clusters[,unique(group_name)], source = "group", type = "Text")
-          )
+            #data.table(cols = clusters[,unique(group_name)], source = "group", type = "Text", visible = T)
+            data.table(cols = paste0("cl",clustering_id,"_",unique(rv_plot$clusters$method)) ,  type = "Text", source = "group", visible = T)
+            
+          ), 
+          use.names = T
         )
         rv$data_plot <- data_plot
-
+        
       })
+      
+      ## create group ####
+      observeEvent(input$go_create_group,{
+        if(rv$selection[,.N]>0){
+          showModal(groupModal(rv, parent_session, "Create new group", paste0(
+            "Visualization at group creation:\nX=",input$picker_X,", \nY=",input$picker_Y,
+            if(isTruthy(input$picker_COLOUR)) paste(", \nColour=", input$picker_COLOUR),
+            if(isTruthy(input$picker_SHAPE)) paste(", \nShape=", input$picker_SHAPE),
+            if(isTruthy(input$picker_SIZE)) paste(", \nSize=", input$picker_SIZE)
+          )))
+        }
+      })
+      
+      ## update params from group ####
+      observeEvent(rv$visu_as_group,{
+        plot_params <- rv$groups[group_id == rv$visu_as_group, plot_params][[1]]
+        
+        updateMaterialSwitch(session, "switch_aggregate", value = plot_params$switch_aggregate)
+        updatePickerInput(session, "aggregate_by", selected = plot_params$aggregate_by)
+        
+        updatePickerInput(session, "picker_X", selected = plot_params$picker_X)
+        updatePickerInput(session, "aggreg_fun_X", selected = plot_params$aggreg_fun_X)
+        updateCheckboxInput(session, "express_X_as_ranks", value = plot_params$express_X_as_ranks)
+        updateCheckboxInput(session, "express_X_relative", value = plot_params$express_X_relative)
+        updatePickerInput(session, "ref_genotype_X", selected = plot_params$ref_genotype_X)
+        updateCheckboxInput(session, "ranking_order_X", value = plot_params$ranking_order_X)
+        
+        updatePickerInput(session, "picker_Y", selected = plot_params$picker_Y)
+        updatePickerInput(session, "aggreg_fun_Y", selected = plot_params$aggreg_fun_Y)
+        updateCheckboxInput(session, "express_Y_as_ranks", value = plot_params$express_Y_as_ranks)
+        updateCheckboxInput(session, "express_Y_relative", value = plot_params$express_Y_relative)
+        updatePickerInput(session, "ref_genotype_Y", selected = plot_params$ref_genotype_Y)
+        updateCheckboxInput(session, "ranking_order_Y", value = plot_params$ranking_order_Y)
+        
+        updateMaterialSwitch(session, "switch_SHAPE", value = plot_params$switch_SHAPE)
+        updatePickerInput(session, "picker_SHAPE", selected = plot_params$picker_SHAPE)
+        updatePickerInput(session, "aggreg_fun_SHAPE", selected = plot_params$aggreg_fun_SHAPE)
+        
+        updateMaterialSwitch(session, "switch_COLOUR", value = plot_params$switch_COLOUR)
+        updatePickerInput(session, "picker_COLOUR", selected = plot_params$picker_COLOUR)
+        updatePickerInput(session, "aggreg_fun_COLOUR", selected = plot_params$aggreg_fun_COLOUR)
+        
+        updateMaterialSwitch(session, "switch_SIZE", value = plot_params$switch_SIZE)
+        updatePickerInput(session, "picker_SIZE", selected = plot_params$picker_SIZE)
+        updatePickerInput(session, "aggreg_fun_SIZE", selected = plot_params$aggreg_fun_SIZE)
+        
+        rv$visu_as_group <- NULL
+      })
+      
+      return(rv)
     }
   )
 }

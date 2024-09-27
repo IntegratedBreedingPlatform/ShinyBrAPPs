@@ -111,11 +111,11 @@ mod_model_ui <- function(id){
                 pickerInput(
                   ns("select_trait_outliers"),"Trait", multiple = F, choices = NULL, width = "100%"
                 )
-              ),
-              column(
-                4,
-                sliderInput(ns("limit_residual"), label = "Threshold for standardized residuals", min = 0, max = 0, value = 0, width = "100%")
-              )
+              )#,
+              #column(
+              #  4,
+              #  sliderInput(ns("limit_residual"), label = "Threshold for standardized residuals", min = 0, max = 0, value = 0, width = "100%")
+              #)
             ),
             fluidRow(
               column(
@@ -188,7 +188,7 @@ mod_model_server <- function(id, rv){
         rv$obsUnit_outliers <- NULL
 
         req(rv$data_dq)
-        req("observations.observationVariableName"%in%names(rv$data_dq))
+        req("observationVariableName"%in%names(rv$data_dq))
         
         choices_env <- rv$data_dq[!is.na(study_name_app)][,unique(study_name_app)]
         updatePickerInput(
@@ -200,7 +200,7 @@ mod_model_server <- function(id, rv){
           )
         )
 
-        choices_traits <- unique(rv$data_dq[scale.dataType == "Numerical"]$observations.observationVariableName)
+        choices_traits <- unique(rv$data_dq[scale.dataType == "Numerical"]$observationVariableName)
         updatePickerInput(
           session,"select_traits",
           choices = choices_traits,
@@ -228,7 +228,7 @@ mod_model_server <- function(id, rv){
           shinyjs::hide("go_fit_no_outlier")
           # Update traits dropdown
           if (is.null(input$select_environments)) {            
-            choices_traits <- unique(rv$data_dq[scale.dataType == "Numerical"]$observations.observationVariableName)            
+            choices_traits <- unique(rv$data_dq[scale.dataType == "Numerical"]$observationVariableName)            
             if (is.null(input$select_traits)) {
               selected_traits <- NULL
             } else {
@@ -237,7 +237,7 @@ mod_model_server <- function(id, rv){
   
           } else {
             ## only traits found in all selected environments can be selected
-            trait_by_studyDbIds <- rv$data_dq[scale.dataType == "Numerical"][study_name_app %in% input$select_environments, .(trait = unique(observations.observationVariableName)), .(studyDbId)]
+            trait_by_studyDbIds <- rv$data_dq[scale.dataType == "Numerical"][study_name_app %in% input$select_environments, .(trait = unique(observationVariableName)), .(studyDbId)]
             choices_traits <- trait_by_studyDbIds[, .N, trait][N == length(trait_by_studyDbIds[, unique(studyDbId)]), trait]
             if (is.null(input$select_traits)) {
               selected_traits <- choices_traits
@@ -249,7 +249,6 @@ mod_model_server <- function(id, rv){
               }
             }
           }
-
           updatePickerInput(
             session, "select_traits",
             choices = choices_traits,
@@ -273,8 +272,7 @@ mod_model_server <- function(id, rv){
         #
         # NB: choices_model_design is defined in inst/apps/stabrapp/config.R
         # For the following code to work, the item order in choices_model_design has to be: "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"
-        
-        data_filt <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs) & (study_name_app %in% input$select_environments)]
+        data_filt <- rv$data_dq[!(observationDbId %in% rv$excluded_obs) & (study_name_app %in% input$select_environments)]
         has_subBlocks <- data_filt[,.N,.(blockNumber)][,.N]>1
         has_repIds <- data_filt[,.N,.(replicate)][,.N]>1
         has_coords <- data_filt[,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1
@@ -333,7 +331,7 @@ mod_model_server <- function(id, rv){
           shinyjs::hide("go_fit_no_outlier")
           # Update environments dropdown
           if (is.null(input$select_traits)) {
-            req("observations.observationVariableName"%in%names(rv$data_dq))
+            req("observationVariableName"%in%names(rv$data_dq))
             choices_env <- rv$data_dq[,unique(study_name_app)]
             if (is.null(input$select_environments)) {
               selected_env <- NULL
@@ -342,8 +340,8 @@ mod_model_server <- function(id, rv){
             }
           } else {
             ## only environment with all selected traits can be selected
-            env_by_traits <- rv$data_dq[observations.observationVariableName %in% input$select_traits, .(env = unique(study_name_app)), .(observations.observationVariableName)]
-            choices_env <- env_by_traits[, .N, env][N == length(env_by_traits[, unique(observations.observationVariableName)]), env]
+            env_by_traits <- rv$data_dq[observationVariableName %in% input$select_traits, .(env = unique(study_name_app)), .(observationVariableName)]
+            choices_env <- env_by_traits[, .N, env][N == length(env_by_traits[, unique(observationVariableName)]), env]
             if (is.null(input$select_environments)) {
               selected_env <- choices_env
             } else {
@@ -353,9 +351,6 @@ mod_model_server <- function(id, rv){
                 selected_env <- choices_env
               }
             }
-            print(selected_env)
-            print(choices_env)
-            #choices_env <- unique(rv$data_dq[observations.observationVariableName %in% input$select_traits, study_name_app])
           }
           updatePickerInput(
             session, "select_environments",
@@ -371,14 +366,14 @@ mod_model_server <- function(id, rv){
           # - have to be numerical
           # - must not be some columns (like ids)
           # - can be traits
-          all_traits <- rv$data_dq[,unique(observations.observationVariableName)]
+          all_traits <- rv$data_dq[,unique(observationVariableName)]
           remaining_traits <- setdiff(all_traits, input$select_traits)
           choices_cov <- c(names(rv$data_dq)[unlist(rv$data_dq[,lapply(.SD, is.numeric)])], remaining_traits)
           not_cov <- c(
-            "studyDbId", "trialDbId","observations.observationDbId",
+            "studyDbId", "trialDbId","observationDbId",
             "environment_number",
-            "observations.observationVariableDbId",
-            "observations.value",
+            "observationVariableDbId",
+            "observationValue",
             "programDbId"
           )
           choices_cov <- choices_cov[!(choices_cov%in%not_cov)]
@@ -449,8 +444,8 @@ mod_model_server <- function(id, rv){
         req(rv_mod$data_checks)
         ## create TD without the excluded observations
         ## exclude observations
-        rv$data_dq[,observations.value:=as.numeric(observations.value)]
-        data_filtered <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
+        rv$data_dq[,observationValue:=as.numeric(observationValue)]
+        data_filtered <- rv$data_dq[!(observationDbId %in% rv$excluded_obs)]
         rv$fitted_data <- data_filtered
         fitModel(data_filtered)
         output$fit_outliers_output = renderText({
@@ -463,8 +458,8 @@ mod_model_server <- function(id, rv){
         req(rv$obsUnit_outliers)
         ## create TD without the excluded observations
         ## exclude observations
-        rv$data_dq[,observations.value:=as.numeric(observations.value)]
-        data_filtered <- rv$data_dq[!(observations.observationDbId %in% rv$excluded_obs)]
+        rv$data_dq[,observationValue:=as.numeric(observationValue)]
+        data_filtered <- rv$data_dq[!(observationDbId %in% rv$excluded_obs)]
         data_filtered <- data_filtered[!(observationUnitDbId %in% rv$obsUnit_outliers)]
         rv$fitted_data <- data_filtered
         fitModel(data_filtered)
@@ -474,44 +469,52 @@ mod_model_server <- function(id, rv){
       })
       
       fitModel <- function(data_filtered) {
-        ## make 1 column per trait
-        data_filtered_casted <- dcast(
-          data = data_filtered[,.(
-            observationUnitDbId,
-            genotype = germplasmName, trial = study_name_app, loc = studyLocationDbId,
-            repId = replicate,
-            subBlock = blockNumber,
-            rowCoord = positionCoordinateY, colCoord = positionCoordinateX,
-            observations.observationVariableName, observations.value
-          )],
-          formula = "observationUnitDbId + genotype + trial + loc + repId + subBlock + rowCoord + colCoord ~ observations.observationVariableName",
-          value.var = "observations.value"
-        )
         
         ## parametrization
         createTD_args <- list(
           genotype = "genotype",
           trial = "trial",
-          loc = "loc",
-          repId = "repId",
-          subBlock = "subBlock",
-          rowCoord = "rowCoord",
-          colCoord = "colCoord"
+          loc = "loc"
         )
-        if(!rv_mod$data_checks$has_subBlocks){
-          data_filtered_casted[,subBlock:=NULL]
-          createTD_args$subBlock <- NULL
+        
+        data <- data_filtered[,.(
+          observationUnitDbId,
+          genotype = germplasmName,
+          trial = study_name_app, 
+          loc = locationDbId,
+          observationVariableName, 
+          observationValue
+        )]
+        
+        formula <- "observationUnitDbId + genotype + trial + loc"
+        
+        if(rv_mod$data_checks$has_subBlocks){
+          createTD_args$subBlock <- "subBlock"
+          data[,subBlock := data_filtered$blockNumber]
+          formula <- paste0(formula, " + subBlock")
         }
-        if(!rv_mod$data_checks$has_repIds){
-          data_filtered_casted[,repId:=NULL]
-          createTD_args$repId <- NULL
+        if(rv_mod$data_checks$has_repIds){
+          createTD_args$repId <- "repId"
+          data[,repId := data_filtered$replicate]
+          formula <- paste0(formula, " + repId")
         }
-        if(!rv_mod$data_checks$has_coords){
-          data_filtered_casted[,rowCoord:=NULL]
-          data_filtered_casted[,colCoord:=NULL]
-          createTD_args$rowCoord <- NULL
-          createTD_args$colCoord <- NULL
+        if(rv_mod$data_checks$has_coords){
+          createTD_args$rowCoord <- "rowCoord"
+          createTD_args$colCoord <- "colCoord"
+          data[,rowCoord := data_filtered$positionCoordinateY]
+          data[,colCoord := data_filtered$positionCoordinateX]
+          formula <- paste0(formula, " + rowCoord + colCoord")
         }
+        
+        formula <- paste0(formula, " ~ observationVariableName")
+        
+        ## make 1 column per trait
+        data_filtered_casted <- dcast(
+          data = data,
+          formula = formula,
+          value.var = "observationValue"
+        )
+        
         createTD_args <- c(
           list(data = data_filtered_casted),
           createTD_args
@@ -519,7 +522,6 @@ mod_model_server <- function(id, rv){
         
         ## create TD
         rv_mod$TD <- do.call(what = createTD, args = createTD_args)
-        
         
         rv$fit <- NULL
         
@@ -532,6 +534,7 @@ mod_model_server <- function(id, rv){
         
         ### fit TD
         a <- tryCatch({
+          withProgress(message = "Fitting model", min=1, max=1, {
             rv$fit <- fitTD(
               TD = rv_mod$TD,
               trials = input$select_environments,
@@ -543,7 +546,15 @@ mod_model_server <- function(id, rv){
               # useCheckId = FALSE,
               spatial = ifelse(input$model_engine=="SpATS", input$spatial_opt, F),
               control = cntrl
-            )
+            )})
+          withProgress(message = "Extracting statistics from fitted models", min=1, max=1,{ 
+            rv$fitextr <- extractSTA(rv$fit)
+          })
+          withProgress(message = "Looking for outliers", min=1, max=1,{
+            rv$outliers <-  outlierSTA(rv$fit, 
+                                       what = "random",
+                                       commonFactors = "genotype")
+          })
           },
           error=function(e){ e })
         mess <- a$message
@@ -610,68 +621,31 @@ mod_model_server <- function(id, rv){
         req(input$select_environment_fit)
         req(input$select_trait_fit)
         req(rv$fit)
-
-        output$fit_summary <- renderPrint({
-          # s_all <- summary(
-          #   rv$fit,
-          #   trait = input$select_trait_fit,
-          #   trials = input$select_environment_fit
-          # )
-          s <- lapply(input$select_environment_fit, function(env){
-            summary(
-              rv$fit,
-              trait = input$select_trait_fit,
-              trials = env
-            )
-          })
-          names(s) <- input$select_environment_fit
-          # s["all environments"] <- s_all
-          s
-        })
-
-        output$fit_residuals <- renderPlot({
-          req(rv$fit)
-          req(input$select_environment_fit)
-          plots_envs <- lapply(input$select_environment_fit, function(trial){
-            plot(
-              rv$fit,
-              trait = input$select_trait_fit,
-              trials = trial,
-              output = F
-              # output = F,
-              # what = c("random","fixed")[c(
-              #   !is.null(rv$fit[[trial]]$mRand),
-              #   !is.null(rv$fit[[trial]]$mFixed)
-              # )]
-            )
-          })
-
-          plot_envs <- lapply(1:length(input$select_environment_fit), function(k){
-            do.call("arrangeGrob",
-                    c(
-                      plots_envs[[k]][[input$select_environment_fit[k]]][[input$select_trait_fit]],
-                      ncol=2,
-                      top = paste0("Trial: ", input$select_environment_fit[k],
-                                   "\nTrait: ", input$select_trait_fit)
-                    )
-            )
-          })
-          plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
-          plot(plot_multi_env)
-        },
-        height=length(input$select_environment_fit)*500
-        )
-
-        output$fit_spatial <- renderPlot({
-          req(rv$fit)
-          isolate(req(rv_mod$data_checks$has_coords))
-          req(input$select_environment_fit)
-          plots_envs <- lapply(input$select_environment_fit, function(trial){
-            if(rv$data_dq[observations.observationVariableName == input$select_trait_fit & study_name_app == trial,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
-              p <- plot(
+          output$fit_summary <- renderPrint({
+            # s_all <- summary(
+            #   rv$fit,
+            #   trait = input$select_trait_fit,
+            #   trials = input$select_environment_fit
+            # )
+            s <- lapply(input$select_environment_fit, function(env){
+              summary(
                 rv$fit,
-                plotType = "spatial",
                 trait = input$select_trait_fit,
+                trials = env
+              )
+            })
+            names(s) <- input$select_environment_fit
+            # s["all environments"] <- s_all
+            s
+          })
+          #browser()
+          output$fit_residuals <- renderPlot({
+            req(rv$fit)
+            req(input$select_environment_fit)
+            plots_envs <- lapply(input$select_environment_fit, function(trial){
+              plot(
+                rv$fit,
+                traits = input$select_trait_fit,
                 trials = trial,
                 output = F
                 # output = F,
@@ -680,58 +654,74 @@ mod_model_server <- function(id, rv){
                 #   !is.null(rv$fit[[trial]]$mFixed)
                 # )]
               )
-              p
-            }else{
-              a_STATgen_like_list <- list()
-              a_STATgen_like_list[[trial]][[input$select_trait_fit]][["p1"]] <- ggplot() + geom_text(aes(x = 0, y = 0), label = "no spatial data") + theme_void()
-              a_STATgen_like_list
-            }
-          })
-          plot_envs <- lapply(1:length(input$select_environment_fit), function(k){
-            do.call("arrangeGrob",
-                    c(
-                      plots_envs[[k]][[input$select_environment_fit[k]]][[input$select_trait_fit]],
-                      ncol=2,
-                      top = paste0("Trial: ", input$select_environment_fit[k],
-                                   "\nTrait: ", input$select_trait_fit)
-                    )
-            )
-          })
-          plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
-          plot(plot_multi_env)
-        },
-        height=length(input$select_environment_fit)*500
-        )
+            })
+            
+            plot_envs <- lapply(1:length(input$select_environment_fit), function(k){
+              do.call("arrangeGrob",
+                      c(
+                        plots_envs[[k]][[input$select_environment_fit[k]]][[input$select_trait_fit]],
+                        ncol=2,
+                        top = paste0("Trial: ", input$select_environment_fit[k],
+                                     "\nTrait: ", input$select_trait_fit)
+                      )
+              )
+            })
+            plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
+            plot(plot_multi_env)
+          },
+          height=length(input$select_environment_fit)*500
+          )
+          
+          output$fit_spatial <- renderPlot({
+            req(rv$fit)
+            isolate(req(rv_mod$data_checks$has_coords))
+            req(input$select_environment_fit)
+            plots_envs <- lapply(input$select_environment_fit, function(trial){
+              if(rv$data_dq[observationVariableName == input$select_trait_fit & study_name_app == trial,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
+                p <- plot(
+                  rv$fit,
+                  plotType = "spatial",
+                  traits = input$select_trait_fit,
+                  trials = trial,
+                  output = F
+                  # output = F,
+                  # what = c("random","fixed")[c(
+                  #   !is.null(rv$fit[[trial]]$mRand),
+                  #   !is.null(rv$fit[[trial]]$mFixed)
+                  # )]
+                )
+                p
+              }else{
+                a_STATgen_like_list <- list()
+                a_STATgen_like_list[[trial]][[input$select_trait_fit]][["p1"]] <- ggplot() + geom_text(aes(x = 0, y = 0), label = "no spatial data") + theme_void()
+                a_STATgen_like_list
+              }
+            })
+            plot_envs <- lapply(1:length(input$select_environment_fit), function(k){
+              do.call("arrangeGrob",
+                      c(
+                        plots_envs[[k]][[input$select_environment_fit[k]]][[input$select_trait_fit]],
+                        ncol=2,
+                        top = paste0("Trial: ", input$select_environment_fit[k],
+                                     "\nTrait: ", input$select_trait_fit)
+                      )
+              )
+            })
+            plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
+            plot(plot_multi_env)
+          },
+          height=length(input$select_environment_fit)*500
+          )          
+
       })
 
       ### Outliers
-      observeEvent(input$select_trait_outliers,{
-        req(rv$fit)
-        req(input$select_trait_outliers)
 
-        stdResR <- as.data.table(extractSTA(STA = rv$fit, traits = input$select_trait_outliers, what = "stdResR"))
-        res_q <- quantile(abs(stdResR[[input$select_trait_outliers]]), probs = seq(0,1,0.01), na.rm = T)
-        updateSliderInput(
-          session = session, "limit_residual",
-          max = as.numeric(res_q[101]),
-          value = as.numeric(res_q[100]) # by default, the 1% extreme residuals are returned
-        )
-      })
-      
       output$table_outliers <- renderDataTable({
         req(rv$fit)
         req(input$select_trait_outliers)
-        req(input$limit_residual>0)
-
-        # outliers on all traits (used to get number of outliers for each observationUnit)
-        outliersSTA_all <- outlierSTA(
-          rv$fit,
-          what = "random",
-          rLimit = input$limit_residual,
-          commonFactors = "genotype",
-          verbose = F
-        )
-        outliers_all <- as.data.table(outliersSTA_all$outliers)
+        req(rv$outliers)
+        outliers_all <- as.data.table(rv$outliers$outliers) #as.data.table(outliersSTA_all$outliers)
         validate(need(outliers_all[,.N]>0 , "No outlier on this trait"))
         
         # outliers for the selected trait
@@ -744,7 +734,7 @@ mod_model_server <- function(id, rv){
         which(colnames(outliers_all) == "subBlock")
         outliers_nb <- outliers_all[, .(`#outliers` = sum(outlier)), by = observationUnitDbId]
         
-        variables_index <- which(colnames(outliers_all) %in% unique(rv$fitted_data$observations.observationVariableName))
+        variables_index <- which(colnames(outliers_all) %in% unique(rv$fitted_data$observationVariableName))
         first_var_index <- variables_index[1]
         last_var_index <- variables_index[length(variables_index)]
 
@@ -766,7 +756,7 @@ mod_model_server <- function(id, rv){
         
         # change columns order (move variables columns at the end)
         cols <- colnames(outliers)
-        first_var_index <- which(colnames(outliers_all) %in% unique(rv$fitted_data$observations.observationVariableName))[1]
+        first_var_index <- which(colnames(outliers_all) %in% unique(rv$fitted_data$observationVariableName))[1]
         outlier_index <- which(cols == "outlier")
         new_cols_order <- c(cols[1:first_var_index-1], cols[outlier_index:length(cols)], cols[(first_var_index):(outlier_index-1)])
         setcolorder(outliers, new_cols_order)
@@ -787,8 +777,8 @@ mod_model_server <- function(id, rv){
         genotype_col_index = which(colnames(outliers) == "genotype") - 1
         env_col_index = which(colnames(outliers) == "environment") - 1
         outlier_col_index = which(colnames(outliers) == "outlier") - 1
-        
-        datatable(
+        dec_cols <- names(which(apply(data.frame(outliers)[,which(!apply(outliers,2,function(a) all(is.na(as.numeric(a)))))],2,function(a) sum(abs(round(as.numeric(a),0)-as.numeric(a)),na.rm = T))>0))
+        formatRound(datatable(
           outliers,
           rownames = F,
           options = list(
@@ -813,49 +803,28 @@ mod_model_server <- function(id, rv){
               )
             )
           )
-        )
+        ),digits = 2, columns = dec_cols)
       })
 
       ### Metrics
       output$metrics_A_table <- renderDT({
         req(rv$fit)
+        req(rv$fitextr)
 
         ## heritability
-        heritability <- as.data.table(extractSTA(STA = rv$fit, what = "heritability"))
-
+        allex <- rv$fitextr
         if(rv_mod$model_engine%in%c("lme4")){
-          ## CV
-          cv <- as.data.table(extractSTA(STA = rv$fit, what = "CV"))
-
-          ## wald test
-          wald_raw <- extractSTA(STA = rv$fit, what = "wald")
-          wald <- rbindlist(lapply(names(wald_raw), function(env){
-            data.table(
-              trial = env,
-              rbindlist(lapply(names(wald_raw[[env]]$wald), function(trait){
-                data.table(
-                  trait = trait,
-                  wald_raw[[env]]$wald[[trait]]
-                )
-              }))
-            )
-          }))
-
-          cv_melt <- melt(cv, id.vars = "trial", variable.name = "trait", value.name = "CV")
-          heritability_melt <- melt(heritability, id.vars = "trial", variable.name = "trait", value.name = "Heritability")
-
-          metrics <- heritability_melt[cv_melt, on = .(trial, trait)][wald[,.(trial, trait, "Wald p.value" = p.value)], on = .(trial, trait)]
-
+          ### CV
+          metrics <- rbindlist(Map(function(f,t) data.table(Environment=t,Trait=names(f$heritability),Heritability=f$heritability, CV=f$CV, `Wald p.value`=unlist(lapply(f$wald,function(a) a$`p.value`))),allex, names(allex)))
+          
         }else{
-          metrics <- melt(heritability, id.vars = "trial", variable.name = "trait", value.name = "Heritability")
+          metrics <- rbindlist(Map(function(f,t) data.table(Environment=t,Trait=names(f$heritability),Heritability=f$heritability),allex, names(allex)))
+          
         }
-        setnames(metrics, "trial", "Environment")
-        setnames(metrics, "trait", "Trait")
-
         rv_mod$metrics_A <- metrics
 
         setkey(metrics, "Environment")
-        dtable <- datatable(
+        dtable <- formatRound(datatable(
           metrics,
           rownames = F,
           options = list(
@@ -865,7 +834,7 @@ mod_model_server <- function(id, rv){
             scrollCollapse = T,
             dom = 't',
             rowsGroup = as.list(c(0))
-          ))
+          )),columns=c("Heritability", "CV", "Wald p.value"), digits=2)
         path <- "www/js/datatables-rowsgroup/"
         dep <- htmltools::htmlDependency(
           "RowsGroup", "2.0.0",
@@ -879,15 +848,19 @@ mod_model_server <- function(id, rv){
         req(rv$fit)
         req(input$select_metrics_B)
         req(input$select_environment_metrics)
-
-        metrics_table <- as.data.table(extractSTA(STA = rv$fit, what = input$select_metrics_B))
+        req(rv$fitextr)
+        #browser()
+        #metrics_table <- as.data.table(extractSTA(STA = rv$fit, what = input$select_metrics_B))
+        metrics_table <- as.data.table(rv$fitextr[[input$select_environment_metrics]][[input$select_metrics_B]])
+        
         entry_types <- unique(rv$data_dq[,.(genotype=germplasmName, entryType)])
         setkey(metrics_table, genotype)
         setkey(entry_types, genotype)
         metrics_table <- entry_types[metrics_table]
-        setnames(metrics_table, "trial", "environment")
+        #setnames(metrics_table, "trial", "environment")
 
-        metrics_table_filt <- metrics_table[environment==input$select_environment_metrics, -c("environment"), with = F]
+        #metrics_table_filt <- metrics_table[environment==input$select_environment_metrics, -c("environment"), with = F]
+        metrics_table_filt <- metrics_table
         rv_mod$metrics_B <- metrics_table_filt
         
         # selected_rows <- input$metrics_A_table_rows_selected
@@ -898,8 +871,7 @@ mod_model_server <- function(id, rv){
         # selected <- match(traits, colnames(metrics_table_filt)) - 1
         # print("selected columns: ")
         # print(selected)
-
-        dtable <- datatable(
+        dtable <- formatRound(datatable(
           metrics_table_filt,
           rownames = F,
           options = list(
@@ -910,7 +882,8 @@ mod_model_server <- function(id, rv){
             dom = 't'
           ),
           #selection = list(mode = 'multiple', selected = selected, target = 'column', selectable = T)
-        )
+        ), columns = colnames(metrics_table_filt)[!colnames(metrics_table_filt)%in%c("genotype","entryType")],
+        digits = 2)
         path <- "www/js/datatables-rowsgroup/"
         dep <- htmltools::htmlDependency(
           "RowsGroup", "2.0.0",
@@ -1032,7 +1005,6 @@ mod_model_server <- function(id, rv){
         tryCatch({
           #Get all BLUEs/BLUPs data
           table_metrics <- extract_all_BLUEs_BLUPs()
-          
           #filter traits and env to push
           if (!is.null(input$metrics_A_table_rows_selected)) {
             selected_rows <- input$metrics_A_table_rows_selected
@@ -1074,7 +1046,7 @@ mod_model_server <- function(id, rv){
           origin_variable_names <- origin_variable_names[!duplicated(origin_variable_names), ]
           
           # Get variables ids from data
-          variables_df <- select(rv$data, c("observations.observationVariableDbId", "observations.observationVariableName"))
+          variables_df <- select(rv$data, c("observationVariableDbId", "observationVariableName"))
           variables_df <- variables_df[!duplicated(variables_df), ]
           variables_df <- na.omit(variables_df)
           colnames(variables_df) <- c("originVariableDbId","originVariableName")
