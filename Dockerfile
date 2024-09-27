@@ -41,6 +41,8 @@ RUN R -e "install.packages('gtools', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('leaflet', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('shinybusy', repos='http://cran.rstudio.com/')"
 RUN R -e "remotes::install_github('aliceboizet/brapir-v2@fix-perf-observationunits')"
+RUN R -e "install.packages('statgenGxE', repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('shinysky', repos='http://cran.rstudio.com/')"
 
 ## Install shinybrapps
 # Note: presently the image is constructed from within the package directory because the repo "IntegratedBreedingPlatform/ShinyBrAPPs" is private. If it becomes public, it will be possible to construct the image from anywhere via "install_gihub()"

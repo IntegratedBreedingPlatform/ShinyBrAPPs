@@ -24,8 +24,9 @@ ui <- fluidPage(
                     margin-bottom: 5px;
                     border-color: #357ebd;"),
   shinyjs::useShinyjs(),
-  shinysky::busyIndicator(wait = 200, text = NULL, img = "img/loading-animation.gif"),
-
+  #shinysky::busyIndicator(wait = 200, text = NULL, img = "img/loading-animation.gif"),
+  shinybusy::add_busy_spinner(spin = "fading-circle", position = "top-left", margins = c(110, 10), color = "#225691", height = 25, width =25, timeout = 200), 
+  
   div(class = "container-fluid",
       mod_banner_ui("banner"),
       mod_get_studydata_ui("get_studydata"),
