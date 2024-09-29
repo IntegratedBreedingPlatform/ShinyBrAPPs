@@ -25,6 +25,7 @@ Depends:
     RColorBrewer,
     e1071,
     statgenSTA,
+    statgenGxE,
     brapirv1,
     brapirv2,
     SpATS,
@@ -39,5 +40,7 @@ Depends:
     openxlsx,
     shinycssloaders,
     gtools,
+    ggnewscale
+    
     R (>= 2.10)
 RoxygenNote: 7.1.1
