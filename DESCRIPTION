@@ -41,5 +41,6 @@ Depends:
     shinycssloaders,
     gtools,
     ggnewscale,
+    metan,
     R (>= 2.10)
 RoxygenNote: 7.1.1
