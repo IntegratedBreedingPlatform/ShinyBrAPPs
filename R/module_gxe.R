@@ -158,27 +158,38 @@ mod_gxe_ui <- function(id){
             pickerInput(ns("FW_picker_plot_type"),
                         label="Plot type",
                         choices = c("scatter", "line", "trellis", "scatterFit"), selected = "line"),
-            pickerInput(ns("FW_picker_color_by"), label="Color by", multiple = F, choices = c("Nothing","sensitivity clusters"), selected = "Nothing"),
+            pickerInput(ns("FW_picker_color_by"), label="Color genotypes by", multiple = F, choices = c("Nothing","sensitivity clusters"), selected = "Nothing"),
             #materialSwitch(ns("FW_cluster_sensitivity"), "Color by sensitivity clusters", value = FALSE, status = "info"),
             numericInput(ns("FW_cluster_sensitivity_nb"),"Number of clusters", min = 2, max = 8, step = 1, value = 2),
             pickerInput(ns("FW_picker_cluster_on"), label="Cluster on", choices = c(sensitivity="Sens", `genotype means`="GenMean"), multiple = TRUE, selected = "Sens"),
             shiny::downloadButton(ns("FW_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
           ),
-          bslib::layout_columns(
+          #bslib::layout_columns(
             #### Accordion results ####
             bslib::accordion(id = ns("FW_accord1"),
                              #actionButton(ns("expand_MM_accord1"),label = "Open all", class = "btn btn-info"),
 
                              bslib::accordion_panel(title = "FW plot",
-                             #                       bslib::layout_columns(
-                                                    bslib::card(full_screen = T, height = "800",
-                                                      #plotlyOutput(ns("FW_plot"))
-                                                      #plotOutput(ns("FW_plot"))
-                                                      #materialSwitch(ns("FW_plot_interact"),"Interactive plot", value=FALSE, status="info"),
-                                                      plotOutput(ns("FW_plot")),
-                                                      uiOutput(ns("FW_sens_clust_select"))
-                                                      #bslib::card_footer()
-                                                    )),
+                                                    bslib::layout_columns(col_widths = c(9,3),
+                                                                          bslib::card(full_screen = T, height = "800",
+                                                                                      bslib::card_header(
+                                                                                        materialSwitch(ns("FW_coord_equal"), "Equal axes on line plot", value = TRUE, status = "info")
+                                                                                      ),
+                                                                                      bslib::card_body(
+                                                                                        uiOutput(ns("FW_trellis_genot_select_ui")),
+                                                                                        plotOutput(ns("FW_plot"), hover = hoverOpts(id =ns("FWplot_hover"),delay = 50)),
+                                                                                        #htmlOutput(ns("FWhover_info")),
+                                                                                        uiOutput(ns("FW_sens_clust_select"))
+                                                                                      )
+                                                                                      ),
+                                                                          value_box(title = "",
+                                                                                    max_height = 100,
+                                                                                    style = 'background-color: #EEEEEE!important;',
+                                                                                    #value = tags$p(textOutput(ns("FWhover_vinfo")), style = "font-size: 100%;")
+                                                                                    value = textOutput(ns("FWhover_vinfo"))
+                                                                          )
+                                                    )
+                                                    ),
                              bslib::accordion_panel(title = "Germplasm list and clusters",
                                                     #bslib::card(DT::dataTableOutput(ns("FW_selected_obs_DT"))),
                                                     bslib::card(
@@ -940,10 +951,66 @@ mod_gxe_server <- function(id, rv, parent_session){
                 p <- gridExtra::grid.arrange(tot, right = legend, 
                                              top = paste("Finlay & Wilkinson analysis for", input$picker_trait))
             }
+            #if (!is.null(input$FWplot_click)){
+            #  print("clickpasnull")
+            #  click=input$FWplot_click
+            #  #browser()
+            #  dist=sqrt((click$x-p$data$EnvMean)^2+(click$y-p$data$fitted)^2)
+            #  p + geom_text(data = p$data[which.min(dist),], aes(x=EnvMean,y=fitted,label = genotype, size = 12))
+            #} else {
+            #  print("clicknull")
+            if (input$FW_picker_plot_type=="line" & !input$FW_coord_equal){
+              p + coord_cartesian()
+            } else {
               p
+            }
+            #}
           })
       })
-
+      
+      observe({
+        output$FWhover_vinfo <- renderText({
+          if(!is.null(input$FWplot_hover)) {
+            #browser()
+            F <- as.data.table(rv$TDFWplot$fittedGeno)
+            E <- as.data.table(rv$TDFWplot$envEffs)
+            EF <- E[F, on=.(Trial=trial)]
+            hover=input$FWplot_hover
+            dist=sqrt((hover$x-EF$EnvMean)^2+(hover$y-EF$fittedValue)^2)
+            prox <- max(c(EF$EnvMean,EF$fittedValue))/30
+            genot <- as.character(EF$genotype)[which.min(dist)]
+            if(min(dist) < prox) {genot}
+          }
+        })
+        # output$FWhover_info <- renderText({
+        #   if(!is.null(input$FWplot_hover)) {
+        #   #browser()
+        #   F <- as.data.table(rv$TDFWplot$fittedGeno)
+        #   E <- as.data.table(rv$TDFWplot$envEffs)
+        #   EF <- E[F, on=.(Trial=trial)]
+        #   hover=input$FWplot_hover
+        #   dist=sqrt((hover$x-EF$EnvMean)^2+(hover$y-EF$fittedValue)^2)
+        #   genot <- as.character(EF$genotype)[which.min(dist)]
+        #   if(min(dist) < 3) {
+        #     htmltools::renderTags(
+        #       tags$div(
+        #         genot,
+        #         style = paste0(
+        #           "position: absolute; ",
+        #           "top: ", hover$coords_css$y, "px; ",
+        #           "left: ", hover$coords_css$x, "px; ",
+        #           "background: gray; ",
+        #           "padding: 3px; ",
+        #           "color: white; "
+        #         )
+        #       )
+        #     )$html
+        #     
+        #   }
+        #   }
+        # })
+      })
+      
       #### compute sensitivity_clusters whenever a picker changes ####
       observeEvent(  eventExpr = {
         input$FW_picker_color_by
