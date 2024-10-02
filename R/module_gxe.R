@@ -19,11 +19,14 @@ mod_gxe_ui <- function(id){
             #   h4('Options ', icon('screwdriver-wrench'))
             # ),
             width = 350,
-            pickerInput(ns("picker_trait"), label = tags$span(style="color: red;","Trait"), choices = c()),
+            pickerInput(ns("picker_trait"), label = tags$span(style="color: red;","Trait"), choices = c())|>
+              tooltip("Select a single trait to work on", options = list(trigger="hover")),
             materialSwitch(ns("use_weights"),label = "Use weights", value = FALSE, inline = T, status = "info"),
             pickerInput(ns("weight_var"), label = "Weight variable", choices = c()),
-            pickerInput(ns("picker_germplasm_level"), label = tags$span(style="color: red;","Germplasm level"), choices = c("germplasmDbId","germplasmName"), selected = "GermplasmDbId"),
-            pickerInput(ns("picker_env_variable"), label = tags$span(style="color: red;","Variable to use as Environment Name"), choices = c()),
+            pickerInput(ns("picker_germplasm_level"), label = tags$span(style="color: red;","Germplasm level"), choices = c("germplasmDbId","germplasmName"), selected = "GermplasmName")|>
+              tooltip("Select how genotypes will be identified (either germplasmDbId or germplasmName). In the second case, germplasm that have different DbIds in different environments but sharing a common preferred name will be considered as the same.", options = list(trigger="hover")),
+            pickerInput(ns("picker_env_variable"), label = tags$span(style="color: red;","Variable to use as Environment Name"), choices = c())|>
+              tooltip("Select an environment detail variable that will be used to identify environments", options = list(trigger="hover")),
             pickerInput(ns("picker_env"),
                         label = "Environments",
                         choices = c(),
