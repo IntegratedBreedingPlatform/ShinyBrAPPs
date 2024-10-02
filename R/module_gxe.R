@@ -250,7 +250,10 @@ mod_gxe_ui <- function(id){
                              bslib::accordion_panel(title = "GGE plot",
                                                     bslib::layout_sidebar(
                                                       bslib::card(full_screen = T,height = "800",max_height = "800",
-                                                                  plotOutput(ns("GGE_plot"))
+                                                                  bslib::card_body(plotOutput(ns("GGE_plot"))),
+                                                                  bslib::card_footer(div(style="display: flex;gap: 10px;",
+                                                                    shiny::actionButton(ns("create_group_from_wWw"), "Create groups from which won where", icon = icon(NULL), class = "btn btn-info")
+                                                                  ))
                                                       ),
                                                       sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,#full_screen = F,
                                                                              bslib::card(full_screen = F,height = "735",max_height = "735",
@@ -1208,13 +1211,15 @@ mod_gxe_server <- function(id, rv, parent_session){
       ### GGE plot ####
       observe({
         req(rv$TDGGEmetan)
+        #browser()
         output$GGE_plot <- renderPlot({
           #output$FW_plot <- renderPlotly({
           #browser()
           TDGGEplot <- rv$TDGGEmetan
+          gg <- NULL
           #browser()
           if (input$GGE_picker_plot_type==5){
-            metan:::plot.gge(TDGGEplot,
+            gg <- metan:::plot.gge(TDGGEplot,
                              type = input$GGE_picker_plot_type,
                              sel_env = input$GGE_picker_env_select,
                              size.text.gen = input$GGE_plot_size.text.gen,
@@ -1240,7 +1245,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             )            
             
           } else if (input$GGE_picker_plot_type == 7) {
-            metan:::plot.gge(TDGGEplot,
+            gg <- metan:::plot.gge(TDGGEplot,
                              type = input$GGE_picker_plot_type,
                              sel_gen = input$GGE_picker_gen_select,
                              size.text.gen = input$GGE_plot_size.text.gen,
@@ -1265,7 +1270,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                                                                                  plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
             )
           } else if (input$GGE_picker_plot_type == 9) {
-            metan:::plot.gge(TDGGEplot,
+            gg <- metan:::plot.gge(TDGGEplot,
                              type = input$GGE_picker_plot_type,
                              sel_gen1 = input$GGE_picker_gen_select,
                              sel_gen2 = input$GGE_picker_gen2_select,
@@ -1291,7 +1296,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                                                                                  plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
             )
           } else {
-            metan:::plot.gge(TDGGEplot,
+            gg <- metan:::plot.gge(TDGGEplot,
                              type = input$GGE_picker_plot_type,
                              size.text.gen = input$GGE_plot_size.text.gen,
                              repulsion = input$GGE_plot_repulsion,
@@ -1314,10 +1319,35 @@ mod_gxe_server <- function(id, rv, parent_session){
                              plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
                                                                                  plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
             )
+            if (input$GGE_picker_plot_type == 3) {
+              rv$gp_WwW <- gg$layers[[length(gg$layers)]]$data$label
+            }
           }
-
-        })
+          if (input$GGE_colorGenoBy!="Nothing"){
+            browser() 
+          }
+          print(gg)
           
+        })
+      })
+      
+      observeEvent(input$create_group_from_wWw,{
+        #browser()
+        if(length(rv$gp_WwW)>0){
+          #browser()
+          rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
+                                                               Genotype=rv$gp_WwW),
+                                                  y=unique(rbindlist(rv$TD)),
+                                                  by.x = "Genotype",
+                                                  by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
+          showModal(groupModal(rv=rv, 
+                               parent_session = parent_session, 
+                               modal_title = "Create new group", 
+                               group_description = paste0("Group of which won where genotypes in GGE analysis of ", input$picker_trait, " variable"),
+                               group_prefix =paste0("www_GGE@",input$picker_trait,".")
+          )
+          )
+        }
       })
       
       ## AMMI ####
