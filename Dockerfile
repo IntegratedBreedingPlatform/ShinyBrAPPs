@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
 	libcurl4-openssl-dev \
 	libgdal-dev \
 	libfontconfig1-dev \
+	pandoc \
 	cmake
 
 ## Install R deps
