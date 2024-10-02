@@ -897,7 +897,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             TDFWplot <- rv$TDFWplot
             #browser()
             if (is.null(input$FW_picker_color_by)){
-              p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+                p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
             } else {
               if (input$FW_picker_color_by=="sensitivity clusters"){
                 #browser()
@@ -922,7 +922,12 @@ mod_gxe_server <- function(id, rv, parent_session){
                   }
               } else {
                 if (input$FW_picker_color_by=="Nothing"){
-                  p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+                  if (input$FW_picker_plot_type=="trellis"){
+                    p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=input$FW_trellis_genot_select) 
+                  } else {
+                    
+                    p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+                  }
                   if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
                     rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
                     p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
@@ -1042,7 +1047,15 @@ mod_gxe_server <- function(id, rv, parent_session){
       }, handlerExpr = {
         req(rv$TDFW)
         #browser()
-        if (input$FW_picker_color_by=="sensitivity clusters"){
+        if (input$FW_picker_plot_type=="trellis"){
+          output$FW_trellis_genot_select_ui <- renderUI({
+            genots <- as.character(unique(rbindlist(rv$TDFW$TD)$genotype))
+            pickerInput(ns("FW_trellis_genot_select"), label = "Select genotypes", choices = genots, selected = genots[1:round(length(genots)*0.05,0)], multiple = T, options = pickerOptions(liveSearch = TRUE))
+          })
+        } else {
+          output$FW_trellis_genot_select_ui <- renderUI({NULL})
+        }
+        if (input$FW_picker_plot_type=="line" & input$FW_picker_color_by=="sensitivity clusters"){
           sensclust <- data.table(rv$TDFW$estimates)
           sensclust <- sensclust[!is.na(Sens)]
           sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
@@ -1067,6 +1080,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           output$FW_sens_clust_select <- renderUI(expr = NULL)
         }
       })
+      
       observeEvent(input$FW_sens_clusters_DT_rows_selected, ignoreNULL = FALSE, {
         #browser()
         if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
