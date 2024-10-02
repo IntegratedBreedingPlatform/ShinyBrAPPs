@@ -415,6 +415,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       observe({
         req(rv$data_plot)
         req(rv$column_datasource)
+        req(!isTRUE(input$picker_germplasm_attr_open))
         #update trait dropdown
         trait_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_regexp,cols)]$cols
         weight_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_wt_regexp,cols)]$cols
@@ -633,6 +634,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         req(rv$column_datasource)
         req(input$picker_trait)
         req(input$picker_env)
+        req(!isTRUE(input$picker_germplasm_attr_open))
         #browser()
         data2TD <- copy(rv$data_gxe[observationLevel=="MEANS"])
         if (input$picker_germplasm_level=="germplasmDbId"){
