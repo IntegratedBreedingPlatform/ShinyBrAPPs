@@ -45,17 +45,21 @@ mod_gxe_ui <- function(id){
           ),#),
           #bslib::layout_column_wrap(
           #  width = 1/2,
-          ### Plots ####
+          ### Plots & tables ####
             bslib::card(full_screen = TRUE,#height = "33%",
               plotOutput(ns("TD_boxplot"))
             ),
           bslib::layout_columns(
-            bslib::card(full_screen = TRUE,
-             plotOutput(ns("TD_scatterplots"))
+            bslib::card(full_screen = FALSE,
+                        bslib::card_header("Included genotypes"),
+                        DT::dataTableOutput(ns("TD_included_geno")),
+                        bslib::card_footer(uiOutput(ns("copy_incgeno_table")))
+                        #plotOutput(ns("TD_scatterplots"))
             ),
             bslib::card(full_screen = FALSE,
                         bslib::card_header("Excluded genotypes"),
-                        DT::dataTableOutput(ns("TD_excluded_geno"))
+                        DT::dataTableOutput(ns("TD_excluded_geno")),
+                        bslib::card_footer(uiOutput(ns("copy_excgeno_table")))
             )
           )
           #)
@@ -206,7 +210,7 @@ mod_gxe_ui <- function(id){
                                                     verbatimTextOutput(ns("FW_text_output")) 
                              )
             )
-          )
+          #)
         )
       ),
       bslib::nav_panel(
@@ -640,14 +644,28 @@ mod_gxe_server <- function(id, rv, parent_session){
         #
           genot_to_excl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype][N<input$exclude_geno_nb_env]
           data2TD <- data2TD[!genotype%in%genot_to_excl$genotype]
+          genot_incl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype]
+          output$TD_included_geno <- DT::renderDataTable(genot_incl, rownames= FALSE)
+          output$copy_incgeno_table <- renderUI({
+            rclipboard::rclipButton("clipbtnincg_table", "Copy table", paste(paste(colnames(genot_incl),collapse="\t"),
+                                                                            paste(apply(genot_incl,1,paste,collapse="\t"),collapse = "\n"),
+                                                                            sep="\n"))#, shiny::icon("clipboard"))
+          })
+          
           #if (exists("genot_to_excl")){
             if (nrow(genot_to_excl)>1){
               #showNotification(paste0("Excluding ", nrow(genot_to_excl)," genotypes"), type = "message")
               output$TD_excluded_geno <- DT::renderDataTable(data.table(genot_to_excl), rownames= FALSE)
+              output$copy_excgeno_table <- renderUI({
+                rclipboard::rclipButton("clipbtnincg_table", "Copy table", paste(paste(colnames(genot_to_excl),collapse="\t"),
+                                                                                 paste(apply(genot_to_excl,1,paste,collapse="\t"),collapse = "\n"),
+                                                                                 sep="\n"))#, shiny::icon("clipboard"))
+              })
+
             } else {
               #showNotification(paste0("Using all genotypes"), type = "message")
               output$TD_excluded_geno <- DT::renderDataTable(data.table()[0L], rownames= FALSE)
-              
+              output$copy_excgeno_table <- renderUI({NULL})
             }
             
           #}
@@ -730,42 +748,42 @@ mod_gxe_server <- function(id, rv, parent_session){
         })
         if (length(input$picker_env)>1){
           shinyjs::show("TD_scatterplots")
-          output$TD_scatterplots <- renderPlot({
-            if (!is.null(input$picker_germplasm_attr)){
-              if (!is.null(input$picker_scenario)){
-                #if ("scenarioFull"%in%names(data2TD)){
-                  plot(rv$TD, plotType = "scatter",
-                       traits = input$picker_trait,
-                       colorGenoBy = input$picker_germplasm_attr[1], 
-                       colorTrialBy = "scenario")
-                #} else {
-                #  plot(rv$TD, plotType = "scatter",
-                #       traits = input$picker_trait,
-                #       colorGenoBy = input$picker_germplasm_attr, 
-                #       colorTrialBy = input$picker_scenario[1])
-                #}
-              } else {
-                plot(rv$TD, plotType = "scatter",
-                     traits = input$picker_trait,
-                     colorGenoBy = input$picker_germplasm_attr[1])
-              }            
-            } else {
-              if (!is.null(input$picker_scenario)){
-                #if ("scenarioFull"%in%names(data2TD)){
-                  plot(rv$TD, plotType = "scatter",
-                       traits = input$picker_trait,
-                       colorTrialBy = "scenario")
-                #} else {
-                #  plot(rv$TD, plotType = "scatter",
-                #       traits = input$picker_trait,
-                #       colorTrialBy = input$picker_scenario[1])
-                #}
-              } else {
-                plot(rv$TD, plotType = "scatter",
-                     traits = input$picker_trait)
-              }            
-            }
-          })          
+          #output$TD_scatterplots <- renderPlot({
+          #  if (!is.null(input$picker_germplasm_attr)){
+          #    if (!is.null(input$picker_scenario)){
+          #      #if ("scenarioFull"%in%names(data2TD)){
+          #        plot(rv$TD, plotType = "scatter",
+          #             traits = input$picker_trait,
+          #             colorGenoBy = input$picker_germplasm_attr[1], 
+          #             colorTrialBy = "scenario")
+          #      #} else {
+          #      #  plot(rv$TD, plotType = "scatter",
+          #      #       traits = input$picker_trait,
+          #      #       colorGenoBy = input$picker_germplasm_attr, 
+          #      #       colorTrialBy = input$picker_scenario[1])
+          #      #}
+          #    } else {
+          #      plot(rv$TD, plotType = "scatter",
+          #           traits = input$picker_trait,
+          #           colorGenoBy = input$picker_germplasm_attr[1])
+          #    }            
+          #  } else {
+          #    if (!is.null(input$picker_scenario)){
+          #      #if ("scenarioFull"%in%names(data2TD)){
+          #        plot(rv$TD, plotType = "scatter",
+          #             traits = input$picker_trait,
+          #             colorTrialBy = "scenario")
+          #      #} else {
+          #      #  plot(rv$TD, plotType = "scatter",
+          #      #       traits = input$picker_trait,
+          #      #       colorTrialBy = input$picker_scenario[1])
+          #      #}
+          #    } else {
+          #      plot(rv$TD, plotType = "scatter",
+          #           traits = input$picker_trait)
+          #    }            
+          #  }
+          #})          
         } else {
           shinyjs::hide("TD_scatterplots")
         }
