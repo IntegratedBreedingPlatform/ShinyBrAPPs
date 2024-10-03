@@ -19,11 +19,14 @@ mod_gxe_ui <- function(id){
             #   h4('Options ', icon('screwdriver-wrench'))
             # ),
             width = 350,
-            pickerInput(ns("picker_trait"), label = tags$span(style="color: red;","Trait"), choices = c()),
+            pickerInput(ns("picker_trait"), label = tags$span(style="color: red;","Trait"), choices = c())|>
+              tooltip("Select a single trait to work on", options = list(trigger="hover")),
             materialSwitch(ns("use_weights"),label = "Use weights", value = FALSE, inline = T, status = "info"),
             pickerInput(ns("weight_var"), label = "Weight variable", choices = c()),
-            pickerInput(ns("picker_germplasm_level"), label = tags$span(style="color: red;","Germplasm level"), choices = c("germplasmDbId","germplasmName"), selected = "GermplasmDbId"),
-            pickerInput(ns("picker_env_variable"), label = tags$span(style="color: red;","Variable to use as Environment Name"), choices = c()),
+            pickerInput(ns("picker_germplasm_level"), label = tags$span(style="color: red;","Germplasm level"), choices = c("germplasmDbId","germplasmName"), selected = "GermplasmName")|>
+              tooltip("Select how genotypes will be identified (either germplasmDbId or germplasmName). In the second case, germplasm that have different DbIds in different environments but sharing a common preferred name will be considered as the same.", options = list(trigger="hover")),
+            pickerInput(ns("picker_env_variable"), label = tags$span(style="color: red;","Variable to use as Environment Name"), choices = c())|>
+              tooltip("Select an environment detail variable that will be used to identify environments", options = list(trigger="hover")),
             pickerInput(ns("picker_env"),
                         label = "Environments",
                         choices = c(),
@@ -42,17 +45,21 @@ mod_gxe_ui <- function(id){
           ),#),
           #bslib::layout_column_wrap(
           #  width = 1/2,
-          ### Plots ####
+          ### Plots & tables ####
             bslib::card(full_screen = TRUE,#height = "33%",
               plotOutput(ns("TD_boxplot"))
             ),
           bslib::layout_columns(
-            bslib::card(full_screen = TRUE,
-             plotOutput(ns("TD_scatterplots"))
+            bslib::card(full_screen = FALSE,
+                        bslib::card_header("Included genotypes"),
+                        DT::dataTableOutput(ns("TD_included_geno")),
+                        bslib::card_footer(uiOutput(ns("copy_incgeno_table")))
+                        #plotOutput(ns("TD_scatterplots"))
             ),
             bslib::card(full_screen = FALSE,
                         bslib::card_header("Excluded genotypes"),
-                        DT::dataTableOutput(ns("TD_excluded_geno"))
+                        DT::dataTableOutput(ns("TD_excluded_geno")),
+                        bslib::card_footer(uiOutput(ns("copy_excgeno_table")))
             )
           )
           #)
@@ -155,27 +162,38 @@ mod_gxe_ui <- function(id){
             pickerInput(ns("FW_picker_plot_type"),
                         label="Plot type",
                         choices = c("scatter", "line", "trellis", "scatterFit"), selected = "line"),
-            pickerInput(ns("FW_picker_color_by"), label="Color by", multiple = F, choices = c("Nothing","sensitivity clusters"), selected = "Nothing"),
+            pickerInput(ns("FW_picker_color_by"), label="Color genotypes by", multiple = F, choices = c("Nothing","sensitivity clusters"), selected = "Nothing"),
             #materialSwitch(ns("FW_cluster_sensitivity"), "Color by sensitivity clusters", value = FALSE, status = "info"),
             numericInput(ns("FW_cluster_sensitivity_nb"),"Number of clusters", min = 2, max = 8, step = 1, value = 2),
             pickerInput(ns("FW_picker_cluster_on"), label="Cluster on", choices = c(sensitivity="Sens", `genotype means`="GenMean"), multiple = TRUE, selected = "Sens"),
             shiny::downloadButton(ns("FW_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
           ),
-          bslib::layout_columns(
+          #bslib::layout_columns(
             #### Accordion results ####
             bslib::accordion(id = ns("FW_accord1"),
                              #actionButton(ns("expand_MM_accord1"),label = "Open all", class = "btn btn-info"),
 
                              bslib::accordion_panel(title = "FW plot",
-                             #                       bslib::layout_columns(
-                                                    bslib::card(full_screen = T, height = "800",
-                                                      #plotlyOutput(ns("FW_plot"))
-                                                      #plotOutput(ns("FW_plot"))
-                                                      #materialSwitch(ns("FW_plot_interact"),"Interactive plot", value=FALSE, status="info"),
-                                                      plotOutput(ns("FW_plot")),
-                                                      uiOutput(ns("FW_sens_clust_select"))
-                                                      #bslib::card_footer()
-                                                    )),
+                                                    bslib::layout_columns(col_widths = c(9,3),
+                                                                          bslib::card(full_screen = T, height = "800",
+                                                                                      bslib::card_header(
+                                                                                        materialSwitch(ns("FW_coord_equal"), "Equal axes on line plot", value = TRUE, status = "info")
+                                                                                      ),
+                                                                                      bslib::card_body(
+                                                                                        uiOutput(ns("FW_trellis_genot_select_ui")),
+                                                                                        plotOutput(ns("FW_plot"), hover = hoverOpts(id =ns("FWplot_hover"),delay = 50)),
+                                                                                        #htmlOutput(ns("FWhover_info")),
+                                                                                        uiOutput(ns("FW_sens_clust_select"))
+                                                                                      )
+                                                                                      ),
+                                                                          value_box(title = "",
+                                                                                    max_height = 100,
+                                                                                    style = 'background-color: #EEEEEE!important;',
+                                                                                    #value = tags$p(textOutput(ns("FWhover_vinfo")), style = "font-size: 100%;")
+                                                                                    value = textOutput(ns("FWhover_vinfo"))
+                                                                          )
+                                                    )
+                                                    ),
                              bslib::accordion_panel(title = "Germplasm list and clusters",
                                                     #bslib::card(DT::dataTableOutput(ns("FW_selected_obs_DT"))),
                                                     bslib::card(
@@ -192,7 +210,7 @@ mod_gxe_ui <- function(id){
                                                     verbatimTextOutput(ns("FW_text_output")) 
                              )
             )
-          )
+          #)
         )
       ),
       bslib::nav_panel(
@@ -236,7 +254,10 @@ mod_gxe_ui <- function(id){
                              bslib::accordion_panel(title = "GGE plot",
                                                     bslib::layout_sidebar(
                                                       bslib::card(full_screen = T,height = "800",max_height = "800",
-                                                                  plotOutput(ns("GGE_plot"))
+                                                                  bslib::card_body(plotOutput(ns("GGE_plot"))),
+                                                                  bslib::card_footer(div(style="display: flex;gap: 10px;",
+                                                                    shiny::actionButton(ns("create_group_from_wWw"), "Create groups from which won where", icon = icon(NULL), class = "btn btn-info")
+                                                                  ))
                                                       ),
                                                       sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,#full_screen = F,
                                                                              bslib::card(full_screen = F,height = "735",max_height = "735",
@@ -394,6 +415,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       observe({
         req(rv$data_plot)
         req(rv$column_datasource)
+        req(!isTRUE(input$picker_germplasm_attr_open))
         #update trait dropdown
         trait_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_regexp,cols)]$cols
         weight_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_wt_regexp,cols)]$cols
@@ -612,6 +634,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         req(rv$column_datasource)
         req(input$picker_trait)
         req(input$picker_env)
+        req(!isTRUE(input$picker_germplasm_attr_open))
         #browser()
         data2TD <- copy(rv$data_gxe[observationLevel=="MEANS"])
         if (input$picker_germplasm_level=="germplasmDbId"){
@@ -623,14 +646,28 @@ mod_gxe_server <- function(id, rv, parent_session){
         #
           genot_to_excl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype][N<input$exclude_geno_nb_env]
           data2TD <- data2TD[!genotype%in%genot_to_excl$genotype]
+          genot_incl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype]
+          output$TD_included_geno <- DT::renderDataTable(genot_incl, rownames= FALSE)
+          output$copy_incgeno_table <- renderUI({
+            rclipboard::rclipButton("clipbtnincg_table", "Copy table", paste(paste(colnames(genot_incl),collapse="\t"),
+                                                                            paste(apply(genot_incl,1,paste,collapse="\t"),collapse = "\n"),
+                                                                            sep="\n"))#, shiny::icon("clipboard"))
+          })
+          
           #if (exists("genot_to_excl")){
             if (nrow(genot_to_excl)>1){
               #showNotification(paste0("Excluding ", nrow(genot_to_excl)," genotypes"), type = "message")
               output$TD_excluded_geno <- DT::renderDataTable(data.table(genot_to_excl), rownames= FALSE)
+              output$copy_excgeno_table <- renderUI({
+                rclipboard::rclipButton("clipbtnincg_table", "Copy table", paste(paste(colnames(genot_to_excl),collapse="\t"),
+                                                                                 paste(apply(genot_to_excl,1,paste,collapse="\t"),collapse = "\n"),
+                                                                                 sep="\n"))#, shiny::icon("clipboard"))
+              })
+
             } else {
               #showNotification(paste0("Using all genotypes"), type = "message")
               output$TD_excluded_geno <- DT::renderDataTable(data.table()[0L], rownames= FALSE)
-              
+              output$copy_excgeno_table <- renderUI({NULL})
             }
             
           #}
@@ -713,42 +750,42 @@ mod_gxe_server <- function(id, rv, parent_session){
         })
         if (length(input$picker_env)>1){
           shinyjs::show("TD_scatterplots")
-          output$TD_scatterplots <- renderPlot({
-            if (!is.null(input$picker_germplasm_attr)){
-              if (!is.null(input$picker_scenario)){
-                #if ("scenarioFull"%in%names(data2TD)){
-                  plot(rv$TD, plotType = "scatter",
-                       traits = input$picker_trait,
-                       colorGenoBy = input$picker_germplasm_attr[1], 
-                       colorTrialBy = "scenario")
-                #} else {
-                #  plot(rv$TD, plotType = "scatter",
-                #       traits = input$picker_trait,
-                #       colorGenoBy = input$picker_germplasm_attr, 
-                #       colorTrialBy = input$picker_scenario[1])
-                #}
-              } else {
-                plot(rv$TD, plotType = "scatter",
-                     traits = input$picker_trait,
-                     colorGenoBy = input$picker_germplasm_attr[1])
-              }            
-            } else {
-              if (!is.null(input$picker_scenario)){
-                #if ("scenarioFull"%in%names(data2TD)){
-                  plot(rv$TD, plotType = "scatter",
-                       traits = input$picker_trait,
-                       colorTrialBy = "scenario")
-                #} else {
-                #  plot(rv$TD, plotType = "scatter",
-                #       traits = input$picker_trait,
-                #       colorTrialBy = input$picker_scenario[1])
-                #}
-              } else {
-                plot(rv$TD, plotType = "scatter",
-                     traits = input$picker_trait)
-              }            
-            }
-          })          
+          #output$TD_scatterplots <- renderPlot({
+          #  if (!is.null(input$picker_germplasm_attr)){
+          #    if (!is.null(input$picker_scenario)){
+          #      #if ("scenarioFull"%in%names(data2TD)){
+          #        plot(rv$TD, plotType = "scatter",
+          #             traits = input$picker_trait,
+          #             colorGenoBy = input$picker_germplasm_attr[1], 
+          #             colorTrialBy = "scenario")
+          #      #} else {
+          #      #  plot(rv$TD, plotType = "scatter",
+          #      #       traits = input$picker_trait,
+          #      #       colorGenoBy = input$picker_germplasm_attr, 
+          #      #       colorTrialBy = input$picker_scenario[1])
+          #      #}
+          #    } else {
+          #      plot(rv$TD, plotType = "scatter",
+          #           traits = input$picker_trait,
+          #           colorGenoBy = input$picker_germplasm_attr[1])
+          #    }            
+          #  } else {
+          #    if (!is.null(input$picker_scenario)){
+          #      #if ("scenarioFull"%in%names(data2TD)){
+          #        plot(rv$TD, plotType = "scatter",
+          #             traits = input$picker_trait,
+          #             colorTrialBy = "scenario")
+          #      #} else {
+          #      #  plot(rv$TD, plotType = "scatter",
+          #      #       traits = input$picker_trait,
+          #      #       colorTrialBy = input$picker_scenario[1])
+          #      #}
+          #    } else {
+          #      plot(rv$TD, plotType = "scatter",
+          #           traits = input$picker_trait)
+          #    }            
+          #  }
+          #})          
         } else {
           shinyjs::hide("TD_scatterplots")
         }
@@ -862,7 +899,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             TDFWplot <- rv$TDFWplot
             #browser()
             if (is.null(input$FW_picker_color_by)){
-              p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+                p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
             } else {
               if (input$FW_picker_color_by=="sensitivity clusters"){
                 #browser()
@@ -887,7 +924,12 @@ mod_gxe_server <- function(id, rv, parent_session){
                   }
               } else {
                 if (input$FW_picker_color_by=="Nothing"){
-                  p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+                  if (input$FW_picker_plot_type=="trellis"){
+                    p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=input$FW_trellis_genot_select) 
+                  } else {
+                    
+                    p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+                  }
                   if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
                     rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
                     p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
@@ -937,10 +979,66 @@ mod_gxe_server <- function(id, rv, parent_session){
                 p <- gridExtra::grid.arrange(tot, right = legend, 
                                              top = paste("Finlay & Wilkinson analysis for", input$picker_trait))
             }
+            #if (!is.null(input$FWplot_click)){
+            #  print("clickpasnull")
+            #  click=input$FWplot_click
+            #  #browser()
+            #  dist=sqrt((click$x-p$data$EnvMean)^2+(click$y-p$data$fitted)^2)
+            #  p + geom_text(data = p$data[which.min(dist),], aes(x=EnvMean,y=fitted,label = genotype, size = 12))
+            #} else {
+            #  print("clicknull")
+            if (input$FW_picker_plot_type=="line" & !input$FW_coord_equal){
+              p + coord_cartesian()
+            } else {
               p
+            }
+            #}
           })
       })
-
+      
+      observe({
+        output$FWhover_vinfo <- renderText({
+          if(!is.null(input$FWplot_hover)) {
+            #browser()
+            F <- as.data.table(rv$TDFWplot$fittedGeno)
+            E <- as.data.table(rv$TDFWplot$envEffs)
+            EF <- E[F, on=.(Trial=trial)]
+            hover=input$FWplot_hover
+            dist=sqrt((hover$x-EF$EnvMean)^2+(hover$y-EF$fittedValue)^2)
+            prox <- max(c(EF$EnvMean,EF$fittedValue))/30
+            genot <- as.character(EF$genotype)[which.min(dist)]
+            if(min(dist) < prox) {genot}
+          }
+        })
+        # output$FWhover_info <- renderText({
+        #   if(!is.null(input$FWplot_hover)) {
+        #   #browser()
+        #   F <- as.data.table(rv$TDFWplot$fittedGeno)
+        #   E <- as.data.table(rv$TDFWplot$envEffs)
+        #   EF <- E[F, on=.(Trial=trial)]
+        #   hover=input$FWplot_hover
+        #   dist=sqrt((hover$x-EF$EnvMean)^2+(hover$y-EF$fittedValue)^2)
+        #   genot <- as.character(EF$genotype)[which.min(dist)]
+        #   if(min(dist) < 3) {
+        #     htmltools::renderTags(
+        #       tags$div(
+        #         genot,
+        #         style = paste0(
+        #           "position: absolute; ",
+        #           "top: ", hover$coords_css$y, "px; ",
+        #           "left: ", hover$coords_css$x, "px; ",
+        #           "background: gray; ",
+        #           "padding: 3px; ",
+        #           "color: white; "
+        #         )
+        #       )
+        #     )$html
+        #     
+        #   }
+        #   }
+        # })
+      })
+      
       #### compute sensitivity_clusters whenever a picker changes ####
       observeEvent(  eventExpr = {
         input$FW_picker_color_by
@@ -952,7 +1050,15 @@ mod_gxe_server <- function(id, rv, parent_session){
         req(rv$TDFW)
         req(input$FW_cluster_sensitivity_nb, input$FW_picker_cluster_on)
         #browser()
-        if (input$FW_picker_color_by=="sensitivity clusters"){
+        if (input$FW_picker_plot_type=="trellis"){
+          output$FW_trellis_genot_select_ui <- renderUI({
+            genots <- as.character(unique(rbindlist(rv$TDFW$TD)$genotype))
+            pickerInput(ns("FW_trellis_genot_select"), label = "Select genotypes", choices = genots, selected = genots[1:round(length(genots)*0.05,0)], multiple = T, options = pickerOptions(liveSearch = TRUE))
+          })
+        } else {
+          output$FW_trellis_genot_select_ui <- renderUI({NULL})
+        }
+        if (input$FW_picker_plot_type=="line" & input$FW_picker_color_by=="sensitivity clusters"){
           sensclust <- data.table(rv$TDFW$estimates)
           sensclust <- sensclust[!is.na(Sens)]
           sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
@@ -977,6 +1083,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           output$FW_sens_clust_select <- renderUI(expr = NULL)
         }
       })
+      
       observeEvent(input$FW_sens_clusters_DT_rows_selected, ignoreNULL = FALSE, {
         #browser()
         if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
@@ -1139,13 +1246,15 @@ mod_gxe_server <- function(id, rv, parent_session){
       ### GGE plot ####
       observe({
         req(rv$TDGGEmetan)
+        #browser()
         output$GGE_plot <- renderPlot({
           #output$FW_plot <- renderPlotly({
           #browser()
           TDGGEplot <- rv$TDGGEmetan
+          gg <- NULL
           #browser()
           if (input$GGE_picker_plot_type==5){
-            metan:::plot.gge(TDGGEplot,
+            gg <- metan:::plot.gge(TDGGEplot,
                              type = input$GGE_picker_plot_type,
                              sel_env = input$GGE_picker_env_select,
                              size.text.gen = input$GGE_plot_size.text.gen,
@@ -1171,7 +1280,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             )            
             
           } else if (input$GGE_picker_plot_type == 7) {
-            metan:::plot.gge(TDGGEplot,
+            gg <- metan:::plot.gge(TDGGEplot,
                              type = input$GGE_picker_plot_type,
                              sel_gen = input$GGE_picker_gen_select,
                              size.text.gen = input$GGE_plot_size.text.gen,
@@ -1196,7 +1305,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                                                                                  plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
             )
           } else if (input$GGE_picker_plot_type == 9) {
-            metan:::plot.gge(TDGGEplot,
+            gg <- metan:::plot.gge(TDGGEplot,
                              type = input$GGE_picker_plot_type,
                              sel_gen1 = input$GGE_picker_gen_select,
                              sel_gen2 = input$GGE_picker_gen2_select,
@@ -1222,7 +1331,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                                                                                  plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
             )
           } else {
-            metan:::plot.gge(TDGGEplot,
+            gg <- metan:::plot.gge(TDGGEplot,
                              type = input$GGE_picker_plot_type,
                              size.text.gen = input$GGE_plot_size.text.gen,
                              repulsion = input$GGE_plot_repulsion,
@@ -1245,10 +1354,35 @@ mod_gxe_server <- function(id, rv, parent_session){
                              plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
                                                                                  plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
             )
+            if (input$GGE_picker_plot_type == 3) {
+              rv$gp_WwW <- gg$layers[[length(gg$layers)]]$data$label
+            }
           }
-
-        })
+          if (input$GGE_colorGenoBy!="Nothing"){
+            browser() 
+          }
+          print(gg)
           
+        })
+      })
+      
+      observeEvent(input$create_group_from_wWw,{
+        #browser()
+        if(length(rv$gp_WwW)>0){
+          #browser()
+          rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
+                                                               Genotype=rv$gp_WwW),
+                                                  y=unique(rbindlist(rv$TD)),
+                                                  by.x = "Genotype",
+                                                  by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
+          showModal(groupModal(rv=rv, 
+                               parent_session = parent_session, 
+                               modal_title = "Create new group", 
+                               group_description = paste0("Group of which won where genotypes in GGE analysis of ", input$picker_trait, " variable"),
+                               group_prefix =paste0("www_GGE@",input$picker_trait,".")
+          )
+          )
+        }
       })
       
       ## AMMI ####
