@@ -360,7 +360,9 @@ mod_gxe_ui <- function(id){
                                                 bslib::layout_columns(
                                                   bslib::card(
                                                     dataTableOutput(ns("STAB_sup")),
-                                                    uiOutput(ns("copy_STABsup_table"))
+                                                    bslib::card_footer(
+                                                      uiOutput(ns("copy_STABsup_table"))
+                                                    )
                                                   ),
                                                   bslib::card(
                                                     plotlyOutput(ns("STAB_sup_plot"))                                                  )
@@ -370,7 +372,9 @@ mod_gxe_ui <- function(id){
                                                 bslib::layout_columns(
                                                   bslib::card(
                                                     dataTableOutput(ns("STAB_static")),
-                                                    uiOutput(ns("copy_STABstatic_table"))
+                                                    bslib::card_footer(
+                                                      uiOutput(ns("copy_STABstatic_table"))
+                                                    )
                                                   ),
                                                   bslib::card(
                                                     plotlyOutput(ns("STAB_static_plot"))
@@ -381,7 +385,9 @@ mod_gxe_ui <- function(id){
                                                 bslib::layout_columns(
                                                   bslib::card(
                                                     dataTableOutput(ns("STAB_wricke")),
-                                                    uiOutput(ns("copy_STABwricke_table"))
+                                                    bslib::card_footer(
+                                                      uiOutput(ns("copy_STABwricke_table"))
+                                                    )
                                                   ),
                                                   bslib::card(
                                                     plotlyOutput(ns("STAB_wricke_plot"))
