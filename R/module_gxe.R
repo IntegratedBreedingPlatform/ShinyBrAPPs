@@ -186,16 +186,19 @@ mod_gxe_ui <- function(id){
                              bslib::accordion_panel(title = "FW plot",
                                                     bslib::layout_columns(col_widths = c(9,3),
                                                                           bslib::card(full_screen = T, height = "800",
-                                                                                      div(style=".bslib-card .card-header.line-height: 2rem;",
-                                                                                      bslib::card_header(
-                                                                                        materialSwitch(ns("FW_coord_equal"), "Equal axes on line plot", value = TRUE, status = "info")
-                                                                                      )),
                                                                                       bslib::card_body(
                                                                                         uiOutput(ns("FW_trellis_genot_select_ui")),
                                                                                         plotOutput(ns("FW_plot"), hover = hoverOpts(id =ns("FWplot_hover"),delay = 50)),
                                                                                         #htmlOutput(ns("FWhover_info")),
                                                                                         uiOutput(ns("FW_sens_clust_select"))
-                                                                                      )
+                                                                                      ),
+                                                                                      #div(style=".bslib-card .card-footer.font-size: 1.2rem;",
+                                                                                          bslib::card_footer(
+                                                                                            div(style = "display: flex; margin-top: 1rem;",
+                                                                                                materialSwitch(ns("FW_coord_equal"), "Equal axes on line plot", value = TRUE, status = "info"),
+                                                                                                materialSwitch(ns("FW_display_raw_data"), "Plot also non fitted values", value = TRUE, status = "info")
+                                                                                            )
+                                                                                          )#)
                                                                                       ),
                                                                           value_box(title = "",
                                                                                     max_height = 100,
@@ -938,6 +941,9 @@ mod_gxe_server <- function(id, rv, parent_session){
                       ggnewscale::new_scale_color() + 
                       ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                       geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
+                      if (input$FW_display_raw_data){
+                        p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                      }
                   }
               } else {
                 if (input$FW_picker_color_by=="Nothing"){
@@ -948,11 +954,15 @@ mod_gxe_server <- function(id, rv, parent_session){
                     p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
                   }
                   if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
+                    #browser()
                     rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
                     p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                         ggnewscale::new_scale_color() + 
                         ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                         geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3) + theme(legend.position = "right")
+                        if (input$FW_display_raw_data){
+                          p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                        }
                   }
                   
                 } else {
@@ -966,6 +976,10 @@ mod_gxe_server <- function(id, rv, parent_session){
                         ggnewscale::new_scale_color() + 
                         ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                         geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
+                        if (input$FW_display_raw_data){
+                          p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                        }
+                    
                   }
                   
                 }
