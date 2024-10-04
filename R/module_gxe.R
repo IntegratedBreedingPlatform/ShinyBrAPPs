@@ -1086,7 +1086,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           }
           renum <- sensclust[,lapply(.SD,mean),sensitivity_cluster, .SDcols = c("GenMean","Sens")][order(GenMean)]
           renum[,renum:=1:.N]
-          sensclustren <- renum[sensclust, on=.(sensitivity_cluster)][,sensitivity_cluster:=renum]
+          sensclustren <- renum[,.(sensitivity_cluster,renum)][sensclust, on=.(sensitivity_cluster)][,sensitivity_cluster:=renum]
           sensclustren[,renum:=NULL]
           rv$sensclust <- sensclustren
           rv$TDFWplot <- rv$TDFW
@@ -1126,7 +1126,17 @@ mod_gxe_server <- function(id, rv, parent_session){
       #### Render FW sensclusters DT ####
       observe({
         req(rv$sensclust)
-        output$FW_sens_clusters_DT <- DT::renderDataTable(DT::datatable(rv$sensclust, filter = "top"),rownames= FALSE, selection = 'multiple')
+        #browser()
+        dtsc <- dcast(rbindlist(rv$TD)[,c("genotype","trial",input$picker_trait), with = F],genotype~trial)[rv$sensclust, on=.(genotype=Genotype)][,-c("SE_GenMean","SE_Sens","MSdeviation")]
+        formatcols <- colnames(dtsc)[-which(colnames(dtsc)%in%c("genotype","sensitivity_cluster", "Rank"))]
+        if (any(colnames(dtsc)%in%"sensitivity_cluster")){
+          dtsc[,sensitivity_cluster:=as.character(sensitivity_cluster)]
+        }
+        output$FW_sens_clusters_DT <- DT::renderDataTable(formatRound(DT::datatable(dtsc, filter = "top"),
+                                                                      columns = formatcols,
+                                                                      digits = 2),
+                                                          rownames= FALSE,
+                                                          selection = 'multiple')
         dtproxy <<- dataTableProxy('FW_sens_clusters_DT')
         if (any(colnames(rv$sensclust)=="sensitivity_cluster")){
           shinyjs::enable("create_groups_from_sensclusters")
