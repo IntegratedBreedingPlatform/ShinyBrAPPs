@@ -166,6 +166,16 @@ mod_gxe_ui <- function(id){
             #materialSwitch(ns("FW_cluster_sensitivity"), "Color by sensitivity clusters", value = FALSE, status = "info"),
             numericInput(ns("FW_cluster_sensitivity_nb"),"Number of clusters", min = 2, max = 8, step = 1, value = 2),
             pickerInput(ns("FW_picker_cluster_on"), label="Cluster on", choices = c(sensitivity="Sens", `genotype means`="GenMean"), multiple = TRUE, selected = "Sens"),
+            prettyRadioButtons( 
+              inputId = ns("FW_picker_cluster_meth"),
+              label = "Clustering method",
+              choices = c("Kmeans", "hclust"),
+              inline = TRUE,
+              shape = "round",
+              status = "primary",
+              fill = TRUE,
+              bigger = TRUE
+            ),
             shiny::downloadButton(ns("FW_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
           ),
           #bslib::layout_columns(
@@ -1051,6 +1061,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         input$FW_cluster_sensitivity_nb
         input$FW_picker_cluster_on
         input$FW_picker_plot_type
+        input$FW_picker_cluster_meth
         rv$TDFW
       }, handlerExpr = {
         req(rv$TDFW)
@@ -1067,7 +1078,11 @@ mod_gxe_server <- function(id, rv, parent_session){
         if (input$FW_picker_plot_type=="line" & input$FW_picker_color_by=="sensitivity clusters"){
           sensclust <- data.table(rv$TDFW$estimates)
           sensclust <- sensclust[!is.na(Sens)]
-          sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
+          if (input$FW_picker_cluster_meth=="Kmeans"){
+            sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
+          } else {
+            sensclust[,sensitivity_cluster:=cutree(hclust(dist(scale(.SD))),k = input$FW_cluster_sensitivity_nb), .SDcols = input$FW_picker_cluster_on]
+          }
           rv$sensclust <- sensclust
           rv$TDFWplot <- rv$TDFW
           rv$TDFWplot$TD <- lapply(rv$TDFWplot$TD, function(a) data.table(a)[sensclust, on=.(genotype=Genotype)])
@@ -1134,7 +1149,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         clusters <- unique(rbindlist(rv$TD)[,.(genotype,germplasmDbId,germplasmName)])[rv$sensclust, on=.(genotype=Genotype)][order(sensitivity_cluster)][,.(
           group_name = paste0("cl",clustering_id,"_FW@",input$picker_trait,".", sensitivity_cluster),
           group_desc = paste0(
-            "Clustering method: FW clusters on ",input$picker_trait, " variable, using ", paste(input$FW_picker_cluster_on, collapse = ", "), "<br>",
+            "Clustering method: FW clusters on ",input$picker_trait, " variable, using ", input$FW_picker_cluster_meth, " on ", paste(input$FW_picker_cluster_on, collapse = ", "), "<br>",
             "Cluster: ", sensitivity_cluster,"/", input$FW_cluster_sensitivity_nb, "<br>",
             "Timestamp: ", Sys.time()
           ),
