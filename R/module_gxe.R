@@ -186,9 +186,10 @@ mod_gxe_ui <- function(id){
                              bslib::accordion_panel(title = "FW plot",
                                                     bslib::layout_columns(col_widths = c(9,3),
                                                                           bslib::card(full_screen = T, height = "800",
+                                                                                      div(style=".bslib-card .card-header.line-height: 2rem;",
                                                                                       bslib::card_header(
                                                                                         materialSwitch(ns("FW_coord_equal"), "Equal axes on line plot", value = TRUE, status = "info")
-                                                                                      ),
+                                                                                      )),
                                                                                       bslib::card_body(
                                                                                         uiOutput(ns("FW_trellis_genot_select_ui")),
                                                                                         plotOutput(ns("FW_plot"), hover = hoverOpts(id =ns("FWplot_hover"),delay = 50)),
