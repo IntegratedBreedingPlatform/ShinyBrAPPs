@@ -196,7 +196,7 @@ mod_gxe_ui <- function(id){
                                                                                           bslib::card_footer(
                                                                                             div(style = "display: flex; margin-top: 1rem;",
                                                                                                 materialSwitch(ns("FW_coord_equal"), "Equal axes on line plot", value = TRUE, status = "info"),
-                                                                                                materialSwitch(ns("FW_display_raw_data"), "Plot also non fitted values", value = TRUE, status = "info")
+                                                                                                materialSwitch(ns("FW_display_raw_data"), "Plot also non fitted values on selected genotypes", value = FALSE, status = "info")
                                                                                             )
                                                                                           )#)
                                                                                       ),
