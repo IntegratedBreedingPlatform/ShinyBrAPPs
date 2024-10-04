@@ -1084,14 +1084,18 @@ mod_gxe_server <- function(id, rv, parent_session){
           } else {
             sensclust[,sensitivity_cluster:=cutree(hclust(dist(scale(.SD))),k = input$FW_cluster_sensitivity_nb), .SDcols = input$FW_picker_cluster_on]
           }
-          rv$sensclust <- sensclust
+          renum <- sensclust[,lapply(.SD,mean),sensitivity_cluster, .SDcols = c("GenMean","Sens")][order(GenMean)]
+          renum[,renum:=1:.N]
+          sensclustren <- renum[sensclust, on=.(sensitivity_cluster)][,sensitivity_cluster:=renum]
+          sensclustren[,renum:=NULL]
+          rv$sensclust <- sensclustren
           rv$TDFWplot <- rv$TDFW
-          rv$TDFWplot$TD <- lapply(rv$TDFWplot$TD, function(a) data.table(a)[sensclust, on=.(genotype=Genotype)])
+          rv$TDFWplot$TD <- lapply(rv$TDFWplot$TD, function(a) data.table(a)[rv$sensclust, on=.(genotype=Genotype)])
           output$FW_sens_clust_select <- renderUI(
             prettyRadioButtons( 
               inputId = ns("FW_sens_clust_select_buttons"),
               label = "Select a cluster to highlight",
-              choices = c("none", sort(unique(sensclust$sensitivity_cluster))),
+              choices = c("none", sort(unique(rv$sensclust$sensitivity_cluster))),
               inline = TRUE,
               shape = "round",
               status = "primary",
