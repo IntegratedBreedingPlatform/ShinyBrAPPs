@@ -166,6 +166,16 @@ mod_gxe_ui <- function(id){
             #materialSwitch(ns("FW_cluster_sensitivity"), "Color by sensitivity clusters", value = FALSE, status = "info"),
             numericInput(ns("FW_cluster_sensitivity_nb"),"Number of clusters", min = 2, max = 8, step = 1, value = 2),
             pickerInput(ns("FW_picker_cluster_on"), label="Cluster on", choices = c(sensitivity="Sens", `genotype means`="GenMean"), multiple = TRUE, selected = "Sens"),
+            prettyRadioButtons( 
+              inputId = ns("FW_picker_cluster_meth"),
+              label = "Clustering method",
+              choices = c("Kmeans", "hclust"),
+              inline = TRUE,
+              shape = "round",
+              status = "primary",
+              fill = TRUE,
+              bigger = TRUE
+            ),
             shiny::downloadButton(ns("FW_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
           ),
           #bslib::layout_columns(
@@ -176,15 +186,19 @@ mod_gxe_ui <- function(id){
                              bslib::accordion_panel(title = "FW plot",
                                                     bslib::layout_columns(col_widths = c(9,3),
                                                                           bslib::card(full_screen = T, height = "800",
-                                                                                      bslib::card_header(
-                                                                                        materialSwitch(ns("FW_coord_equal"), "Equal axes on line plot", value = TRUE, status = "info")
-                                                                                      ),
                                                                                       bslib::card_body(
                                                                                         uiOutput(ns("FW_trellis_genot_select_ui")),
                                                                                         plotOutput(ns("FW_plot"), hover = hoverOpts(id =ns("FWplot_hover"),delay = 50)),
                                                                                         #htmlOutput(ns("FWhover_info")),
                                                                                         uiOutput(ns("FW_sens_clust_select"))
-                                                                                      )
+                                                                                      ),
+                                                                                      #div(style=".bslib-card .card-footer.font-size: 1.2rem;",
+                                                                                          bslib::card_footer(
+                                                                                            div(style = "display: flex; margin-top: 1rem;",
+                                                                                                materialSwitch(ns("FW_coord_equal"), "Equal axes on line plot", value = TRUE, status = "info"),
+                                                                                                materialSwitch(ns("FW_display_raw_data"), "Plot also non fitted values on selected genotypes", value = FALSE, status = "info")
+                                                                                            )
+                                                                                          )#)
                                                                                       ),
                                                                           value_box(title = "",
                                                                                     max_height = 100,
@@ -360,7 +374,9 @@ mod_gxe_ui <- function(id){
                                                 bslib::layout_columns(
                                                   bslib::card(
                                                     dataTableOutput(ns("STAB_sup")),
-                                                    uiOutput(ns("copy_STABsup_table"))
+                                                    bslib::card_footer(
+                                                      uiOutput(ns("copy_STABsup_table"))
+                                                    )
                                                   ),
                                                   bslib::card(
                                                     plotlyOutput(ns("STAB_sup_plot"))                                                  )
@@ -370,7 +386,9 @@ mod_gxe_ui <- function(id){
                                                 bslib::layout_columns(
                                                   bslib::card(
                                                     dataTableOutput(ns("STAB_static")),
-                                                    uiOutput(ns("copy_STABstatic_table"))
+                                                    bslib::card_footer(
+                                                      uiOutput(ns("copy_STABstatic_table"))
+                                                    )
                                                   ),
                                                   bslib::card(
                                                     plotlyOutput(ns("STAB_static_plot"))
@@ -381,7 +399,9 @@ mod_gxe_ui <- function(id){
                                                 bslib::layout_columns(
                                                   bslib::card(
                                                     dataTableOutput(ns("STAB_wricke")),
-                                                    uiOutput(ns("copy_STABwricke_table"))
+                                                    bslib::card_footer(
+                                                      uiOutput(ns("copy_STABwricke_table"))
+                                                    )
                                                   ),
                                                   bslib::card(
                                                     plotlyOutput(ns("STAB_wricke_plot"))
@@ -921,6 +941,9 @@ mod_gxe_server <- function(id, rv, parent_session){
                       ggnewscale::new_scale_color() + 
                       ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                       geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
+                      if (input$FW_display_raw_data){
+                        p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                      }
                   }
               } else {
                 if (input$FW_picker_color_by=="Nothing"){
@@ -931,11 +954,15 @@ mod_gxe_server <- function(id, rv, parent_session){
                     p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
                   }
                   if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
+                    #browser()
                     rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
                     p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                         ggnewscale::new_scale_color() + 
                         ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                         geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3) + theme(legend.position = "right")
+                        if (input$FW_display_raw_data){
+                          p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                        }
                   }
                   
                 } else {
@@ -949,6 +976,10 @@ mod_gxe_server <- function(id, rv, parent_session){
                         ggnewscale::new_scale_color() + 
                         ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                         geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
+                        if (input$FW_display_raw_data){
+                          p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                        }
+                    
                   }
                   
                 }
@@ -1045,6 +1076,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         input$FW_cluster_sensitivity_nb
         input$FW_picker_cluster_on
         input$FW_picker_plot_type
+        input$FW_picker_cluster_meth
         rv$TDFW
       }, handlerExpr = {
         req(rv$TDFW)
@@ -1061,15 +1093,23 @@ mod_gxe_server <- function(id, rv, parent_session){
         if (input$FW_picker_plot_type=="line" & input$FW_picker_color_by=="sensitivity clusters"){
           sensclust <- data.table(rv$TDFW$estimates)
           sensclust <- sensclust[!is.na(Sens)]
-          sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
-          rv$sensclust <- sensclust
+          if (input$FW_picker_cluster_meth=="Kmeans"){
+            sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
+          } else {
+            sensclust[,sensitivity_cluster:=cutree(hclust(dist(scale(.SD))),k = input$FW_cluster_sensitivity_nb), .SDcols = input$FW_picker_cluster_on]
+          }
+          renum <- sensclust[,lapply(.SD,mean),sensitivity_cluster, .SDcols = c("GenMean","Sens")][order(GenMean)]
+          renum[,renum:=1:.N]
+          sensclustren <- renum[,.(sensitivity_cluster,renum)][sensclust, on=.(sensitivity_cluster)][,sensitivity_cluster:=renum]
+          sensclustren[,renum:=NULL]
+          rv$sensclust <- sensclustren
           rv$TDFWplot <- rv$TDFW
-          rv$TDFWplot$TD <- lapply(rv$TDFWplot$TD, function(a) data.table(a)[sensclust, on=.(genotype=Genotype)])
+          rv$TDFWplot$TD <- lapply(rv$TDFWplot$TD, function(a) data.table(a)[rv$sensclust, on=.(genotype=Genotype)])
           output$FW_sens_clust_select <- renderUI(
             prettyRadioButtons( 
               inputId = ns("FW_sens_clust_select_buttons"),
               label = "Select a cluster to highlight",
-              choices = c("none", sort(unique(sensclust$sensitivity_cluster))),
+              choices = c("none", sort(unique(rv$sensclust$sensitivity_cluster))),
               inline = TRUE,
               shape = "round",
               status = "primary",
@@ -1100,7 +1140,17 @@ mod_gxe_server <- function(id, rv, parent_session){
       #### Render FW sensclusters DT ####
       observe({
         req(rv$sensclust)
-        output$FW_sens_clusters_DT <- DT::renderDataTable(DT::datatable(rv$sensclust, filter = "top"),rownames= FALSE, selection = 'multiple')
+        #browser()
+        dtsc <- dcast(rbindlist(rv$TD)[,c("genotype","trial",input$picker_trait), with = F],genotype~trial)[rv$sensclust, on=.(genotype=Genotype)][,-c("SE_GenMean","SE_Sens","MSdeviation")]
+        formatcols <- colnames(dtsc)[-which(colnames(dtsc)%in%c("genotype","sensitivity_cluster", "Rank"))]
+        if (any(colnames(dtsc)%in%"sensitivity_cluster")){
+          dtsc[,sensitivity_cluster:=as.character(sensitivity_cluster)]
+        }
+        output$FW_sens_clusters_DT <- DT::renderDataTable(formatRound(DT::datatable(dtsc, filter = "top"),
+                                                                      columns = formatcols,
+                                                                      digits = 2),
+                                                          rownames= FALSE,
+                                                          selection = 'multiple')
         dtproxy <<- dataTableProxy('FW_sens_clusters_DT')
         if (any(colnames(rv$sensclust)=="sensitivity_cluster")){
           shinyjs::enable("create_groups_from_sensclusters")
@@ -1128,7 +1178,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         clusters <- unique(rbindlist(rv$TD)[,.(genotype,germplasmDbId,germplasmName)])[rv$sensclust, on=.(genotype=Genotype)][order(sensitivity_cluster)][,.(
           group_name = paste0("cl",clustering_id,"_FW@",input$picker_trait,".", sensitivity_cluster),
           group_desc = paste0(
-            "Clustering method: FW clusters on ",input$picker_trait, " variable, using ", paste(input$FW_picker_cluster_on, collapse = ", "), "<br>",
+            "Clustering method: FW clusters on ",input$picker_trait, " variable, using ", input$FW_picker_cluster_meth, " on ", paste(input$FW_picker_cluster_on, collapse = ", "), "<br>",
             "Cluster: ", sensitivity_cluster,"/", input$FW_cluster_sensitivity_nb, "<br>",
             "Timestamp: ", Sys.time()
           ),
