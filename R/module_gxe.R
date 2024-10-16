@@ -22,7 +22,10 @@ mod_gxe_ui <- function(id){
             pickerInput(ns("picker_trait"), label = tags$span(style="color: red;","Trait"), choices = c())|>
               tooltip("Select a single trait to work on", options = list(trigger="hover")),
             materialSwitch(ns("use_weights"),label = "Use weights", value = FALSE, inline = T, status = "info"),
-            pickerInput(ns("weight_var"), label = "Weight variable", choices = c()),
+            div(style="display: flex;gap: 10px;",
+                pickerInput(ns("weight_var"), label = "Weight variable", choices = c()),
+                materialSwitch(ns("transf_weights"),label = "Weight variable is seBLUE/P", value = TRUE, inline = T, status = "info"))|>
+                tooltip("When this option is selected weights will be calculated as 1/x^2, x being the selected weight variable", options = list(trigger="hover")),
             pickerInput(ns("picker_germplasm_level"), label = tags$span(style="color: red;","Germplasm level"), choices = c("germplasmDbId","germplasmName"), selected = "GermplasmName")|>
               tooltip("Select how genotypes will be identified (either germplasmDbId or germplasmName). In the second case, germplasm that have different DbIds in different environments but sharing a common preferred name will be considered as the same.", options = list(trigger="hover")),
             pickerInput(ns("picker_env_variable"), label = tags$span(style="color: red;","Variable to use as Environment Name"), choices = c())|>
@@ -715,7 +718,11 @@ mod_gxe_server <- function(id, rv, parent_session){
         }
         if (input$use_weights){
           if (!is.null(input$weight_var)){
-            data2TD[,wt:=(1/.SD)^2, .SDcols=input$weight_var]
+            if (input$transf_weights==TRUE){
+              data2TD[,wt:=(1/.SD)^2, .SDcols=input$weight_var]
+            } else {
+              data2TD[,wt:=.SD, .SDcols=input$weight_var]
+            }
           }
         }        
         #browser()
