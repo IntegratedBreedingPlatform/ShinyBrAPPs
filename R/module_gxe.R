@@ -6,6 +6,16 @@ mod_gxe_ui <- function(id){
     rclipboard::rclipboardSetup(),
     shinyjs::useShinyjs(),
     chooseSliderSkin("Flat", color = "#1b95b2"),
+    tags$head(
+      tags$style(HTML("
+      .console pre {
+        color: #d40000;
+        background-color: #333333;
+        font-weight: bolder;
+        overflow-y:scroll;
+        max-height: 250px;
+      }"))
+    ),
     bslib::navset_tab(
       bslib::nav_panel(
         ## Data prep panel ####
@@ -134,7 +144,10 @@ mod_gxe_ui <- function(id){
             ),
             bslib::accordion_panel(title = "Variance components and heritability", 
                           verbatimTextOutput(ns("MM_vc"))
-            )
+            )#,
+            #bslib::accordion_panel(title = "Console", 
+            #                       div(class = "console",verbatimTextOutput(ns("MM_console")))
+            #)
           ),
           #### Accordion plot and predict results ####
           bslib::accordion(id = ns("MM_accord2"),
@@ -420,7 +433,12 @@ mod_gxe_ui <- function(id){
         )
       )
       
-    )
+    ),
+    bslib::accordion(id = ns("console_accord"),
+                     bslib::accordion_panel(title = "Console", 
+                                            div(class = "console",verbatimTextOutput(ns("console")))
+                     )
+    )###
   )
 }
 
@@ -435,6 +453,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       bslib::accordion_panel_close("GGE_adv_settings_acc", values="advs", session = session)
       ## observe data and update Trait picker ####
       rv$selected_genotypes <- NULL
+      rv$console <- NULL
       observe({
         req(rv$data_plot)
         req(rv$column_datasource)
@@ -826,6 +845,8 @@ mod_gxe_server <- function(id, rv, parent_session){
           misspicks <- c("'Trait'","'Variable to use as Environment'", "'Germplasm level'")[c(is.null(input$picker_trait),is.null(input$picker_env_variable), is.null(input$picker_germplasm_level))] 
           showNotification(stringmagic::string_magic("{enum ? misspicks}  should be selected first on Data preparation Tab"), type = "error", duration = notification_duration)
         } else {
+          #rv$console <- NULL
+          withCallingHandlers({
           rv$TDVarComp <- switch(input$picker_gxe_mm_env_struct,
                                  `1`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)},
                                  `2`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, locationYear = TRUE), error=function(e) e)},
@@ -870,6 +891,13 @@ mod_gxe_server <- function(id, rv, parent_session){
           }, rownames= FALSE)
           bslib::accordion_panel_set(id="MM_accord1", values=TRUE)
           bslib::accordion_panel_set(id="MM_accord2", values=TRUE)
+          }, message = function(m) rv$console <- paste(rv$console, paste0("Mixed model run at ",Sys.time(), " : ",m), sep=""),
+             warning = function(w) rv$console <- paste(rv$console, paste0("Mixed model run at ",Sys.time(), " : ",w), sep=""))}
+      })
+      
+      observe({
+        if(!is.null(rv$console)){
+          output$console <- renderText(rv$console)
         }
       })
       
@@ -907,7 +935,11 @@ mod_gxe_server <- function(id, rv, parent_session){
           misspicks <- c("'Trait'","'Variable to use as Environment'", "'Germplasm level'")[c(is.null(input$picker_trait),is.null(input$picker_env_variable), is.null(input$picker_germplasm_level))] 
           showNotification(stringmagic::string_magic("{enum ? misspicks}  should be selected first on Data preparation Tab"), type = "error", duration = notification_duration)
         } else {
+          withCallingHandlers({
           rv$TDFW <- tryCatch(gxeFw(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)
+          },
+          message = function(m) rv$console <- paste(rv$console, paste0("FW run at ",Sys.time(), " : ",m), sep=""),
+          warning = function(w) rv$console <- paste(rv$console, paste0("FW run at ",Sys.time(), " : ",w), sep=""))
           rv$TDFWplot <- rv$TDFW
           output$FW_text_output <- renderPrint({
             if ("FW"%in%class(rv$TDFW)){
@@ -1263,7 +1295,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         req(rv$TD)
         #browser()
         rv$TD.metangge <- rbindlist(rv$TD)[,.SD, .SDcols=c("trial","genotype",input$picker_trait)]
-
+        withCallingHandlers({
         rv$TDGGEmetan <- tryCatch(metan::gge(rv$TD.metangge,
                                              env=trial,
                                              gen=genotype,
@@ -1272,7 +1304,10 @@ mod_gxe_server <- function(id, rv, parent_session){
                                              scaling = input$GGE_advs_scaling,
                                              svp = input$GGE_advs_svp,), error=function(e) e)
         rv$TDGGE <- tryCatch(gxeGGE(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)
-        #browser()
+        },
+        message = function(m) rv$console <- paste(rv$console, paste0("GGE run at ",Sys.time(), " : ",m), sep=""),
+        warning = function(w) rv$console <- paste(rv$console, paste0("GGE run at ",Sys.time(), " : ",w), sep=""))
+        
         
         updatePickerInput(
           session, "GGE_picker_gen_select",
@@ -1459,6 +1494,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       observeEvent(input$AMMI_run,{
         req(rv$TD)
         #browser()
+        withCallingHandlers({
         rv$TDAMMI <- tryCatch(gxeAmmi(TD = rv$TD,
                                       trait = input$picker_trait,
                                       nPC = switch((input$AMMI_nPC=="Auto")+1,  as.numeric(input$AMMI_nPC,NULL)),
@@ -1466,6 +1502,10 @@ mod_gxe_server <- function(id, rv, parent_session){
                                       center = input$AMMI_center,
                                       excludeGeno = input$AMMI_excludeGeno,
                                       useWt = input$use_weights), error=function(e) e)
+        },
+        message = function(m) rv$console <- paste(rv$console, paste0("AMMI run at ",Sys.time(), " : ",m), sep=""),
+        warning = function(w) rv$console <- paste(rv$console, paste0("AMMI run at ",Sys.time(), " : ",w), sep=""))
+        
         #browser()
         output$AMMI_text_output <- renderPrint({
           if ("AMMI"%in%class(rv$TDAMMI)){
