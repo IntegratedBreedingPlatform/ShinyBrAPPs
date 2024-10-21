@@ -1,153 +1,123 @@
 #' @export
 mod_model_ui <- function(id){
   ns <- NS(id)
-  column(
-    12,
-    fluidRow(
-      column(
-        4,
-        pickerInput(
-          ns("select_environments"), "Select Environments", multiple = TRUE, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
-        )
+  tagList(
+    bslib::layout_columns(
+      col_widths = c(4, 3, 3, 2),
+      pickerInput(
+        ns("select_environments"), "Select Environments", multiple = TRUE, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
       ),
-      column(
-        3,
-        pickerInput(
-          ns("select_traits"), label = "Select Traits", multiple = TRUE, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
-        )
+      pickerInput(
+        ns("select_traits"), label = "Select Traits", multiple = TRUE, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
       ),
-      column(
-        3,
-        pickerInput(ns("model_design"),
-                    label = actionLink(ns("model_design_metadata_button"),"Select Model Design", style ="color:inherit", icon = icon("info-circle", style = "float:right; font-size:large;margin-left:10px")),
-                    choices = NULL,
-                    selected = NULL, multiple = F,
-                    options = list(
-                      title = "Select Model Design",
-                      onInitialize = I('function() { this.setValue(""); }')
-                    ),
-                    width = "100%"),
-        bsModal(
-          ns("modal_model_design"), title = "Metadata for model designs", trigger = ns("model_design_metadata_button"), size = "large",
-          dataTableOutput(ns("table_model_design_metadata"))
-        )
+      pickerInput(ns("model_design"),
+                  label = actionLink(ns("model_design_metadata_button"),"Select Model Design", style ="color:inherit", icon = icon("info-circle", style = "float:right; font-size:large;margin-left:10px")),
+                  choices = NULL,
+                  selected = NULL, multiple = F,
+                  options = list(
+                    title = "Select Model Design",
+                    onInitialize = I('function() { this.setValue(""); }'),
+                    container = "body"
+                  ),
+                  width = "100%"
       ),
-      column(
-        2,
-        pickerInput(ns("model_engine"), "Select Modelling Engine",
-                    choices = c("SpATS", "lme4"),
-                    # choices = c("SpATS", "lme4", "asreml"),
-                    selected = "lme4",
-                    width = "100%")
+      pickerInput(ns("model_engine"), "Select Modelling Engine",
+                  choices = c("SpATS", "lme4"),
+                  # choices = c("SpATS", "lme4", "asreml"),
+                  selected = "lme4",
+                  width = "100%"
       )
     ),
-    fluidRow(
-      column(
-        12,
-        bsCollapse(
-          open = NULL,
-          bsCollapsePanel(
-            title = "Advanced fitting options",
-            pickerInput(ns("covariates"),label = "Covariates", choices = NULL, multiple = T),
-            checkboxGroupInput(ns("what"),label = "Genotype effect (what)", choices = c("random", "fixed"), selected = c("random", "fixed"), inline = T),
-            prettySwitch(ns("spatial_opt"),label = "Spatial", value = T),
-            prettySwitch(ns("display_psanova_opt"),label = "Set up PSANOVA", value = F),
-            uiOutput(ns("psanova_opt"))
+    bsModal(
+      ns("modal_model_design"), title = "Metadata for model designs", trigger = ns("model_design_metadata_button"), size = "large",
+      dataTableOutput(ns("table_model_design_metadata"))
+    ),
+    br(),
+    bslib::accordion(id = ns("advanced_options"),
+      open = F,
+      bslib::accordion_panel(
+        title = "Advanced fitting options", 
+          pickerInput(ns("covariates"),label = "Covariates", choices = NULL, multiple = T),
+          checkboxGroupInput(ns("what"),label = "Genotype effect (what)", choices = c("random", "fixed"), selected = c("random", "fixed"), inline = T),
+        prettySwitch(ns("spatial_opt"),label = "Spatial", value = T),
+        prettySwitch(ns("display_psanova_opt"),label = "Set up PSANOVA", value = F),
+        uiOutput(ns("psanova_opt"))
+     )
+    ),
+    br(),
+    bslib::layout_columns(
+      col_widths = c(2, 2, 4),
+      shiny::actionButton(ns("go_fit_model"), "Fit model", class = "btn btn-info"),
+      hidden(shiny::actionButton(ns("go_fit_no_outlier"), "Refit without outliers", class = "btn btn-info")),
+      h4(textOutput(ns("fit_outliers_output")))
+    ),
+    br(),
+    bslib::navset_tab(
+      bslib::nav_panel(
+        "Results",
+        bslib::layout_columns(
+          col_widths = c(6,6),
+          div(
+            # tags$h4("Metrics ~ Environment x Trait"),
+            # pickerInput(ns("select_metrics_A"), "Statistics", multiple = F, choices = NULL, width = "40%", inline = T),
+            downloadButton(ns("export_metrics_A"), "CSV Export", class = "btn btn-info", style = "float:right; margin:5px"),
+            shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push BLUES/BLUPS to BMS", icon = icon("leaf"), class = "btn btn-primary", style = "float:right; margin:5px"),
+            bsTooltip(id = ns("push_metrics_to_BMS_B"), title = "You can select the traits you want to push by selecting raws in the table below", placement = "left", trigger = "hover"),
+            dataTableOutput(ns("metrics_A_table"))
+          ),
+          div(
+            # tags$h4("Metrics ~ Environment x Trait x Genotype"),
+            downloadButton(ns("export_metrics_B"), "CSV Export", class = "btn btn-info", style = "float:right; margin:5px"),
+            #disabled(shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push to BMS", icon = icon("leaf"), class="btn btn-primary", style = "float:right; margin:5px")),
+            #br(),
+            pickerInput(ns("select_metrics_B"), "BLUPs/BLUEs", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs"), width = "40%", inline = T, options = list(`style` = "margin-bottom: 0;")),
+            pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL, width = "40%", inline = T, options = list(`style` = "margin-bottom: 0;")),
+            dataTableOutput(ns("metrics_B_table"))
+          )
+        ),
+        bslib::layout_columns(
+          col_widths = c(6,6),
+          dataTableOutput(ns("metrics_A_table")),
+          dataTableOutput(ns("metrics_B_table"))
+        )
+      ),
+      bslib::nav_panel(
+        "Outliers",
+        fluidRow(
+          column(
+            4,
+            pickerInput(
+              ns("select_trait_outliers"),"Trait", multiple = F, choices = NULL, width = "100%"
+            )
+          )#,
+          #column(
+          #  4,
+          #  sliderInput(ns("limit_residual"), label = "Threshold for standardized residuals", min = 0, max = 0, value = 0, width = "100%")
+          #)
+        ),
+        fluidRow(
+          column(
+            12,
+            dataTableOutput(ns("table_outliers"))
           )
         )
-      )
-    ),
-    fluidRow(
-      column(
-        2,
-        shiny::actionButton(ns("go_fit_model"), "Fit model", class = "btn btn-info"),
-        hidden(shiny::actionButton(ns("go_fit_no_outlier"), "Refit without outliers", class = "btn btn-info"))
       ),
-      column(
-        4,
-        h4(textOutput(ns("fit_outliers_output")))
-      )
-    ),
-    fluidRow(
-      column(
-        12,
-        tabsetPanel(
-          tabPanel(
-            "Fitted models",
-            fluidRow(
-              column(
-                3,
-                pickerInput(
-                  ns("select_environment_fit"),"Environments", multiple = T, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
-                )
-              ),
-              column(
-                3,
-                pickerInput(
-                  ns("select_trait_fit"),"Trait", multiple = F, choices = NULL, width = "100%"
-                )
-              )
-            ),
-            fluidRow(
-              column(
-                4,
-                verbatimTextOutput(ns("fit_summary"))
-              ),
-              column(
-                4,
-                plotOutput(ns("fit_residuals"))
-              ),
-              column(
-                4,
-                plotOutput(ns("fit_spatial"))
-              )
-            )
+      bslib::nav_panel(
+        title = "Fitted models",
+        bslib::layout_columns(
+          col_widths = c(3, 3),
+          pickerInput(
+            ns("select_environment_fit"),"Environments", multiple = T, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
           ),
-          tabPanel(
-            "Outliers",
-            fluidRow(
-              column(
-                4,
-                pickerInput(
-                  ns("select_trait_outliers"),"Trait", multiple = F, choices = NULL, width = "100%"
-                )
-              )#,
-              #column(
-              #  4,
-              #  sliderInput(ns("limit_residual"), label = "Threshold for standardized residuals", min = 0, max = 0, value = 0, width = "100%")
-              #)
-            ),
-            fluidRow(
-              column(
-                12,
-                dataTableOutput(ns("table_outliers"))
-              )
-            )
-          ),
-          tabPanel(
-            "Results",
-            fluidRow(
-              column(
-                6,
-                # tags$h4("Metrics ~ Environment x Trait"),
-                # pickerInput(ns("select_metrics_A"), "Statistics", multiple = F, choices = NULL, width = "40%", inline = T),
-                downloadButton(ns("export_metrics_A"), "CSV Export", class = "btn btn-info", style = "float:right; margin:5px"),
-                shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push BLUES/BLUPS to BMS", icon = icon("leaf"), class = "btn btn-primary", style = "float:right; margin:5px"),
-                bsTooltip(id = ns("push_metrics_to_BMS_B"), title = "You can select the traits you want to push by selecting raws in the table below", placement = "left", trigger = "hover"),
-                dataTableOutput(ns("metrics_A_table"))
-              ),
-              column(
-                6,
-                # tags$h4("Metrics ~ Environment x Trait x Genotype"),
-                downloadButton(ns("export_metrics_B"), "CSV Export", class = "btn btn-info", style = "float:right; margin:5px"),
-                #disabled(shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push to BMS", icon = icon("leaf"), class="btn btn-primary", style = "float:right; margin:5px")),
-                tags$br(),
-                pickerInput(ns("select_metrics_B"), "BLUPs/BLUEs", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs"), width = "40%", inline = T),
-                pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL, width = "40%", inline = T),
-                dataTableOutput(ns("metrics_B_table"))
-              )
-            )
+          pickerInput(
+            ns("select_trait_fit"),"Trait", multiple = F, choices = NULL, width = "100%"
           )
+        ),      
+        bslib::layout_columns(
+          col_widths = c(4, 4, 4),
+          verbatimTextOutput(ns("fit_summary")),
+          plotOutput(ns("fit_residuals")),
+          plotOutput(ns("fit_spatial"))
         )
       )
     )
@@ -163,8 +133,6 @@ mod_model_server <- function(id, rv){
       ns <- session$ns
 
       rv_mod <- reactiveValues()
-      
-      
 
       observe({
         ## initialization
