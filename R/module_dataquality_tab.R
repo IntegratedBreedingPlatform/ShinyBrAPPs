@@ -2,102 +2,90 @@
 mod_dataquality_ui <- function(id){
   ns <- NS(id)
   tagList(
-    fluidRow(
-      column(
-        8,
-        pickerInput(
-          inputId = ns("studies"),
-          label = "Environments",
-          choices = NULL,
-          width = "100%",
-          multiple = T,
-          options = list(
-            `actions-box` = TRUE,
-            title = 'Load Environments First',
-            onInitialize = I('function() { this.setValue(""); }')
-          )
-        )
-      ),
-      column(
-        3,
-        pickerInput(
-          ns("trait"), label = "Trait", choices = NULL, width = "100%",
-          options = list(
-            title = 'Load Environments First',
-            onInitialize = I('function() { this.setValue(""); }')
-          )
-        )
-      ),
-      column(
-        1,
-        shiny::actionLink(ns("envXtrait"), label = "Env x Trait", width = "100%", icon = icon("info"), class = "btn btn-info"),
-        bsModal(ns("envXtraitModal"), title = "Environment x Trait", trigger = ns("envXtrait"), size = "large", plotOutput(ns("envXtraitViz")))
+    tags$style(
+      HTML(
+        ".nav .nav-item .nav-link { font-size: 20px; }
+        ",
       )
     ),
-    fluidRow(
-      column(
-        8,
-        tabsetPanel(
-          selected = "Distributions",
-          # selected = "Summary Statistics",
-          tabPanel(
-            "Distributions",
-            fluidRow(
-              column(4,
-                     pickerInput(
-                       ns("select_variable"), label = "Select observations by variable value",
-                       choices = NULL, multiple = F, width = "100%",
-                       options = list(
-                         title = 'Load Environments First',
-                         `live-search` = TRUE,
-                         onInitialize = I('function() { this.setValue(""); }')
-                       )
-                     )
-              ),
-              column(
-                8,
-                pickerInput(
-                  ns("select_variable_value"),label = HTML("<br/>"), choices = NULL, multiple = T, width = "100%",
-                  options = list(
-                    title = 'Load Environments First',
-                    `live-search` = TRUE,
-                    onInitialize = I('function() { this.setValue(""); }')
-                  )
-                )
-              )
-            ),
-            fluidRow(
-              column(
-                12,
-                tags$label("Or select observations directly on the plots")
-              )
-            ),
-            fluidRow(
-              uiOutput(ns("cols"))
-            )
-            
-          ),
-          tabPanel(
-            "Correlations",
-            plotlyOutput(ns("correlationPlot")),# width = 800, height = 600),
-          ),
-          tabPanel(
-            "Summary Statistics",
-            h2("Summary Statistics"),
-            dataTableOutput(ns("sumstats_table"))
-          )
+    bslib::layout_columns(
+      col_widths = c(8, 3, 1),
+      pickerInput(
+        inputId = ns("studies"),
+        label = "Environments",
+        choices = NULL,
+        width = "100%",
+        multiple = T,
+        options = list(
+          `actions-box` = TRUE,
+          title = 'Load Environments First',
+          onInitialize = I('function() { this.setValue(""); }')
         )
       ),
-      column(
-        4,
-        # verbatimTextOutput(ns("debug")),
-        h2("Selected observations", class = "display_if_selection", style = "display: none"),
-        dataTableOutput(ns("selected_obs_table")),
-        shiny::actionButton(ns("set_excluded_obs"), "Set selected row(s) as excluded observation(s)", class = "btn btn-info display_if_selection", style = "display: none"),
-        shiny::actionButton(ns("unselect_obs"), "Reset selection", class = "btn btn-info display_if_selection", style = "display: none"),
-        h2("Excluded observations", class = "display_if_exclusion", style = "display: none"),
-        dataTableOutput(ns("excluded_obs_table")),
-        shiny::actionButton(ns("set_non_excluded_obs"), "Set selected row(s) as non-excluded observation(s)", class = "btn btn-info display_if_exclusion", style = "display: none"),
+
+      pickerInput(
+        ns("trait"), label = "Trait", choices = NULL, width = "100%",
+        options = list(
+          title = 'Load Environments First',
+          onInitialize = I('function() { this.setValue(""); }')
+        )
+      ),
+      shiny::actionLink(ns("envXtrait"), label = "Env x Trait", width = "100%", icon = icon("info"), class = "btn btn-info"),
+      bsModal(ns("envXtraitModal"), title = "Environment x Trait", trigger = ns("envXtrait"), size = "large", plotOutput(ns("envXtraitViz")))
+    ),
+    bslib::navset_tab(
+      selected = "Distributions",
+      bslib::nav_panel(
+        title = "Distributions",
+        bslib::layout_sidebar(
+          sidebar = bslib::sidebar(
+            id = ns("sel_obs_sidebar"),
+            position = "right",
+            width = "30%",
+            open = F,
+            h3("Selected observations"),
+            dataTableOutput(ns("selected_obs_table")),
+            bslib::layout_columns(
+              col_widths = c(8,4),
+              shiny::actionButton(ns("set_excluded_obs"), "Set selected row(s) as excluded observation(s)", class = "btn btn-info display_if_selection", style = "width: auto; display: none"),
+              shiny::actionButton(ns("unselect_obs"), "Reset selection", class = "btn btn-info display_if_selection", style = "width: auto; display: none ")
+            ),
+            h3("Excluded observations"),
+            dataTableOutput(ns("excluded_obs_table")),
+            shiny::actionButton(ns("set_non_excluded_obs"), "Set selected row(s) as non-excluded observation(s)", class = "btn btn-info display_if_exclusion", style = "width: auto; display: none"),
+          ),
+          bslib::layout_columns(
+            col_widths = c(6,6),
+            pickerInput(
+              ns("select_variable"), label = "Select observations by variable value",
+              choices = NULL, multiple = F, width = "100%",
+              options = list(
+                title = 'Load Environments First',
+                `live-search` = TRUE,
+                onInitialize = I('function() { this.setValue(""); }')
+              )
+            ),
+            pickerInput(
+              ns("select_variable_value"),label = HTML("<br/>"), choices = NULL, multiple = T, width = "100%",
+              options = list(
+                title = 'Load Environments First',
+                `live-search` = TRUE,
+                onInitialize = I('function() { this.setValue(""); }')
+              )
+            )
+          ),
+          tags$label("Or select observations directly on the plots"),
+          uiOutput(ns("cols"))
+        )
+      ),
+      bslib::nav_panel(
+        title = "Correlations",
+        plotlyOutput(ns("correlationPlot")),# width = 800, height = 600)
+      ),
+      bslib::nav_panel(
+        title = "Summary Statistics",
+        h2("Summary Statistics"),
+        dataTableOutput(ns("sumstats_table"))
       )
     )
   )
@@ -178,17 +166,10 @@ mod_dataquality_server <- function(id, rv){
       output$cols <- renderUI({
         ns <- NS(id)
         tagList(
-          column(
-            width = rv_width(),
-            #"test col width"
-            plotlyOutput(ns("distribution_viz"))#,height = "400px")
-          ),
-          column(
-            width = 5,
-            plotlyOutput(ns("layout_viz"))
-          ),
-          column(
-            width = 1,
+          bslib::layout_columns(
+            col_widths = c(rv_width(), 5, 1),
+            plotlyOutput(ns("distribution_viz")),#,height = "400px")
+            plotlyOutput(ns("layout_viz")),
             plotOutput(ns("layout_legend"))
           )
         )
@@ -480,6 +461,10 @@ mod_dataquality_server <- function(id, rv){
               title = 'Select a value',
               onInitialize = I('function() { this.setValue(""); }')
             )
+          )
+          bslib::toggle_sidebar(
+            id = "sel_obs_sidebar",
+            open = T
           )
         }
         rv$sel_observationDbIds <- sel_observationDbIds
