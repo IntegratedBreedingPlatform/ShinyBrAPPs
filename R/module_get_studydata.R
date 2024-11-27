@@ -1,3 +1,5 @@
+#' @import shinyBS
+#' @import shinyWidgets
 #' @export
 mod_get_studydata_ui <- function(id){
   ns <- NS(id)
@@ -81,6 +83,8 @@ mod_get_studydata_ui <- function(id){
   )
 }
 
+#' @importFrom DT renderDT
+#' @importFrom varhandle check.numeric
 #' @export
 mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_dev = NULL
   moduleServer(

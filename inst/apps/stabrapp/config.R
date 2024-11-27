@@ -26,6 +26,7 @@ visible_columns_selected_obs <- c(
 )
 
 ## correspondence of experimental designs
+library(data.table)
 exp_designs_corresp <- data.table(
   StatGenSTA_code = c(
     "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"

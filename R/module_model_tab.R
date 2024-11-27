@@ -1,8 +1,10 @@
+#' @import bslib
+#' @importFrom shinyjs hidden
 #' @export
 mod_model_ui <- function(id){
   ns <- NS(id)
   tagList(
-    bslib::layout_columns(
+    layout_columns(
       col_widths = c(4, 3, 3, 2),
       pickerInput(
         ns("select_environments"), "Select Environments", multiple = TRUE, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
@@ -33,29 +35,70 @@ mod_model_ui <- function(id){
       dataTableOutput(ns("table_model_design_metadata"))
     ),
     br(),
-    bslib::accordion(id = ns("advanced_options"),
+    accordion(id = ns("advanced_options"),
       open = F,
-      bslib::accordion_panel(
+      accordion_panel(
         title = "Advanced fitting options", 
-          pickerInput(ns("covariates"),label = "Covariates", choices = NULL, multiple = T),
-          checkboxGroupInput(ns("what"),label = "Genotype effect (what)", choices = c("random", "fixed"), selected = c("random", "fixed"), inline = T),
-        prettySwitch(ns("spatial_opt"),label = "Spatial", value = T),
-        prettySwitch(ns("display_psanova_opt"),label = "Set up PSANOVA", value = F),
+        fluidRow(
+          awesomeCheckboxGroup(
+            ns("what"),
+            label = tooltip(
+              trigger = list(
+                "Genotype effect (what)",
+                icon("info-circle")#, style = "float:right; font-size:large;margin-left:10px")
+              ),
+              "Specify whether 'genotype' should be fitted as a fixed or random effect. If not specified, both models are fitted."
+            ),
+            choices = c("random", "fixed"), 
+            selected = c("random", "fixed"), 
+            inline = T, 
+            width = "300"
+          ),
+          
+          pickerInput(
+            ns("covariates"),
+            label = tooltip(
+              trigger = list(
+                "Covariates",
+                icon("info-circle")
+              ),
+              "Specify covariates to be fitted as extra fixed effects in the model."
+            ),
+            choices = NULL, 
+            multiple = T
+          )
+        ),
+        fluidRow(
+          prettySwitch(
+            ns("spatial_opt"),
+            label = tooltip(
+              trigger = list(
+                "Spatial",
+                icon("info-circle")
+              ),
+              "Should spatial models be tried? Spatial models can only be fitted with SpATS and asreml. \n
+              If SpATS is used for modeling, only spatial models can be fitted and spatial is always set to TRUE. \n
+              If asreml is used, fitting spatial models is optional."
+            ),
+            value = T
+          ),
+          prettySwitch(ns("display_psanova_opt"),label = "Set up PSANOVA", value = F)
+        ),
         uiOutput(ns("psanova_opt"))
      )
     ),
     br(),
-    bslib::layout_columns(
+    layout_columns(
       col_widths = c(2, 2, 4),
       shiny::actionButton(ns("go_fit_model"), "Fit model", class = "btn btn-info"),
       hidden(shiny::actionButton(ns("go_fit_no_outlier"), "Refit without outliers", class = "btn btn-info")),
       h4(textOutput(ns("fit_outliers_output")))
     ),
     br(),
-    bslib::navset_tab(
-      bslib::nav_panel(
+    navset_tab(
+      nav_panel(
         "Results",
-        bslib::layout_columns(
+        layout_columns(
           col_widths = c(6,6),
           div(
             # tags$h4("Metrics ~ Environment x Trait"),
@@ -75,13 +118,13 @@ mod_model_ui <- function(id){
             dataTableOutput(ns("metrics_B_table"))
           )
         ),
-        bslib::layout_columns(
+        layout_columns(
           col_widths = c(6,6),
           dataTableOutput(ns("metrics_A_table")),
           dataTableOutput(ns("metrics_B_table"))
         )
       ),
-      bslib::nav_panel(
+      nav_panel(
         "Outliers",
         fluidRow(
           column(
@@ -102,9 +145,9 @@ mod_model_ui <- function(id){
           )
         )
       ),
-      bslib::nav_panel(
+      nav_panel(
         title = "Fitted models",
-        bslib::layout_columns(
+        layout_columns(
           col_widths = c(3, 3),
           pickerInput(
             ns("select_environment_fit"),"Environments", multiple = T, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
@@ -113,7 +156,7 @@ mod_model_ui <- function(id){
             ns("select_trait_fit"),"Trait", multiple = F, choices = NULL, width = "100%"
           )
         ),      
-        bslib::layout_columns(
+        layout_columns(
           col_widths = c(4, 4, 4),
           verbatimTextOutput(ns("fit_summary")),
           plotOutput(ns("fit_residuals")),
@@ -364,6 +407,7 @@ mod_model_server <- function(id, rv){
       })
 
       output$psanova_opt <- renderUI({ ## based on RAPWeb code
+        browser()
         req(input$select_environments, rv_mod$TD, input$model_engine == "SpATS", input$display_psanova_opt==T)
 
         ## Variable selection. Cov vars have to be a factor column.

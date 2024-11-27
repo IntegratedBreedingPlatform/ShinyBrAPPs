@@ -1,6 +1,7 @@
 #' @export
 mod_get_extradata_ui <- function(id){}
 
+#' @importFrom varhandle check.numeric
 #' @export
 mod_get_extradata_server <- function(id, rv){
   moduleServer(

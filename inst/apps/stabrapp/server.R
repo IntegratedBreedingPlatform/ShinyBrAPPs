@@ -11,6 +11,6 @@ rv <- reactiveValues(
 server <- function(input, output, session){
   rv <- mod_get_studydata_server("get_studydata", rv)
   mod_banner_server("banner", rv)
-  rv <- mod_dataquality_server("dataquality", rv)
+  mod_dataquality_server("dataquality", rv)
   mod_model_server("model", rv)
 }

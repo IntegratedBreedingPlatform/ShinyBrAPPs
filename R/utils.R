@@ -209,6 +209,7 @@ parse_api_url <- function(url){
   )
 }
 
+#' @import data.table
 #' @export
 make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
   if(!is.null(trialDbId)){
@@ -256,6 +257,7 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
   setDT(loc_names)
   req(loc_names)
   maxchar <- 9
+  
   loc_names[,location_name_abbrev := lapply(abbreviation, function(x){
     if(is.na(x)){
       if(nchar(locationName)>maxchar){
