@@ -262,6 +262,7 @@ mod_dataquality_server <- function(id, rv) {
     ## observe input$select_variable ####
     observeEvent(input$select_variable, {
       req(input$select_variable)
+      req(rv_dq$data_viz)
       
       if (input$select_variable == "") {
         shinyjs::hide("select_variable_value")
@@ -288,6 +289,7 @@ mod_dataquality_server <- function(id, rv) {
     
     ## observe input$select_variable_value ####
     observeEvent(input$select_variable_value, {
+      req(rv_dq$data_viz)
       sel_observationDbIds <- rv_dq$data_viz[eval(as.name(input$select_variable)) %in% input$select_variable_value, observationDbId]
       rv_dq$sel_observationDbIds <- sel_observationDbIds
     })
@@ -382,8 +384,7 @@ mod_dataquality_server <- function(id, rv) {
     ## output layout plot ####
     output$layout_viz <- renderPlotly({
       req(rv_dq$data_viz[, .N > 0])
-      req(rv_dq$data_viz[, .N, .(positionCoordinateX, positionCoordinateY)][, .N] >
-            1)
+      req(rv_dq$data_viz[, .N, .(positionCoordinateX, positionCoordinateY)][, .N] > 1)
       req(input$studies)
       #req(all(input$studies%in%rv_dq$data_viz[,unique(studyDbId)]))
       req(input$trait)

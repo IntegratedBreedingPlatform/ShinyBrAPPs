@@ -428,7 +428,6 @@ mod_model_server <- function(id, rv){
 
       ## output$psanova_opt ####
       output$psanova_opt <- renderUI({ ## based on RAPWeb code
-        browser()
         req(input$select_environments, rv_mod$TD, input$model_engine == "SpATS", input$display_psanova_opt==T)
 
         ## Variable selection. Cov vars have to be a factor column.
