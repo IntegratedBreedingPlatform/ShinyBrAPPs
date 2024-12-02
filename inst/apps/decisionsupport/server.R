@@ -14,12 +14,9 @@ server <- function(input, output, session){
   mod_scatterplot_server("scatterplot", rv, session)
   mod_gxe_server("gxe", rv, session)
   mod_groups_sidebar_server("groups_sidebar", rv, session)
-<<<<<<< HEAD
 
-=======
   output$Rsi <- renderPrint(sessionInfo())
   
->>>>>>> 19da6602210117720ed3e1453394d8a566a7be7c
   ## Action when clicking on button create group in modal
   observeEvent(input$modal_create_group_go, {
     rv$selection[, group_name := input$modal_create_group_text_input_label]
