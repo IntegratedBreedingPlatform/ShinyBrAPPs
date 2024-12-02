@@ -8,8 +8,7 @@ mod_get_extradata_server <- function(id, rv){
     id,
     function(input, output, session){
 
-      observe({
-        req(rv$data)
+      observeEvent(rv$data, {
         req(rv$study_metadata)
 
         if(!isTruthy("observationVariableName"%in%names(rv$data))){
@@ -179,8 +178,6 @@ mod_get_extradata_server <- function(id, rv){
           #rv$ontology_variables <- ontology_variables
         })
       })
-
-      return(rv)
     }
   )
 }

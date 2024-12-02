@@ -229,7 +229,6 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
       ### BrAPI GET studies and GET locations
       observeEvent(rv_st$trialDbId,{
         req(rv_st$trialDbId)
-        browser()
         # get study_metadata
         tryCatch({
           study_metadata <- make_study_metadata(con = rv$con, trialDbId = rv_st$trialDbId)

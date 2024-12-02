@@ -1,5 +1,4 @@
 #' @import bslib
-#' @importFrom shinyjs hidden
 #' @export
 mod_model_ui <- function(id){
   ns <- NS(id)

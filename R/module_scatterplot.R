@@ -1,3 +1,4 @@
+#' @import bslib
 #' @export
 # UI ####
 mod_scatterplot_ui <- function(id){
@@ -17,9 +18,9 @@ mod_scatterplot_ui <- function(id){
       )
     ),
     
-    bslib::layout_sidebar(
+    layout_sidebar(
       ## Param sidebar ####
-      sidebar = bslib::sidebar(
+      sidebar = sidebar(
         width = 350,
          pickerInput(
            inputId = ns("env"),
@@ -60,8 +61,8 @@ mod_scatterplot_ui <- function(id){
         ),
         ### Options card ####
          div(
-           bslib::card(
-             bslib::card_header(
+           card(
+             card_header(
                h4('Options ', icon('screwdriver-wrench')),
                class = "d-flex justify-content-between",
                actionBttn(
@@ -73,7 +74,7 @@ mod_scatterplot_ui <- function(id){
                  size = "xs"
               )
              ),
-             bslib::card_body(
+             card_body(
                fluidRow(
                  column(2),
                  column(5, strong("Variables")),
@@ -116,7 +117,7 @@ mod_scatterplot_ui <- function(id){
          )
       ),
       ## Plot card ####
-      bslib::card(height = "800px",
+      card(height = "800px",
         full_screen = TRUE,
          plotlyOutput(
            ns("scatterplot"), width = "100%", height = "600px"
@@ -148,6 +149,7 @@ mod_scatterplot_ui <- function(id){
   )
 }
 
+#' @import data.table
 #' @export
 # SERVER ####
 mod_scatterplot_server <- function(id, rv, parent_session){
@@ -157,19 +159,19 @@ mod_scatterplot_server <- function(id, rv, parent_session){
     id,
     function(input, output, session){
       ns <- session$ns
-      rv_plot <- reactiveValues()
+      rv_plot <- reactiveValues(
+        draw_regression = F,
+        draw_clusters = F,
+        counter_hca = 0,
+        counter_kmeans = 0,
+        selected_express_X_as = NULL,
+        selected_express_Y_as = NULL,
+        selection_variables = NULL
+      )
       
-      rv$groups <- data.table()
+      rv$groups <- NULL
       rv$visu_as_group <- NULL
       rv$new_group_created <- F
-      
-      rv_plot$draw_regression <- F
-      rv_plot$draw_clusters <- F
-      rv_plot$counter_hca <- 0
-      rv_plot$counter_kmeans <- 0
-      rv_plot$selected_express_X_as <- NULL
-      rv_plot$selected_express_Y_as <- NULL
-      rv_plot$selection_variables <- NULL
       
       ## function for data aggregation
       aggreg_functions <- data.table(
