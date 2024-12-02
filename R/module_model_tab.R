@@ -960,7 +960,8 @@ mod_model_server <- function(id, rv){
           footer = tagList(
             modalButton("Cancel"),
             shiny::actionButton(ns("ok"), "Push BLUEs/BLUPs anyway", class = "btn btn-primary")
-          )
+          ),
+          fade = F
         )
       }
       
@@ -972,6 +973,7 @@ mod_model_server <- function(id, rv){
 
       observeEvent(input$push_metrics_to_BMS_B,{
         # check if heritability > 0 before pushing
+        browser()
         if (!is.null(input$metrics_A_table_rows_selected)) {
           selected_rows <- input$metrics_A_table_rows_selected
           heritabilities <- rv_mod$metrics_A[selected_rows]$Heritability
