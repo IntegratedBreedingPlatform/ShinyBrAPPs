@@ -10,8 +10,8 @@ mod_gxe_ui <- function(id){
       tags$style(HTML("
       .console pre {
         color: #d40000;
-        background-color: #333333;
-        font-weight: bolder;
+        background-color: #f5f5f5;
+        font-weight: bold;
         overflow-y:scroll;
         max-height: 250px;
       }"))

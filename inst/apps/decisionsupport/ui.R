@@ -63,7 +63,10 @@ ui <- fluidPage(
             p("Alice Boizet (Author) - alice.boizet 'at' cirad.fr"),
             p("Léo Valette (Author)"),
             p("Mariano Crimi (Author)"),
-            img(src='img/ibpcirad.png', height="15%", width="15%",  align = "left")
+            img(src='img/ibpcirad.png', height="15%", width="15%",  align = "left"),
+            br(),hr(),hr(),hr(),
+            h2("Session info"),
+            verbatimTextOutput("Rsi")
           )
         )
       )
