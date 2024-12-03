@@ -1,4 +1,3 @@
-#' @import shinyBS
 #' @import shinyWidgets
 #' @import bslib
 #' @export

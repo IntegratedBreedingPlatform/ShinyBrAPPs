@@ -1,3 +1,7 @@
+#' @import shiny
+#' @import shinyWidgets
+#' @import bslib
+#' @importFrom DT dataTableProxy
 #' @export
 # UI ####
 mod_gxe_ui <- function(id){
@@ -16,16 +20,16 @@ mod_gxe_ui <- function(id){
         max-height: 250px;
       }"))
     ),
-    bslib::navset_tab(
-      bslib::nav_panel(
+    navset_tab(
+      nav_panel(
         ## Data prep panel ####
         title = "Data preparation", 
         ### Sidebar ####
-        bslib::layout_sidebar(
+        layout_sidebar(
           width = 1/3,
           #height = 800,
-          sidebar=bslib::sidebar(#bslib::card(
-            # bslib::card_header(
+          sidebar=sidebar(#card(
+            # card_header(
             #   h4('Options ', icon('screwdriver-wrench'))
             # ),
             width = 350,
@@ -56,34 +60,34 @@ mod_gxe_ui <- function(id){
             #               value = FALSE, inline = T, status = "info"),
             pickerInput(ns("picker_germplasm_attr"), label = "Select germplasm attributes to display in GxE plots", choices = c(), multiple = T)
           ),#),
-          #bslib::layout_column_wrap(
+          #layout_column_wrap(
           #  width = 1/2,
           ### Plots & tables ####
-            bslib::card(full_screen = TRUE,#height = "33%",
+            card(full_screen = TRUE,#height = "33%",
               plotOutput(ns("TD_boxplot"))
             ),
-          bslib::layout_columns(
-            bslib::card(full_screen = FALSE,
-                        bslib::card_header("Included genotypes"),
+          layout_columns(
+            card(full_screen = FALSE,
+                        card_header("Included genotypes"),
                         DT::dataTableOutput(ns("TD_included_geno")),
-                        bslib::card_footer(uiOutput(ns("copy_incgeno_table")))
+                        card_footer(uiOutput(ns("copy_incgeno_table")))
                         #plotOutput(ns("TD_scatterplots"))
             ),
-            bslib::card(full_screen = FALSE,
-                        bslib::card_header("Excluded genotypes"),
+            card(full_screen = FALSE,
+                        card_header("Excluded genotypes"),
                         DT::dataTableOutput(ns("TD_excluded_geno")),
-                        bslib::card_footer(uiOutput(ns("copy_excgeno_table")))
+                        card_footer(uiOutput(ns("copy_excgeno_table")))
             )
           )
           #)
         )
       ),
-      bslib::nav_panel(
+      nav_panel(
         ## Mixed model panel ####
         title = "Mixed model",
-        bslib::layout_sidebar(
+        layout_sidebar(
           ### Sidebar ####
-          sidebar=bslib::sidebar(          # bslib::card_header(
+          sidebar=sidebar(          # card_header(
           #   h4('Options ', icon('screwdriver-wrench'))
           # ),
             width = 350,
@@ -101,61 +105,61 @@ mod_gxe_ui <- function(id){
                                   `Trials are nested within scenarios`=6)),
           shiny::downloadButton(ns("MM_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
         ),
-        # bslib::layout_columns(
-        #   bslib::card(full_screen = TRUE,
-        #               bslib::card_header(
+        # layout_columns(
+        #   card(full_screen = TRUE,
+        #               card_header(
         #                 class = "bg-dark",
         #                 "Model output"
         #               ),
-        #               bslib::card_body(
+        #               card_body(
         #                 verbatimTextOutput(ns("MM_text_output")) 
         #               )
         #   ),
-        #   bslib::card(full_screen = TRUE,
-        #               bslib::card_header(
+        #   card(full_screen = TRUE,
+        #               card_header(
         #                 class = "bg-dark",
         #                 "Diagnostics"
         #               ),
-        #               bslib::card_body(
+        #               card_body(
         #                 verbatimTextOutput(ns("MM_diagnostics"))
         #               )
         #   ),
-        #   bslib::card(full_screen = TRUE,
-        #               bslib::card_header(
+        #   card(full_screen = TRUE,
+        #               card_header(
         #                 class = "bg-dark",
         #                 "Variance components"
         #               ),
-        #               bslib::card_body(
+        #               card_body(
         #                 verbatimTextOutput(ns("MM_vc"))
         #               )
         #               
         #   )
         # ),
         ### Results ####
-        bslib::layout_columns(
+        layout_columns(
           #### Accordion textual results ####
-          bslib::accordion(id = ns("MM_accord1"),
+          accordion(id = ns("MM_accord1"),
             #actionButton(ns("expand_MM_accord1"),label = "Open all", class = "btn btn-info"),
-            bslib::accordion_panel(title = "Model output", 
+            accordion_panel(title = "Model output", 
                           verbatimTextOutput(ns("MM_text_output")) 
             ),
-            bslib::accordion_panel(title = "Diagnostics", 
+            accordion_panel(title = "Diagnostics", 
                           verbatimTextOutput(ns("MM_diagnostics"))
             ),
-            bslib::accordion_panel(title = "Variance components and heritability", 
+            accordion_panel(title = "Variance components and heritability", 
                           verbatimTextOutput(ns("MM_vc"))
             )#,
-            #bslib::accordion_panel(title = "Console", 
+            #accordion_panel(title = "Console", 
             #                       div(class = "console",verbatimTextOutput(ns("MM_console")))
             #)
           ),
           #### Accordion plot and predict results ####
-          bslib::accordion(id = ns("MM_accord2"),
+          accordion(id = ns("MM_accord2"),
                            #actionButton(ns("expand_MM_accord2"),label = "Open all", class = "btn btn-info"),
-                           bslib::accordion_panel(title = "Model plot", 
+                           accordion_panel(title = "Model plot", 
                                                   plotOutput(ns("MM_plot_output")) 
                            ),
-                           bslib::accordion_panel(title = "Predictions",
+                           accordion_panel(title = "Predictions",
                                                   pickerInput(ns("MM_predict_level"), label = "Prediction level", choices = c("genotype")),
                                                   DT::dataTableOutput(ns("MM_predictions"))
                            )
@@ -164,12 +168,12 @@ mod_gxe_ui <- function(id){
         )
         )
       ),
-      bslib::nav_panel(
+      nav_panel(
         ## FW panel ####
         title = "Finlay Wilkinson",
-        bslib::layout_sidebar(
+        layout_sidebar(
           ### Sidebar ####
-          sidebar=bslib::sidebar(
+          sidebar=sidebar(
             width = 350,
             div(style="display: flex;",
             actionBttn(ns("FW_run"), "Run FW analysis", block = TRUE),
@@ -194,22 +198,22 @@ mod_gxe_ui <- function(id){
             ),
             shiny::downloadButton(ns("FW_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
           ),
-          #bslib::layout_columns(
+          #layout_columns(
             #### Accordion results ####
-            bslib::accordion(id = ns("FW_accord1"),
+            accordion(id = ns("FW_accord1"),
                              #actionButton(ns("expand_MM_accord1"),label = "Open all", class = "btn btn-info"),
 
-                             bslib::accordion_panel(title = "FW plot",
-                                                    bslib::layout_columns(col_widths = c(9,3),
-                                                                          bslib::card(full_screen = T, height = "800",
-                                                                                      bslib::card_body(
+                             accordion_panel(title = "FW plot",
+                                                    layout_columns(col_widths = c(9,3),
+                                                                          card(full_screen = T, height = "800",
+                                                                                      card_body(
                                                                                         uiOutput(ns("FW_trellis_genot_select_ui")),
                                                                                         plotOutput(ns("FW_plot"), hover = hoverOpts(id =ns("FWplot_hover"),delay = 50)),
                                                                                         #htmlOutput(ns("FWhover_info")),
                                                                                         uiOutput(ns("FW_sens_clust_select"))
                                                                                       ),
                                                                                       #div(style=".bslib-card .card-footer.font-size: 1.2rem;",
-                                                                                          bslib::card_footer(
+                                                                                          card_footer(
                                                                                             div(style = "display: flex; margin-top: 1rem;",
                                                                                                 materialSwitch(ns("FW_coord_equal"), "Equal axes on line plot", value = TRUE, status = "info"),
                                                                                                 materialSwitch(ns("FW_display_raw_data"), "Plot also non fitted values on selected genotypes", value = FALSE, status = "info")
@@ -224,11 +228,11 @@ mod_gxe_ui <- function(id){
                                                                           )
                                                     )
                                                     ),
-                             bslib::accordion_panel(title = "Germplasm list and clusters",
-                                                    #bslib::card(DT::dataTableOutput(ns("FW_selected_obs_DT"))),
-                                                    bslib::card(
-                                                      bslib::card_body(DT::dataTableOutput(ns("FW_sens_clusters_DT"))),
-                                                      bslib::card_footer(div(style="display: flex;gap: 10px;",
+                             accordion_panel(title = "Germplasm list and clusters",
+                                                    #card(DT::dataTableOutput(ns("FW_selected_obs_DT"))),
+                                                    card(
+                                                      card_body(DT::dataTableOutput(ns("FW_sens_clusters_DT"))),
+                                                      card_footer(div(style="display: flex;gap: 10px;",
                                                                              shiny::actionButton(inputId = ns("sens_clusters_DT.clearsel"), label = "Deselect all", icon = icon(NULL), class = "btn btn-info"),
                                                                              shiny::actionButton(ns("create_groups_from_sensclusters"), "Create groups from clusters", icon = icon(NULL), class = "btn btn-info"),
                                                                              shiny::actionButton(ns("create_groups_from_selgeno"),label = "Create group from selected genotypes", icon = icon(NULL), class = "btn btn-info")
@@ -236,25 +240,25 @@ mod_gxe_ui <- function(id){
                                                                          )
                                                       )
                              ),
-                             bslib::accordion_panel(title = "Analysis summary", 
+                             accordion_panel(title = "Analysis summary", 
                                                     verbatimTextOutput(ns("FW_text_output")) 
                              )
             )
           #)
         )
       ),
-      bslib::nav_panel(
+      nav_panel(
         ## GGE panel ####
         title = "GGE",
-        bslib::layout_sidebar(
+        layout_sidebar(
           ### Sidebar ####
-          sidebar=bslib::sidebar(
+          sidebar=sidebar(
             width = 350,
             div(style="display: flex;",
                 actionBttn(ns("GGE_run"), "Run GGE analysis", block = TRUE),
                 a(href="https://tiagoolivoto.github.io/metan/articles/vignettes_gge.html",icon("fas fa-question-circle"), target="_blank")),
-            bslib::accordion(id = ns("GGE_adv_settings_acc"),
-                             bslib::accordion_panel(title = "Advanced settings", value = "advs",
+            accordion(id = ns("GGE_adv_settings_acc"),
+                             accordion_panel(title = "Advanced settings", value = "advs",
                                                     pickerInput(ns("GGE_advs_centering"), label = "centering", options = list(container = "body"), choices = c(none=0, global=1, environment=2, double=3), selected = 2),
                                                     pickerInput(ns("GGE_advs_scaling"), label = "scaling", options = list(container = "body"), choices = c(none=0, sd=1), selected = 0),
                                                     pickerInput(ns("GGE_advs_svp"), label = "svp", options = list(container = "body"), choices = c(genotype=1, environment=2, symmetrical=3), selected = 2))),
@@ -278,19 +282,19 @@ mod_gxe_ui <- function(id){
             shiny::downloadButton(ns("GGE_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
             
           ),
-          bslib::layout_columns(
+          layout_columns(
             #### Accordion results ####
-            bslib::accordion(id = ns("GGE_accord1"),
-                             bslib::accordion_panel(title = "GGE plot",
-                                                    bslib::layout_sidebar(
-                                                      bslib::card(full_screen = T,height = "800",max_height = "800",
-                                                                  bslib::card_body(plotOutput(ns("GGE_plot"))),
-                                                                  bslib::card_footer(div(style="display: flex;gap: 10px;",
+            accordion(id = ns("GGE_accord1"),
+                             accordion_panel(title = "GGE plot",
+                                                    layout_sidebar(
+                                                      card(full_screen = T,height = "800",max_height = "800",
+                                                                  card_body(plotOutput(ns("GGE_plot"))),
+                                                                  card_footer(div(style="display: flex;gap: 10px;",
                                                                     shiny::actionButton(ns("create_group_from_wWw"), "Create groups from which won where", icon = icon(NULL), class = "btn btn-info")
                                                                   ))
                                                       ),
-                                                      sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,#full_screen = F,
-                                                                             bslib::card(full_screen = F,height = "735",max_height = "735",
+                                                      sidebar=sidebar(position = "right", title = "Advanced plot settings", open = FALSE,#full_screen = F,
+                                                                             card(full_screen = F,height = "735",max_height = "735",
                                                                                          sliderInput(ns("GGE_plot_title_size"), label = "plot_title_size", min = 10, max = 30, value = 12, step = 1),
                                                                   sliderInput(ns("GGE_plot_size.text.gen"), label = "size.text.gen", min = 1, max = 8, value = 3.5, step = 0.5),
                                                                   sliderInput(ns("GGE_plot_repulsion"), label="plot_repulsion", value = 1, min=1, max=10, step=0.5),
@@ -314,19 +318,19 @@ mod_gxe_ui <- function(id){
                                                                   
                                                     )
                              ),
-                             bslib::accordion_panel(title = "Analysis summary", 
+                             accordion_panel(title = "Analysis summary", 
                                                     verbatimTextOutput(ns("GGE_text_output")) 
                              )
             )
           )
         )
       ),
-      bslib::nav_panel(
+      nav_panel(
         ## AMMI panel ####
         title = "AMMI",
-        bslib::layout_sidebar(
+        layout_sidebar(
           ### Sidebar ####
-          sidebar=bslib::sidebar(
+          sidebar=sidebar(
             width = 350,
             div(style="display: flex;",
                 actionBttn(ns("AMMI_run"), "Run AMMI analysis", block = TRUE),
@@ -350,16 +354,16 @@ mod_gxe_ui <- function(id){
             shiny::downloadButton(ns("AMMI_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
             
           ),
-          bslib::layout_columns(
+          layout_columns(
             #### Accordion results ####
-            bslib::accordion(id = ns("AMMI_accord1"),
-                             bslib::accordion_panel(title = "AMMI plot",
-                                                   bslib::layout_sidebar(
-                                                     bslib::card(full_screen = T,height = "800",max_height = "800",
+            accordion(id = ns("AMMI_accord1"),
+                             accordion_panel(title = "AMMI plot",
+                                                   layout_sidebar(
+                                                     card(full_screen = T,height = "800",max_height = "800",
                                                                  plotOutput(ns("AMMI_plot"))
                                                      ),
-                                                     sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,
-                                                                            bslib::card(full_screen = F,height = "735",max_height = "735",
+                                                     sidebar=sidebar(position = "right", title = "Advanced plot settings", open = FALSE,
+                                                                            card(full_screen = F,height = "735",max_height = "735",
                                                                                         sliderInput(ns("AMMI_plot_sizeGeno"), label = "sizeGeno", min = 0, max = 10, value = 0, step = 1),
                                                                                         materialSwitch(ns("AMMI_plot_repel"), label = "use_ggrepel", value = FALSE, status = "info"),
                                                                                         sliderInput(ns("AMMI_plot_repulsion"), label="plot_repulsion", value = 1, min=1, max=10, step=0.5),
@@ -370,72 +374,72 @@ mod_gxe_ui <- function(id){
                                                                             )
                                                      )
                              ),
-                             bslib::accordion_panel(title = "Analysis summary", 
+                             accordion_panel(title = "Analysis summary", 
                                                     verbatimTextOutput(ns("AMMI_text_output")) 
                              )
             )
           )
         )
       ),
-      bslib::nav_panel(
+      nav_panel(
         ## Stability panel ####
         title = "Stability",
-        bslib::layout_sidebar(
+        layout_sidebar(
           ### Sidebar ####
-          sidebar=bslib::sidebar(
+          sidebar=sidebar(
             width = 350,
             pickerInput(ns("STAB_plots_colorby"),"Color Genotypes by", choices = c())),
-        bslib::accordion(id = ns("STAB_accordsup"),
-                         bslib::accordion_panel(title = "Superiority measure of Lin and Binns",
-                                                bslib::layout_columns(
-                                                  bslib::card(
+        accordion(id = ns("STAB_accordsup"),
+                         accordion_panel(title = "Superiority measure of Lin and Binns",
+                                                layout_columns(
+                                                  card(
                                                     dataTableOutput(ns("STAB_sup")),
-                                                    bslib::card_footer(
+                                                    card_footer(
                                                       uiOutput(ns("copy_STABsup_table"))
                                                     )
                                                   ),
-                                                  bslib::card(
+                                                  card(
                                                     plotlyOutput(ns("STAB_sup_plot"))                                                  )
                                                 )
                                                 ),
-                         bslib::accordion_panel(title = "Shukla's stability variance",
-                                                bslib::layout_columns(
-                                                  bslib::card(
+                         accordion_panel(title = "Shukla's stability variance",
+                                                layout_columns(
+                                                  card(
                                                     dataTableOutput(ns("STAB_static")),
-                                                    bslib::card_footer(
+                                                    card_footer(
                                                       uiOutput(ns("copy_STABstatic_table"))
                                                     )
                                                   ),
-                                                  bslib::card(
+                                                  card(
                                                     plotlyOutput(ns("STAB_static_plot"))
                                                   )
                                                 )
                          ),
-                         bslib::accordion_panel(title = "Wricke's ecovalence",
-                                                bslib::layout_columns(
-                                                  bslib::card(
+                         accordion_panel(title = "Wricke's ecovalence",
+                                                layout_columns(
+                                                  card(
                                                     dataTableOutput(ns("STAB_wricke")),
-                                                    bslib::card_footer(
+                                                    card_footer(
                                                       uiOutput(ns("copy_STABwricke_table"))
                                                     )
                                                   ),
-                                                  bslib::card(
+                                                  card(
                                                     plotlyOutput(ns("STAB_wricke_plot"))
                                                   )
                                                 )
                          )
         )
         )),
-      bslib::nav_panel(
+      nav_panel(
         ## Mega-env panel ####
         title = "Mega-envs",
-        bslib::layout_sidebar(
+        layout_sidebar(
         )
       )
       
     ),
-    bslib::accordion(id = ns("console_accord"),
-                     bslib::accordion_panel(title = "Console", 
+    accordion(id = ns("console_accord"),
+                     accordion_panel(title = "Console", 
                                             div(class = "console",verbatimTextOutput(ns("console")))
                      )
     )###
@@ -443,19 +447,23 @@ mod_gxe_ui <- function(id){
 }
 
 # SERVER ####
+#' @import statgenGxE
 #' @export
 mod_gxe_server <- function(id, rv, parent_session){
   ns <- NS(id)
   moduleServer(
     id,
     function(input, output, session){
+      rv_gxe <- reactiveValues(
+        selected_genotypes = NULL,
+        console = NULL,
+        data = NULL
+      )
       
-      bslib::accordion_panel_close("GGE_adv_settings_acc", values="advs", session = session)
-      ## observe data and update Trait picker ####
-      rv$selected_genotypes <- NULL
-      rv$console <- NULL
-      observe({
-        req(rv$data_plot)
+      accordion_panel_close("GGE_adv_settings_acc", values="advs", session = session)
+
+      ## initialize all inputs ####
+      observeEvent(rv$extradata, {
         req(rv$column_datasource)
         req(!isTRUE(input$picker_germplasm_attr_open))
         #update trait dropdown
@@ -463,23 +471,23 @@ mod_gxe_server <- function(id, rv, parent_session){
         weight_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_wt_regexp,cols)]$cols
         if ("startDate"%in%colnames(rv$study_metadata)){
           rv$study_metadata[, studyDbId := as.numeric(studyDbId)]
-          rv$data_gxe <- rv$data_plot[unique(rv$study_metadata[studyDbId%in%unique(rv$data_plot$studyDbId),.(studyDbId, study_startYear = year(as.POSIXct(startDate)))]), on=.(studyDbId)]
+          rv_gxe$data <- rv$extradata[unique(rv$study_metadata[studyDbId%in%unique(rv$extradata$studyDbId),.(studyDbId, study_startYear = year(as.POSIXct(startDate)))]), on=.(studyDbId)]
         } else {
-          rv$data_gxe <- rv$data_plot
+          rv_gxe$data <- rv$extradata
         }
         #attempt to identify variables that are redundant with studyDbId to use as choices for picker_env_variable
-        datagef <- lapply(rv$data_gxe, function(a) as.factor(a))
-        env_vars <- names(which(unlist(lapply(datagef, function(a) length(levels(as.factor(paste(a, datagef$studyDbId))))==length(levels(datagef$studyDbId)) & length(levels(as.factor(paste(a, datagef$studyDbId))))==length(levels(a))))==TRUE))
+        datagef <- lapply(rv_gxe$data, function(a) as.factor(a))
+        rv_gxe$env_vars <- names(which(unlist(lapply(datagef, function(a) length(levels(as.factor(paste(a, datagef$studyDbId))))==length(levels(datagef$studyDbId)) & length(levels(as.factor(paste(a, datagef$studyDbId))))==length(levels(a))))==TRUE))
         if (!is.null(input$picker_env_variable)){
           updatePickerInput(
             session, "picker_env_variable",
-            choices = env_vars,
+            choices = rv_gxe$env_vars,
             selected = input$picker_env_variable
           )
         } else {
           updatePickerInput(
             session, "picker_env_variable",
-            choices = env_vars,
+            choices = rv_gxe$env_vars,
             selected = character(0)
           )
         }
@@ -544,13 +552,12 @@ mod_gxe_server <- function(id, rv, parent_session){
         )
       })
       
-      ## update env picker when trait is chosen ####
-      #observeEvent(input$picker_trait,{
-      observe({
+      ## update env picker when trait or env_variable is chosen ####
+      observeEvent(c(input$picker_trait, input$picker_env_variable),{
         req(input$picker_trait)
         req(input$picker_env_variable)
         ## update environments dropdown
-        envs <- unique(rv$data_gxe[!is.na(get(input$picker_trait)),.SD,.SDcols = c("studyDbId", input$picker_env_variable)])
+        envs <- unique(rv_gxe$data[!is.na(get(input$picker_trait)),.SD,.SDcols = c("studyDbId", input$picker_env_variable)])
         env_choices <- envs[,studyDbId]
         names(env_choices) <- envs[[input$picker_env_variable]]
         updatePickerInput(
@@ -565,7 +572,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       ## update pickers when environment is chosen ####
       observeEvent(input$picker_env,{
         ## update env details dropdowns
-        colnames(rv$data_gxe)
+        colnames(rv_gxe$data)
         env_details <- c(rv$column_datasource[source == "environment" & visible == T,]$cols, "study_startYear")
         updatePickerInput(
           session, "picker_scenario",
@@ -670,31 +677,31 @@ mod_gxe_server <- function(id, rv, parent_session){
       #    updateMaterialSwitch(session, "check_combine_scenario", value = FALSE)
       #  }
       #})
+      
       ## main observer to build TD object and output basic plots ####
       observe({
-        req(rv$data_gxe)
+        req(rv_gxe$data)
         req(rv$column_datasource)
         req(input$picker_trait)
         req(input$picker_env)
         req(!isTRUE(input$picker_germplasm_attr_open))
         #browser()
-        data2TD <- copy(rv$data_gxe[observationLevel=="MEANS"])
+        data2TD <- copy(rv_gxe$data[observationLevel=="MEANS"])
         if (input$picker_germplasm_level=="germplasmDbId"){
           data2TD[, genotype:=paste0(germplasmDbId," (",germplasmName,")")]
         } else {
           data2TD[, genotype:=germplasmName]
         }
         
-        #
-          genot_to_excl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype][N<input$exclude_geno_nb_env]
-          data2TD <- data2TD[!genotype%in%genot_to_excl$genotype]
-          genot_incl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype]
-          output$TD_included_geno <- DT::renderDataTable(genot_incl, rownames= FALSE)
-          output$copy_incgeno_table <- renderUI({
-            rclipboard::rclipButton("clipbtnincg_table", "Copy table", paste(paste(colnames(genot_incl),collapse="\t"),
-                                                                            paste(apply(genot_incl,1,paste,collapse="\t"),collapse = "\n"),
-                                                                            sep="\n"))#, shiny::icon("clipboard"))
-          })
+        genot_to_excl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype][N<input$exclude_geno_nb_env]
+        data2TD <- data2TD[!genotype%in%genot_to_excl$genotype]
+        genot_incl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype]
+        output$TD_included_geno <- DT::renderDataTable(genot_incl, rownames= FALSE)
+        output$copy_incgeno_table <- renderUI({
+          rclipboard::rclipButton("clipbtnincg_table", "Copy table", paste(paste(colnames(genot_incl),collapse="\t"),
+                                                                          paste(apply(genot_incl,1,paste,collapse="\t"),collapse = "\n"),
+                                                                          sep="\n"))#, shiny::icon("clipboard"))
+        })
           
           #if (exists("genot_to_excl")){
             if (nrow(genot_to_excl)>1){
@@ -744,8 +751,8 @@ mod_gxe_server <- function(id, rv, parent_session){
             }
           }
         }        
-        #browser()
-        rv$TD <- statgenSTA::createTD(data = data2TD[studyDbId%in%input$picker_env],
+        browser()
+        rv_gxe$TD <- statgenSTA::createTD(data = data2TD[studyDbId%in%input$picker_env],
                                       genotype = "genotype",
                                       trial = input$picker_env_variable)
 
@@ -753,42 +760,40 @@ mod_gxe_server <- function(id, rv, parent_session){
         #Update number of AMMI PCs picker as the smallest of the number of genotypes or environments minus one
         updatePickerInput(
           session, "AMMI_nPC",
-          choices = c("Auto",c(2:min(length(rv$TD)-1, length(unique(rbindlist(rv$TD)$genotype))-1))),
+          choices = c("Auto",c(2:min(length(rv_gxe$TD)-1, length(unique(rbindlist(rv_gxe$TD)$genotype))-1))),
           selected = "Auto"
         )
         #Update excludeGeno AMMI picker
         updatePickerInput(
           session, "AMMI_excludeGeno",
-          choices = as.character(unique(rbindlist(rv$TD)$genotype)),
+          choices = as.character(unique(rbindlist(rv_gxe$TD)$genotype)),
           selected = character(0)
         )
         #Update rotatePC AMMI picker
         updatePickerInput(
           session, "AMMI_rotatePC",
-          choices = as.character(unique(rbindlist(rv$TD)$trial)),
+          choices = as.character(unique(rbindlist(rv_gxe$TD)$trial)),
           selected = character(0)
         )
-        
-        
         
         
         output$TD_boxplot <- renderPlot({
           if (!is.null(input$picker_scenario)){
             #if ("scenarioFull"%in%names(data2TD)){
-              plot(rv$TD,
+              plot(rv_gxe$TD,
                    plotType = "box",
                    traits = input$picker_trait,
                    colorTrialBy = "scenario",
                    orderBy = "descending")
             #} else {
-            #  plot(rv$TD,
+            #  plot(rv_gxe$TD,
             #       plotType = "box",
             #       traits = input$picker_trait,
             #       colorTrialBy = input$picker_scenario[1],
             #       orderBy = "descending")
             #}
           } else {
-            plot(rv$TD,
+            plot(rv_gxe$TD,
                  plotType = "box",
                  traits = input$picker_trait,
                  orderBy = "descending") 
@@ -800,34 +805,34 @@ mod_gxe_server <- function(id, rv, parent_session){
           #  if (!is.null(input$picker_germplasm_attr)){
           #    if (!is.null(input$picker_scenario)){
           #      #if ("scenarioFull"%in%names(data2TD)){
-          #        plot(rv$TD, plotType = "scatter",
+          #        plot(rv_gxe$TD, plotType = "scatter",
           #             traits = input$picker_trait,
           #             colorGenoBy = input$picker_germplasm_attr[1], 
           #             colorTrialBy = "scenario")
           #      #} else {
-          #      #  plot(rv$TD, plotType = "scatter",
+          #      #  plot(rv_gxe$TD, plotType = "scatter",
           #      #       traits = input$picker_trait,
           #      #       colorGenoBy = input$picker_germplasm_attr, 
           #      #       colorTrialBy = input$picker_scenario[1])
           #      #}
           #    } else {
-          #      plot(rv$TD, plotType = "scatter",
+          #      plot(rv_gxe$TD, plotType = "scatter",
           #           traits = input$picker_trait,
           #           colorGenoBy = input$picker_germplasm_attr[1])
           #    }            
           #  } else {
           #    if (!is.null(input$picker_scenario)){
           #      #if ("scenarioFull"%in%names(data2TD)){
-          #        plot(rv$TD, plotType = "scatter",
+          #        plot(rv_gxe$TD, plotType = "scatter",
           #             traits = input$picker_trait,
           #             colorTrialBy = "scenario")
           #      #} else {
-          #      #  plot(rv$TD, plotType = "scatter",
+          #      #  plot(rv_gxe$TD, plotType = "scatter",
           #      #       traits = input$picker_trait,
           #      #       colorTrialBy = input$picker_scenario[1])
           #      #}
           #    } else {
-          #      plot(rv$TD, plotType = "scatter",
+          #      plot(rv_gxe$TD, plotType = "scatter",
           #           traits = input$picker_trait)
           #    }            
           #  }
@@ -847,79 +852,78 @@ mod_gxe_server <- function(id, rv, parent_session){
         } else {
           #rv$console <- NULL
           withCallingHandlers({
-          rv$TDVarComp <- switch(input$picker_gxe_mm_env_struct,
-                                 `1`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)},
-                                 `2`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, locationYear = TRUE), error=function(e) e)},
-                                 `3`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "year"), error=function(e) e)},
-                                 `4`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "loc"), error=function(e) e)},
-                                 `5`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, regionLocationYear = TRUE), error=function(e) e)},
-                                 `6`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "scenario"), error=function(e) e)})
+          rv_gxe$TDVarComp <- switch(input$picker_gxe_mm_env_struct,
+                                 `1`={tryCatch(gxeVarComp(TD = rv_gxe$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)},
+                                 `2`={tryCatch(gxeVarComp(TD = rv_gxe$TD, trait = input$picker_trait, useWt = input$use_weights, locationYear = TRUE), error=function(e) e)},
+                                 `3`={tryCatch(gxeVarComp(TD = rv_gxe$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "year"), error=function(e) e)},
+                                 `4`={tryCatch(gxeVarComp(TD = rv_gxe$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "loc"), error=function(e) e)},
+                                 `5`={tryCatch(gxeVarComp(TD = rv_gxe$TD, trait = input$picker_trait, useWt = input$use_weights, regionLocationYear = TRUE), error=function(e) e)},
+                                 `6`={tryCatch(gxeVarComp(TD = rv_gxe$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "scenario"), error=function(e) e)})
           output$MM_text_output <- renderPrint({
-            if ("varComp"%in%class(rv$TDVarComp)){
-              summary(rv$TDVarComp)
+            if ("varComp"%in%class(rv_gxe$TDVarComp)){
+              summary(rv_gxe$TDVarComp)
             } else {
-              rv$TDVarComp
+              rv_gxe$TDVarComp
             }
           })
           output$MM_diagnostics <- renderPrint({
-            if ("varComp"%in%class(rv$TDVarComp)){
-              diagnostics(rv$TDVarComp)
+            if ("varComp"%in%class(rv_gxe$TDVarComp)){
+              diagnostics(rv_gxe$TDVarComp)
             } else {
               "Model failed"
             }
           })
           output$MM_vc <- renderPrint({
-            if ("varComp"%in%class(rv$TDVarComp)){
-              list(`Variance components`=vc(rv$TDVarComp), heritability=herit(rv$TDVarComp))
+            if ("varComp"%in%class(rv_gxe$TDVarComp)){
+              list(`Variance components`=vc(rv_gxe$TDVarComp), heritability=herit(rv_gxe$TDVarComp))
             } else {
               "Model failed"
             }
           })
           output$MM_plot_output <- renderPlot({
-            if ("varComp"%in%class(rv$TDVarComp)){
-              plot(rv$TDVarComp)
+            if ("varComp"%in%class(rv_gxe$TDVarComp)){
+              plot(rv_gxe$TDVarComp)
             } else {
               "Model failed"
             }
           })
           output$MM_predictions <- DT::renderDataTable({
-            if ("varComp"%in%class(rv$TDVarComp)){
-              predict(rv$TDVarComp)
+            if ("varComp"%in%class(rv_gxe$TDVarComp)){
+              predict(rv_gxe$TDVarComp)
             } else {
               data.table()[]
             }
           }, rownames= FALSE)
-          bslib::accordion_panel_set(id="MM_accord1", values=TRUE)
-          bslib::accordion_panel_set(id="MM_accord2", values=TRUE)
-          }, message = function(m) rv$console <- paste(rv$console, paste0("Mixed model run at ",Sys.time(), " : ",m), sep=""),
-             warning = function(w) rv$console <- paste(rv$console, paste0("Mixed model run at ",Sys.time(), " : ",w), sep=""))}
+          accordion_panel_set(id="MM_accord1", values=TRUE)
+          accordion_panel_set(id="MM_accord2", values=TRUE)
+          }, message = function(m) rv_gxe$console <- paste(rv_gxe$console, paste0("Mixed model run at ",Sys.time(), " : ",m), sep=""),
+             warning = function(w) rv_gxe$console <- paste(rv_gxe$console, paste0("Mixed model run at ",Sys.time(), " : ",w), sep=""))}
       })
       
-      observe({
-        if(!is.null(rv$console)){
-          output$console <- renderText(rv$console)
-        }
+      ### Rendering console ####
+      observeEvent(rv_gxe$console, {
+          output$console <- renderText(rv_gxe$console)
       })
       
-      observe({
-        req(rv$TDVarComp)
-        if (is.null(rv$TDVarComp$nestingFactor)){
+      observeEvent(rv_gxe$TDVarComp, {
+        if (is.null(rv_gxe$TDVarComp$nestingFactor)){
           predict_levels <- "genotype"
-          if (!is.null(rv$TDVarComp$useLocYear)){
-            if (rv$TDVarComp$useLocYear){
+          if (!is.null(rv_gxe$TDVarComp$useLocYear)){
+            if (rv_gxe$TDVarComp$useLocYear){
               predict_levels <- c("genotype","trial")
             }
           }
         } else {
-          predict_levels <- c("genotype",rv$TDVarComp$nestingFactor)
+          predict_levels <- c("genotype",rv_gxe$TDVarComp$nestingFactor)
         }
         updatePickerInput(session, "MM_predict_level", choices = predict_levels, selected = "genotype")
       })
+      
       ### Change prediction level ####
       observeEvent(input$MM_predict_level,{
         output$MM_predictions <- DT::renderDataTable({
-          if ("varComp"%in%class(rv$TDVarComp)){
-            predict(rv$TDVarComp, predictLevel=input$MM_predict_level)
+          if ("varComp"%in%class(rv_gxe$TDVarComp)){
+            predict(rv_gxe$TDVarComp, predictLevel=input$MM_predict_level)
           } else {
             data.table()[]
           }
@@ -936,16 +940,16 @@ mod_gxe_server <- function(id, rv, parent_session){
           showNotification(stringmagic::string_magic("{enum ? misspicks}  should be selected first on Data preparation Tab"), type = "error", duration = notification_duration)
         } else {
           withCallingHandlers({
-          rv$TDFW <- tryCatch(gxeFw(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)
+          rv_gxe$TDFW <- tryCatch(gxeFw(TD = rv_gxe$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)
           },
-          message = function(m) rv$console <- paste(rv$console, paste0("FW run at ",Sys.time(), " : ",m), sep=""),
-          warning = function(w) rv$console <- paste(rv$console, paste0("FW run at ",Sys.time(), " : ",w), sep=""))
-          rv$TDFWplot <- rv$TDFW
+          message = function(m) rv_gxe$console <- paste(rv_gxe$console, paste0("FW run at ",Sys.time(), " : ",m), sep=""),
+          warning = function(w) rv_gxe$console <- paste(rv_gxe$console, paste0("FW run at ",Sys.time(), " : ",w), sep=""))
+          rv_gxe$TDFWplot <- rv_gxe$TDFW
           output$FW_text_output <- renderPrint({
-            if ("FW"%in%class(rv$TDFW)){
-              summary(rv$TDFW)
+            if ("FW"%in%class(rv_gxe$TDFW)){
+              summary(rv_gxe$TDFW)
             } else {
-              rv$TDFW
+              rv_gxe$TDFW
             }
           })
         }
@@ -953,9 +957,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       ### FW plot ####
       #### renderPlot observer ####
       observe({
-        req(rv$TDFW)
+        req(rv_gxe$TDFW)
           output$FW_plot <- renderPlot({
-            TDFWplot <- rv$TDFWplot
+            TDFWplot <- rv_gxe$TDFWplot
             #browser()
             if (is.null(input$FW_picker_color_by)){
                 p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
@@ -969,19 +973,19 @@ mod_gxe_server <- function(id, rv, parent_session){
                   names(stacolors)<-1:length(stacolors)
                   p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                     ggnewscale::new_scale_color() + 
-                    ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$sensclust[sensitivity_cluster==input$FW_sens_clust_select_buttons, Genotype],], aes(y = fitted, color=sensitivity_cluster), size=1) + scale_color_manual(values = stacolors)
+                    ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$sensclust[sensitivity_cluster==input$FW_sens_clust_select_buttons, Genotype],], aes(y = fitted, color=sensitivity_cluster), size=1) + scale_color_manual(values = stacolors)
                   
                 }
                 
                 if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
-                  rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
+                  rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
                   #browser()
                   p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                       ggnewscale::new_scale_color() + 
-                      ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
-                      geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
+                      ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                      geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3)
                       if (input$FW_display_raw_data){
-                        p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                        p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv_gxe$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
                       }
                   }
               } else {
@@ -994,29 +998,29 @@ mod_gxe_server <- function(id, rv, parent_session){
                   }
                   if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
                     #browser()
-                    rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
+                    rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
                     p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                         ggnewscale::new_scale_color() + 
-                        ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
-                        geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3) + theme(legend.position = "right")
+                        ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                        geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3) + theme(legend.position = "right")
                         if (input$FW_display_raw_data){
-                          p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                          p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv_gxe$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
                         }
                   }
                   
                 } else {
                   if (!input$FW_picker_color_by%in%colnames(TDFWplot$TD)){
-                    TDFWplot$TD <- rv$TD
+                    TDFWplot$TD <- rv_gxe$TD
                   }
                   p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
                   if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
-                    rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
+                    rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
                     p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                         ggnewscale::new_scale_color() + 
-                        ggplot2::geom_line(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
-                        geom_point(data=p$data[p$data$genotype%in%rv$selected_genotypes,], aes(color=genotype), size=3)
+                        ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                        geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3)
                         if (input$FW_display_raw_data){
-                          p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                          p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv_gxe$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
                         }
                     
                   }
@@ -1070,8 +1074,8 @@ mod_gxe_server <- function(id, rv, parent_session){
         output$FWhover_vinfo <- renderText({
           if(!is.null(input$FWplot_hover)) {
             #browser()
-            F <- as.data.table(rv$TDFWplot$fittedGeno)
-            E <- as.data.table(rv$TDFWplot$envEffs)
+            F <- as.data.table(rv_gxe$TDFWplot$fittedGeno)
+            E <- as.data.table(rv_gxe$TDFWplot$envEffs)
             EF <- E[F, on=.(Trial=trial)]
             hover=input$FWplot_hover
             dist=sqrt((hover$x-EF$EnvMean)^2+(hover$y-EF$fittedValue)^2)
@@ -1083,8 +1087,8 @@ mod_gxe_server <- function(id, rv, parent_session){
         # output$FWhover_info <- renderText({
         #   if(!is.null(input$FWplot_hover)) {
         #   #browser()
-        #   F <- as.data.table(rv$TDFWplot$fittedGeno)
-        #   E <- as.data.table(rv$TDFWplot$envEffs)
+        #   F <- as.data.table(rv_gxe$TDFWplot$fittedGeno)
+        #   E <- as.data.table(rv_gxe$TDFWplot$envEffs)
         #   EF <- E[F, on=.(Trial=trial)]
         #   hover=input$FWplot_hover
         #   dist=sqrt((hover$x-EF$EnvMean)^2+(hover$y-EF$fittedValue)^2)
@@ -1116,21 +1120,22 @@ mod_gxe_server <- function(id, rv, parent_session){
         input$FW_picker_cluster_on
         input$FW_picker_plot_type
         input$FW_picker_cluster_meth
-        rv$TDFW
+        rv_gxe$TDFW
       }, handlerExpr = {
-        req(rv$TDFW)
+        browser()
+        req(rv_gxe$TDFW)
         req(input$FW_cluster_sensitivity_nb, input$FW_picker_cluster_on)
         #browser()
         if (input$FW_picker_plot_type=="trellis"){
           output$FW_trellis_genot_select_ui <- renderUI({
-            genots <- as.character(unique(rbindlist(rv$TDFW$TD)$genotype))
+            genots <- as.character(unique(rbindlist(rv_gxe$TDFW$TD)$genotype))
             pickerInput(ns("FW_trellis_genot_select"), label = "Select genotypes", choices = genots, selected = genots[1:round(length(genots)*0.05,0)], multiple = T, options = pickerOptions(liveSearch = TRUE))
           })
         } else {
           output$FW_trellis_genot_select_ui <- renderUI({NULL})
         }
         if (input$FW_picker_plot_type=="line" & input$FW_picker_color_by=="sensitivity clusters"){
-          sensclust <- data.table(rv$TDFW$estimates)
+          sensclust <- data.table(rv_gxe$TDFW$estimates)
           sensclust <- sensclust[!is.na(Sens)]
           if (input$FW_picker_cluster_meth=="Kmeans"){
             sensclust[,sensitivity_cluster:=kmeans(scale(.SD),centers = input$FW_cluster_sensitivity_nb)$cluster, .SDcols = input$FW_picker_cluster_on]
@@ -1141,14 +1146,14 @@ mod_gxe_server <- function(id, rv, parent_session){
           renum[,renum:=1:.N]
           sensclustren <- renum[,.(sensitivity_cluster,renum)][sensclust, on=.(sensitivity_cluster)][,sensitivity_cluster:=renum]
           sensclustren[,renum:=NULL]
-          rv$sensclust <- sensclustren
-          rv$TDFWplot <- rv$TDFW
-          rv$TDFWplot$TD <- lapply(rv$TDFWplot$TD, function(a) data.table(a)[rv$sensclust, on=.(genotype=Genotype)])
+          rv_gxe$sensclust <- sensclustren
+          rv_gxe$TDFWplot <- rv_gxe$TDFW
+          rv_gxe$TDFWplot$TD <- lapply(rv_gxe$TDFWplot$TD, function(a) data.table(a)[rv_gxe$sensclust, on=.(genotype=Genotype)])
           output$FW_sens_clust_select <- renderUI(
             prettyRadioButtons( 
               inputId = ns("FW_sens_clust_select_buttons"),
               label = "Select a cluster to highlight",
-              choices = c("none", sort(unique(rv$sensclust$sensitivity_cluster))),
+              choices = c("none", sort(unique(rv_gxe$sensclust$sensitivity_cluster))),
               inline = TRUE,
               shape = "round",
               status = "primary",
@@ -1157,8 +1162,8 @@ mod_gxe_server <- function(id, rv, parent_session){
             )
           )
         } else {
-          sensclust <- data.table(rv$TDFW$estimates)
-          rv$sensclust <- sensclust
+          sensclust <- data.table(rv_gxe$TDFW$estimates)
+          rv_gxe$sensclust <- sensclust
           output$FW_sens_clust_select <- renderUI(expr = NULL)
         }
       })
@@ -1178,9 +1183,9 @@ mod_gxe_server <- function(id, rv, parent_session){
 
       #### Render FW sensclusters DT ####
       observe({
-        req(rv$sensclust)
-        #browser()
-        dtsc <- dcast(rbindlist(rv$TD)[,c("genotype","trial",input$picker_trait), with = F],genotype~trial)[rv$sensclust, on=.(genotype=Genotype)][,-c("SE_GenMean","SE_Sens","MSdeviation")]
+        req(rv_gxe$sensclust)
+        browser()
+        dtsc <- dcast(rbindlist(rv_gxe$TD)[,c("genotype","trial",input$picker_trait), with = F],genotype~trial)[rv_gxe$sensclust, on=.(genotype=Genotype)][,-c("SE_GenMean","SE_Sens","MSdeviation")]
         formatcols <- colnames(dtsc)[-which(colnames(dtsc)%in%c("genotype","sensitivity_cluster", "Rank"))]
         if (any(colnames(dtsc)%in%"sensitivity_cluster")){
           dtsc[,sensitivity_cluster:=as.character(sensitivity_cluster)]
@@ -1191,7 +1196,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                                                           rownames= FALSE,
                                                           selection = 'multiple')
         dtproxy <<- dataTableProxy('FW_sens_clusters_DT')
-        if (any(colnames(rv$sensclust)=="sensitivity_cluster")){
+        if (any(colnames(rv_gxe$sensclust)=="sensitivity_cluster")){
           shinyjs::enable("create_groups_from_sensclusters")
           #shinyjs::addClass("create_groups_from_sensclusters", "active")
         } else {
@@ -1214,7 +1219,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           clustering_id <- ifelse(length(rv$groups[!is.na(clustering_id)]$clustering_id)==0, 1, max(rv$groups[!is.na(clustering_id)]$clustering_id) + 1)
         }
         
-        clusters <- unique(rbindlist(rv$TD)[,.(genotype,germplasmDbId,germplasmName)])[rv$sensclust, on=.(genotype=Genotype)][order(sensitivity_cluster)][,.(
+        clusters <- unique(rbindlist(rv_gxe$TD)[,.(genotype,germplasmDbId,germplasmName)])[rv_gxe$sensclust, on=.(genotype=Genotype)][order(sensitivity_cluster)][,.(
           group_name = paste0("cl",clustering_id,"_FW@",input$picker_trait,".", sensitivity_cluster),
           group_desc = paste0(
             "Clustering method: FW clusters on ",input$picker_trait, " variable, using ", input$FW_picker_cluster_meth, " on ", paste(input$FW_picker_cluster_on, collapse = ", "), "<br>",
@@ -1240,7 +1245,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         ), fill = T, use.names = T)
         
         ## update selectors (shape, colour)
-        data_plot <- copy(rv$data_plot) # to avoid reactivity issues related to assignment by reference
+        data_plot <- copy(rv$extradata) # to avoid reactivity issues related to assignment by reference
         ## Revoir ca pour ne créer qu'un seule varaible dans data.plot avec les numéros de clusters
         #browser()
         #for(id in clusters[,unique(group_id)]){
@@ -1257,18 +1262,16 @@ mod_gxe_server <- function(id, rv, parent_session){
             data.table(cols = paste0("cl",clustering_id,"_FW@",input$picker_trait) ,  type = "Text", source = "group", visible = T)
           )
         )
-        rv$data_plot <- data_plot
-
-        
+        rv$extradata <- data_plot
       })
       
       observeEvent(input$create_groups_from_selgeno,{
         #browser()
-        if(length(rv$selected_genotypes)>0){
+        if(length(rv_gxe$selected_genotypes)>0){
           #browser()
           rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
-                                                               rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]),
-                                                  y=unique(rbindlist(rv$TD)),
+                                                               rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]),
+                                                  y=unique(rbindlist(rv_gxe$TD)),
                                                   by.x = "Genotype",
                                                   by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
           showModal(groupModal(rv=rv, 
@@ -1284,65 +1287,65 @@ mod_gxe_server <- function(id, rv, parent_session){
       #output$FW_selected_obs_DT <- renderTable({
       #  req(input$observ_fwplot_brush)
       #  browser()
-      #  rv$obs_fwtable <- brushedPoints(rv$fwp$data,
+      #  rv_gxe$obs_fwtable <- brushedPoints(rv_gxe$fwp$data,
       #                                 input$observ_fwplot_brush)
-      #  rv$obs_fwtable
+      #  rv_gxe$obs_fwtable
       #}, width='50%')
       
       ## GGE ####
       ### Run GGE ####
       observeEvent(input$GGE_run,{
-        req(rv$TD)
+        req(rv_gxe$TD)
         #browser()
-        rv$TD.metangge <- rbindlist(rv$TD)[,.SD, .SDcols=c("trial","genotype",input$picker_trait)]
+        rv_gxe$TD.metangge <- rbindlist(rv_gxe$TD)[,.SD, .SDcols=c("trial","genotype",input$picker_trait)]
         withCallingHandlers({
-        rv$TDGGEmetan <- tryCatch(metan::gge(rv$TD.metangge,
+        rv_gxe$TDGGEmetan <- tryCatch(metan::gge(rv_gxe$TD.metangge,
                                              env=trial,
                                              gen=genotype,
                                              resp = input$picker_trait,
                                              centering = input$GGE_advs_centering,
                                              scaling = input$GGE_advs_scaling,
                                              svp = input$GGE_advs_svp,), error=function(e) e)
-        rv$TDGGE <- tryCatch(gxeGGE(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)
+        rv_gxe$TDGGE <- tryCatch(gxeGGE(TD = rv_gxe$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)
         },
-        message = function(m) rv$console <- paste(rv$console, paste0("GGE run at ",Sys.time(), " : ",m), sep=""),
-        warning = function(w) rv$console <- paste(rv$console, paste0("GGE run at ",Sys.time(), " : ",w), sep=""))
+        message = function(m) rv_gxe$console <- paste(rv_gxe$console, paste0("GGE run at ",Sys.time(), " : ",m), sep=""),
+        warning = function(w) rv_gxe$console <- paste(rv_gxe$console, paste0("GGE run at ",Sys.time(), " : ",w), sep=""))
         
         
         updatePickerInput(
           session, "GGE_picker_gen_select",
-          choices = rv$TDGGEmetan[[1]]$labelgen
+          choices = rv_gxe$TDGGEmetan[[1]]$labelgen
           #selected = character(0)
         )
         updatePickerInput(
           session, "GGE_picker_gen2_select",
-          choices = rv$TDGGEmetan[[1]]$labelgen,
-          selected = rv$TDGGEmetan[[1]]$labelgen[2]
+          choices = rv_gxe$TDGGEmetan[[1]]$labelgen,
+          selected = rv_gxe$TDGGEmetan[[1]]$labelgen[2]
         )
         updatePickerInput(
           session, "GGE_picker_env_select",
-          choices = rv$TDGGEmetan[[1]]$labelenv,
-          selected = rv$TDGGEmetan[[1]]$labelenv
+          choices = rv_gxe$TDGGEmetan[[1]]$labelenv,
+          selected = rv_gxe$TDGGEmetan[[1]]$labelenv
         )
         
         
         
         output$GGE_text_output <- renderPrint({
-          if ("AMMI"%in%class(rv$TDGGE)){
-            summary(rv$TDGGE)
+          if ("AMMI"%in%class(rv_gxe$TDGGE)){
+            summary(rv_gxe$TDGGE)
           } else {
-            rv$TDGGE
+            rv_gxe$TDGGE
           }
         })
       })
       ### GGE plot ####
       observe({
-        req(rv$TDGGEmetan)
+        req(rv_gxe$TDGGEmetan)
         #browser()
         output$GGE_plot <- renderPlot({
           #output$FW_plot <- renderPlotly({
           #browser()
-          TDGGEplot <- rv$TDGGEmetan
+          TDGGEplot <- rv_gxe$TDGGEmetan
           gg <- NULL
           #browser()
           if (input$GGE_picker_plot_type==5){
@@ -1447,7 +1450,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                                                                                  plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
             )
             if (input$GGE_picker_plot_type == 3) {
-              rv$gp_WwW <- gg$layers[[length(gg$layers)]]$data$label
+              rv_gxe$gp_WwW <- gg$layers[[length(gg$layers)]]$data$label
             }
           }
           if (input$GGE_colorGenoBy!="Nothing"){
@@ -1460,11 +1463,11 @@ mod_gxe_server <- function(id, rv, parent_session){
       
       observeEvent(input$create_group_from_wWw,{
         #browser()
-        if(length(rv$gp_WwW)>0){
+        if(length(rv_gxe$gp_WwW)>0){
           #browser()
-          rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
-                                                               Genotype=rv$gp_WwW),
-                                                  y=unique(rbindlist(rv$TD)),
+          rv$extradataselection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
+                                                               Genotype=rv_gxe$gp_WwW),
+                                                  y=unique(rbindlist(rv_gxe$TD)),
                                                   by.x = "Genotype",
                                                   by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
           showModal(groupModal(rv=rv, 
@@ -1480,7 +1483,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       ## AMMI ####
       ### Make sur year exists in TD if byYear is chosen ####
       observeEvent(input$AMMI_byYear,{
-        if(input$AMMI_byYear & !any(colnames(rbindlist(rv$TD))=="year"))
+        if(input$AMMI_byYear & !any(colnames(rbindlist(rv_gxe$TD))=="year"))
           isolate({
             showNotification("Select an env. detail to use as year in Data preparation Tab", type = "warning", duration = notification_duration)
             updatePickerInput(
@@ -1492,10 +1495,10 @@ mod_gxe_server <- function(id, rv, parent_session){
       
       ### Run AMMI ####
       observeEvent(input$AMMI_run,{
-        req(rv$TD)
+        req(rv_gxe$TD)
         #browser()
         withCallingHandlers({
-        rv$TDAMMI <- tryCatch(gxeAmmi(TD = rv$TD,
+        rv_gxe$TDAMMI <- tryCatch(gxeAmmi(TD = rv_gxe$TD,
                                       trait = input$picker_trait,
                                       nPC = switch((input$AMMI_nPC=="Auto")+1,  as.numeric(input$AMMI_nPC,NULL)),
                                       byYear = input$AMMI_byYear,
@@ -1503,39 +1506,39 @@ mod_gxe_server <- function(id, rv, parent_session){
                                       excludeGeno = input$AMMI_excludeGeno,
                                       useWt = input$use_weights), error=function(e) e)
         },
-        message = function(m) rv$console <- paste(rv$console, paste0("AMMI run at ",Sys.time(), " : ",m), sep=""),
-        warning = function(w) rv$console <- paste(rv$console, paste0("AMMI run at ",Sys.time(), " : ",w), sep=""))
+        message = function(m) rv_gxe$console <- paste(rv_gxe$console, paste0("AMMI run at ",Sys.time(), " : ",m), sep=""),
+        warning = function(w) rv_gxe$console <- paste(rv_gxe$console, paste0("AMMI run at ",Sys.time(), " : ",w), sep=""))
         
         #browser()
         output$AMMI_text_output <- renderPrint({
-          if ("AMMI"%in%class(rv$TDAMMI)){
-            summary(rv$TDAMMI)
+          if ("AMMI"%in%class(rv_gxe$TDAMMI)){
+            summary(rv_gxe$TDAMMI)
           } else {
-            rv$TDAMMI
+            rv_gxe$TDAMMI
           }
         })
       })
 
       ### AMMI plot ####
       observe({
-        req(rv$TDAMMI)
+        req(rv_gxe$TDAMMI)
         #browser()
         #Update rotatePC AMMI picker
         updatePickerInput(
           session, "AMMI_primAxis",
-          choices = colnames(rv$TDAMMI$envScores),
-          selected = colnames(rv$TDAMMI$envScores)[1]
+          choices = colnames(rv_gxe$TDAMMI$envScores),
+          selected = colnames(rv_gxe$TDAMMI$envScores)[1]
         )
         updatePickerInput(
           session, "AMMI_secAxis",
-          choices = colnames(rv$TDAMMI$envScores),
-          selected = colnames(rv$TDAMMI$envScores)[2]
+          choices = colnames(rv_gxe$TDAMMI$envScores),
+          selected = colnames(rv_gxe$TDAMMI$envScores)[2]
         )
         
         output$AMMI_plot <- renderPlot({
           #browser()
           if (input$AMMI_plotGeno & input$AMMI_plot_sizeGeno>1 & input$AMMI_plot_repel){
-            p <- statgenGxE:::plot.AMMI(rv$TDAMMI,
+            p <- statgenGxE:::plot.AMMI(rv_gxe$TDAMMI,
                                         plotType = input$AMMI_plotType,
                                         scale = input$AMMI_scale,
                                         plotGeno = input$AMMI_plotGeno,
@@ -1554,7 +1557,7 @@ mod_gxe_server <- function(id, rv, parent_session){
               geom_text(data=p$data[p$data$type=="env",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="env",]))) +
               ggrepel::geom_text_repel(data =p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="geno",]), size=input$AMMI_plot_sizeGeno), max.overlaps = input$AMMI_plot_max_overlaps, force = input$AMMI_plot_repulsion)
           } else {
-            p <- statgenGxE:::plot.AMMI(rv$TDAMMI,
+            p <- statgenGxE:::plot.AMMI(rv_gxe$TDAMMI,
                                         plotType = input$AMMI_plotType,
                                         scale = input$AMMI_scale,
                                         plotGeno = input$AMMI_plotGeno,
@@ -1575,38 +1578,38 @@ mod_gxe_server <- function(id, rv, parent_session){
     ## Stability ####
       ### Run Stab ####
       observe({
-        req(rv$TD)
+        req(rv_gxe$TD)
        # browser()
-        rv$TDStab <- tryCatch(statgenGxE::gxeStability(TD = rv$TD,
+        rv_gxe$TDStab <- tryCatch(statgenGxE::gxeStability(TD = rv_gxe$TD,
                                                         trait = input$picker_trait), error=function(e) e)
         output$STAB_sup <- renderDataTable({
-            formatRound(datatable(rv$TDStab$superiority, rownames = FALSE),
+            formatRound(datatable(rv_gxe$TDStab$superiority, rownames = FALSE),
                         columns = c("Mean", "Superiority"), 
                         digits=3)
         })
         output$STAB_sup_plot <- renderPlotly({
-          ggplotly(ggplot(rv$TDStab$superiority) + 
+          ggplotly(ggplot(rv_gxe$TDStab$superiority) + 
                      geom_point(aes(x=Mean, y= sqrt(Superiority), text = Genotype)) +
                      ylab("Square root of superiority"), source="STAB_sup_plot")
         })
         output$STAB_static <- renderDataTable({
-          formatRound(datatable(rv$TDStab$static, rownames = FALSE),
+          formatRound(datatable(rv_gxe$TDStab$static, rownames = FALSE),
                                 columns = c("Mean", "Static"), 
                                 digits=3)
         })
         output$STAB_static_plot <- renderPlotly({
-          ggplotly(ggplot(rv$TDStab$static) + 
+          ggplotly(ggplot(rv_gxe$TDStab$static) + 
                      geom_point(aes(x=Mean, y= sqrt(Static), text = Genotype)) +
                      ylab("Square root of Static stability"), source="STAB_static_plot")
         })
         
         output$STAB_wricke <- renderDataTable({
-          formatRound(datatable(rv$TDStab$wricke, rownames = FALSE),
+          formatRound(datatable(rv_gxe$TDStab$wricke, rownames = FALSE),
                                 columns = c("Mean", "Wricke"), 
                                 digits=3)
         })
         output$STAB_wricke_plot <- renderPlotly({
-          ggplotly(ggplot(rv$TDStab$wricke) + 
+          ggplotly(ggplot(rv_gxe$TDStab$wricke) + 
                      geom_point(aes(x=Mean, y= sqrt(Wricke), text = Genotype)) +
                      ylab("Square root of Wricke ecovalence"), source="STAB_wricke_plot")
         })
@@ -1614,26 +1617,26 @@ mod_gxe_server <- function(id, rv, parent_session){
       })
       
       observe({
-        req(nrow(rv$TDStab$superiority)>0)
+        req(nrow(rv_gxe$TDStab$superiority)>0)
         output$copy_STABsup_table <- renderUI({
-          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv$TDStab$superiority),collapse="\t"),
-                                                                          paste(apply(rv$TDStab$superiority,1,paste,collapse="\t"),collapse = "\n"),
+          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv_gxe$TDStab$superiority),collapse="\t"),
+                                                                          paste(apply(rv_gxe$TDStab$superiority,1,paste,collapse="\t"),collapse = "\n"),
                                                                           sep="\n"))#, shiny::icon("clipboard"))
         })
       })
       observe({
-        req(nrow(rv$TDStab$static)>0)
+        req(nrow(rv_gxe$TDStab$static)>0)
         output$copy_STABstatic_table <- renderUI({
-          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv$TDStab$static),collapse="\t"),
-                                                                          paste(apply(rv$TDStab$static,1,paste,collapse="\t"),collapse = "\n"),
+          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv_gxe$TDStab$static),collapse="\t"),
+                                                                          paste(apply(rv_gxe$TDStab$static,1,paste,collapse="\t"),collapse = "\n"),
                                                                           sep="\n"))#, shiny::icon("clipboard"))
         })
       })
       observe({
-        req(nrow(rv$TDStab$wricke)>0)
+        req(nrow(rv_gxe$TDStab$wricke)>0)
         output$copy_STABwricke_table <- renderUI({
-          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv$TDStab$wricke),collapse="\t"),
-                                                                          paste(apply(rv$TDStab$wricke,1,paste,collapse="\t"),collapse = "\n"),
+          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv_gxe$TDStab$wricke),collapse="\t"),
+                                                                          paste(apply(rv_gxe$TDStab$wricke,1,paste,collapse="\t"),collapse = "\n"),
                                                                           sep="\n"))#, shiny::icon("clipboard"))
         })
       })
@@ -1645,7 +1648,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           content = function(file) {
             rmarkdown::render(
               input="reports/GxE_MM.Rmd", output_file = file,
-              params = list(data=rv$TD, trait=input$picker_trait, env_struct=input$picker_gxe_mm_env_struct)
+              params = list(data=rv_gxe$TD, trait=input$picker_trait, env_struct=input$picker_gxe_mm_env_struct)
             )
           }
         )
@@ -1657,7 +1660,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         content = function(file) {
           rmarkdown::render(
             input="reports/GxE_FW.Rmd", output_file = file,
-            params = list(data=rv$TD, trait=input$picker_trait, colorby=input$FW_picker_color_by)
+            params = list(data=rv_gxe$TD, trait=input$picker_trait, colorby=input$FW_picker_color_by)
           )
         }
       )
@@ -1667,7 +1670,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           paste("GxE_GGE-", Sys.Date(), ".html", sep="")
         },
         content = function(file) {
-          if (is.null(rv$TD.metangge)){
+          if (is.null(rv_gxe$TD.metangge)){
             showNotification("Please Run analysis once first", type = "warning", duration = notification_duration)
           } else {
             rmarkdown::render(
@@ -1682,7 +1685,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           paste("GxE_AMMI-", Sys.Date(), ".html", sep="")
         },
         content = function(file) {
-          #if (is.null(rv$TDAMMI)){
+          #if (is.null(rv_gxe$TDAMMI)){
           #  showNotification("Please Run analysis once first", type = "warning", duration = notification_duration)
           #} else {
             rmarkdown::render(

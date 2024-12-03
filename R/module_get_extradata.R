@@ -55,7 +55,7 @@ mod_get_extradata_server <- function(id, rv){
             " ~ observationVariableName"
           )
 
-          data_plot <- dcast(
+          extradata <- dcast(
             data = data_tmp[!is.na(observationVariableName)],#[studyDbId %in% input$studies],
             formula = formul,
             value.var = "observationValue"
@@ -69,7 +69,7 @@ mod_get_extradata_server <- function(id, rv){
                                            value.var = "environmentParameters.value")
             environmentParameters[,studyDbId:=as.numeric(studyDbId)]
             env_cols <- unique(rv$study_metadata[, .(cols = environmentParameters.parameterName, type = NA, source = "environment", visible = T)])
-            data_plot <- merge(data_plot, environmentParameters, by = "studyDbId")
+            extradata <- merge(extradata, environmentParameters, by = "studyDbId")
           }else{
             environmentParameters <- unique(rv$study_metadata[,studyDbId])
             showNotification("No environment parameters in study metadata", type = "warning", duration = notification_duration)
@@ -81,7 +81,7 @@ mod_get_extradata_server <- function(id, rv){
           column_datasource[grepl("germplasm", cols), source := "germplasm"]
           column_datasource[cols == "germplasmDbId", visible := F]  #used in custom_input_genotype_groups
           ## add germplasm info
-          germplasms <- data_plot[,unique(germplasmDbId)]
+          germplasms <- extradata[,unique(germplasmDbId)]
           germplasm_cols <- NULL
           withProgress(message = "POST brapi/v2/search/attributevalues/", value = 0, {
             # get study_metadata
@@ -144,8 +144,8 @@ mod_get_extradata_server <- function(id, rv){
             req("attributeName" %in% names(germplasm_data))
             germplasm_data_2 <- dcast(germplasm_data, "germplasmDbId ~ attributeName", value.var = "value")
             if(!any(duplicated(germplasm_data_2))){
-              data_plot <- merge.data.table(
-                data_plot,
+              extradata <- merge.data.table(
+                extradata,
                 germplasm_data_2,
                 by = "germplasmDbId")
             }
@@ -157,8 +157,8 @@ mod_get_extradata_server <- function(id, rv){
           # for columns that are not typed (environmentParameters for example) assign type manually
           # check if the variable can be safely converted to num and then convert. Assign type "Text" otherwise
           nothing <- lapply(column_datasource[is.na(type), cols], function(col){
-            if(all(check.numeric(data_plot[,eval(as.name(col))]))){
-              data_plot[,eval(col) := as.numeric(eval(as.name(col)))]
+            if(all(check.numeric(extradata[,eval(as.name(col))]))){
+              extradata[,eval(col) := as.numeric(eval(as.name(col)))]
               column_datasource[cols == col, type := "Numerical"]
             }else{
               column_datasource[cols == col, type := "Text"]
@@ -168,11 +168,11 @@ mod_get_extradata_server <- function(id, rv){
           ## force numerical variables to be numerical
           # (it is not the case for environmentParameters)
           nothing <- lapply(column_datasource[type=="Numerical", cols], function(col){
-            data_plot[,eval(col) := as.numeric(eval(as.name(col)))]
+            extradata[,eval(col) := as.numeric(eval(as.name(col)))]
           })
           
           rv$environmentParameters <- environmentParameters
-          rv$data_plot <- data_plot
+          rv$extradata <- extradata
 
           rv$column_datasource <- column_datasource
           #rv$ontology_variables <- ontology_variables

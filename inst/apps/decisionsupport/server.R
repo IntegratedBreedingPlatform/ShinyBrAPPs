@@ -1,3 +1,4 @@
+#' @import data.table
 server <- function(input, output, session){
   rv <- reactiveValues(
     con = NULL,                 # brapi connection information
@@ -28,7 +29,7 @@ server <- function(input, output, session){
     ), fill = T, use.names = T)
 
     ## update selectors (shape, colour)
-    data_plot <- copy(rv$data_plot) # to avoid issues related to assignment by reference
+    data_plot <- copy(rv$extradata) # to avoid issues related to assignment by reference
     data_plot[germplasmDbId %in% rv$selection[,unlist(germplasmDbIds)], eval(input$modal_create_group_text_input_label) := paste0('In "', input$modal_create_group_text_input_label,'"')]
     data_plot[!(germplasmDbId %in% rv$selection[,unlist(germplasmDbIds)]), eval(input$modal_create_group_text_input_label) := paste0('Not in "', input$modal_create_group_text_input_label,'"')]
     rv$column_datasource <- rbindlist(
@@ -40,8 +41,7 @@ server <- function(input, output, session){
     )
 
     rv$new_group_created <- T #to avoid environments selection reset
-    rv$data_plot <- data_plot
-
+    rv$extradata <- data_plot
 
     rv$selection <- data.table()
 

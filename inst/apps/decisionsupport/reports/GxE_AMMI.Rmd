@@ -12,13 +12,13 @@ library(metan)
 
 ## Studies:
 ```{r}
-knitr::kable(unique(data.table(rbindlist(rv$TD))[,.(trial,locationName,studyDbId,studyName)]))
+knitr::kable(unique(data.table(rbindlist(rv_gxe$TD))[,.(trial,locationName,studyDbId,studyName)]))
 ```
 
 ## Trait: `r input$picker_trait`
 ## Analysis output
 ```{r, echo=FALSE}
-        TDAMMI <- tryCatch(gxeAmmi(TD = rv$TD,
+        TDAMMI <- tryCatch(gxeAmmi(TD = rv_gxe$TD,
                                       trait = input$picker_trait,
                                       nPC = switch((input$AMMI_nPC=="Auto")+1,  as.numeric(input$AMMI_nPC,NULL)),
                                       byYear = input$AMMI_byYear,
