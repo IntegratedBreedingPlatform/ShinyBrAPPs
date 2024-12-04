@@ -802,7 +802,7 @@ mod_model_server <- function(id, rv){
             scrollCollapse = T,
             dom = 't',
             rowsGroup = as.list(c(0))
-          )),columns=c("Heritability", "CV", "Wald p.value"), digits=2)
+          )),columns=names(which(unlist(lapply(metrics,is.numeric))==TRUE)), digits=2)
         path <- "www/js/datatables-rowsgroup/"
         dep <- htmltools::htmlDependency(
           "RowsGroup", "2.0.0",
