@@ -181,7 +181,7 @@ get_env_data <- function(con = NULL,
       study_obs[,study_name_abbrev_app := stu_name_abbrev_app]
     }
   })
-  return(study_obs)
+  return(unique(study_obs))
 }
 
 #' @export
