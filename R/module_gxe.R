@@ -468,7 +468,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           rv$data_gxe <- rv$data_plot
         }
         #attempt to identify variables that are redundant with studyDbId to use as choices for picker_env_variable
-        datagef <- lapply(rv$data_gxe, function(a) as.factor(a))
+        datagef <- lapply(rv$data_gxe[,.SD, .SDcols = c("studyDbId",rv$column_datasource[source=="environment", cols])], function(a) as.factor(a))
         env_vars <- names(which(unlist(lapply(datagef, function(a) length(levels(as.factor(paste(a, datagef$studyDbId))))==length(levels(datagef$studyDbId)) & length(levels(as.factor(paste(a, datagef$studyDbId))))==length(levels(a))))==TRUE))
         if (!is.null(input$picker_env_variable)){
           updatePickerInput(
@@ -1451,7 +1451,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             }
           }
           if (input$GGE_colorGenoBy!="Nothing"){
-            browser() 
+            #browser() 
           }
           print(gg)
           
