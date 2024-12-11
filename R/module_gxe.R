@@ -63,13 +63,13 @@ mod_gxe_ui <- function(id){
               plotOutput(ns("TD_boxplot"))
             ),
           bslib::layout_columns(
-            bslib::card(full_screen = FALSE,
+            bslib::card(full_screen = FALSE, height = "610px",
                         bslib::card_header("Included genotypes"),
                         DT::dataTableOutput(ns("TD_included_geno")),
                         bslib::card_footer(uiOutput(ns("copy_incgeno_table")))
                         #plotOutput(ns("TD_scatterplots"))
             ),
-            bslib::card(full_screen = FALSE,
+            bslib::card(full_screen = FALSE, height = "610px",
                         bslib::card_header("Excluded genotypes"),
                         DT::dataTableOutput(ns("TD_excluded_geno")),
                         bslib::card_footer(uiOutput(ns("copy_excgeno_table")))
@@ -601,7 +601,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           selected = character(0)
         )
         output$sliderUI_exclude_geno_nb_env <- renderUI({
-          sliderInput(ns("exclude_geno_nb_env"),label = "Exclude genotypes that are present in less than X environments", value = 1, min = 1, max = length(input$picker_env), step = 1 )
+          sliderInput(ns("exclude_geno_nb_env"),label = "Set the minimum number of environments in which each germplasm should be at least present", value = 1, min = 1, max = length(input$picker_env), step = 1 )
         })
       })
       
@@ -689,7 +689,8 @@ mod_gxe_server <- function(id, rv, parent_session){
           genot_to_excl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype][N<input$exclude_geno_nb_env]
           data2TD <- data2TD[!genotype%in%genot_to_excl$genotype]
           genot_incl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype]
-          output$TD_included_geno <- DT::renderDataTable(genot_incl, rownames= FALSE)
+          output$TD_included_geno <- DT::renderDataTable(datatable(genot_incl,
+                                                                   options = list(dom="lfi<t>pr")), rownames= FALSE)
           output$copy_incgeno_table <- renderUI({
             rclipboard::rclipButton("clipbtnincg_table", "Copy table", paste(paste(colnames(genot_incl),collapse="\t"),
                                                                             paste(apply(genot_incl,1,paste,collapse="\t"),collapse = "\n"),
@@ -699,7 +700,8 @@ mod_gxe_server <- function(id, rv, parent_session){
           #if (exists("genot_to_excl")){
             if (nrow(genot_to_excl)>1){
               #showNotification(paste0("Excluding ", nrow(genot_to_excl)," genotypes"), type = "message")
-              output$TD_excluded_geno <- DT::renderDataTable(data.table(genot_to_excl), rownames= FALSE)
+              output$TD_excluded_geno <- DT::renderDataTable(datatable(genot_to_excl,
+                                                                       options = list(dom="lfi<t>pr")), rownames= FALSE)
               output$copy_excgeno_table <- renderUI({
                 rclipboard::rclipButton("clipbtnincg_table", "Copy table", paste(paste(colnames(genot_to_excl),collapse="\t"),
                                                                                  paste(apply(genot_to_excl,1,paste,collapse="\t"),collapse = "\n"),
