@@ -147,7 +147,7 @@ mod_get_extradata_server <- function(id, rv){
               extradata <- merge.data.table(
                 extradata,
                 germplasm_data_2,
-                by = "germplasmDbId")
+                by = "germplasmDbId", all.x=TRUE)
             }
             if (!is.null(germplasm_cols)) {
               column_datasource <- rbindlist(list(column_datasource, germplasm_cols), use.names = T, fill = T)
