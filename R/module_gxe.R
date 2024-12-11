@@ -63,13 +63,13 @@ mod_gxe_ui <- function(id){
               plotOutput(ns("TD_boxplot"))
             ),
           bslib::layout_columns(
-            bslib::card(full_screen = FALSE, height = "610px",
+            bslib::card(full_screen = FALSE, height = "650px",
                         bslib::card_header("Included genotypes"),
                         DT::dataTableOutput(ns("TD_included_geno")),
                         bslib::card_footer(uiOutput(ns("copy_incgeno_table")))
                         #plotOutput(ns("TD_scatterplots"))
             ),
-            bslib::card(full_screen = FALSE, height = "610px",
+            bslib::card(full_screen = FALSE, height = "650px",
                         bslib::card_header("Excluded genotypes"),
                         DT::dataTableOutput(ns("TD_excluded_geno")),
                         bslib::card_footer(uiOutput(ns("copy_excgeno_table")))
@@ -690,7 +690,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           data2TD <- data2TD[!genotype%in%genot_to_excl$genotype]
           genot_incl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype]
           output$TD_included_geno <- DT::renderDataTable(datatable(genot_incl,
-                                                                   options = list(dom="lfi<t>pr")), rownames= FALSE)
+                                                                   options = list(dom="if<t>lpr")), rownames= FALSE)
           output$copy_incgeno_table <- renderUI({
             rclipboard::rclipButton("clipbtnincg_table", "Copy table", paste(paste(colnames(genot_incl),collapse="\t"),
                                                                             paste(apply(genot_incl,1,paste,collapse="\t"),collapse = "\n"),
@@ -701,7 +701,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             if (nrow(genot_to_excl)>1){
               #showNotification(paste0("Excluding ", nrow(genot_to_excl)," genotypes"), type = "message")
               output$TD_excluded_geno <- DT::renderDataTable(datatable(genot_to_excl,
-                                                                       options = list(dom="lfi<t>pr")), rownames= FALSE)
+                                                                       options = list(dom="if<t>lpr")), rownames= FALSE)
               output$copy_excgeno_table <- renderUI({
                 rclipboard::rclipButton("clipbtnincg_table", "Copy table", paste(paste(colnames(genot_to_excl),collapse="\t"),
                                                                                  paste(apply(genot_to_excl,1,paste,collapse="\t"),collapse = "\n"),
