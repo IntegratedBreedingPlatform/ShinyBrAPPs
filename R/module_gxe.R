@@ -753,7 +753,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             }
           }
         }        
-        browser()
+
         rv_gxe$TD <- statgenSTA::createTD(data = data2TD[studyDbId%in%input$picker_env],
                                       genotype = "genotype",
                                       trial = input$picker_env_variable)
@@ -958,134 +958,133 @@ mod_gxe_server <- function(id, rv, parent_session){
       })
       ### FW plot ####
       #### renderPlot observer ####
-      observe({
+
+      output$FW_plot <- renderPlot({
         req(rv_gxe$TDFW)
-          output$FW_plot <- renderPlot({
-            TDFWplot <- rv_gxe$TDFWplot
+        TDFWplot <- rv_gxe$TDFWplot
+        #browser()
+        if (is.null(input$FW_picker_color_by)){
+            p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+        } else {
+          if (input$FW_picker_color_by=="sensitivity clusters"){
             #browser()
-            if (is.null(input$FW_picker_color_by)){
-                p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
-            } else {
-              if (input$FW_picker_color_by=="sensitivity clusters"){
-                #browser()
-                p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
-                if (input$FW_sens_clust_select_buttons!="none" & input$FW_picker_plot_type=="line"){
-                  #browser()
-                  stacolors <- getOption("statgen.genoColors")
-                  names(stacolors)<-1:length(stacolors)
-                  p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
-                    ggnewscale::new_scale_color() + 
-                    ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$sensclust[sensitivity_cluster==input$FW_sens_clust_select_buttons, Genotype],], aes(y = fitted, color=sensitivity_cluster), size=1) + scale_color_manual(values = stacolors)
-                  
-                }
-                
-                if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
-                  rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
-                  #browser()
-                  p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
-                      ggnewscale::new_scale_color() + 
-                      ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
-                      geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3)
-                      if (input$FW_display_raw_data){
-                        p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv_gxe$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
-                      }
+            p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
+            if (!is.null(input$FW_sens_clust_select_buttons) && input$FW_sens_clust_select_buttons!="none" & input$FW_picker_plot_type=="line"){
+              #browser()
+              stacolors <- getOption("statgen.genoColors")
+              names(stacolors)<-1:length(stacolors)
+              p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
+                ggnewscale::new_scale_color() + 
+                ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$sensclust[sensitivity_cluster==input$FW_sens_clust_select_buttons, Genotype],], aes(y = fitted, color=sensitivity_cluster), size=1) + scale_color_manual(values = stacolors)
+              
+            }
+            
+            if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
+              rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
+              #browser()
+              p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
+                  ggnewscale::new_scale_color() + 
+                  ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                  geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3)
+                  if (input$FW_display_raw_data){
+                    p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv_gxe$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
                   }
+              }
+          } else {
+            if (input$FW_picker_color_by=="Nothing"){
+              if (input$FW_picker_plot_type=="trellis"){
+                p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=input$FW_trellis_genot_select) 
               } else {
-                if (input$FW_picker_color_by=="Nothing"){
-                  if (input$FW_picker_plot_type=="trellis"){
-                    p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=input$FW_trellis_genot_select) 
-                  } else {
-                    
-                    p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
-                  }
-                  if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
-                    #browser()
-                    rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
-                    p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
-                        ggnewscale::new_scale_color() + 
-                        ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
-                        geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3) + theme(legend.position = "right")
-                        if (input$FW_display_raw_data){
-                          p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv_gxe$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
-                        }
-                  }
-                  
-                } else {
-                  if (!input$FW_picker_color_by%in%colnames(TDFWplot$TD)){
-                    TDFWplot$TD <- rv_gxe$TD
-                  }
-                  p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
-                  if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
-                    rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
-                    p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
-                        ggnewscale::new_scale_color() + 
-                        ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
-                        geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3)
-                        if (input$FW_display_raw_data){
-                          p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv_gxe$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
-                        }
-                    
-                  }
-                  
-                }
+                
+                p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
               }
-            }
-            #Following is required because statgenGxE:::plot.FW return a list of
-            #three ggplots in case of plotType="scatter"
-            #need to restore legend on first plot and capture it
-            #and to grid.arrange the 3 plots
-            if (input$FW_picker_plot_type=="scatter"){
-              if (input$FW_picker_color_by!="Nothing") {
-                p1Gtable <- ggplot2::ggplot_gtable(ggplot2::ggplot_build(p$p1 + ggplot2::theme(legend.position = "right")))
-                legendPos <- sapply(X = p1Gtable$grobs, FUN = `[[`, 
-                                    "name") == "guide-box"
-                legend <- p1Gtable$grobs[[which(legendPos)]]
+              if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
+                #browser()
+                rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
+                p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
+                    ggnewscale::new_scale_color() + 
+                    ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                    geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3) + theme(legend.position = "right")
+                    if (input$FW_display_raw_data){
+                      p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv_gxe$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                    }
               }
-              else {
-                legend <- NULL
-              }
-              pEmpty <- ggplot2::ggplot() + ggplot2::theme(panel.background = ggplot2::element_blank())
-              p1Gr <- ggplot2::ggplotGrob(p$p1)
-              p2Gr <- ggplot2::ggplotGrob(p$p2)
-              p3Gr <- ggplot2::ggplotGrob(p$p3)
-              pEmpty <- ggplot2::ggplotGrob(pEmpty)
-              c1 <- gridExtra::gtable_rbind(p1Gr, p2Gr)
-              c2 <- gridExtra::gtable_rbind(pEmpty, p3Gr)
-              tot <- gridExtra::gtable_cbind(c1, c2)
-                p <- gridExtra::grid.arrange(tot, right = legend, 
-                                             top = paste("Finlay & Wilkinson analysis for", input$picker_trait))
-            }
-            #if (!is.null(input$FWplot_click)){
-            #  print("clickpasnull")
-            #  click=input$FWplot_click
-            #  #browser()
-            #  dist=sqrt((click$x-p$data$EnvMean)^2+(click$y-p$data$fitted)^2)
-            #  p + geom_text(data = p$data[which.min(dist),], aes(x=EnvMean,y=fitted,label = genotype, size = 12))
-            #} else {
-            #  print("clicknull")
-            if (input$FW_picker_plot_type=="line" & !input$FW_coord_equal){
-              p + coord_cartesian()
+              
             } else {
-              p
+              if (!input$FW_picker_color_by%in%colnames(TDFWplot$TD)){
+                TDFWplot$TD <- rv_gxe$TD
+              }
+              p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
+              if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
+                rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
+                p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
+                    ggnewscale::new_scale_color() + 
+                    ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
+                    geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3)
+                    if (input$FW_display_raw_data){
+                      p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv_gxe$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                    }
+                
+              }
+              
             }
-            #}
-          })
+          }
+        }
+        #Following is required because statgenGxE:::plot.FW return a list of
+        #three ggplots in case of plotType="scatter"
+        #need to restore legend on first plot and capture it
+        #and to grid.arrange the 3 plots
+        if (input$FW_picker_plot_type=="scatter"){
+          if (input$FW_picker_color_by!="Nothing") {
+            p1Gtable <- ggplot2::ggplot_gtable(ggplot2::ggplot_build(p$p1 + ggplot2::theme(legend.position = "right")))
+            legendPos <- sapply(X = p1Gtable$grobs, FUN = `[[`, 
+                                "name") == "guide-box"
+            legend <- p1Gtable$grobs[[which(legendPos)]]
+          }
+          else {
+            legend <- NULL
+          }
+          pEmpty <- ggplot2::ggplot() + ggplot2::theme(panel.background = ggplot2::element_blank())
+          p1Gr <- ggplot2::ggplotGrob(p$p1)
+          p2Gr <- ggplot2::ggplotGrob(p$p2)
+          p3Gr <- ggplot2::ggplotGrob(p$p3)
+          pEmpty <- ggplot2::ggplotGrob(pEmpty)
+          c1 <- gridExtra::gtable_rbind(p1Gr, p2Gr)
+          c2 <- gridExtra::gtable_rbind(pEmpty, p3Gr)
+          tot <- gridExtra::gtable_cbind(c1, c2)
+            p <- gridExtra::grid.arrange(tot, right = legend, 
+                                         top = paste("Finlay & Wilkinson analysis for", input$picker_trait))
+        }
+        #if (!is.null(input$FWplot_click)){
+        #  print("clickpasnull")
+        #  click=input$FWplot_click
+        #  #browser()
+        #  dist=sqrt((click$x-p$data$EnvMean)^2+(click$y-p$data$fitted)^2)
+        #  p + geom_text(data = p$data[which.min(dist),], aes(x=EnvMean,y=fitted,label = genotype, size = 12))
+        #} else {
+        #  print("clicknull")
+        if (input$FW_picker_plot_type=="line" & !input$FW_coord_equal){
+          p + coord_cartesian()
+        } else {
+          p
+        }
+        #}
       })
       
-      observe({
-        output$FWhover_vinfo <- renderText({
-          if(!is.null(input$FWplot_hover)) {
-            #browser()
-            F <- as.data.table(rv_gxe$TDFWplot$fittedGeno)
-            E <- as.data.table(rv_gxe$TDFWplot$envEffs)
-            EF <- E[F, on=.(Trial=trial)]
-            hover=input$FWplot_hover
-            dist=sqrt((hover$x-EF$EnvMean)^2+(hover$y-EF$fittedValue)^2)
-            prox <- max(c(EF$EnvMean,EF$fittedValue))/30
-            genot <- as.character(EF$genotype)[which.min(dist)]
-            if(min(dist) < prox) {genot}
-          }
-        })
+ 
+      output$FWhover_vinfo <- renderText({
+        if(!is.null(input$FWplot_hover)) {
+          #browser()
+          F <- as.data.table(rv_gxe$TDFWplot$fittedGeno)
+          E <- as.data.table(rv_gxe$TDFWplot$envEffs)
+          EF <- E[F, on=.(Trial=trial)]
+          hover=input$FWplot_hover
+          dist=sqrt((hover$x-EF$EnvMean)^2+(hover$y-EF$fittedValue)^2)
+          prox <- max(c(EF$EnvMean,EF$fittedValue))/30
+          genot <- as.character(EF$genotype)[which.min(dist)]
+          if(min(dist) < prox) {genot}
+        }
+      })
         # output$FWhover_info <- renderText({
         #   if(!is.null(input$FWplot_hover)) {
         #   #browser()
@@ -1113,7 +1112,6 @@ mod_gxe_server <- function(id, rv, parent_session){
         #   }
         #   }
         # })
-      })
       
       #### compute sensitivity_clusters whenever a picker changes ####
       observeEvent(  eventExpr = {
@@ -1124,7 +1122,6 @@ mod_gxe_server <- function(id, rv, parent_session){
         input$FW_picker_cluster_meth
         rv_gxe$TDFW
       }, handlerExpr = {
-        browser()
         req(rv_gxe$TDFW)
         req(input$FW_cluster_sensitivity_nb, input$FW_picker_cluster_on)
         #browser()
@@ -1184,9 +1181,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       
 
       #### Render FW sensclusters DT ####
-      observe({
-        req(rv_gxe$sensclust)
-        browser()
+      observeEvent(rv_gxe$sensclust, {
         dtsc <- dcast(rbindlist(rv_gxe$TD)[,c("genotype","trial",input$picker_trait), with = F],genotype~trial)[rv_gxe$sensclust, on=.(genotype=Genotype)][,-c("SE_GenMean","SE_Sens","MSdeviation")]
         formatcols <- colnames(dtsc)[-which(colnames(dtsc)%in%c("genotype","sensitivity_cluster", "Rank"))]
         if (any(colnames(dtsc)%in%"sensitivity_cluster")){
@@ -1329,139 +1324,138 @@ mod_gxe_server <- function(id, rv, parent_session){
           choices = rv_gxe$TDGGEmetan[[1]]$labelenv,
           selected = rv_gxe$TDGGEmetan[[1]]$labelenv
         )
-        
-        
-        
-        output$GGE_text_output <- renderPrint({
-          if ("AMMI"%in%class(rv_gxe$TDGGE)){
-            summary(rv_gxe$TDGGE)
-          } else {
-            rv_gxe$TDGGE
-          }
-        })
       })
+      
+      output$GGE_text_output <- renderPrint({
+        req(rv_gxe$TDGGE)
+        if ("AMMI"%in%class(rv_gxe$TDGGE)){
+          summary(rv_gxe$TDGGE)
+        } else {
+          rv_gxe$TDGGE
+        }
+      })
+      
       ### GGE plot ####
-      observe({
+
+      output$GGE_plot <- renderPlot({
         req(rv_gxe$TDGGEmetan)
+        #output$FW_plot <- renderPlotly({
         #browser()
-        output$GGE_plot <- renderPlot({
-          #output$FW_plot <- renderPlotly({
-          #browser()
-          TDGGEplot <- rv_gxe$TDGGEmetan
-          gg <- NULL
-          #browser()
-          if (input$GGE_picker_plot_type==5){
-            gg <- metan:::plot.gge(TDGGEplot,
-                             type = input$GGE_picker_plot_type,
-                             sel_env = input$GGE_picker_env_select,
-                             size.text.gen = input$GGE_plot_size.text.gen,
-                             repulsion = input$GGE_plot_repulsion,
-                             max_overlaps = input$GGE_plot_max_overlaps,
-                             size.shape = input$GGE_plot_size.shape,
-                             size.shape.win = input$GGE_plot_size.shape.win,
-                             size.stroke = input$GGE_plot_size.stroke,
-                             col.alpha = input$GGE_plot_col.alpha,
-                             col.alpha.circle = input$GGE_plot_col.alpha.circle,
-                             size.text.env = input$GGE_plot_size.text.env,
-                             size.text.lab = input$GGE_plot_size.text.lab,
-                             size.text.win = input$GGE_plot_size.text.win,
-                             size.line = input$GGE_plot_size.line,
-                             axis_expand = input$GGE_plot_axis_expand,
-                             col.stroke = input$GGE_plot_col.stroke,
-                             col.gen = input$GGE_plot_col.gen,
-                             col.env = input$GGE_plot_col.env,
-                             col.line = input$GGE_plot_col.line,
-                             col.circle = input$GGE_plot_col.circle,
-                             plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
-                                                                                 plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
-            )            
-            
-          } else if (input$GGE_picker_plot_type == 7) {
-            gg <- metan:::plot.gge(TDGGEplot,
-                             type = input$GGE_picker_plot_type,
-                             sel_gen = input$GGE_picker_gen_select,
-                             size.text.gen = input$GGE_plot_size.text.gen,
-                             repulsion = input$GGE_plot_repulsion,
-                             max_overlaps = input$GGE_plot_max_overlaps,
-                             size.shape = input$GGE_plot_size.shape,
-                             size.shape.win = input$GGE_plot_size.shape.win,
-                             size.stroke = input$GGE_plot_size.stroke,
-                             col.alpha = input$GGE_plot_col.alpha,
-                             col.alpha.circle = input$GGE_plot_col.alpha.circle,
-                             size.text.env = input$GGE_plot_size.text.env,
-                             size.text.lab = input$GGE_plot_size.text.lab,
-                             size.text.win = input$GGE_plot_size.text.win,
-                             size.line = input$GGE_plot_size.line,
-                             axis_expand = input$GGE_plot_axis_expand,
-                             col.stroke = input$GGE_plot_col.stroke,
-                             col.gen = input$GGE_plot_col.gen,
-                             col.env = input$GGE_plot_col.env,
-                             col.line = input$GGE_plot_col.line,
-                             col.circle = input$GGE_plot_col.circle,
-                             plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
-                                                                                 plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
-            )
-          } else if (input$GGE_picker_plot_type == 9) {
-            gg <- metan:::plot.gge(TDGGEplot,
-                             type = input$GGE_picker_plot_type,
-                             sel_gen1 = input$GGE_picker_gen_select,
-                             sel_gen2 = input$GGE_picker_gen2_select,
-                             size.text.gen = input$GGE_plot_size.text.gen,
-                             repulsion = input$GGE_plot_repulsion,
-                             max_overlaps = input$GGE_plot_max_overlaps,
-                             size.shape = input$GGE_plot_size.shape,
-                             size.shape.win = input$GGE_plot_size.shape.win,
-                             size.stroke = input$GGE_plot_size.stroke,
-                             col.alpha = input$GGE_plot_col.alpha,
-                             col.alpha.circle = input$GGE_plot_col.alpha.circle,
-                             size.text.env = input$GGE_plot_size.text.env,
-                             size.text.lab = input$GGE_plot_size.text.lab,
-                             size.text.win = input$GGE_plot_size.text.win,
-                             size.line = input$GGE_plot_size.line,
-                             axis_expand = input$GGE_plot_axis_expand,
-                             col.stroke = input$GGE_plot_col.stroke,
-                             col.gen = input$GGE_plot_col.gen,
-                             col.env = input$GGE_plot_col.env,
-                             col.line = input$GGE_plot_col.line,
-                             col.circle = input$GGE_plot_col.circle,
-                             plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
-                                                                                 plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
-            )
-          } else {
-            gg <- metan:::plot.gge(TDGGEplot,
-                             type = input$GGE_picker_plot_type,
-                             size.text.gen = input$GGE_plot_size.text.gen,
-                             repulsion = input$GGE_plot_repulsion,
-                             max_overlaps = input$GGE_plot_max_overlaps,
-                             size.shape = input$GGE_plot_size.shape,
-                             size.shape.win = input$GGE_plot_size.shape.win,
-                             size.stroke = input$GGE_plot_size.stroke,
-                             col.alpha = input$GGE_plot_col.alpha,
-                             col.alpha.circle = input$GGE_plot_col.alpha.circle,
-                             size.text.env = input$GGE_plot_size.text.env,
-                             size.text.lab = input$GGE_plot_size.text.lab,
-                             size.text.win = input$GGE_plot_size.text.win,
-                             size.line = input$GGE_plot_size.line,
-                             axis_expand = input$GGE_plot_axis_expand,
-                             col.stroke = input$GGE_plot_col.stroke,
-                             col.gen = input$GGE_plot_col.gen,
-                             col.env = input$GGE_plot_col.env,
-                             col.line = input$GGE_plot_col.line,
-                             col.circle = input$GGE_plot_col.circle,
-                             plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
-                                                                                 plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
-            )
-            if (input$GGE_picker_plot_type == 3) {
-              rv_gxe$gp_WwW <- gg$layers[[length(gg$layers)]]$data$label
-            }
-          }
-          if (input$GGE_colorGenoBy!="Nothing"){
-            #browser() 
-          }
-          print(gg)
+        TDGGEplot <- rv_gxe$TDGGEmetan
+        gg <- NULL
+        #browser()
+        if (input$GGE_picker_plot_type==5){
+          gg <- metan:::plot.gge(TDGGEplot,
+                           type = input$GGE_picker_plot_type,
+                           sel_env = input$GGE_picker_env_select,
+                           size.text.gen = input$GGE_plot_size.text.gen,
+                           repulsion = input$GGE_plot_repulsion,
+                           max_overlaps = input$GGE_plot_max_overlaps,
+                           size.shape = input$GGE_plot_size.shape,
+                           size.shape.win = input$GGE_plot_size.shape.win,
+                           size.stroke = input$GGE_plot_size.stroke,
+                           col.alpha = input$GGE_plot_col.alpha,
+                           col.alpha.circle = input$GGE_plot_col.alpha.circle,
+                           size.text.env = input$GGE_plot_size.text.env,
+                           size.text.lab = input$GGE_plot_size.text.lab,
+                           size.text.win = input$GGE_plot_size.text.win,
+                           size.line = input$GGE_plot_size.line,
+                           axis_expand = input$GGE_plot_axis_expand,
+                           col.stroke = input$GGE_plot_col.stroke,
+                           col.gen = input$GGE_plot_col.gen,
+                           col.env = input$GGE_plot_col.env,
+                           col.line = input$GGE_plot_col.line,
+                           col.circle = input$GGE_plot_col.circle,
+                           plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
+                                                                               plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
+          )            
           
-        })
+        } else if (input$GGE_picker_plot_type == 7) {
+          gg <- metan:::plot.gge(TDGGEplot,
+                           type = input$GGE_picker_plot_type,
+                           sel_gen = input$GGE_picker_gen_select,
+                           size.text.gen = input$GGE_plot_size.text.gen,
+                           repulsion = input$GGE_plot_repulsion,
+                           max_overlaps = input$GGE_plot_max_overlaps,
+                           size.shape = input$GGE_plot_size.shape,
+                           size.shape.win = input$GGE_plot_size.shape.win,
+                           size.stroke = input$GGE_plot_size.stroke,
+                           col.alpha = input$GGE_plot_col.alpha,
+                           col.alpha.circle = input$GGE_plot_col.alpha.circle,
+                           size.text.env = input$GGE_plot_size.text.env,
+                           size.text.lab = input$GGE_plot_size.text.lab,
+                           size.text.win = input$GGE_plot_size.text.win,
+                           size.line = input$GGE_plot_size.line,
+                           axis_expand = input$GGE_plot_axis_expand,
+                           col.stroke = input$GGE_plot_col.stroke,
+                           col.gen = input$GGE_plot_col.gen,
+                           col.env = input$GGE_plot_col.env,
+                           col.line = input$GGE_plot_col.line,
+                           col.circle = input$GGE_plot_col.circle,
+                           plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
+                                                                               plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
+          )
+        } else if (input$GGE_picker_plot_type == 9) {
+          gg <- metan:::plot.gge(TDGGEplot,
+                           type = input$GGE_picker_plot_type,
+                           sel_gen1 = input$GGE_picker_gen_select,
+                           sel_gen2 = input$GGE_picker_gen2_select,
+                           size.text.gen = input$GGE_plot_size.text.gen,
+                           repulsion = input$GGE_plot_repulsion,
+                           max_overlaps = input$GGE_plot_max_overlaps,
+                           size.shape = input$GGE_plot_size.shape,
+                           size.shape.win = input$GGE_plot_size.shape.win,
+                           size.stroke = input$GGE_plot_size.stroke,
+                           col.alpha = input$GGE_plot_col.alpha,
+                           col.alpha.circle = input$GGE_plot_col.alpha.circle,
+                           size.text.env = input$GGE_plot_size.text.env,
+                           size.text.lab = input$GGE_plot_size.text.lab,
+                           size.text.win = input$GGE_plot_size.text.win,
+                           size.line = input$GGE_plot_size.line,
+                           axis_expand = input$GGE_plot_axis_expand,
+                           col.stroke = input$GGE_plot_col.stroke,
+                           col.gen = input$GGE_plot_col.gen,
+                           col.env = input$GGE_plot_col.env,
+                           col.line = input$GGE_plot_col.line,
+                           col.circle = input$GGE_plot_col.circle,
+                           plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
+                                                                               plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
+          )
+        } else {
+          gg <- metan:::plot.gge(TDGGEplot,
+                           type = input$GGE_picker_plot_type,
+                           size.text.gen = input$GGE_plot_size.text.gen,
+                           repulsion = input$GGE_plot_repulsion,
+                           max_overlaps = input$GGE_plot_max_overlaps,
+                           size.shape = input$GGE_plot_size.shape,
+                           size.shape.win = input$GGE_plot_size.shape.win,
+                           size.stroke = input$GGE_plot_size.stroke,
+                           col.alpha = input$GGE_plot_col.alpha,
+                           col.alpha.circle = input$GGE_plot_col.alpha.circle,
+                           size.text.env = input$GGE_plot_size.text.env,
+                           size.text.lab = input$GGE_plot_size.text.lab,
+                           size.text.win = input$GGE_plot_size.text.win,
+                           size.line = input$GGE_plot_size.line,
+                           axis_expand = input$GGE_plot_axis_expand,
+                           col.stroke = input$GGE_plot_col.stroke,
+                           col.gen = input$GGE_plot_col.gen,
+                           col.env = input$GGE_plot_col.env,
+                           col.line = input$GGE_plot_col.line,
+                           col.circle = input$GGE_plot_col.circle,
+                           plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
+                                                                               plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
+          )
+          if (input$GGE_picker_plot_type == 3) {
+            rv_gxe$gp_WwW <- gg$layers[[length(gg$layers)]]$data$label
+          }
+        }
+        if (input$GGE_colorGenoBy!="Nothing"){
+          #browser() 
+        }
+        print(gg)
+        
       })
+    
       
       observeEvent(input$create_group_from_wWw,{
         #browser()
@@ -1522,7 +1516,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       })
 
       ### AMMI plot ####
-      observe({
+      observeEvent(rv_gxe$TDAMMI, {
         req(rv_gxe$TDAMMI)
         #browser()
         #Update rotatePC AMMI picker
@@ -1536,124 +1530,130 @@ mod_gxe_server <- function(id, rv, parent_session){
           choices = colnames(rv_gxe$TDAMMI$envScores),
           selected = colnames(rv_gxe$TDAMMI$envScores)[2]
         )
-        
-        output$AMMI_plot <- renderPlot({
-          #browser()
-          if (input$AMMI_plotGeno & input$AMMI_plot_sizeGeno>1 & input$AMMI_plot_repel){
-            p <- statgenGxE:::plot.AMMI(rv_gxe$TDAMMI,
-                                        plotType = input$AMMI_plotType,
-                                        scale = input$AMMI_scale,
-                                        plotGeno = input$AMMI_plotGeno,
-                                        colorGenoBy = switch((input$AMMI_colorGenoBy=="Nothing")+1,  input$AMMI_colorGenoBy, NULL),
-                                        plotConvHull = input$AMMI_plotConvHull,
-                                        colorEnvBy = input$AMMI_colorEnvBy,
-                                        rotatePC = input$AMMI_rotatePC,
-                                        primAxis = input$AMMI_primAxis,
-                                        secAxis = input$AMMI_secAxis,
-                                        envFactor = input$AMMI_plot_envFactor,
-                                        sizeGeno = input$AMMI_plot_sizeGeno,
-                                        sizeEnv = input$AMMI_plot_sizeEnv,
-                                        title = switch((input$AMMI_plot_title=="")+1,  input$AMMI_plot_title, NULL))
-            p$layers[[1]] <- NULL
-            p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]])) +
-              geom_text(data=p$data[p$data$type=="env",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="env",]))) +
-              ggrepel::geom_text_repel(data =p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="geno",]), size=input$AMMI_plot_sizeGeno), max.overlaps = input$AMMI_plot_max_overlaps, force = input$AMMI_plot_repulsion)
-          } else {
-            p <- statgenGxE:::plot.AMMI(rv_gxe$TDAMMI,
-                                        plotType = input$AMMI_plotType,
-                                        scale = input$AMMI_scale,
-                                        plotGeno = input$AMMI_plotGeno,
-                                        colorGenoBy = switch((input$AMMI_colorGenoBy=="Nothing")+1,  input$AMMI_colorGenoBy, NULL),
-                                        plotConvHull = input$AMMI_plotConvHull,
-                                        colorEnvBy = input$AMMI_colorEnvBy,
-                                        rotatePC = input$AMMI_rotatePC,
-                                        primAxis = input$AMMI_primAxis,
-                                        secAxis = input$AMMI_secAxis,
-                                        envFactor = input$AMMI_plot_envFactor,
-                                        sizeGeno = input$AMMI_plot_sizeGeno,
-                                        sizeEnv = input$AMMI_plot_sizeEnv,
-                                        title = switch((input$AMMI_plot_title=="")+1,  input$AMMI_plot_title, NULL))
-          }
-        print(p)
-        })
-      })
-    ## Stability ####
-      ### Run Stab ####
-      observe({
-        req(rv_gxe$TD)
-       # browser()
-        rv_gxe$TDStab <- tryCatch(statgenGxE::gxeStability(TD = rv_gxe$TD,
-                                                        trait = input$picker_trait), error=function(e) e)
-        output$STAB_sup <- renderDataTable({
-            formatRound(datatable(rv_gxe$TDStab$superiority, rownames = FALSE),
-                        columns = c("Mean", "Superiority"), 
-                        digits=3)
-        })
-        output$STAB_sup_plot <- renderPlotly({
-          ggplotly(ggplot(rv_gxe$TDStab$superiority) + 
-                     geom_point(aes(x=Mean, y= sqrt(Superiority), text = Genotype)) +
-                     ylab("Square root of superiority"), source="STAB_sup_plot")
-        })
-        output$STAB_static <- renderDataTable({
-          formatRound(datatable(rv_gxe$TDStab$static, rownames = FALSE),
-                                columns = c("Mean", "Static"), 
-                                digits=3)
-        })
-        output$STAB_static_plot <- renderPlotly({
-          ggplotly(ggplot(rv_gxe$TDStab$static) + 
-                     geom_point(aes(x=Mean, y= sqrt(Static), text = Genotype)) +
-                     ylab("Square root of Static stability"), source="STAB_static_plot")
-        })
-        
-        output$STAB_wricke <- renderDataTable({
-          formatRound(datatable(rv_gxe$TDStab$wricke, rownames = FALSE),
-                                columns = c("Mean", "Wricke"), 
-                                digits=3)
-        })
-        output$STAB_wricke_plot <- renderPlotly({
-          ggplotly(ggplot(rv_gxe$TDStab$wricke) + 
-                     geom_point(aes(x=Mean, y= sqrt(Wricke), text = Genotype)) +
-                     ylab("Square root of Wricke ecovalence"), source="STAB_wricke_plot")
-        })
-        
       })
       
-      observe({
-        req(nrow(rv_gxe$TDStab$superiority)>0)
-        output$copy_STABsup_table <- renderUI({
-          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv_gxe$TDStab$superiority),collapse="\t"),
-                                                                          paste(apply(rv_gxe$TDStab$superiority,1,paste,collapse="\t"),collapse = "\n"),
-                                                                          sep="\n"))#, shiny::icon("clipboard"))
-        })
+      output$AMMI_plot <- renderPlot({
+        req(rv_gxe$TDAMMI)
+        req(input$AMMI_primAxis)
+        #browser()
+        if (input$AMMI_plotGeno & input$AMMI_plot_sizeGeno>1 & input$AMMI_plot_repel){
+          p <- statgenGxE:::plot.AMMI(rv_gxe$TDAMMI,
+                                      plotType = input$AMMI_plotType,
+                                      scale = input$AMMI_scale,
+                                      plotGeno = input$AMMI_plotGeno,
+                                      colorGenoBy = switch((input$AMMI_colorGenoBy=="Nothing")+1,  input$AMMI_colorGenoBy, NULL),
+                                      plotConvHull = input$AMMI_plotConvHull,
+                                      colorEnvBy = input$AMMI_colorEnvBy,
+                                      rotatePC = input$AMMI_rotatePC,
+                                      primAxis = input$AMMI_primAxis,
+                                      secAxis = input$AMMI_secAxis,
+                                      envFactor = input$AMMI_plot_envFactor,
+                                      sizeGeno = input$AMMI_plot_sizeGeno,
+                                      sizeEnv = input$AMMI_plot_sizeEnv,
+                                      title = switch((input$AMMI_plot_title=="")+1,  input$AMMI_plot_title, NULL))
+          p$layers[[1]] <- NULL
+          p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]])) +
+            geom_text(data=p$data[p$data$type=="env",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="env",]))) +
+            ggrepel::geom_text_repel(data =p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="geno",]), size=input$AMMI_plot_sizeGeno), max.overlaps = input$AMMI_plot_max_overlaps, force = input$AMMI_plot_repulsion)
+        } else {
+          p <- statgenGxE:::plot.AMMI(rv_gxe$TDAMMI,
+                                      plotType = input$AMMI_plotType,
+                                      scale = input$AMMI_scale,
+                                      plotGeno = input$AMMI_plotGeno,
+                                      colorGenoBy = switch((input$AMMI_colorGenoBy=="Nothing")+1,  input$AMMI_colorGenoBy, NULL),
+                                      plotConvHull = input$AMMI_plotConvHull,
+                                      colorEnvBy = input$AMMI_colorEnvBy,
+                                      rotatePC = input$AMMI_rotatePC,
+                                      primAxis = input$AMMI_primAxis,
+                                      secAxis = input$AMMI_secAxis,
+                                      envFactor = input$AMMI_plot_envFactor,
+                                      sizeGeno = input$AMMI_plot_sizeGeno,
+                                      sizeEnv = input$AMMI_plot_sizeEnv,
+                                      title = switch((input$AMMI_plot_title=="")+1,  input$AMMI_plot_title, NULL))
+        }
+        print(p)
       })
-      observe({
-        req(nrow(rv_gxe$TDStab$static)>0)
-        output$copy_STABstatic_table <- renderUI({
-          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv_gxe$TDStab$static),collapse="\t"),
-                                                                          paste(apply(rv_gxe$TDStab$static,1,paste,collapse="\t"),collapse = "\n"),
-                                                                          sep="\n"))#, shiny::icon("clipboard"))
-        })
+      
+      ## Stability ####
+      ### Run Stab ####
+      observeEvent(rv_gxe$TD, {
+        rv_gxe$TDStab <- tryCatch(statgenGxE::gxeStability(TD = rv_gxe$TD,
+                                                        trait = input$picker_trait), error=function(e) e)
+        if (nrow(rv_gxe$TDStab$superiority)>0) {
+          output$copy_STABsup_table <- renderUI({
+            rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv_gxe$TDStab$superiority),collapse="\t"),
+                                                                            paste(apply(rv_gxe$TDStab$superiority,1,paste,collapse="\t"),collapse = "\n"),
+                                                                            sep="\n"))#, shiny::icon("clipboard"))
+          })
+        }
+        
+        if (nrow(rv_gxe$TDStab$static)>0) {
+          output$copy_STABstatic_table <- renderUI({
+            rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv_gxe$TDStab$static),collapse="\t"),
+                                                                            paste(apply(rv_gxe$TDStab$static,1,paste,collapse="\t"),collapse = "\n"),
+                                                                            sep="\n"))#, shiny::icon("clipboard"))
+          })
+        }
+        
+        if (nrow(rv_gxe$TDStab$wricke)>0) {
+          output$copy_STABwricke_table <- renderUI({
+            rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv_gxe$TDStab$wricke),collapse="\t"),
+                                                                            paste(apply(rv_gxe$TDStab$wricke,1,paste,collapse="\t"),collapse = "\n"),
+                                                                            sep="\n"))#, shiny::icon("clipboard"))
+          })
+        }
       })
-      observe({
-        req(nrow(rv_gxe$TDStab$wricke)>0)
-        output$copy_STABwricke_table <- renderUI({
-          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv_gxe$TDStab$wricke),collapse="\t"),
-                                                                          paste(apply(rv_gxe$TDStab$wricke,1,paste,collapse="\t"),collapse = "\n"),
-                                                                          sep="\n"))#, shiny::icon("clipboard"))
-        })
+      
+      output$STAB_sup <- renderDataTable({
+        req(rv_gxe$TDStab)
+        formatRound(datatable(rv_gxe$TDStab$superiority, rownames = FALSE),
+                    columns = c("Mean", "Superiority"), 
+                    digits=3)
       })
-    ## MM Report ####
-        output$MM_report <- downloadHandler(
-          filename = function() {
-            paste("GxE_MM-", Sys.Date(), ".html", sep="")
-          },
-          content = function(file) {
-            rmarkdown::render(
-              input="reports/GxE_MM.Rmd", output_file = file,
-              params = list(data=rv_gxe$TD, trait=input$picker_trait, env_struct=input$picker_gxe_mm_env_struct)
-            )
-          }
-        )
+      output$STAB_sup_plot <- renderPlotly({
+        req(rv_gxe$TDStab)
+        ggplotly(ggplot(rv_gxe$TDStab$superiority) + 
+                   geom_point(aes(x=Mean, y= sqrt(Superiority), text = Genotype)) +
+                   ylab("Square root of superiority"), source="STAB_sup_plot")
+      })
+      output$STAB_static <- renderDataTable({
+        req(rv_gxe$TDStab)
+        formatRound(datatable(rv_gxe$TDStab$static, rownames = FALSE),
+                    columns = c("Mean", "Static"), 
+                    digits=3)
+      })
+      output$STAB_static_plot <- renderPlotly({
+        req(rv_gxe$TDStab)
+        ggplotly(ggplot(rv_gxe$TDStab$static) + 
+                   geom_point(aes(x=Mean, y= sqrt(Static), text = Genotype)) +
+                   ylab("Square root of Static stability"), source="STAB_static_plot")
+      })
+      
+      output$STAB_wricke <- renderDataTable({
+        req(rv_gxe$TDStab)
+        formatRound(datatable(rv_gxe$TDStab$wricke, rownames = FALSE),
+                    columns = c("Mean", "Wricke"), 
+                    digits=3)
+      })
+      output$STAB_wricke_plot <- renderPlotly({
+        req(rv_gxe$TDStab)
+        ggplotly(ggplot(rv_gxe$TDStab$wricke) + 
+                   geom_point(aes(x=Mean, y= sqrt(Wricke), text = Genotype)) +
+                   ylab("Square root of Wricke ecovalence"), source="STAB_wricke_plot")
+      })
+      
+      ## MM Report ####
+      output$MM_report <- downloadHandler(
+        filename = function() {
+          paste("GxE_MM-", Sys.Date(), ".html", sep="")
+        },
+        content = function(file) {
+          rmarkdown::render(
+            input="reports/GxE_MM.Rmd", output_file = file,
+            params = list(data=rv_gxe$TD, trait=input$picker_trait, env_struct=input$picker_gxe_mm_env_struct)
+          )
+        }
+      )
       ## FW Report ####
       output$FW_report <- downloadHandler(
         filename = function() {
