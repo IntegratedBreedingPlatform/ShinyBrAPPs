@@ -34,7 +34,7 @@ mod_trialdataxplor_ui <- function(id){
                                         #column(
                                         #4,
                                         #checkboxInput("obs_display_all_germ", "Display all germplasms"),
-                                        div(tableOutput(ns("selected_obs")), style = "font-size: 75%;"))
+                                        div(DT::dataTableOutput(ns("selected_obs")), style = "font-size: 75%;"))
                                       #)
                              ),
                          bslib::nav_panel("Data check report",value="check",
@@ -46,7 +46,7 @@ mod_trialdataxplor_ui <- function(id){
                                       div(tableOutput(ns("var_no_dat")), style = "font-size: 75%;"),
                                       h3("Candidate outliers:"),
                                       sliderInput(ns("outslid"), "coef", min = 1.5, max=5, value = 1.5),
-                                      div(tableOutput(ns("candidat_out")), style = "font-size: 75%;")
+                                      div(DT::dataTableOutput(ns("candidat_out")), style = "font-size: 75%;")
                                       
                              ),
                          bslib::nav_panel("Locations map",value="map",
@@ -68,6 +68,10 @@ mod_trialdataxplor_server <- function(id, rv){
       ns <- session$ns
       rv_dq <- reactiveValues()
       rv_width <- reactiveVal(12)
+      
+      find_outlier <- function(x,c=1.5) {
+        return(x < quantile(x, .25) - c*IQR(x) | x > quantile(x, .75) + c*IQR(x))
+      }
       
       observe({
         req(rv$data)
@@ -181,11 +185,18 @@ mod_trialdataxplor_server <- function(id, rv){
        rv$var_no_dat <- vnd
        output$var_no_dat <- renderTable(vnd)
        cdout0 <- data_dq[observationValue==0, .(reason="value=0",studyDbId, study_label, observationVariableDbId, observationVariableName, observationValue, germplasmName, replicate, blockNumber, plotNumber, entryNumber)]
-       norm_var <- data_dq[scale.dataType=="Numerical" & observationValue!=0][data_dq[!is.na(observationValue),.(sd=sd(observationValue)),.(studyDbId,observationVariableDbId)][sd!=0],on=.(studyDbId,observationVariableDbId)][!is.na(observationValue)][,.(shapiro.test(observationValue)$`p.value`),.(studyDbId,observationVariableDbId, observationVariableName)][V1>=0.05]
-       cdoutbp <-data_dq[data_dq[norm_var, on=.(studyDbId,observationVariableDbId)][,.(observationValue=boxplot.stats(observationValue, coef = input$outslid)$out),.(studyDbId,observationVariableDbId)],on=.(studyDbId,observationVariableDbId, observationValue)][, .(reason="boxplot-outliers",studyDbId, study_label, observationVariableDbId,observationVariableName, observationValue, germplasmName, replicate, blockNumber, plotNumber, entryNumber)]
+       #norm_var <- data_dq[scale.dataType=="Numerical" & observationValue!=0][data_dq[!is.na(observationValue),.(sd=sd(observationValue)),.(studyDbId,observationVariableDbId)][sd!=0],on=.(studyDbId,observationVariableDbId)][!is.na(observationValue)][,.(shapiro.test(observationValue)$`p.value`),.(studyDbId,observationVariableDbId, observationVariableName)][V1>=0.05]
+       #cdoutbp <-data_dq[data_dq[norm_var, on=.(studyDbId,observationVariableDbId)][,.(observationValue=boxplot.stats(observationValue, coef = input$outslid)$out),.(studyDbId,observationVariableDbId)],on=.(studyDbId,observationVariableDbId, observationValue)][, .(reason="boxplot-outliers",studyDbId, study_label, observationVariableDbId,observationVariableName, observationValue, germplasmName, replicate, blockNumber, plotNumber, entryNumber)]
+       cdoutbp <- data_dq[data_dq[,find_outlier(observationValue,input$outslid),.(studyDbId,observationVariableDbId)]$V1==TRUE][, .(reason="boxplot-outliers",studyDbId, study_label, observationVariableDbId,observationVariableName, observationValue, germplasmName, replicate, blockNumber, plotNumber, entryNumber)]
        cdout <- rbind(cdout0,cdoutbp)
+       #cdout[, observationValue:=formatC(observationValue,digits = 2, format="f")]
        rv$candidat_out <- cdout
-       output$candidat_out <- renderTable(cdout, digits=0)
+       
+       output$candidat_out <- DT::renderDataTable({
+         datatable(cdout, options = list(paging = FALSE,searching = FALSE), selection = "none") |>
+           formatRound(columns = "observationValue", digits = 2)
+       })
+         #renderTable(cdout, digits=0)
        data_dq[, facetrows := paste0("V: ",observationVariableName,"\n",
                                          "T: ",trait.name, "\n",
                                          "M: ",method.methodName,"\n",
@@ -240,7 +251,7 @@ mod_trialdataxplor_server <- function(id, rv){
            )) +
              #geom_violin(alpha = 0.2) +
              geom_boxplot(
-               fill = grey(0.8), alpha = 0.2,
+               fill = grey(0.8), outlier.colour = "red",  outlier.size = 5
              ) +
              # geom_point(
              geom_jitter(
@@ -283,7 +294,7 @@ mod_trialdataxplor_server <- function(id, rv){
            g1
          })
      })
-     output$selected_obs <- renderTable({
+     output$selected_obs <- DT::renderDataTable({
        req(rv$data_dq[,.N]>0)
        req(input$observ_boxplot_brush)
        #browser()
@@ -319,7 +330,8 @@ mod_trialdataxplor_server <- function(id, rv){
        #                                                                                   observationTimeStamp,
        #                                                                                   study_label)])[order(germplasmDbId)]
        #}
-       rv$obs_btable
+       datatable(rv$obs_btable, options = list(paging = FALSE,searching = FALSE), selection = "none") |>
+         formatRound(columns = "observationValue", digits = 2)
      }, width='50%')
      observe({
        req(rv$obs_btable[,.N]>0)
