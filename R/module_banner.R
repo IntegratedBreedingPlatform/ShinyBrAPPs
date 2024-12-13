@@ -32,7 +32,7 @@ mod_banner_server <- function(id, rv){
                 #circle = FALSE,
                 #downloadBttn(ns("dwnld1"),label = "As csv", style = "minimal", size="xs"),
                 downloadButton(ns("dwnld1"),label = "As csv file"),
-                downloadButton(ns("dwnld2"),label = "As TD object")
+                if (rv$appname!="BMS trial data explorer") downloadButton(ns("dwnld2"),label = "As TD object")
               ))),
         style = "padding: 2px 0 2px 10px;
                     width:100%;
@@ -51,7 +51,17 @@ mod_banner_server <- function(id, rv){
           paste("data-", Sys.Date(), ".csv", sep="")
         },
         content = function(file) {
-          write.csv(rv$data_plot, file, row.names = F)
+          if (rv$appname=="DSBrAPP"){
+            write.csv(rv$data_plot, file, row.names = F)
+          } else {
+            if (rv$appname=="STABrAPP"){
+              write.csv(rv$data, file, row.names = F)
+            } else {
+              if (rv$appname=="BMS trial data explorer"){
+                write.csv(rv$data_dq[,-c("facetrows", "facetcols"), with=F], file, row.names = F)
+              }
+            }
+          }
         }
       )
       output$dwnld2 <- downloadHandler(
