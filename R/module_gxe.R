@@ -203,7 +203,7 @@ mod_gxe_ui <- function(id){
                                                     bslib::layout_columns(col_widths = c(9,3),
                                                                           bslib::card(full_screen = T, height = "800",
                                                                                       bslib::card_body(
-                                                                                        uiOutput(ns("FW_trellis_genot_select_ui")),
+                                                                                        #uiOutput(ns("FW_trellis_genot_select_ui")),
                                                                                         plotOutput(ns("FW_plot"), hover = hoverOpts(id =ns("FWplot_hover"),delay = 50)),
                                                                                         #htmlOutput(ns("FWhover_info")),
                                                                                         uiOutput(ns("FW_sens_clust_select"))
@@ -985,11 +985,39 @@ mod_gxe_server <- function(id, rv, parent_session){
                       if (input$FW_display_raw_data){
                         p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
                       }
+                }
+                if (input$FW_picker_plot_type=="trellis"){
+                  if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
+                    rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
+                    p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv$selected_genotypes) 
+                  } else {
+                    #p <- plot(TDFWplot, plotType = input$FW_picker_plot_type) 
+                    p <- ggplot() + geom_text(aes(x=1,y=1,label="Please select germplasms to display in the Germplasm list and clusters below"), size=5) + 
+                      theme(axis.line=element_blank(),axis.text.x=element_blank(),
+                            axis.text.y=element_blank(),axis.ticks=element_blank(),
+                            axis.title.x=element_blank(),
+                            axis.title.y=element_blank(),legend.position="none",
+                            panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+                            panel.grid.minor=element_blank(),plot.background=element_blank())
                   }
+                }
+
               } else {
                 if (input$FW_picker_color_by=="Nothing"){
                   if (input$FW_picker_plot_type=="trellis"){
-                    p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=input$FW_trellis_genot_select) 
+                    if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
+                      rv$selected_genotypes <- rv$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
+                      p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv$selected_genotypes) 
+                    } else {
+                      #p <- plot(TDFWplot, plotType = input$FW_picker_plot_type) 
+                      p <- ggplot() + geom_text(aes(x=1,y=1,label="Please select germplasms to display in the Germplasm list and clusters below"), size=5) + 
+                        theme(axis.line=element_blank(),axis.text.x=element_blank(),
+                              axis.text.y=element_blank(),axis.ticks=element_blank(),
+                              axis.title.x=element_blank(),
+                              axis.title.y=element_blank(),legend.position="none",
+                              panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+                              panel.grid.minor=element_blank(),plot.background=element_blank())
+                    }
                   } else {
                     
                     p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
@@ -1079,7 +1107,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             dist=sqrt((hover$x-EF$EnvMean)^2+(hover$y-EF$fittedValue)^2)
             prox <- max(c(EF$EnvMean,EF$fittedValue))/30
             genot <- as.character(EF$genotype)[which.min(dist)]
-            if(min(dist) < prox) {genot}
+            if(min(dist) < prox & input$FW_picker_plot_type%in%c("line","scatterFit")) {genot}
           }
         })
         # output$FWhover_info <- renderText({
@@ -1123,14 +1151,14 @@ mod_gxe_server <- function(id, rv, parent_session){
         req(rv$TDFW)
         req(input$FW_cluster_sensitivity_nb, input$FW_picker_cluster_on)
         #browser()
-        if (input$FW_picker_plot_type=="trellis"){
-          output$FW_trellis_genot_select_ui <- renderUI({
-            genots <- as.character(unique(rbindlist(rv$TDFW$TD)$genotype))
-            pickerInput(ns("FW_trellis_genot_select"), label = "Select genotypes", choices = genots, selected = genots[1:round(length(genots)*0.05,0)], multiple = T, options = pickerOptions(liveSearch = TRUE))
-          })
-        } else {
-          output$FW_trellis_genot_select_ui <- renderUI({NULL})
-        }
+        #if (input$FW_picker_plot_type=="trellis"){
+        #  output$FW_trellis_genot_select_ui <- renderUI({
+        #    genots <- as.character(unique(rbindlist(rv$TDFW$TD)$genotype))
+        #    pickerInput(ns("FW_trellis_genot_select"), label = "Select genotypes", choices = genots, selected = genots[1:round(length(genots)*0.05,0)], multiple = T, options = pickerOptions(liveSearch = TRUE))
+        #  })
+        #} else {
+        #  output$FW_trellis_genot_select_ui <- renderUI({NULL})
+        #}
         if (input$FW_picker_plot_type=="line" & input$FW_picker_color_by=="sensitivity clusters"){
           sensclust <- data.table(rv$TDFW$estimates)
           sensclust <- sensclust[!is.na(Sens)]
