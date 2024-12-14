@@ -1215,11 +1215,21 @@ mod_gxe_server <- function(id, rv, parent_session){
         if (any(colnames(dtsc)%in%"sensitivity_cluster")){
           dtsc[,sensitivity_cluster:=as.character(sensitivity_cluster)]
         }
-        output$FW_sens_clusters_DT <- DT::renderDataTable(formatRound(DT::datatable(dtsc, filter = "top"),
-                                                                      columns = formatcols,
-                                                                      digits = 2),
-                                                          rownames= FALSE,
-                                                          selection = 'multiple')
+        if (!is.null(rv$group_sel_germplasms)){
+          #browser()
+          output$FW_sens_clusters_DT <- DT::renderDataTable(dtsc,
+                                                            rownames= FALSE,
+                                                            server = TRUE,
+                                                            selection = list(mode='multiple',
+                                                                             selected=which(unique(rv$data_plot[,.(germplasmDbId,germplasmName)])[dtsc, on=.(germplasmName=genotype)]$germplasmDbId%in%rv$group_sel_germplasms)))
+        } else {
+          output$FW_sens_clusters_DT <- DT::renderDataTable(formatRound(DT::datatable(dtsc, filter = "top"),
+                                                                        columns = formatcols,
+                                                                        digits = 2),
+                                                            rownames= FALSE,
+                                                            selection = 'multiple')
+        }
+
         dtproxy <<- dataTableProxy('FW_sens_clusters_DT')
         if (any(colnames(rv$sensclust)=="sensitivity_cluster")){
           shinyjs::enable("create_groups_from_sensclusters")

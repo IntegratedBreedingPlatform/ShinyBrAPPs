@@ -170,6 +170,10 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
         rv$groups <- rv$groups[!(group_id %in% input$group_sel_input)]
       })      
       
+      observeEvent(input$group_sel_input,{
+        rv$group_sel_germplasms <- unlist(rv$groups[group_id%in%input$group_sel_input, germplasmDbIds])
+      })
+      
       ## Export as list ####
       observeEvent(input$action_groups_export_as_list,{
         showModal(modalDialog(
