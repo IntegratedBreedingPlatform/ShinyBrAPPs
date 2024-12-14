@@ -9,7 +9,12 @@ mod_trialdataxplor_ui <- function(id){
       #use_waiter(),
       #waiter_on_busy(),
       # Sidebar
-      
+      tags$style(
+        HTML(
+          ".nav .nav-item .nav-link { font-size: 20px; }
+        ",
+        )
+      ),
       bslib::page_navbar(title = "", id = ns("tabsetId"), 
                              #tabsetPanel(#title = "", id = "tabsetId",
                          bslib::nav_panel("Data counts",value="counts",
