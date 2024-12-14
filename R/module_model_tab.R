@@ -490,6 +490,7 @@ mod_model_server <- function(id, rv){
         
         ## create TD
         rv_mod$TD <- do.call(what = createTD, args = createTD_args)
+        rv$TD <- rv_mod$TD
         
         rv$fit <- NULL
         

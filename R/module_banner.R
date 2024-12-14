@@ -69,11 +69,23 @@ mod_banner_server <- function(id, rv){
           paste("data-", Sys.Date(), ".Rdata", sep="")
         },
         content = function(file) {
-          if (is.null(rv$TD)){
-            showNotification("You must select a Trait and a Variable to use as Environment Name to form the TD object", type = "error", duration = notification_duration)
+          if (rv$appname=="DSBrAPP"){
+            write.csv(rv$data_plot, file, row.names = F)
+            if (is.null(rv$TD)){
+              showNotification("You must select a Trait and a Variable to use as Environment Name to form the TD object", type = "error", duration = notification_duration)
+            } else {
+              TD <- rv$TD
+              save(TD, file = file)
+            }
           } else {
-            TD <- rv$TD
-            save(TD, file = file)
+            if (rv$appname=="STABrAPP"){
+              if (is.null(rv$TD)){
+                showNotification("Please fit a model first", type = "error", duration = notification_duration)
+              } else {
+                TD <- rv$TD
+                save(TD, file = file)
+              }
+            }
           }
         }
       )
