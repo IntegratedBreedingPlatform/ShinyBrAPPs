@@ -4,8 +4,8 @@ Title: ShinyBrAPPs
 Version: 27.8
 Authors@R: c(
   person("Jean-François", "Rami", email = "rami@cirad.fr", role = c("aut", "ctb", "cre")),
-  person("Alice", "Boizet", email = "alice.boizet@cirad.fr", role = c("aut", "ctb"))
-  person("Mariano", "Crimi", email = "mcrimi@cgiar.org", role = c("aut", "ctb"))
+  person("Alice", "Boizet", email = "alice.boizet@cirad.fr", role = c("aut", "ctb")),
+  person("Mariano", "Crimi", email = "mcrimi@cgiar.org", role = c("aut", "ctb")),
   person("Léo", "Valette", email = "leovalette@posteo.net", role = c("aut"))
   )
 Description: ShinyBrAPPs 
