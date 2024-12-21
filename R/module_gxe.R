@@ -198,13 +198,14 @@ mod_gxe_ui <- function(id){
             #### Accordion results ####
             bslib::accordion(id = ns("FW_accord1"),
                              #actionButton(ns("expand_MM_accord1"),label = "Open all", class = "btn btn-info"),
+                             open = c("FW plot","Germplasm list and clusters"),
 
                              bslib::accordion_panel(title = "FW plot",
                                                     bslib::layout_columns(col_widths = c(9,3),
                                                                           bslib::card(full_screen = T, height = "800",
                                                                                       bslib::card_body(
                                                                                         #uiOutput(ns("FW_trellis_genot_select_ui")),
-                                                                                        plotOutput(ns("FW_plot"), hover = hoverOpts(id =ns("FWplot_hover"),delay = 50)),
+                                                                                        plotOutput(ns("FW_plot"), hover = hoverOpts(id =ns("FWplot_hover"),delay = 50), click = clickOpts(id=ns("FWplot_click")), dblclick = dblclickOpts(id=ns("FWplot_dblclick"))),
                                                                                         #htmlOutput(ns("FWhover_info")),
                                                                                         uiOutput(ns("FW_sens_clust_select"))
                                                                                       ),
@@ -453,6 +454,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       bslib::accordion_panel_close("GGE_adv_settings_acc", values="advs", session = session)
       ## observe data and update Trait picker ####
       rv$selected_genotypes <- NULL
+      rv$FWclicked_genotypes <- NULL
       rv$console <- NULL
       observe({
         req(rv$data_plot)
@@ -510,7 +512,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             selected = character(0)
           )
         }
-        
+        #browser()
         #colorbychoices <- input$picker_germplasm_attr
         #colorbychoices <- c(colorbychoices,rv$column_datasource[source %in% "group"]$cols)
         colorbychoices <- list(Nothing=c("Nothing"))
@@ -958,13 +960,13 @@ mod_gxe_server <- function(id, rv, parent_session){
         req(rv$TDFW)
           output$FW_plot <- renderPlot({
             TDFWplot <- rv$TDFWplot
-            #browser()
             if (is.null(input$FW_picker_color_by)){
                 p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
             } else {
               if (input$FW_picker_color_by=="sensitivity clusters"){
                 #browser()
                 p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
+                req(input$FW_sens_clust_select_buttons)
                 if (input$FW_sens_clust_select_buttons!="none" & input$FW_picker_plot_type=="line"){
                   #browser()
                   stacolors <- getOption("statgen.genoColors")
@@ -1095,7 +1097,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             #}
           })
       })
-      
+      #### Handle hover event ####
       observe({
         output$FWhover_vinfo <- renderText({
           if(!is.null(input$FWplot_hover)) {
@@ -1138,6 +1140,34 @@ mod_gxe_server <- function(id, rv, parent_session){
         #   }
         # })
       })
+      #### Handle click event ####
+      
+      observeEvent(input$FWplot_click,{
+        if(!is.null(input$FWplot_hover)) {
+          #browser()
+          F <- as.data.table(rv$TDFWplot$fittedGeno)
+          E <- as.data.table(rv$TDFWplot$envEffs)
+          EF <- E[F, on=.(Trial=trial)]
+          hover=input$FWplot_hover
+          dist=sqrt((hover$x-EF$EnvMean)^2+(hover$y-EF$fittedValue)^2)
+          prox <- max(c(EF$EnvMean,EF$fittedValue))/30
+          rv$FWclicked_genotypes <- unique(c(rv$FWclicked_genotypes,as.character(EF$genotype)[which.min(dist)]))
+          dtsc <- dcast(rbindlist(rv$TD)[,c("genotype","trial",input$picker_trait), with = FALSE],genotype~trial)[rv$sensclust, on=.(genotype=Genotype)][,-c("SE_GenMean","SE_Sens","MSdeviation")]
+          formatcols <- colnames(dtsc)[-which(colnames(dtsc)%in%c("genotype","sensitivity_cluster", "Rank"))]
+          output$FW_sens_clusters_DT <- DT::renderDataTable(formatRound(DT::datatable(dtsc, filter = "top",
+                                                                                      selection = list(mode="multiple", 
+                                                                                                       selected=which(dtsc$genotype%in%rv$FWclicked_genotypes))),
+                                                                        columns = formatcols,digits = 2),rownames= FALSE, server=TRUE)
+        }
+      })
+      #### Handle dbleclick event ####
+      
+      observeEvent(input$FWplot_dblclick,{
+        rv$FWclicked_genotypes <- NULL
+        selectRows(dtproxy, selected=NULL)
+        
+      })
+      
       
       #### compute sensitivity_clusters whenever a picker changes ####
       observeEvent(  eventExpr = {
@@ -1231,6 +1261,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       })
       
       observeEvent(input$sens_clusters_DT.clearsel,{
+        rv$FWclicked_genotypes <- NULL
         selectRows(dtproxy, selected=NULL)
       })
       
