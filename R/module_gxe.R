@@ -357,16 +357,23 @@ mod_gxe_ui <- function(id){
                              bslib::accordion_panel(title = "AMMI plot",
                                                    bslib::layout_sidebar(
                                                      bslib::card(full_screen = T,height = "800",max_height = "800",
-                                                                 plotOutput(ns("AMMI_plot"))
+                                                                 bslib::card_body(
+                                                                   plotlyOutput(ns("AMMI_plot")) 
+                                                                 ),
+                                                                 bslib::card_footer(
+                                                                   div(style="display: flex;gap: 10px;",
+                                                                       shiny::actionButton(ns("create_groups_from_AMMIsel"), "Create group from selection", icon = icon(NULL), class = "btn btn-info")
+                                                                   )
+                                                                 )
                                                      ),
                                                      sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,
                                                                             bslib::card(full_screen = F,height = "735",max_height = "735",
-                                                                                        sliderInput(ns("AMMI_plot_sizeGeno"), label = "sizeGeno", min = 0, max = 10, value = 0, step = 1),
-                                                                                        materialSwitch(ns("AMMI_plot_repel"), label = "use_ggrepel", value = FALSE, status = "info"),
-                                                                                        sliderInput(ns("AMMI_plot_repulsion"), label="plot_repulsion", value = 1, min=1, max=10, step=0.5),
-                                                                                        sliderInput(ns("AMMI_plot_max_overlaps"), label="plot_max_overlaps", value = 20, min=5, max=50, step=1),
-                                                                                        sliderInput(ns("AMMI_plot_sizeEnv"), label = "sizeEnv", min = 0, max = 10, value = 3, step = 1),
-                                                                                        sliderInput(ns("AMMI_plot_envFactor"), label = "envFactor", min = 0, max = 5, value = 1, step = 0.1),
+                                                                                        sliderInput(ns("AMMI_plot_sizeGeno"), label = "Genotype label size", min = 0, max = 10, value = 1, step = 1),
+                                                                                        #materialSwitch(ns("AMMI_plot_repel"), label = "use_ggrepel", value = FALSE, status = "info"),
+                                                                                        #sliderInput(ns("AMMI_plot_repulsion"), label="plot_repulsion", value = 1, min=1, max=10, step=0.5),
+                                                                                        #sliderInput(ns("AMMI_plot_max_overlaps"), label="plot_max_overlaps", value = 20, min=5, max=50, step=1),
+                                                                                        sliderInput(ns("AMMI_plot_sizeEnv"), label = "Env label size", min = 0, max = 10, value = 3, step = 1),
+                                                                                        sliderInput(ns("AMMI_plot_envFactor"), label = "Env blow up factor", min = 0.1, max = 5, value = 1, step = 0.1),
                                                                                         textInput(ns("AMMI_plot_title"),label = "Title",value = NULL))
                                                                             )
                                                      )
@@ -1593,9 +1600,10 @@ mod_gxe_server <- function(id, rv, parent_session){
           selected = colnames(rv$TDAMMI$envScores)[2]
         )
         
-        output$AMMI_plot <- renderPlot({
+        output$AMMI_plot <- renderPlotly({
+          req(input$AMMI_primAxis, input$AMMI_secAxis)
           #browser()
-          if (input$AMMI_plotGeno & input$AMMI_plot_sizeGeno>1 & input$AMMI_plot_repel){
+          if (input$AMMI_plotGeno & input$AMMI_plot_sizeGeno>=1){
             p <- statgenGxE:::plot.AMMI(rv$TDAMMI,
                                         plotType = input$AMMI_plotType,
                                         scale = input$AMMI_scale,
@@ -1610,10 +1618,20 @@ mod_gxe_server <- function(id, rv, parent_session){
                                         sizeGeno = input$AMMI_plot_sizeGeno,
                                         sizeEnv = input$AMMI_plot_sizeEnv,
                                         title = switch((input$AMMI_plot_title=="")+1,  input$AMMI_plot_title, NULL))
-            p$layers[[1]] <- NULL
-            p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]])) +
-              geom_text(data=p$data[p$data$type=="env",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="env",]))) +
-              ggrepel::geom_text_repel(data =p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="geno",]), size=input$AMMI_plot_sizeGeno), max.overlaps = input$AMMI_plot_max_overlaps, force = input$AMMI_plot_repulsion)
+            #p$layers[[1]] <- NULL
+            if (input$AMMI_plotType=="AMMI2"){
+              p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]]), size=1) #+
+            } else {
+              p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=x, y = y), size=1) #+
+            }
+            #  geom_text(data=p$data[p$data$type=="env",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="env",])))
+            #if (input$AMMI_plot_repel){
+            #  p <- p + ggrepel::geom_text_repel(data =p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="geno",]), size=input$AMMI_plot_sizeGeno), max.overlaps = input$AMMI_plot_max_overlaps, force = input$AMMI_plot_repulsion)
+            #} else {
+            #browser()
+            #  p <- p + geom_text(data =p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="geno",]), size=input$AMMI_plot_sizeGeno), position = position_nudge(y=max(p$data[p$data$type=="geno",][[input$AMMI_secAxis]])/100))
+            #}
+
           } else {
             p <- statgenGxE:::plot.AMMI(rv$TDAMMI,
                                         plotType = input$AMMI_plotType,
@@ -1628,11 +1646,66 @@ mod_gxe_server <- function(id, rv, parent_session){
                                         envFactor = input$AMMI_plot_envFactor,
                                         sizeGeno = input$AMMI_plot_sizeGeno,
                                         sizeEnv = input$AMMI_plot_sizeEnv,
-                                        title = switch((input$AMMI_plot_title=="")+1,  input$AMMI_plot_title, NULL))
+                                        title = switch((input$AMMI_plot_title=="")+1,  input$AMMI_plot_title, NULL),
+                                        output = FALSE)
           }
-        print(p)
+          #browser()
+          shinyjs::disable("create_groups_from_AMMIsel")
+        ggplotly(p,  source = "I")
         })
       })
+      
+      ### Handle group creation in AMMI plot ####
+      observeEvent(event_data("plotly_selected", source = "I"),{
+        req(nrow(event_data("plotly_selected", source = "I"))>0)
+        if (input$AMMI_plotType=="AMMI2"){
+          if (input$AMMI_plot_sizeGeno>=1){
+            if (input$AMMI_plotConvHull){
+              selection <- as.data.table(event_data("plotly_selected", source = "I"))[curveNumber==2, pointNumber+1]
+            } else {
+              selection <- as.data.table(event_data("plotly_selected", source = "I"))[curveNumber==1, pointNumber+1]
+            }
+          } else {
+            selection <- as.data.table(event_data("plotly_selected", source = "I"))[curveNumber==0, pointNumber+1]
+          }
+        } else {
+          if (input$AMMI_plot_sizeGeno>=1){
+              selection <- as.data.table(event_data("plotly_selected", source = "I"))[curveNumber==3, pointNumber+1]
+          } else {
+            selection <- as.data.table(event_data("plotly_selected", source = "I"))[curveNumber==2, pointNumber+1]
+          }
+          
+        }
+          rv$AMMI_plot_selection <- rownames(rv$TDAMMI$genoScores[selection,])
+      })
+      observeEvent(event_data("plotly_deselect", source = "I"),{
+        rv$AMMI_plot_selection <- NULL
+      })                 
+      observe({
+        if(!is.null(rv$AMMI_plot_selection)){
+          shinyjs::enable("create_groups_from_AMMIsel")
+        } else {
+          shinyjs::disable("create_groups_from_AMMIsel")
+        }
+      })
+      observeEvent(input$create_groups_from_AMMIsel,{
+        if(length(rv$AMMI_plot_selection)>0){
+          rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
+                                                               data.table(Genotype=rv$AMMI_plot_selection)),
+                                                  y=unique(rbindlist(rv$TD)),
+                                                  by.x = "Genotype",
+                                                  by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
+          showModal(groupModal(rv=rv, 
+                               parent_session = parent_session, 
+                               modal_title = "Create new group", 
+                               group_description = paste0("Group manually created from selected genotypes in AMMI analysis of ", input$picker_trait, " variable"),
+                               group_prefix =paste0("M_AMMI@",input$picker_trait,".")
+          )
+          )
+        }
+      })
+      
+      
     ## Stability ####
       ### Run Stab ####
       observe({
