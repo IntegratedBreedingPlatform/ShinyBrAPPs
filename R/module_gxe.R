@@ -227,13 +227,13 @@ mod_gxe_ui <- function(id){
                              bslib::accordion_panel(title = "Germplasm list and clusters",
                                                     #bslib::card(DT::dataTableOutput(ns("FW_selected_obs_DT"))),
                                                     bslib::card(
-                                                      bslib::card_body(DT::dataTableOutput(ns("FW_sens_clusters_DT"))),
-                                                      bslib::card_footer(div(style="display: flex;gap: 10px;",
+                                                      bslib::card_header(div(style="display: flex;gap: 10px;",
                                                                              shiny::actionButton(inputId = ns("sens_clusters_DT.clearsel"), label = "Deselect all", icon = icon(NULL), class = "btn btn-info"),
                                                                              shiny::actionButton(ns("create_groups_from_sensclusters"), "Create groups from clusters", icon = icon(NULL), class = "btn btn-info"),
                                                                              shiny::actionButton(ns("create_groups_from_selgeno"),label = "Create group from selected genotypes", icon = icon(NULL), class = "btn btn-info")
-                                                                             )
-                                                                         )
+                                                      )
+                                                      ),
+                                                      bslib::card_body(DT::dataTableOutput(ns("FW_sens_clusters_DT")))
                                                       )
                              ),
                              bslib::accordion_panel(title = "Analysis summary", 
