@@ -1624,7 +1624,11 @@ mod_gxe_server <- function(id, rv, parent_session){
             # data structure is different for AMMI1 and AMMI2 plots
             # hence the distinction between both cases
             if (input$AMMI_plotType=="AMMI2"){
-              p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]]), size=input$AMMI_plot_sizePoint) #+
+              p$layers[[1]] <- NULL
+              p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]]), size=input$AMMI_plot_sizePoint) +
+              geom_text(data=p$data[p$data$type=="env",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="env",]))) +
+              geom_text(data =p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="geno",]), size=input$AMMI_plot_sizeGeno), position = position_nudge(y=input$AMMI_plot_envFactor*max(p$data[p$data$type=="geno",input$AMMI_secAxis])/8))
+              
               if (!is.null(rv$AMMIclicked_genotypes)){
                 clickgeno <- p$data[p$data$type=="geno" & row.names(p$data)%in%rv$AMMIclicked_genotypes,]
                 p <- p + geom_point(data = clickgeno, aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]]), shape = 21, color="red", size=input$AMMI_plot_sizePoint+1)
