@@ -255,7 +255,7 @@ mod_gxe_ui <- function(id){
                 actionBttn(ns("GGE_run"), "Run GGE analysis", block = TRUE),
                 a(href="https://tiagoolivoto.github.io/metan/articles/vignettes_gge.html",icon("fas fa-question-circle"), target="_blank")),
             bslib::accordion(id = ns("GGE_adv_settings_acc"),
-                             bslib::accordion_panel(title = "Advanced settings", value = "advs",
+                             bslib::accordion_panel(title = "Analysis settings", value = "advs",
                                                     pickerInput(ns("GGE_advs_centering"), label = "centering", options = list(container = "body"), choices = c(none=0, global=1, environment=2, double=3), selected = 2),
                                                     pickerInput(ns("GGE_advs_scaling"), label = "scaling", options = list(container = "body"), choices = c(none=0, sd=1), selected = 0),
                                                     pickerInput(ns("GGE_advs_svp"), label = "svp", options = list(container = "body"), choices = c(genotype=1, environment=2, symmetrical=3), selected = 2))),
@@ -333,13 +333,17 @@ mod_gxe_ui <- function(id){
             div(style="display: flex;",
                 actionBttn(ns("AMMI_run"), "Run AMMI analysis", block = TRUE),
                 a(href="https://biometris.github.io/statgenGxE/articles/statgenGxE.html#am",icon("fas fa-question-circle"), target="_blank")),
-            pickerInput(ns("AMMI_nPC"),
-                        label="Number of PC",
-                        choices = c("Auto"), selected = "Auto"),
-            materialSwitch(ns("AMMI_center"), "center", value = TRUE, status = "info"),
-            pickerInput(ns("AMMI_excludeGeno"), label="Exclude genotypes", multiple = T, choices = c(), options = pickerOptions(liveSearch = TRUE)),
-            materialSwitch(ns("AMMI_byYear"), "Run by year", value = FALSE, status = "info"),
-            hr(style = "border-top: 1px solid #000000;"),
+            bslib::accordion(id = ns("AMMI_adv_settings_acc"),
+                             bslib::accordion_panel(title = "Analysis settings", value = "advs",
+                                                    pickerInput(ns("AMMI_nPC"),
+                                                                label="Number of PC",
+                                                                choices = c("Auto"), selected = "Auto"),
+                                                    materialSwitch(ns("AMMI_center"), "center", value = TRUE, status = "info"),
+                                                    pickerInput(ns("AMMI_excludeGeno"), label="Exclude genotypes", multiple = T, choices = c(), options = pickerOptions(liveSearch = TRUE))
+                                                    )
+            ),
+            #materialSwitch(ns("AMMI_byYear"), "Run by year", value = FALSE, status = "info"),
+            #hr(style = "border-top: 1px solid #000000;"),
             pickerInput(ns("AMMI_plotType"), label="Plot type", choices = c("AMMI1", "AMMI2"), selected = "AMMI2"),
             pickerInput(ns("AMMI_primAxis"), label="Primary axis", choices = c()),
             pickerInput(ns("AMMI_secAxis"), label="Second axis", choices = c()),
@@ -371,10 +375,10 @@ mod_gxe_ui <- function(id){
                                                                             bslib::card(full_screen = F,height = "735",max_height = "735",
                                                                                         sliderInput(ns("AMMI_plot_sizeGeno"), label = "Genotype labels size", min = 0, max = 10, value = 1, step = 1),
                                                                                         #materialSwitch(ns("AMMI_plot_repel"), label = "use_ggrepel", value = FALSE, status = "info"),
-                                                                                        sliderInput(ns("AMMI_plot_sizePoint"), label="Points size", value = 1, min=1, max=10, step=1),
+                                                                                        sliderInput(ns("AMMI_plot_sizePoint"), label="Points size", value = 2, min=1, max=10, step=1),
                                                                                         #sliderInput(ns("AMMI_plot_max_overlaps"), label="plot_max_overlaps", value = 20, min=5, max=50, step=1),
                                                                                         sliderInput(ns("AMMI_plot_sizeEnv"), label = "Env labels size", min = 0, max = 10, value = 3, step = 1),
-                                                                                        sliderInput(ns("AMMI_plot_envFactor"), label = "Env blow up factor", min = 0.1, max = 5, value = 1, step = 0.1),
+                                                                                        sliderInput(ns("AMMI_plot_envFactor"), label = "Env blow up factor", min = 0.1, max = 5, value = 0.5, step = 0.1),
                                                                                         textInput(ns("AMMI_plot_title"),label = "Title",value = NULL))
                                                                             )
                                                      )
@@ -460,6 +464,7 @@ mod_gxe_server <- function(id, rv, parent_session){
     function(input, output, session){
       
       bslib::accordion_panel_close("GGE_adv_settings_acc", values="advs", session = session)
+      bslib::accordion_panel_close("AMMI_adv_settings_acc", values="advs", session = session)
       ## observe data and update Trait picker ####
       rv$selected_genotypes <- NULL
       rv$FWclicked_genotypes <- NULL
@@ -1548,16 +1553,16 @@ mod_gxe_server <- function(id, rv, parent_session){
       
       ## AMMI ####
       ### Make sur year exists in TD if byYear is chosen ####
-      observeEvent(input$AMMI_byYear,{
-        if(input$AMMI_byYear & !any(colnames(rbindlist(rv$TD))=="year"))
-          isolate({
-            showNotification("Select an env. detail to use as year in Data preparation Tab", type = "warning", duration = notification_duration)
-            updatePickerInput(
-              session, "AMMI_byYear",
-              selected = FALSE
-            )
-          })
-      })
+      #observeEvent(input$AMMI_byYear,{
+      #  if(input$AMMI_byYear & !any(colnames(rbindlist(rv$TD))=="year"))
+      #    isolate({
+      #      showNotification("Select an env. detail to use as year in Data preparation Tab", type = "warning", duration = notification_duration)
+      #      updatePickerInput(
+      #        session, "AMMI_byYear",
+      #        selected = FALSE
+      #      )
+      #    })
+      #})
       
       ### Run AMMI ####
       observeEvent(input$AMMI_run,{
@@ -1567,7 +1572,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         rv$TDAMMI <- tryCatch(gxeAmmi(TD = rv$TD,
                                       trait = input$picker_trait,
                                       nPC = switch((input$AMMI_nPC=="Auto")+1,  as.numeric(input$AMMI_nPC,NULL)),
-                                      byYear = input$AMMI_byYear,
+                                      byYear = FALSE, #input$AMMI_byYear,
                                       center = input$AMMI_center,
                                       excludeGeno = input$AMMI_excludeGeno,
                                       useWt = input$use_weights), error=function(e) e)
