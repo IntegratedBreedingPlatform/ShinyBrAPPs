@@ -1470,14 +1470,21 @@ mod_gxe_server <- function(id, rv, parent_session){
               rv$gp_WwW <- gg$layers[[length(gg$layers)]]$data$label
             }
           }
-          if (input$GGE_colorGenoBy!="Nothing"){
+          if (input$GGE_colorGenoBy!="Nothing" & input$GGE_picker_plot_type!=2){
             #browser() 
+            geompdat <- as.data.table(gg$data)
+            geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$GGE_colorGenoBy)]), by.x = "label", by.y = "genotype", all = TRUE)
+            
+            gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
+            gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
+            gg <- gg + geom_point(data=geompdat, aes(d1, d2, color=as.factor(.data[[input$GGE_colorGenoBy]]), fill = as.factor(.data[[input$GGE_colorGenoBy]]), shape = type), size = input$GGE_plot_size.shape, 
+                                  stroke = input$GGE_plot_size.stroke, alpha = input$GGE_plot_col.alpha) + scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
           }
           #browser()
           rv$GGEplotdat <- gg$data
           if(length(rv$GGEclicked_genotypes)>0){
             clickgeno <- gg$data[gg$data$type=="genotype" & gg$data$label%in%rv$GGEclicked_genotypes,]
-            gg + ggnewscale::new_scale_color()
+            gg + ggnewscale::new_scale_fill()
             gg <- gg + geom_point(data = clickgeno, aes(x=d1, y = d2), shape = 21, size=input$GGE_plot_size.shape+2, stroke=input$GGE_plot_size.stroke, color="red") 
           }
           gg
