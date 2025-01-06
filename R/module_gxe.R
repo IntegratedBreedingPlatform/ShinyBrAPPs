@@ -399,6 +399,9 @@ mod_gxe_ui <- function(id){
             width = 350,
             pickerInput(ns("STAB_plots_colorby"),"Color Genotypes by", choices = c())),
         bslib::accordion(id = ns("STAB_accordsup"),
+                         open = c("Superiority measure of Lin and Binns",
+                                  "Shukla's stability variance",
+                                  "Wricke's ecovalence"),
                          bslib::accordion_panel(title = "Superiority measure of Lin and Binns",
                                                 bslib::layout_columns(
                                                   bslib::card(
@@ -408,7 +411,12 @@ mod_gxe_ui <- function(id){
                                                     )
                                                   ),
                                                   bslib::card(
-                                                    plotlyOutput(ns("STAB_sup_plot"))                                                  )
+                                                    plotOutput(ns("STAB_sup_plot"),
+                                                               hover = hoverOpts(id =ns("STAB_sup_plot_hover"),delay = 50),
+                                                               click = clickOpts(id=ns("STAB_sup_plot_click")),
+                                                               #brush = brushOpts(id=ns("STAB_sup_plot_brush")),
+                                                               dblclick = dblclickOpts(id=ns("STAB_sup_plot_dblclick")))
+                                                    )
                                                 )
                                                 ),
                          bslib::accordion_panel(title = "Shukla's stability variance",
@@ -420,7 +428,11 @@ mod_gxe_ui <- function(id){
                                                     )
                                                   ),
                                                   bslib::card(
-                                                    plotlyOutput(ns("STAB_static_plot"))
+                                                    plotOutput(ns("STAB_static_plot"),
+                                                               hover = hoverOpts(id =ns("STAB_static_plot_hover"),delay = 50),
+                                                               click = clickOpts(id=ns("STAB_static_plot_click")),
+                                                               #brush = brushOpts(id=ns("STAB_static_plot_brush")),
+                                                               dblclick = dblclickOpts(id=ns("STAB_static_plot_dblclick")))
                                                   )
                                                 )
                          ),
@@ -433,7 +445,11 @@ mod_gxe_ui <- function(id){
                                                     )
                                                   ),
                                                   bslib::card(
-                                                    plotlyOutput(ns("STAB_wricke_plot"))
+                                                    plotOutput(ns("STAB_wricke_plot"),
+                                                               hover = hoverOpts(id =ns("STAB_wricke_plot_hover"),delay = 50),
+                                                               click = clickOpts(id=ns("STAB_wricke_plot_click")),
+                                                               #brush = brushOpts(id=ns("STAB_wricke_plot_brush")),
+                                                               dblclick = dblclickOpts(id=ns("STAB_wricke_plot_dblclick")))
                                                   )
                                                 )
                          )
@@ -1725,44 +1741,194 @@ mod_gxe_server <- function(id, rv, parent_session){
       
     ## Stability ####
       ### Run Stab ####
+      #### Superiority ####
       observe({
         req(rv$TD)
-       # browser()
         rv$TDStab <- tryCatch(statgenGxE::gxeStability(TD = rv$TD,
                                                         trait = input$picker_trait), error=function(e) e)
-        output$STAB_sup <- renderDataTable({
-            formatRound(datatable(rv$TDStab$superiority, rownames = FALSE),
-                        columns = c("Mean", "Superiority"), 
-                        digits=3)
-        })
-        output$STAB_sup_plot <- renderPlotly({
-          ggplotly(ggplot(rv$TDStab$superiority) + 
+      })
+      output$STAB_sup <- renderDataTable({
+        formatRound(datatable(rv$TDStab$superiority[order(!rv$TDStab$superiority$Genotype%in%rv$STSclicked_genotypes),], rownames = FALSE,
+                              selection = list(mode="multiple", 
+                                               selected=which(rv$TDStab$superiority$Genotype[order(!rv$TDStab$superiority$Genotype%in%rv$STSclicked_genotypes)]%in%rv$STSclicked_genotypes))),
+                    columns = c("Mean", "Superiority"), 
+                    digits=3)
+      })
+      output$STAB_sup_plot <- renderPlot({
+          gg <- ggplot(rv$TDStab$superiority) + 
                      geom_point(aes(x=Mean, y= sqrt(Superiority), text = Genotype)) +
-                     ylab("Square root of superiority"), source="STAB_sup_plot")
+                     ylab("Square root of superiority")
+          rv$st_sup_plotdat <- gg$data
+          if (input$STAB_plots_colorby!="Nothing"){
+            #browser() 
+            geompdat <- as.data.table(gg$data)
+            geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$STAB_plots_colorby)]), by.x = "Genotype", by.y = "genotype", all = TRUE)
+            gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
+            
+            gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
+            gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrt(Superiority), color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
+                                    scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
+                                    scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
+          }
+          if(length(rv$STSclicked_genotypes)>0){
+            clickgeno <- gg$data[gg$data$Genotype%in%rv$STSclicked_genotypes,]
+            #browser()
+            #gg + ggnewscale::new_scale_color()
+            gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Superiority)), shape = 21, size=3, color="red") +
+                       geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Superiority), label=Genotype), size=2, color="red",
+                                 position = position_nudge(y=max(gg$data[,"Superiority"])/150))
+          }
+          gg
         })
+        
+        ##### Handle click event ####
+        observeEvent(input$STAB_sup_plot_click,{
+          if(!is.null(input$STAB_sup_plot_click)) {
+              clicked_genotypes <- rv$STSclicked_genotypes
+              sts <- rv$st_sup_plotdat
+              click=input$STAB_sup_plot_click
+              dist=sqrt((click$x-sts[,2])^2+(click$y-sqrt(sts[,3]))^2)
+              clickedgeno <- as.character(sts$Genotype[which.min(dist)])
+              if (clickedgeno%in%clicked_genotypes){
+                rv$STSclicked_genotypes <- clicked_genotypes[-which(clicked_genotypes==clickedgeno)]
+              } else {
+                rv$STSclicked_genotypes <- unique(c(clicked_genotypes,clickedgeno))
+              }
+          }
+        })
+        #### Handle dbleclick event ####
+        observeEvent(input$STAB_sup_plot_dblclick,{
+          rv$STSclicked_genotypes <- NULL
+        })
+        
+        #### Static ####
+        
         output$STAB_static <- renderDataTable({
-          formatRound(datatable(rv$TDStab$static, rownames = FALSE),
-                                columns = c("Mean", "Static"), 
-                                digits=3)
+          formatRound(datatable(rv$TDStab$static[order(!rv$TDStab$static$Genotype%in%rv$STSclicked_genotypes),], rownames = FALSE,
+                                selection = list(mode="multiple", 
+                                                 selected=which(rv$TDStab$static$Genotype[order(!rv$TDStab$static$Genotype%in%rv$STSclicked_genotypes)]%in%rv$STSclicked_genotypes))),
+                      columns = c("Mean", "Static"), 
+                      digits=3)
         })
-        output$STAB_static_plot <- renderPlotly({
-          ggplotly(ggplot(rv$TDStab$static) + 
+        
+        output$STAB_static_plot <- renderPlot({
+          gg <- ggplot(rv$TDStab$static) + 
                      geom_point(aes(x=Mean, y= sqrt(Static), text = Genotype)) +
-                     ylab("Square root of Static stability"), source="STAB_static_plot")
+                     ylab("Square root of Static stability")
+          rv$st_sta_plotdat <- gg$data
+          if (input$STAB_plots_colorby!="Nothing"){
+            #browser() 
+            geompdat <- as.data.table(gg$data)
+            geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$STAB_plots_colorby)]), by.x = "Genotype", by.y = "genotype", all = TRUE)
+            gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
+            
+            gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
+            gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrt(Static), color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
+              scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
+              scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
+          }
+          if(length(rv$STSclicked_genotypes)>0){
+            clickgeno <- gg$data[gg$data$Genotype%in%rv$STSclicked_genotypes,]
+            #browser()
+            #gg + ggnewscale::new_scale_color()
+            gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Static)), shape = 21, size=3, color="red") + 
+              geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Static), label=Genotype), size=2, color="red",
+                        position = position_nudge(y=max(gg$data[,"Static"])/150))
+            
+          }
+          gg
+          
         })
+        ##### Handle click event ####
+        observeEvent(input$STAB_static_plot_click,{
+          if(!is.null(input$STAB_static_plot_click)) {
+            clicked_genotypes <- rv$STSclicked_genotypes
+            sta <- rv$st_sta_plotdat
+            click=input$STAB_static_plot_click
+            dist=sqrt((click$x-sta[,2])^2+(click$y-sqrt(sta[,3]))^2)
+            clickedgeno <- as.character(sta$Genotype[which.min(dist)])
+            if (clickedgeno%in%clicked_genotypes){
+              rv$STSclicked_genotypes <- clicked_genotypes[-which(clicked_genotypes==clickedgeno)]
+            } else {
+              rv$STSclicked_genotypes <- unique(c(clicked_genotypes,clickedgeno))
+            }
+          }
+        })
+        #### Handle dbleclick event ####
+        observeEvent(input$STAB_static_plot_dblclick,{
+          rv$STSclicked_genotypes <- NULL
+        })
+        
+        #### Wricke ####
         
         output$STAB_wricke <- renderDataTable({
-          formatRound(datatable(rv$TDStab$wricke, rownames = FALSE),
-                                columns = c("Mean", "Wricke"), 
-                                digits=3)
-        })
-        output$STAB_wricke_plot <- renderPlotly({
-          ggplotly(ggplot(rv$TDStab$wricke) + 
-                     geom_point(aes(x=Mean, y= sqrt(Wricke), text = Genotype)) +
-                     ylab("Square root of Wricke ecovalence"), source="STAB_wricke_plot")
+          formatRound(datatable(rv$TDStab$wricke[order(!rv$TDStab$wricke$Genotype%in%rv$STSclicked_genotypes),], rownames = FALSE,
+                                selection = list(mode="multiple", 
+                                                 selected=which(rv$TDStab$wricke$Genotype[order(!rv$TDStab$wricke$Genotype%in%rv$STSclicked_genotypes)]%in%rv$STSclicked_genotypes))),
+                      columns = c("Mean", "Wricke"), 
+                      digits=3)
         })
         
-      })
+        output$STAB_wricke_plot <- renderPlot({
+          gg <- ggplot(rv$TDStab$wricke) + 
+            geom_point(aes(x=Mean, y= sqrt(Wricke), text = Genotype)) +
+            ylab("Square root of Wricke ecovalence")
+          rv$st_stw_plotdat <- gg$data
+          if (input$STAB_plots_colorby!="Nothing"){
+            #browser() 
+            geompdat <- as.data.table(gg$data)
+            geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$STAB_plots_colorby)]), by.x = "Genotype", by.y = "genotype", all = TRUE)
+            gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
+            
+            gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
+            gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrt(Wricke), color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
+              scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
+              scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
+          }
+          if(length(rv$STSclicked_genotypes)>0){
+            clickgeno <- gg$data[gg$data$Genotype%in%rv$STSclicked_genotypes,]
+            #browser()
+            #gg + ggnewscale::new_scale_color()
+            gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Wricke)), shape = 21, size=3, color="red") +
+                       geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Wricke), label=Genotype), size=2, color="red",
+                                 position = position_nudge(y=max(gg$data[,"Wricke"])/150))
+            
+          }
+          gg
+          
+        })
+        ##### Handle click event ####
+        observeEvent(input$STAB_wricke_plot_click,{
+          if(!is.null(input$STAB_wricke_plot_click)) {
+            clicked_genotypes <- rv$STSclicked_genotypes
+            stw <- rv$st_stw_plotdat
+            click=input$STAB_wricke_plot_click
+            dist=sqrt((click$x-stw[,2])^2+(click$y-sqrt(stw[,3]))^2)
+            clickedgeno <- as.character(stw$Genotype[which.min(dist)])
+            if (clickedgeno%in%clicked_genotypes){
+              rv$STSclicked_genotypes <- clicked_genotypes[-which(clicked_genotypes==clickedgeno)]
+            } else {
+              rv$STSclicked_genotypes <- unique(c(clicked_genotypes,clickedgeno))
+            }
+          }
+        })
+        #### Handle dbleclick event ####
+        observeEvent(input$STAB_wricke_plot_dblclick,{
+          rv$STSclicked_genotypes <- NULL
+        })
+        
+        
+        #output$STAB_wricke <- renderDataTable({
+        #  formatRound(datatable(rv$TDStab$wricke, rownames = FALSE),
+        #                        columns = c("Mean", "Wricke"), 
+        #                        digits=3)
+        #})
+        #output$STAB_wricke_plot <- renderPlot({
+        #  ggplot(rv$TDStab$wricke) + 
+        #             geom_point(aes(x=Mean, y= sqrt(Wricke), text = Genotype)) +
+        #             ylab("Square root of Wricke ecovalence")
+        #})
+        
       
       observe({
         req(nrow(rv$TDStab$superiority)>0)
