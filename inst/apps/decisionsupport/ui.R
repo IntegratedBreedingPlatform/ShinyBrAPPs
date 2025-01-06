@@ -39,7 +39,7 @@ ui <- fluidPage(
             id = "groups_sidebar",
             position = "right",
             open = F,
-            width = 400,
+            width = 350,
             mod_groups_sidebar_ui("groups_sidebar")
           ),
           selected = "GxE Analysis",

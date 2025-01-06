@@ -198,13 +198,14 @@ mod_gxe_ui <- function(id){
             #### Accordion results ####
             bslib::accordion(id = ns("FW_accord1"),
                              #actionButton(ns("expand_MM_accord1"),label = "Open all", class = "btn btn-info"),
+                             open = c("FW plot","Germplasm list and clusters"),
 
                              bslib::accordion_panel(title = "FW plot",
                                                     bslib::layout_columns(col_widths = c(9,3),
                                                                           bslib::card(full_screen = T, height = "800",
                                                                                       bslib::card_body(
                                                                                         #uiOutput(ns("FW_trellis_genot_select_ui")),
-                                                                                        plotOutput(ns("FW_plot"), hover = hoverOpts(id =ns("FWplot_hover"),delay = 50)),
+                                                                                        plotOutput(ns("FW_plot"), hover = hoverOpts(id =ns("FWplot_hover"),delay = 50), click = clickOpts(id=ns("FWplot_click")), dblclick = dblclickOpts(id=ns("FWplot_dblclick"))),
                                                                                         #htmlOutput(ns("FWhover_info")),
                                                                                         uiOutput(ns("FW_sens_clust_select"))
                                                                                       ),
@@ -227,13 +228,13 @@ mod_gxe_ui <- function(id){
                              bslib::accordion_panel(title = "Germplasm list and clusters",
                                                     #bslib::card(DT::dataTableOutput(ns("FW_selected_obs_DT"))),
                                                     bslib::card(
-                                                      bslib::card_body(DT::dataTableOutput(ns("FW_sens_clusters_DT"))),
-                                                      bslib::card_footer(div(style="display: flex;gap: 10px;",
+                                                      bslib::card_header(div(style="display: flex;gap: 10px;",
                                                                              shiny::actionButton(inputId = ns("sens_clusters_DT.clearsel"), label = "Deselect all", icon = icon(NULL), class = "btn btn-info"),
                                                                              shiny::actionButton(ns("create_groups_from_sensclusters"), "Create groups from clusters", icon = icon(NULL), class = "btn btn-info"),
                                                                              shiny::actionButton(ns("create_groups_from_selgeno"),label = "Create group from selected genotypes", icon = icon(NULL), class = "btn btn-info")
-                                                                             )
-                                                                         )
+                                                      )
+                                                      ),
+                                                      bslib::card_body(DT::dataTableOutput(ns("FW_sens_clusters_DT")))
                                                       )
                              ),
                              bslib::accordion_panel(title = "Analysis summary", 
@@ -254,7 +255,7 @@ mod_gxe_ui <- function(id){
                 actionBttn(ns("GGE_run"), "Run GGE analysis", block = TRUE),
                 a(href="https://tiagoolivoto.github.io/metan/articles/vignettes_gge.html",icon("fas fa-question-circle"), target="_blank")),
             bslib::accordion(id = ns("GGE_adv_settings_acc"),
-                             bslib::accordion_panel(title = "Advanced settings", value = "advs",
+                             bslib::accordion_panel(title = "Analysis settings", value = "advs",
                                                     pickerInput(ns("GGE_advs_centering"), label = "centering", options = list(container = "body"), choices = c(none=0, global=1, environment=2, double=3), selected = 2),
                                                     pickerInput(ns("GGE_advs_scaling"), label = "scaling", options = list(container = "body"), choices = c(none=0, sd=1), selected = 0),
                                                     pickerInput(ns("GGE_advs_svp"), label = "svp", options = list(container = "body"), choices = c(genotype=1, environment=2, symmetrical=3), selected = 2))),
@@ -284,36 +285,37 @@ mod_gxe_ui <- function(id){
                              bslib::accordion_panel(title = "GGE plot",
                                                     bslib::layout_sidebar(
                                                       bslib::card(full_screen = T,height = "800",max_height = "800",
-                                                                  bslib::card_body(plotOutput(ns("GGE_plot"))),
+                                                                  bslib::card_body(plotOutput(ns("GGE_plot"), click = clickOpts(id=ns("GGEplot_click")), dblclick = dblclickOpts(id=ns("GGEplot_dblclick")))),
                                                                   bslib::card_footer(div(style="display: flex;gap: 10px;",
+                                                                    shiny::actionButton(ns("create_groups_from_GGEsel"), "Create group from selection", icon = icon(NULL), class = "btn btn-info"),
                                                                     shiny::actionButton(ns("create_group_from_wWw"), "Create groups from which won where", icon = icon(NULL), class = "btn btn-info")
                                                                   ))
                                                       ),
                                                       sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,#full_screen = F,
                                                                              bslib::card(full_screen = F,height = "735",max_height = "735",
-                                                                                         sliderInput(ns("GGE_plot_title_size"), label = "plot_title_size", min = 10, max = 30, value = 12, step = 1),
-                                                                  sliderInput(ns("GGE_plot_size.text.gen"), label = "size.text.gen", min = 1, max = 8, value = 3.5, step = 0.5),
-                                                                  sliderInput(ns("GGE_plot_repulsion"), label="plot_repulsion", value = 1, min=1, max=10, step=0.5),
-                                                                  sliderInput(ns("GGE_plot_max_overlaps"), label="plot_max_overlaps", value = 20, min=5, max=50, step=1),
-                                                                  sliderInput(ns("GGE_plot_size.shape"), label="plot_size.shape", value = 2.2, min=1, max=10, step=0.1),
-                                                                  sliderInput(ns("GGE_plot_size.shape.win"), label="plot_size.shape.win", value = 3.2, min=1, max=10, step=0.1),
-                                                                  sliderInput(ns("GGE_plot_size.stroke"), label="plot_size.stroke", value = 0.3, min=1, max=5, step=0.1),
-                                                                  sliderInput(ns("GGE_plot_col.alpha"), label="plot_col.alpha", value = 1, min=0, max=1, step=0.1),
-                                                                  sliderInput(ns("GGE_plot_col.alpha.circle"), label="plot_col.alpha.circle", value = 0.5, min=0, max=1, step=0.1),
-                                                                  sliderInput(ns("GGE_plot_size.text.env"), label="plot_size.text.env", value = 3.5, min=1, max=10, step=0.5),
-                                                                  sliderInput(ns("GGE_plot_size.text.lab"), label="plot_size.text.lab", value = 12, min=1, max=20, step=0.5),
-                                                                  sliderInput(ns("GGE_plot_size.text.win"), label="plot_size.text.win", value = 4.5, min=1, max=10, step=0.5),
-                                                                  sliderInput(ns("GGE_plot_size.line"), label="plot_size.line", value = 0.5, min=0, max=5, step=0.1),
-                                                                  sliderInput(ns("GGE_plot_axis_expand"), label="plot_axis_expand", value = 1.2, min=0, max=2, step=0.1),
-                                                                  colorPickr(ns("GGE_plot_col.stroke"), label="plot_col.stroke", selected = "black", theme = "monolith", update = "changestop", opacity = TRUE, interaction = list(cancel=FALSE,clear=FALSE,save=FALSE)),
-                                                                  spectrumInput(ns("GGE_plot_col.gen"), label="plot_col.gen", selected = "blue", update_on = "dragstop", options=list(`show-alpha`=TRUE)),
-                                                                  #colorPickr(ns("GGE_plot_col.gen"), label="plot_col.gen", selected = "blue", theme = "monolith", update = "changestop", opacity = TRUE),
-                                                                  colorPickr(ns("GGE_plot_col.env"), label="plot_col.env", selected = "forestgreen", theme = "monolith", update = "changestop", opacity = TRUE),
-                                                                  colorPickr(ns("GGE_plot_col.line"), label="plot_col.line", selected = "forestgreen", theme = "monolith", update = "changestop", opacity = TRUE),
-                                                                  colorPickr(ns("GGE_plot_col.circle"), label="plot_col.circle", selected = "gray", theme = "monolith", update = "changestop"), opacity = TRUE))
-                                                                  
+                                                                                         sliderInput(ns("GGE_plot_size.text.gen"), label = "Genotype labels size", min = 1, max = 8, value = 3.5, step = 0.5),
+                                                                                         sliderInput(ns("GGE_plot_size.text.win"), label="Winners labels size", value = 4.5, min=1, max=10, step=0.5),
+                                                                                         sliderInput(ns("GGE_plot_size.text.env"), label="Environement labels size", value = 3.5, min=1, max=10, step=0.5),
+                                                                                         sliderInput(ns("GGE_plot_repulsion"), label="Labels repulsion", value = 1, min=1, max=10, step=0.5),
+                                                                                         sliderInput(ns("GGE_plot_max_overlaps"), label="Labels max overlaps", value = 20, min=5, max=50, step=1),
+                                                                                         sliderInput(ns("GGE_plot_size.shape"), label="Points size", value = 2.2, min=1, max=10, step=0.1),
+                                                                                         sliderInput(ns("GGE_plot_size.shape.win"), label="Winner points size", value = 3.2, min=1, max=10, step=0.1),
+                                                                                         sliderInput(ns("GGE_plot_size.stroke"), label="Points stroke width", value = 0.3, min=1, max=5, step=0.1),
+                                                                                         sliderInput(ns("GGE_plot_size.line"), label="Line width", value = 0.5, min=0, max=5, step=0.1),
+                                                                                         sliderInput(ns("GGE_plot_axis_expand"), label="Plot expansion", value = 1.2, min=0, max=2, step=0.1),
+                                                                                         sliderInput(ns("GGE_plot_col.alpha"), label="Transparency", value = 1, min=0, max=1, step=0.1),
+                                                                                         sliderInput(ns("GGE_plot_col.alpha.circle"), label="Circle transparency", value = 0.5, min=0, max=1, step=0.1),
+                                                                                         sliderInput(ns("GGE_plot_size.text.lab"), label="plot_size.text.lab", value = 12, min=1, max=20, step=0.5),
+                                                                                         sliderInput(ns("GGE_plot_title_size"), label = "Title text size", min = 10, max = 30, value = 12, step = 1),
+                                                                                         spectrumInput(ns("GGE_plot_col.stroke"), label="Stroke Color", selected = "black", update_on = "dragstop", options=list(`show-alpha`=TRUE)),
+                                                                                         spectrumInput(ns("GGE_plot_col.gen"), label="Genotype labels color", selected = "blue", update_on = "dragstop", options=list(`show-alpha`=TRUE)),
+                                                                                         #colorPickr(ns("GGE_plot_col.gen"), label="Genotype labels color", selected = "blue", theme = "monolith", update = "changestop", opacity = TRUE),
+                                                                                         spectrumInput(ns("GGE_plot_col.env"), label="Environment labels color", selected = "forestgreen", update_on = "dragstop", options=list(`show-alpha`=TRUE)),
+                                                                                         spectrumInput(ns("GGE_plot_col.line"), label="Line color", selected = "forestgreen", update_on = "dragstop", options=list(`show-alpha`=TRUE)),
+                                                                                         spectrumInput(ns("GGE_plot_col.circle"), label="Circle color", selected = "gray", update_on = "dragstop", options=list(`show-alpha`=TRUE))
+                                                                             )
                                                     )
-                             ),
+                             )),
                              bslib::accordion_panel(title = "Analysis summary", 
                                                     verbatimTextOutput(ns("GGE_text_output")) 
                              )
@@ -331,17 +333,21 @@ mod_gxe_ui <- function(id){
             div(style="display: flex;",
                 actionBttn(ns("AMMI_run"), "Run AMMI analysis", block = TRUE),
                 a(href="https://biometris.github.io/statgenGxE/articles/statgenGxE.html#am",icon("fas fa-question-circle"), target="_blank")),
-            pickerInput(ns("AMMI_nPC"),
-                        label="Number of PC",
-                        choices = c("Auto"), selected = "Auto"),
-            materialSwitch(ns("AMMI_center"), "center", value = TRUE, status = "info"),
-            pickerInput(ns("AMMI_excludeGeno"), label="Exclude genotypes", multiple = T, choices = c(), options = pickerOptions(liveSearch = TRUE)),
-            materialSwitch(ns("AMMI_byYear"), "Run by year", value = FALSE, status = "info"),
-            hr(style = "border-top: 1px solid #000000;"),
+            bslib::accordion(id = ns("AMMI_adv_settings_acc"),
+                             bslib::accordion_panel(title = "Analysis settings", value = "advs",
+                                                    pickerInput(ns("AMMI_nPC"),
+                                                                label="Number of PC",
+                                                                choices = c("Auto"), selected = "Auto"),
+                                                    materialSwitch(ns("AMMI_center"), "center", value = TRUE, status = "info"),
+                                                    pickerInput(ns("AMMI_excludeGeno"), label="Exclude genotypes", multiple = T, choices = c(), options = pickerOptions(liveSearch = TRUE))
+                                                    )
+            ),
+            #materialSwitch(ns("AMMI_byYear"), "Run by year", value = FALSE, status = "info"),
+            #hr(style = "border-top: 1px solid #000000;"),
             pickerInput(ns("AMMI_plotType"), label="Plot type", choices = c("AMMI1", "AMMI2"), selected = "AMMI2"),
             pickerInput(ns("AMMI_primAxis"), label="Primary axis", choices = c()),
             pickerInput(ns("AMMI_secAxis"), label="Second axis", choices = c()),
-            materialSwitch(ns("AMMI_plotGeno"), "Plot genotypes", value = TRUE, status = "info"),
+            #materialSwitch(ns("AMMI_plotGeno"), "Plot genotypes", value = TRUE, status = "info"),
             sliderInput(ns("AMMI_scale"), label = "scale", min = 0, max = 1, value = 0.5, step=0.1),
             materialSwitch(ns("AMMI_plotConvHull"), "Plot convex hull around the genotypes", value = FALSE, status = "info"),
             pickerInput(ns("AMMI_colorGenoBy"), label="Color genotypes by", choices = "Nothing", selected = "Nothing"),
@@ -356,16 +362,23 @@ mod_gxe_ui <- function(id){
                              bslib::accordion_panel(title = "AMMI plot",
                                                    bslib::layout_sidebar(
                                                      bslib::card(full_screen = T,height = "800",max_height = "800",
-                                                                 plotOutput(ns("AMMI_plot"))
+                                                                 bslib::card_body(
+                                                                   plotOutput(ns("AMMI_plot"), hover = hoverOpts(id =ns("AMMIplot_hover"),delay = 50), click = clickOpts(id=ns("AMMIplot_click")), dblclick = dblclickOpts(id=ns("AMMIplot_dblclick"))) 
+                                                                 ),
+                                                                 bslib::card_footer(
+                                                                   div(style="display: flex;gap: 10px;",
+                                                                       shiny::actionButton(ns("create_groups_from_AMMIsel"), "Create group from selection", icon = icon(NULL), class = "btn btn-info")
+                                                                   )
+                                                                 )
                                                      ),
                                                      sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,
                                                                             bslib::card(full_screen = F,height = "735",max_height = "735",
-                                                                                        sliderInput(ns("AMMI_plot_sizeGeno"), label = "sizeGeno", min = 0, max = 10, value = 0, step = 1),
-                                                                                        materialSwitch(ns("AMMI_plot_repel"), label = "use_ggrepel", value = FALSE, status = "info"),
-                                                                                        sliderInput(ns("AMMI_plot_repulsion"), label="plot_repulsion", value = 1, min=1, max=10, step=0.5),
-                                                                                        sliderInput(ns("AMMI_plot_max_overlaps"), label="plot_max_overlaps", value = 20, min=5, max=50, step=1),
-                                                                                        sliderInput(ns("AMMI_plot_sizeEnv"), label = "sizeEnv", min = 0, max = 10, value = 3, step = 1),
-                                                                                        sliderInput(ns("AMMI_plot_envFactor"), label = "envFactor", min = 0, max = 5, value = 1, step = 0.1),
+                                                                                        sliderInput(ns("AMMI_plot_sizeGeno"), label = "Genotype labels size", min = 0, max = 10, value = 1, step = 1),
+                                                                                        #materialSwitch(ns("AMMI_plot_repel"), label = "use_ggrepel", value = FALSE, status = "info"),
+                                                                                        sliderInput(ns("AMMI_plot_sizePoint"), label="Points size", value = 2, min=1, max=10, step=1),
+                                                                                        #sliderInput(ns("AMMI_plot_max_overlaps"), label="plot_max_overlaps", value = 20, min=5, max=50, step=1),
+                                                                                        sliderInput(ns("AMMI_plot_sizeEnv"), label = "Env labels size", min = 0, max = 10, value = 3, step = 1),
+                                                                                        sliderInput(ns("AMMI_plot_envFactor"), label = "Env blow up factor", min = 0.1, max = 5, value = 0.5, step = 0.1),
                                                                                         textInput(ns("AMMI_plot_title"),label = "Title",value = NULL))
                                                                             )
                                                      )
@@ -451,8 +464,10 @@ mod_gxe_server <- function(id, rv, parent_session){
     function(input, output, session){
       
       bslib::accordion_panel_close("GGE_adv_settings_acc", values="advs", session = session)
+      bslib::accordion_panel_close("AMMI_adv_settings_acc", values="advs", session = session)
       ## observe data and update Trait picker ####
       rv$selected_genotypes <- NULL
+      rv$FWclicked_genotypes <- NULL
       rv$console <- NULL
       observe({
         req(rv$data_plot)
@@ -510,7 +525,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             selected = character(0)
           )
         }
-        
+        #browser()
         #colorbychoices <- input$picker_germplasm_attr
         #colorbychoices <- c(colorbychoices,rv$column_datasource[source %in% "group"]$cols)
         colorbychoices <- list(Nothing=c("Nothing"))
@@ -771,24 +786,13 @@ mod_gxe_server <- function(id, rv, parent_session){
           selected = character(0)
         )
         
-        
-        
-        
         output$TD_boxplot <- renderPlot({
           if (!is.null(input$picker_scenario)){
-            #if ("scenarioFull"%in%names(data2TD)){
               plot(rv$TD,
                    plotType = "box",
                    traits = input$picker_trait,
                    colorTrialBy = "scenario",
                    orderBy = "descending")
-            #} else {
-            #  plot(rv$TD,
-            #       plotType = "box",
-            #       traits = input$picker_trait,
-            #       colorTrialBy = input$picker_scenario[1],
-            #       orderBy = "descending")
-            #}
           } else {
             plot(rv$TD,
                  plotType = "box",
@@ -796,47 +800,6 @@ mod_gxe_server <- function(id, rv, parent_session){
                  orderBy = "descending") 
           }
         })
-        if (length(input$picker_env)>1){
-          shinyjs::show("TD_scatterplots")
-          #output$TD_scatterplots <- renderPlot({
-          #  if (!is.null(input$picker_germplasm_attr)){
-          #    if (!is.null(input$picker_scenario)){
-          #      #if ("scenarioFull"%in%names(data2TD)){
-          #        plot(rv$TD, plotType = "scatter",
-          #             traits = input$picker_trait,
-          #             colorGenoBy = input$picker_germplasm_attr[1], 
-          #             colorTrialBy = "scenario")
-          #      #} else {
-          #      #  plot(rv$TD, plotType = "scatter",
-          #      #       traits = input$picker_trait,
-          #      #       colorGenoBy = input$picker_germplasm_attr, 
-          #      #       colorTrialBy = input$picker_scenario[1])
-          #      #}
-          #    } else {
-          #      plot(rv$TD, plotType = "scatter",
-          #           traits = input$picker_trait,
-          #           colorGenoBy = input$picker_germplasm_attr[1])
-          #    }            
-          #  } else {
-          #    if (!is.null(input$picker_scenario)){
-          #      #if ("scenarioFull"%in%names(data2TD)){
-          #        plot(rv$TD, plotType = "scatter",
-          #             traits = input$picker_trait,
-          #             colorTrialBy = "scenario")
-          #      #} else {
-          #      #  plot(rv$TD, plotType = "scatter",
-          #      #       traits = input$picker_trait,
-          #      #       colorTrialBy = input$picker_scenario[1])
-          #      #}
-          #    } else {
-          #      plot(rv$TD, plotType = "scatter",
-          #           traits = input$picker_trait)
-          #    }            
-          #  }
-          #})          
-        } else {
-          shinyjs::hide("TD_scatterplots")
-        }
       })
       
       ## MM model ####
@@ -958,13 +921,13 @@ mod_gxe_server <- function(id, rv, parent_session){
         req(rv$TDFW)
           output$FW_plot <- renderPlot({
             TDFWplot <- rv$TDFWplot
-            #browser()
             if (is.null(input$FW_picker_color_by)){
                 p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
             } else {
               if (input$FW_picker_color_by=="sensitivity clusters"){
                 #browser()
                 p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
+                req(input$FW_sens_clust_select_buttons)
                 if (input$FW_sens_clust_select_buttons!="none" & input$FW_picker_plot_type=="line"){
                   #browser()
                   stacolors <- getOption("statgen.genoColors")
@@ -1050,7 +1013,6 @@ mod_gxe_server <- function(id, rv, parent_session){
                         }
                     
                   }
-                  
                 }
               }
             }
@@ -1095,7 +1057,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             #}
           })
       })
-      
+      #### Handle hover event ####
       observe({
         output$FWhover_vinfo <- renderText({
           if(!is.null(input$FWplot_hover)) {
@@ -1138,6 +1100,34 @@ mod_gxe_server <- function(id, rv, parent_session){
         #   }
         # })
       })
+      #### Handle click event ####
+      
+      observeEvent(input$FWplot_click,{
+        if(!is.null(input$FWplot_hover)) {
+          #browser()
+          F <- as.data.table(rv$TDFWplot$fittedGeno)
+          E <- as.data.table(rv$TDFWplot$envEffs)
+          EF <- E[F, on=.(Trial=trial)]
+          hover=input$FWplot_hover
+          dist=sqrt((hover$x-EF$EnvMean)^2+(hover$y-EF$fittedValue)^2)
+          prox <- max(c(EF$EnvMean,EF$fittedValue))/30
+          rv$FWclicked_genotypes <- unique(c(rv$FWclicked_genotypes,as.character(EF$genotype)[which.min(dist)]))
+          dtsc <- dcast(rbindlist(rv$TD)[,c("genotype","trial",input$picker_trait), with = FALSE],genotype~trial)[rv$sensclust, on=.(genotype=Genotype)][,-c("SE_GenMean","SE_Sens","MSdeviation")]
+          formatcols <- colnames(dtsc)[-which(colnames(dtsc)%in%c("genotype","sensitivity_cluster", "Rank"))]
+          output$FW_sens_clusters_DT <- DT::renderDataTable(formatRound(DT::datatable(dtsc, filter = "top",
+                                                                                      selection = list(mode="multiple", 
+                                                                                                       selected=which(dtsc$genotype%in%rv$FWclicked_genotypes))),
+                                                                        columns = formatcols,digits = 2),rownames= FALSE, server=TRUE)
+        }
+      })
+      #### Handle dbleclick event ####
+      
+      observeEvent(input$FWplot_dblclick,{
+        rv$FWclicked_genotypes <- NULL
+        selectRows(dtproxy, selected=NULL)
+        
+      })
+      
       
       #### compute sensitivity_clusters whenever a picker changes ####
       observeEvent(  eventExpr = {
@@ -1231,6 +1221,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       })
       
       observeEvent(input$sens_clusters_DT.clearsel,{
+        rv$FWclicked_genotypes <- NULL
         selectRows(dtproxy, selected=NULL)
       })
       
@@ -1279,7 +1270,6 @@ mod_gxe_server <- function(id, rv, parent_session){
         #  data_plot[!(germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)]), eval(group_name) := paste0('Not in "', group_name,'"')]
         #}
         data_plot <- setnames(data_plot[clusters[,.(germplasmDbId=unlist(germplasmDbIds)),sensitivity_cluster],on=.(germplasmDbId)],old = "sensitivity_cluster",new = paste0("cl",clustering_id,"_FW@",input$picker_trait))[]
-
         rv$column_datasource <- rbindlist(
           list(
             rv$column_datasource,
@@ -1480,12 +1470,48 @@ mod_gxe_server <- function(id, rv, parent_session){
               rv$gp_WwW <- gg$layers[[length(gg$layers)]]$data$label
             }
           }
-          if (input$GGE_colorGenoBy!="Nothing"){
+          if (input$GGE_colorGenoBy!="Nothing" & input$GGE_picker_plot_type!=2){
             #browser() 
+            geompdat <- as.data.table(gg$data)
+            geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$GGE_colorGenoBy)]), by.x = "label", by.y = "genotype", all = TRUE)
+            
+            gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
+            gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
+            gg <- gg + geom_point(data=geompdat, aes(d1, d2, color=as.factor(.data[[input$GGE_colorGenoBy]]), fill = as.factor(.data[[input$GGE_colorGenoBy]]), shape = type), size = input$GGE_plot_size.shape, 
+                                  stroke = input$GGE_plot_size.stroke, alpha = input$GGE_plot_col.alpha) + scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
           }
-          print(gg)
+          #browser()
+          rv$GGEplotdat <- gg$data
+          if(length(rv$GGEclicked_genotypes)>0){
+            clickgeno <- gg$data[gg$data$type=="genotype" & gg$data$label%in%rv$GGEclicked_genotypes,]
+            gg + ggnewscale::new_scale_fill()
+            gg <- gg + geom_point(data = clickgeno, aes(x=d1, y = d2), shape = 21, size=input$GGE_plot_size.shape+2, stroke=input$GGE_plot_size.stroke, color="red") 
+          }
+          gg
           
         })
+      })
+      #### Handle click event ####
+      
+      observeEvent(input$GGEplot_click,{
+        if(!is.null(input$GGEplot_click)) {
+          
+          GG <- rv$GGEplotdat
+          click=input$GGEplot_click
+          dist=sqrt((click$x-GG[,1])^2+(click$y-GG[,2])^2)
+          clickedgeno <- GG$label[which.min(dist)]
+          if (clickedgeno%in%rv$GGEclicked_genotypes){
+            rv$GGEclicked_genotypes <- rv$GGEclicked_genotypes[-which(rv$GGEclicked_genotypes==clickedgeno)]
+          } else {
+            rv$GGEclicked_genotypes <- unique(c(rv$GGEclicked_genotypes,clickedgeno))
+          }
+          #browser()
+        }
+      })
+      #### Handle dbleclick event ####
+      
+      observeEvent(input$GGEplot_dblclick,{
+        rv$GGEclicked_genotypes <- NULL
       })
       
       observeEvent(input$create_group_from_wWw,{
@@ -1506,19 +1532,44 @@ mod_gxe_server <- function(id, rv, parent_session){
           )
         }
       })
+      ### Handle group creation in GGE plot ####
+      observe({
+        if(length(rv$GGEclicked_genotypes)<1){
+          shinyjs::disable("create_groups_from_GGEsel")
+        } else {
+          shinyjs::enable("create_groups_from_GGEsel")
+        }
+      })
+      observeEvent(input$create_groups_from_GGEsel,{
+        if(length(rv$GGEclicked_genotypes)>0){
+          rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
+                                                               data.table(Genotype=rv$GGEclicked_genotypes)),
+                                                  y=unique(rbindlist(rv$TD)),
+                                                  by.x = "Genotype",
+                                                  by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
+          showModal(groupModal(rv=rv, 
+                               parent_session = parent_session, 
+                               modal_title = "Create new group", 
+                               group_description = paste0("Group manually created from selected genotypes in GGE analysis of ", input$picker_trait, " variable"),
+                               group_prefix =paste0("M_GGE@",input$picker_trait,".")
+          )
+          )
+        }
+      })
+      
       
       ## AMMI ####
       ### Make sur year exists in TD if byYear is chosen ####
-      observeEvent(input$AMMI_byYear,{
-        if(input$AMMI_byYear & !any(colnames(rbindlist(rv$TD))=="year"))
-          isolate({
-            showNotification("Select an env. detail to use as year in Data preparation Tab", type = "warning", duration = notification_duration)
-            updatePickerInput(
-              session, "AMMI_byYear",
-              selected = FALSE
-            )
-          })
-      })
+      #observeEvent(input$AMMI_byYear,{
+      #  if(input$AMMI_byYear & !any(colnames(rbindlist(rv$TD))=="year"))
+      #    isolate({
+      #      showNotification("Select an env. detail to use as year in Data preparation Tab", type = "warning", duration = notification_duration)
+      #      updatePickerInput(
+      #        session, "AMMI_byYear",
+      #        selected = FALSE
+      #      )
+      #    })
+      #})
       
       ### Run AMMI ####
       observeEvent(input$AMMI_run,{
@@ -1528,14 +1579,13 @@ mod_gxe_server <- function(id, rv, parent_session){
         rv$TDAMMI <- tryCatch(gxeAmmi(TD = rv$TD,
                                       trait = input$picker_trait,
                                       nPC = switch((input$AMMI_nPC=="Auto")+1,  as.numeric(input$AMMI_nPC,NULL)),
-                                      byYear = input$AMMI_byYear,
+                                      byYear = FALSE, #input$AMMI_byYear,
                                       center = input$AMMI_center,
                                       excludeGeno = input$AMMI_excludeGeno,
                                       useWt = input$use_weights), error=function(e) e)
         },
         message = function(m) rv$console <- paste(rv$console, paste0("AMMI run at ",Sys.time(), " : ",m), sep=""),
         warning = function(w) rv$console <- paste(rv$console, paste0("AMMI run at ",Sys.time(), " : ",w), sep=""))
-        
         #browser()
         output$AMMI_text_output <- renderPrint({
           if ("AMMI"%in%class(rv$TDAMMI)){
@@ -1563,12 +1613,15 @@ mod_gxe_server <- function(id, rv, parent_session){
         )
         
         output$AMMI_plot <- renderPlot({
-          #browser()
-          if (input$AMMI_plotGeno & input$AMMI_plot_sizeGeno>1 & input$AMMI_plot_repel){
+          req(input$AMMI_primAxis, input$AMMI_secAxis)
+          # This is to update the dat component of TDAMMI whenever TD changes
+          # this occurs for example at group creation, a column with group memberships
+          # is added to the TD object and available in the colorGenoBy picker input
+          rv$TDAMMI$dat <- rbindlist(rv$TD)
             p <- statgenGxE:::plot.AMMI(rv$TDAMMI,
                                         plotType = input$AMMI_plotType,
                                         scale = input$AMMI_scale,
-                                        plotGeno = input$AMMI_plotGeno,
+                                        plotGeno = TRUE,
                                         colorGenoBy = switch((input$AMMI_colorGenoBy=="Nothing")+1,  input$AMMI_colorGenoBy, NULL),
                                         plotConvHull = input$AMMI_plotConvHull,
                                         colorEnvBy = input$AMMI_colorEnvBy,
@@ -1579,29 +1632,97 @@ mod_gxe_server <- function(id, rv, parent_session){
                                         sizeGeno = input$AMMI_plot_sizeGeno,
                                         sizeEnv = input$AMMI_plot_sizeEnv,
                                         title = switch((input$AMMI_plot_title=="")+1,  input$AMMI_plot_title, NULL))
-            p$layers[[1]] <- NULL
-            p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]])) +
+            # Following is to handle vizualization of clicked genotypes
+            # data structure is different for AMMI1 and AMMI2 plots
+            # hence the distinction between both cases
+            if (input$AMMI_plotType=="AMMI2"){
+              p$layers[[1]] <- NULL
+              p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]]), size=input$AMMI_plot_sizePoint) +
               geom_text(data=p$data[p$data$type=="env",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="env",]))) +
-              ggrepel::geom_text_repel(data =p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="geno",]), size=input$AMMI_plot_sizeGeno), max.overlaps = input$AMMI_plot_max_overlaps, force = input$AMMI_plot_repulsion)
-          } else {
-            p <- statgenGxE:::plot.AMMI(rv$TDAMMI,
-                                        plotType = input$AMMI_plotType,
-                                        scale = input$AMMI_scale,
-                                        plotGeno = input$AMMI_plotGeno,
-                                        colorGenoBy = switch((input$AMMI_colorGenoBy=="Nothing")+1,  input$AMMI_colorGenoBy, NULL),
-                                        plotConvHull = input$AMMI_plotConvHull,
-                                        colorEnvBy = input$AMMI_colorEnvBy,
-                                        rotatePC = input$AMMI_rotatePC,
-                                        primAxis = input$AMMI_primAxis,
-                                        secAxis = input$AMMI_secAxis,
-                                        envFactor = input$AMMI_plot_envFactor,
-                                        sizeGeno = input$AMMI_plot_sizeGeno,
-                                        sizeEnv = input$AMMI_plot_sizeEnv,
-                                        title = switch((input$AMMI_plot_title=="")+1,  input$AMMI_plot_title, NULL))
-          }
-        print(p)
+              geom_text(data =p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="geno",]), size=input$AMMI_plot_sizeGeno), position = position_nudge(y=input$AMMI_plot_envFactor*max(p$data[p$data$type=="geno",input$AMMI_secAxis])/8))
+              
+              if (!is.null(rv$AMMIclicked_genotypes)){
+                clickgeno <- p$data[p$data$type=="geno" & row.names(p$data)%in%rv$AMMIclicked_genotypes,]
+                p <- p + geom_point(data = clickgeno, aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]]), shape = 21, color="red", size=input$AMMI_plot_sizePoint+1)
+              }
+            } else {
+              p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=x, y = y), size=input$AMMI_plot_sizePoint) #+ 
+              if (!is.null(rv$AMMIclicked_genotypes)){
+                clickgeno <- p$data[p$data$type=="geno" & row.names(p$data)%in%rv$AMMIclicked_genotypes,]
+                p <- p + ggnewscale::new_scale_color()
+                p <- p + geom_point(data = clickgeno, aes(x=x, y = y), shape = 21, color="red", size=input$AMMI_plot_sizePoint+1)
+              }
+            }
+          # This reactive is useful to handle click event
+          rv$AMMIplotdat <- p$data
+          p
         })
       })
+      
+      #### Handle click event ####
+      
+      observeEvent(input$AMMIplot_click,{
+        if(!is.null(input$AMMIplot_click)) {
+          #browser()
+          if (input$AMMI_plotType=="AMMI2"){
+            AG <- rv$AMMIplotdat[,c(input$AMMI_primAxis,input$AMMI_secAxis)]
+            click=input$AMMIplot_click
+            dist=sqrt((click$x-AG[,1])^2+(click$y-AG[,2])^2)
+            clickedgeno <- as.character(row.names(AG))[which.min(dist)]
+          } else {
+            AG <- rv$AMMIplotdat
+            click=input$AMMIplot_click
+            dist=sqrt((click$x-AG$x)^2+(click$y-AG$y)^2)
+            clickedgeno <- as.character(row.names(AG))[which.min(dist)]
+          }
+          if (clickedgeno%in%rv$AMMIclicked_genotypes){
+            rv$AMMIclicked_genotypes <- rv$AMMIclicked_genotypes[-which(rv$AMMIclicked_genotypes==clickedgeno)]
+          } else {
+            rv$AMMIclicked_genotypes <- unique(c(rv$AMMIclicked_genotypes,clickedgeno))
+          }
+          #browser()
+          #if (length(rv$AMMIclicked_genotypes)<1){
+          #  shinyjs::disable("create_groups_from_AMMIsel")
+          #} else {
+          #  shinyjs::enable("create_groups_from_AMMIsel")
+          #}
+          
+        }
+      })
+      
+      #### Handle dbleclick event ####
+      
+      observeEvent(input$AMMIplot_dblclick,{
+        rv$AMMIclicked_genotypes <- NULL
+      })
+      
+      
+      ### Handle group creation in AMMI plot ####
+      observe({
+        if(length(rv$AMMIclicked_genotypes)<1){
+          shinyjs::disable("create_groups_from_AMMIsel")
+        } else {
+          shinyjs::enable("create_groups_from_AMMIsel")
+        }
+      })
+      observeEvent(input$create_groups_from_AMMIsel,{
+        if(length(rv$AMMIclicked_genotypes)>0){
+          rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
+                                                               data.table(Genotype=rv$AMMIclicked_genotypes)),
+                                                  y=unique(rbindlist(rv$TD)),
+                                                  by.x = "Genotype",
+                                                  by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
+          showModal(groupModal(rv=rv, 
+                               parent_session = parent_session, 
+                               modal_title = "Create new group", 
+                               group_description = paste0("Group manually created from selected genotypes in AMMI analysis of ", input$picker_trait, " variable"),
+                               group_prefix =paste0("M_AMMI@",input$picker_trait,".")
+          )
+          )
+        }
+      })
+      
+      
     ## Stability ####
       ### Run Stab ####
       observe({
