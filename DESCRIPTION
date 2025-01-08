@@ -1,16 +1,16 @@
 Type: Package
 Package: shinybrapps
 Title: ShinyBrAPPs
-Version: 0.1.0
+Version: 27.8
 Authors@R: c(
-    person("Jean-François", "Rami", , "rami@cirad.fr", role = c("aut", "ctb", "cre")),
-    person("Alice", "Boizet", , "alice.boizet@cirad.fr", role = c("aut", "ctb")),
-    person("Mariano", "Crimi", , "mcrimi@cgiar.org", role = c("aut", "ctb")),
-    person("Léo", "Valette", , "leovalette@posteo.net", role = "aut")
+    person("Jean-François", "Rami", email = "rami@cirad.fr", role = c("aut", "ctb", "cre")),
+    person("Alice", "Boizet", email = "alice.boizet@cirad.fr", role = c("aut", "ctb")),
+    person("Mariano", "Crimi", email = "mcrimi@cgiar.org", role = c("aut", "ctb")),
+    person("Léo", "Valette", email = "leovalette@posteo.net", role = c("aut"))
   )
 Maintainer: Leo Valette <leovalette@posteo.net>
 Description: ShinyBrAPPs Shiny apps integrated to the Breeding Management
-    System
+    System.
 License: GPL (>= 3)
 Depends:
     R (>= 2.10),
