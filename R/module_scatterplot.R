@@ -172,10 +172,6 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         selection_variables = NULL
       )
       
-      rv$groups <- NULL
-      rv$visu_as_group <- NULL
-      rv$new_group_created <- F
-      
       ## function for data aggregation
       aggreg_functions <- data.table(
         fun = c("mean", "max", "min", "sum", "unique_values"),

@@ -33,12 +33,13 @@ ui <- fluidPage(
         mod_banner_ui("banner"),
         mod_get_studydata_ui("get_studydata"),
         mod_get_extradata_ui("get_extradata"),
+        div(style="position: relative; z-index: 10;",
         bslib::page_navbar(
           sidebar = bslib::sidebar(
             id = "groups_sidebar",
             position = "right",
             open = F,
-            width = 400,
+            width = 350,
             mod_groups_sidebar_ui("groups_sidebar")
           ),
           selected = "GxE Analysis",
@@ -68,7 +69,7 @@ ui <- fluidPage(
             h2("Session info"),
             verbatimTextOutput("Rsi")
           )
-        )
+        ))
       )
   ),
 )

@@ -3,27 +3,27 @@ Package: shinybrapps
 Title: ShinyBrAPPs
 Version: 0.1.0
 Authors@R: c(
-    person("Léo", "Valette", , "leovalette@posteo.net", role = c("aut", "ctb", "cre")),
-    person("Jean-François", "Rami", , "rami@cirad.fr", role = c("aut", "ctb")),
-    person("Mariano", "Crimi", , "mcrimi@cgiar.org", role = c("aut", "ctb"))
+    person("Jean-François", "Rami", , "rami@cirad.fr", role = c("aut", "ctb", "cre")),
+    person("Alice", "Boizet", , "alice.boizet@cirad.fr", role = c("aut", "ctb")),
+    person("Mariano", "Crimi", , "mcrimi@cgiar.org", role = c("aut", "ctb")),
+    person("Léo", "Valette", , "leovalette@posteo.net", role = "aut")
   )
 Maintainer: Leo Valette <leovalette@posteo.net>
 Description: ShinyBrAPPs Shiny apps integrated to the Breeding Management
     System
-License: TO BE DISCUSSED
+License: GPL (>= 3)
 Depends:
-    R (>= 2.10)
+    R (>= 2.10),
+    data.table
 Imports: 
     brapir,
     brapirv2,
     bslib,
-    data.table,
     DT,
     e1071,
     ggnewscale,
     ggplot2,
     ggpubr,
-    ggrepel,
     gridExtra,
     gtools,
     htmltools,

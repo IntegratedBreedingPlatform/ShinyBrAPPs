@@ -114,7 +114,7 @@ function copyToClipboard(id, names) {
         clearInterval(temp);
       }, 2000 );
   } else {
-    console.info( "document.execCommand went wrong…" )
+    console.info("document.execCommand went wrong…")
   }
 
   document.body.removeChild(dummy);

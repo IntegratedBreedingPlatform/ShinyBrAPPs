@@ -45,10 +45,10 @@ mod_model_ui <- function(id){
       )
     ),
     ## Modal with model designs ####
-    bsModal(
-      ns("modal_model_design"), title = "Metadata for model designs", trigger = ns("model_design_metadata_button"), size = "large",
-      dataTableOutput(ns("table_model_design_metadata"))
-    ),
+    # bsModal(
+    #   ns("modal_model_design"), title = "Metadata for model designs", trigger = ns("model_design_metadata_button"), size = "large",
+    #   dataTableOutput(ns("table_model_design_metadata"))
+    # ),
     br(),
     
     ## Advanced options accordion ####
@@ -123,8 +123,14 @@ mod_model_ui <- function(id){
             # tags$h4("Metrics ~ Environment x Trait"),
             # pickerInput(ns("select_metrics_A"), "Statistics", multiple = F, choices = NULL, width = "40%", inline = T),
             downloadButton(ns("export_metrics_A"), "CSV Export", class = "btn btn-info", style = "float:right; margin:5px"),
-            shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push BLUES/BLUPS to BMS", icon = icon("leaf"), class = "btn btn-primary", style = "float:right; margin:5px"),
-            bsTooltip(id = ns("push_metrics_to_BMS_B"), title = "You can select the traits you want to push by selecting raws in the table below", placement = "left", trigger = "hover"),
+            shiny::actionButton(
+              inputId = ns("push_metrics_to_BMS_B"), 
+              label = "Push BLUES/BLUPS to BMS", 
+              icon = icon("leaf"), 
+              class = "btn btn-primary", 
+              style = "float:right; margin:5px"
+            ) |>
+              tooltip("You can select the traits you want to push by selecting raws in the table below"),
             dataTableOutput(ns("metrics_A_table"))
           ),
           div(
@@ -413,6 +419,20 @@ mod_model_server <- function(id, rv){
         }
       }, 
       ignoreNULL = FALSE)
+      
+      ## observe model_design_metadata_button ####
+      observeEvent(input$model_design_metadata_button, {
+        showModal(
+          modalDialog(
+            title = "Metadata for model designs",
+            easyClose = TRUE,
+            footer = NULL,
+            fade = F,
+            size = "l",
+            dataTableOutput(ns("table_model_design_metadata"))
+          )
+        )
+      })
 
       ## observe model_engine ####
       observeEvent(input$model_engine,{
@@ -556,6 +576,7 @@ mod_model_server <- function(id, rv){
         
         ## create TD
         rv_mod$TD <- do.call(what = createTD, args = createTD_args)
+        rv$TD <- rv_mod$TD
         
         
         

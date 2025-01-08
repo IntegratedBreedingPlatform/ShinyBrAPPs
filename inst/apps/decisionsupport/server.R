@@ -7,10 +7,15 @@ server <- function(input, output, session){
     data = NULL,                # trial data as a data.table object
     excluded_obs = NULL,        # vector of excluded observations.observationDbId (data quality module)
     pushOK = FALSE,             # to avoid pushing BLUES/BLUPS to easily
+    groups = data.table(),
+    visu_as_group = NULL,
+    new_group_created = F
   )
   
   mod_get_studydata_server("get_studydata", rv)
   mod_get_extradata_server("get_extradata", rv)
+  print("appname")
+  print(appname)
   mod_banner_server("banner", rv, appname)
   mod_scatterplot_server("scatterplot", rv, session)
   mod_gxe_server("gxe", rv, session)

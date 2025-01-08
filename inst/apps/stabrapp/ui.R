@@ -65,6 +65,7 @@ ui <- fluidPage(
   div(class = "container-fluid",
       mod_banner_ui("banner"),
       mod_get_studydata_ui("get_studydata"),
+      div(style="position: relative; z-index: 10;",
       bslib::page_navbar(
         bslib::nav_panel(
           title = "Data Quality",
@@ -74,6 +75,6 @@ ui <- fluidPage(
           title = "Model",
           mod_model_ui('model')
         )
-      )
+      ))
   )
 )
