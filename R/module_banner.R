@@ -51,14 +51,14 @@ mod_banner_server <- function(id, rv, appname){
           paste("data-", Sys.Date(), ".csv", sep="")
         },
         content = function(file) {
-          if (rv$appname=="DSBrAPP"){
-            write.csv(rv$data_plot, file, row.names = F)
+          if (appname=="DSBrAPP"){
+            write.csv(rv$extradata, file, row.names = F)
           } else {
-            if (rv$appname=="STABrAPP"){
+            if (appname=="STABrAPP"){
               write.csv(rv$data, file, row.names = F)
             } else {
-              if (rv$appname=="BMS trial data explorer"){
-                write.csv(rv$data_dq[,-c("facetrows", "facetcols"), with=F], file, row.names = F)
+              if (appname=="BMS trial data explorer"){
+                write.csv(rv$data[,-c("facetrows", "facetcols"), with=F], file, row.names = F)
               }
             }
           }
@@ -69,7 +69,6 @@ mod_banner_server <- function(id, rv, appname){
           paste("data-", Sys.Date(), ".Rdata", sep="")
         },
         content = function(file) {
-          browser()
           if (appname=="DSBrAPP"){
             write.csv(rv$data, file, row.names = F)
             if (is.null(rv$TD)){

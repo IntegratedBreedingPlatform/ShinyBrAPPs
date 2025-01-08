@@ -206,7 +206,6 @@ mod_model_server <- function(id, rv){
       ns <- session$ns
 
       rv_mod <- reactiveValues(
-        TD = NULL,
         fit = NULL,
         obsUnit_outliers = NULL
       )
@@ -447,14 +446,14 @@ mod_model_server <- function(id, rv){
 
       ## output$psanova_opt ####
       output$psanova_opt <- renderUI({ ## based on RAPWeb code
-        req(input$select_environments, rv_mod$TD, input$model_engine == "SpATS", input$display_psanova_opt==T)
+        req(input$select_environments, rv$TD, input$model_engine == "SpATS", input$display_psanova_opt==T)
 
         ## Variable selection. Cov vars have to be a factor column.
         nRows <- min(sapply(X = input$select_environments, FUN = function(trial) {
-          nlevels(droplevels(rv_mod$TD[[trial]]$rowId))
+          nlevels(droplevels(rv$TD[[trial]]$rowId))
         }))
         nCols <- min(sapply(X = input$select_environments, FUN = function(trial) {
-          nlevels(droplevels(rv_mod$TD[[trial]]$colId))
+          nlevels(droplevels(rv$TD[[trial]]$colId))
         }))
         tagList(
           sliderInput(inputId = ns("spRowSeg"),
@@ -575,8 +574,8 @@ mod_model_server <- function(id, rv){
         )
         
         ## create TD
-        rv_mod$TD <- do.call(what = createTD, args = createTD_args)
-        rv$TD <- rv_mod$TD
+        rv$TD <- do.call(what = createTD, args = createTD_args)
+        rv$TD <- rv$TD
         
         
         
@@ -591,7 +590,7 @@ mod_model_server <- function(id, rv){
         a <- tryCatch({
           withProgress(message = "Fitting model", min=1, max=1, {
             rv_mod$fit <- fitTD(
-              TD = rv_mod$TD,
+              TD = rv$TD,
               trials = input$select_environments,
               design = input$model_design,
               traits = input$select_traits,
