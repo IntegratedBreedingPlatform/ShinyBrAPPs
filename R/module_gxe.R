@@ -401,64 +401,73 @@ mod_gxe_ui <- function(id){
           ### Sidebar ####
           sidebar=sidebar(
             width = 350,
-            pickerInput(ns("STAB_plots_colorby"),"Color Genotypes by", choices = c())),
-        accordion(id = ns("STAB_accordsup"),
-                         accordion_panel(title = "Superiority measure of Lin and Binns",
-                                                layout_columns(
-                                                  card(
-                                                    dataTableOutput(ns("STAB_sup")),
-                                                    card_footer(
-                                                      uiOutput(ns("copy_STABsup_table"))
-                                                    )
-                                                  ),
-                                                  card(
-                                                    plotOutput(ns("STAB_sup_plot"),
-                                                               hover = hoverOpts(id =ns("STAB_sup_plot_hover"),delay = 50),
-                                                               click = clickOpts(id=ns("STAB_sup_plot_click")),
-                                                               #brush = brushOpts(id=ns("STAB_sup_plot_brush")),
-                                                               dblclick = dblclickOpts(id=ns("STAB_sup_plot_dblclick"))
-                                                    )
-                                                  )
-                                                )
-                         ),
-                         accordion_panel(title = "Shukla's stability variance",
-                                                layout_columns(
-                                                  card(
-                                                    dataTableOutput(ns("STAB_static")),
-                                                    card_footer(
-                                                      uiOutput(ns("copy_STABstatic_table"))
-                                                    )
-                                                  ),
-                                                  card(
-                                                    plotOutput(ns("STAB_static_plot"),
-                                                               hover = hoverOpts(id =ns("STAB_static_plot_hover"),delay = 50),
-                                                               click = clickOpts(id=ns("STAB_static_plot_click")),
-                                                               #brush = brushOpts(id=ns("STAB_static_plot_brush")),
-                                                               dblclick = dblclickOpts(id=ns("STAB_static_plot_dblclick"))
-                                                    )
-                                                  )
-                                                )
-                         ),
-                         accordion_panel(title = "Wricke's ecovalence",
-                                                layout_columns(
-                                                  card(
-                                                    dataTableOutput(ns("STAB_wricke")),
-                                                    card_footer(
-                                                      uiOutput(ns("copy_STABwricke_table"))
-                                                    )
-                                                  ),
-                                                  card(
-                                                    plotOutput(ns("STAB_wricke_plot"),
-                                                               hover = hoverOpts(id =ns("STAB_wricke_plot_hover"),delay = 50),
-                                                               click = clickOpts(id=ns("STAB_wricke_plot_click")),
-                                                               #brush = brushOpts(id=ns("STAB_wricke_plot_brush")),
-                                                               dblclick = dblclickOpts(id=ns("STAB_wricke_plot_dblclick"))
-                                                    )
-                                                  )
-                                                )
-                         )
+            pickerInput(ns("STAB_plots_colorby"),"Color Genotypes by", choices = c())
+          ),
+          accordion(
+            id = ns("STAB_accordsup"),
+            open = c("Superiority measure of Lin and Binns",
+                    "Shukla's stability variance",
+                    "Wricke's ecovalence"),
+            accordion_panel(
+              title = "Superiority measure of Lin and Binns",
+              layout_columns(
+                card(
+                  dataTableOutput(ns("STAB_sup")),
+                  card_footer(
+                    uiOutput(ns("copy_STABsup_table"))
+                  )
+                ),
+                card(
+                  plotOutput(ns("STAB_sup_plot"),
+                              hover = hoverOpts(id =ns("STAB_sup_plot_hover"),delay = 50),
+                              click = clickOpts(id=ns("STAB_sup_plot_click")),
+                              #brush = brushOpts(id=ns("STAB_sup_plot_brush")),
+                              dblclick = dblclickOpts(id=ns("STAB_sup_plot_dblclick"))
+                  )
+                )
+              )
+            ),
+            accordion_panel(
+              title = "Shukla's stability variance",
+              layout_columns(
+                card(
+                  dataTableOutput(ns("STAB_static")),
+                  card_footer(
+                    uiOutput(ns("copy_STABstatic_table"))
+                  )
+                ),
+                card(
+                  plotOutput(ns("STAB_static_plot"),
+                              hover = hoverOpts(id =ns("STAB_static_plot_hover"),delay = 50),
+                              click = clickOpts(id=ns("STAB_static_plot_click")),
+                              #brush = brushOpts(id=ns("STAB_static_plot_brush")),
+                              dblclick = dblclickOpts(id=ns("STAB_static_plot_dblclick"))
+                  )
+                )
+              )
+            ),
+            accordion_panel(
+              title = "Wricke's ecovalence",
+              layout_columns(
+                card(
+                  dataTableOutput(ns("STAB_wricke")),
+                  card_footer(
+                    uiOutput(ns("copy_STABwricke_table"))
+                  )
+                ),
+                card(
+                  plotOutput(ns("STAB_wricke_plot"),
+                              hover = hoverOpts(id =ns("STAB_wricke_plot_hover"),delay = 50),
+                              click = clickOpts(id=ns("STAB_wricke_plot_click")),
+                              #brush = brushOpts(id=ns("STAB_wricke_plot_brush")),
+                              dblclick = dblclickOpts(id=ns("STAB_wricke_plot_dblclick"))
+                  )
+                )
+              )
+            )
+          )          
         )
-        )),
+      ),
       nav_panel(
         ## Mega-env panel ####
         title = "Mega-envs",
