@@ -398,63 +398,68 @@ mod_gxe_ui <- function(id){
           sidebar=bslib::sidebar(
             width = 350,
             pickerInput(ns("STAB_plots_colorby"),"Color Genotypes by", choices = c())),
-        bslib::accordion(id = ns("STAB_accordsup"),
+          ### Results ####
+          bslib::accordion(id = ns("STAB_accordsup"),
                          open = c("Superiority measure of Lin and Binns",
                                   "Shukla's stability variance",
                                   "Wricke's ecovalence"),
-                         bslib::accordion_panel(title = "Superiority measure of Lin and Binns",
-                                                bslib::layout_columns(
+                         bslib::accordion_panel(title = "Superiority measure of Lin and Binns, Shukla's stability variance & Wricke's ecovalence",
+                                                bslib::layout_columns(col_widths = 6,
                                                   bslib::card(
                                                     dataTableOutput(ns("STAB_sup")),
                                                     bslib::card_footer(
-                                                      uiOutput(ns("copy_STABsup_table"))
+                                                      div(style="display: flex;gap: 10px;",
+                                                          uiOutput(ns("copy_STABsup_table")),
+                                                          shiny::actionButton(ns("create_groups_from_STABsel"), "Create group from selection", icon = icon(NULL), class = "btn btn-info")
+                                                      )
                                                     )
                                                   ),
-                                                  bslib::card(
+                                                  bslib::layout_columns(col_widths = 12,
+                                                  bslib::card(full_screen = TRUE,
                                                     plotOutput(ns("STAB_sup_plot"),
-                                                               hover = hoverOpts(id =ns("STAB_sup_plot_hover"),delay = 50),
+                                                               #hover = hoverOpts(id =ns("STAB_sup_plot_hover"),delay = 50),
                                                                click = clickOpts(id=ns("STAB_sup_plot_click")),
                                                                #brush = brushOpts(id=ns("STAB_sup_plot_brush")),
-                                                               dblclick = dblclickOpts(id=ns("STAB_sup_plot_dblclick")))
-                                                    )
-                                                )
-                                                ),
-                         bslib::accordion_panel(title = "Shukla's stability variance",
-                                                bslib::layout_columns(
-                                                  bslib::card(
-                                                    dataTableOutput(ns("STAB_static")),
-                                                    bslib::card_footer(
-                                                      uiOutput(ns("copy_STABstatic_table"))
-                                                    )
-                                                  ),
-                                                  bslib::card(
+                                                               dblclick = dblclickOpts(id=ns("STAB_sup_plot_dblclick"), delay = 1000))
+                                                    ),
+                        #                        )
+                        #                        ),
+                        # bslib::accordion_panel(title = "Shukla's stability variance",
+                        #                        bslib::layout_columns(
+                        #                          bslib::card(
+                        #                            dataTableOutput(ns("STAB_static")),
+                        #                            bslib::card_footer(
+                        #                              uiOutput(ns("copy_STABstatic_table"))
+                        #                            )
+                        #                          ),
+                                                  bslib::card(full_screen = TRUE,
                                                     plotOutput(ns("STAB_static_plot"),
-                                                               hover = hoverOpts(id =ns("STAB_static_plot_hover"),delay = 50),
+                                                               #hover = hoverOpts(id =ns("STAB_static_plot_hover"),delay = 50),
                                                                click = clickOpts(id=ns("STAB_static_plot_click")),
                                                                #brush = brushOpts(id=ns("STAB_static_plot_brush")),
-                                                               dblclick = dblclickOpts(id=ns("STAB_static_plot_dblclick")))
-                                                  )
-                                                )
-                         ),
-                         bslib::accordion_panel(title = "Wricke's ecovalence",
-                                                bslib::layout_columns(
-                                                  bslib::card(
-                                                    dataTableOutput(ns("STAB_wricke")),
-                                                    bslib::card_footer(
-                                                      uiOutput(ns("copy_STABwricke_table"))
-                                                    )
+                                                               dblclick = dblclickOpts(id=ns("STAB_static_plot_dblclick"), delay = 1000))
                                                   ),
-                                                  bslib::card(
+                         #                       )
+                         #),
+                         #bslib::accordion_panel(title = "Wricke's ecovalence",
+                         #                       bslib::layout_columns(
+                         #                         bslib::card(
+                         #                           dataTableOutput(ns("STAB_wricke")),
+                         #                           bslib::card_footer(
+                         #                             uiOutput(ns("copy_STABwricke_table"))
+                         #                           )
+                         #                         ),
+                                                  bslib::card(full_screen = TRUE,
                                                     plotOutput(ns("STAB_wricke_plot"),
-                                                               hover = hoverOpts(id =ns("STAB_wricke_plot_hover"),delay = 50),
+                                                               #hover = hoverOpts(id =ns("STAB_wricke_plot_hover"),delay = 50),
                                                                click = clickOpts(id=ns("STAB_wricke_plot_click")),
                                                                #brush = brushOpts(id=ns("STAB_wricke_plot_brush")),
-                                                               dblclick = dblclickOpts(id=ns("STAB_wricke_plot_dblclick")))
+                                                               dblclick = dblclickOpts(id=ns("STAB_wricke_plot_dblclick"), delay = 1000))
                                                   )
                                                 )
                          )
         )
-        )),
+        ))),
       bslib::nav_panel(
         ## Mega-env panel ####
         title = "Mega-envs",
@@ -485,6 +490,12 @@ mod_gxe_server <- function(id, rv, parent_session){
       rv$selected_genotypes <- NULL
       rv$FWclicked_genotypes <- NULL
       rv$console <- NULL
+      
+      lastclick_stabsup <- Sys.time()
+      lastclick_stabsta <- Sys.time()
+      lastclick_stabwri <- Sys.time()
+      lastsel_stabtab <- Sys.time()
+      
       observe({
         req(rv$data_plot)
         req(rv$column_datasource)
@@ -933,9 +944,8 @@ mod_gxe_server <- function(id, rv, parent_session){
       })
       ### FW plot ####
       #### renderPlot observer ####
-      observe({
-        req(rv$TDFW)
           output$FW_plot <- renderPlot({
+            req(rv$TDFW)
             TDFWplot <- rv$TDFWplot
             if (is.null(input$FW_picker_color_by)){
                 p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
@@ -1072,7 +1082,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             }
             #}
           })
-      })
+
       #### Handle hover event ####
       observe({
         output$FWhover_vinfo <- renderText({
@@ -1741,19 +1751,50 @@ mod_gxe_server <- function(id, rv, parent_session){
       
     ## Stability ####
       ### Run Stab ####
-      #### Superiority ####
       observe({
         req(rv$TD)
-        rv$TDStab <- tryCatch(statgenGxE::gxeStability(TD = rv$TD,
+        TDStab <- tryCatch(statgenGxE::gxeStability(TD = rv$TD,
                                                         trait = input$picker_trait), error=function(e) e)
+        dtsup <- as.data.table(TDStab$superiority)
+        dtsta <- as.data.table(TDStab$static)
+        dtwri <- as.data.table(TDStab$wricke)
+        TDStab$dtres <- as.data.frame(dtsup[dtsta[,.(Genotype,Static)], on=.(Genotype)][dtwri[,.(Genotype,Wricke)], on=.(Genotype)])
+        rv$TDStab <- TDStab
       })
+      #### Render DT ####
       output$STAB_sup <- renderDataTable({
-        formatRound(datatable(rv$TDStab$superiority[order(!rv$TDStab$superiority$Genotype%in%rv$STSclicked_genotypes),], rownames = FALSE,
+        #browser()
+        formatRound(datatable(rv$TDStab$dtres[order(!rv$TDStab$dtres$Genotype%in%rv$STSclicked_genotypes),], rownames = FALSE,
+                              options = list(pageLength = 30),
                               selection = list(mode="multiple", 
-                                               selected=which(rv$TDStab$superiority$Genotype[order(!rv$TDStab$superiority$Genotype%in%rv$STSclicked_genotypes)]%in%rv$STSclicked_genotypes))),
-                    columns = c("Mean", "Superiority"), 
+                                               selected=which(rv$TDStab$dtres$Genotype[order(!rv$TDStab$dtres$Genotype%in%rv$STSclicked_genotypes)]%in%rv$STSclicked_genotypes))),
+                    columns = c("Mean", "Superiority", "Static", "Wricke"), 
                     digits=3)
       })
+      #### Handle DT selection ####
+      observeEvent(input$STAB_sup_rows_selected, ignoreNULL = FALSE, ignoreInit = TRUE, {
+        #browser()
+        req(abs(lastsel_stabtab - Sys.time()) >=0.3)
+        if (!is.null(input$STAB_sup_rows_selected)){
+          tab <- rv$TDStab$dtres[order(!rv$TDStab$dtres$Genotype%in%rv$STSclicked_genotypes),]
+          rv$STSclicked_genotypes <- as.character(tab[input$STAB_sup_rows_selected, "Genotype"])
+          lastsel_stabtab <<- Sys.time()
+        } else {
+          rv$STSclicked_genotypes <- NULL
+        }
+      })
+      #### Handle DT Copy ####
+      observe({
+        req(nrow(rv$TDStab$superiority)>0)
+        output$copy_STABsup_table <- renderUI({
+          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv$TDStab$superiority),collapse="\t"),
+                                                                          paste(apply(rv$TDStab$superiority,1,paste,collapse="\t"),collapse = "\n"),
+                                                                          sep="\n"))#, shiny::icon("clipboard"))
+        })
+      })
+      
+      #### Superiority ####
+      ##### Render Plot ####
       output$STAB_sup_plot <- renderPlot({
           gg <- ggplot(rv$TDStab$superiority) + 
                      geom_point(aes(x=Mean, y= sqrt(Superiority), text = Genotype)) +
@@ -1772,8 +1813,6 @@ mod_gxe_server <- function(id, rv, parent_session){
           }
           if(length(rv$STSclicked_genotypes)>0){
             clickgeno <- gg$data[gg$data$Genotype%in%rv$STSclicked_genotypes,]
-            #browser()
-            #gg + ggnewscale::new_scale_color()
             gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Superiority)), shape = 21, size=3, color="red") +
                        geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Superiority), label=Genotype), size=2, color="red",
                                  position = position_nudge(y=max(gg$data[,"Superiority"])/150))
@@ -1783,6 +1822,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         
         ##### Handle click event ####
         observeEvent(input$STAB_sup_plot_click,{
+          req(abs(lastclick_stabsup - Sys.time()) >=0.8)
           if(!is.null(input$STAB_sup_plot_click)) {
               clicked_genotypes <- rv$STSclicked_genotypes
               sts <- rv$st_sup_plotdat
@@ -1794,30 +1834,25 @@ mod_gxe_server <- function(id, rv, parent_session){
               } else {
                 rv$STSclicked_genotypes <- unique(c(clicked_genotypes,clickedgeno))
               }
+              lastclick_stabsup <<- Sys.time()
           }
         })
-        #### Handle dbleclick event ####
+        ##### Handle dbleclick event ####
         observeEvent(input$STAB_sup_plot_dblclick,{
           rv$STSclicked_genotypes <- NULL
         })
+      
+      
+      #### Static ####
         
-        #### Static ####
-        
-        output$STAB_static <- renderDataTable({
-          formatRound(datatable(rv$TDStab$static[order(!rv$TDStab$static$Genotype%in%rv$STSclicked_genotypes),], rownames = FALSE,
-                                selection = list(mode="multiple", 
-                                                 selected=which(rv$TDStab$static$Genotype[order(!rv$TDStab$static$Genotype%in%rv$STSclicked_genotypes)]%in%rv$STSclicked_genotypes))),
-                      columns = c("Mean", "Static"), 
-                      digits=3)
-        })
-        
+      ##### Render Plot ####
+      
         output$STAB_static_plot <- renderPlot({
           gg <- ggplot(rv$TDStab$static) + 
                      geom_point(aes(x=Mean, y= sqrt(Static), text = Genotype)) +
                      ylab("Square root of Static stability")
           rv$st_sta_plotdat <- gg$data
           if (input$STAB_plots_colorby!="Nothing"){
-            #browser() 
             geompdat <- as.data.table(gg$data)
             geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$STAB_plots_colorby)]), by.x = "Genotype", by.y = "genotype", all = TRUE)
             gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
@@ -1829,8 +1864,6 @@ mod_gxe_server <- function(id, rv, parent_session){
           }
           if(length(rv$STSclicked_genotypes)>0){
             clickgeno <- gg$data[gg$data$Genotype%in%rv$STSclicked_genotypes,]
-            #browser()
-            #gg + ggnewscale::new_scale_color()
             gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Static)), shape = 21, size=3, color="red") + 
               geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Static), label=Genotype), size=2, color="red",
                         position = position_nudge(y=max(gg$data[,"Static"])/150))
@@ -1841,6 +1874,8 @@ mod_gxe_server <- function(id, rv, parent_session){
         })
         ##### Handle click event ####
         observeEvent(input$STAB_static_plot_click,{
+          req(abs(lastclick_stabsta - Sys.time()) >=0.8)
+          
           if(!is.null(input$STAB_static_plot_click)) {
             clicked_genotypes <- rv$STSclicked_genotypes
             sta <- rv$st_sta_plotdat
@@ -1852,30 +1887,25 @@ mod_gxe_server <- function(id, rv, parent_session){
             } else {
               rv$STSclicked_genotypes <- unique(c(clicked_genotypes,clickedgeno))
             }
+            lastclick_stabsta <<- Sys.time()
+            
           }
         })
-        #### Handle dbleclick event ####
+        ##### Handle dbleclick event ####
         observeEvent(input$STAB_static_plot_dblclick,{
           rv$STSclicked_genotypes <- NULL
         })
         
-        #### Wricke ####
+      #### Wricke ####
         
-        output$STAB_wricke <- renderDataTable({
-          formatRound(datatable(rv$TDStab$wricke[order(!rv$TDStab$wricke$Genotype%in%rv$STSclicked_genotypes),], rownames = FALSE,
-                                selection = list(mode="multiple", 
-                                                 selected=which(rv$TDStab$wricke$Genotype[order(!rv$TDStab$wricke$Genotype%in%rv$STSclicked_genotypes)]%in%rv$STSclicked_genotypes))),
-                      columns = c("Mean", "Wricke"), 
-                      digits=3)
-        })
-        
+      ##### Render Plot ####
+      
         output$STAB_wricke_plot <- renderPlot({
           gg <- ggplot(rv$TDStab$wricke) + 
             geom_point(aes(x=Mean, y= sqrt(Wricke), text = Genotype)) +
             ylab("Square root of Wricke ecovalence")
           rv$st_stw_plotdat <- gg$data
           if (input$STAB_plots_colorby!="Nothing"){
-            #browser() 
             geompdat <- as.data.table(gg$data)
             geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$STAB_plots_colorby)]), by.x = "Genotype", by.y = "genotype", all = TRUE)
             gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
@@ -1887,8 +1917,6 @@ mod_gxe_server <- function(id, rv, parent_session){
           }
           if(length(rv$STSclicked_genotypes)>0){
             clickgeno <- gg$data[gg$data$Genotype%in%rv$STSclicked_genotypes,]
-            #browser()
-            #gg + ggnewscale::new_scale_color()
             gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Wricke)), shape = 21, size=3, color="red") +
                        geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Wricke), label=Genotype), size=2, color="red",
                                  position = position_nudge(y=max(gg$data[,"Wricke"])/150))
@@ -1899,6 +1927,8 @@ mod_gxe_server <- function(id, rv, parent_session){
         })
         ##### Handle click event ####
         observeEvent(input$STAB_wricke_plot_click,{
+          req(abs(lastclick_stabwri - Sys.time()) >=0.8)
+          
           if(!is.null(input$STAB_wricke_plot_click)) {
             clicked_genotypes <- rv$STSclicked_genotypes
             stw <- rv$st_stw_plotdat
@@ -1910,51 +1940,42 @@ mod_gxe_server <- function(id, rv, parent_session){
             } else {
               rv$STSclicked_genotypes <- unique(c(clicked_genotypes,clickedgeno))
             }
+            lastclick_stabwri <<- Sys.time()
+            
           }
         })
-        #### Handle dbleclick event ####
+        ##### Handle dbleclick event ####
         observeEvent(input$STAB_wricke_plot_dblclick,{
           rv$STSclicked_genotypes <- NULL
         })
         
-        
-        #output$STAB_wricke <- renderDataTable({
-        #  formatRound(datatable(rv$TDStab$wricke, rownames = FALSE),
-        #                        columns = c("Mean", "Wricke"), 
-        #                        digits=3)
-        #})
-        #output$STAB_wricke_plot <- renderPlot({
-        #  ggplot(rv$TDStab$wricke) + 
-        #             geom_point(aes(x=Mean, y= sqrt(Wricke), text = Genotype)) +
-        #             ylab("Square root of Wricke ecovalence")
-        #})
-        
+      #### Handle group creation in Stability selection ####
+      observe({
+        if(length(rv$STSclicked_genotypes)<1){
+          shinyjs::disable("create_groups_from_STABsel")
+        } else {
+          shinyjs::enable("create_groups_from_STABsel")
+        }
+      })
+      observeEvent(input$create_groups_from_STABsel,{
+        if(length(rv$STSclicked_genotypes)>0){
+          rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
+                                                               data.table(Genotype=rv$STSclicked_genotypes)),
+                                                  y=unique(rbindlist(rv$TD)),
+                                                  by.x = "Genotype",
+                                                  by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
+          showModal(groupModal(rv=rv, 
+                               parent_session = parent_session, 
+                               modal_title = "Create new group", 
+                               group_description = paste0("Group manually created from selected genotypes in Stability analysis of ", input$picker_trait, " variable"),
+                               group_prefix =paste0("M_STAB@",input$picker_trait,".")
+          )
+          )
+        }
+      })
       
-      observe({
-        req(nrow(rv$TDStab$superiority)>0)
-        output$copy_STABsup_table <- renderUI({
-          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv$TDStab$superiority),collapse="\t"),
-                                                                          paste(apply(rv$TDStab$superiority,1,paste,collapse="\t"),collapse = "\n"),
-                                                                          sep="\n"))#, shiny::icon("clipboard"))
-        })
-      })
-      observe({
-        req(nrow(rv$TDStab$static)>0)
-        output$copy_STABstatic_table <- renderUI({
-          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv$TDStab$static),collapse="\t"),
-                                                                          paste(apply(rv$TDStab$static,1,paste,collapse="\t"),collapse = "\n"),
-                                                                          sep="\n"))#, shiny::icon("clipboard"))
-        })
-      })
-      observe({
-        req(nrow(rv$TDStab$wricke)>0)
-        output$copy_STABwricke_table <- renderUI({
-          rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv$TDStab$wricke),collapse="\t"),
-                                                                          paste(apply(rv$TDStab$wricke,1,paste,collapse="\t"),collapse = "\n"),
-                                                                          sep="\n"))#, shiny::icon("clipboard"))
-        })
-      })
-    ## MM Report ####
+      
+      ## MM Report ####
         output$MM_report <- downloadHandler(
           filename = function() {
             paste("GxE_MM-", Sys.Date(), ".html", sep="")
