@@ -1812,7 +1812,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       #### plot ####
       output$STAB_sup_plot <- renderPlot({
         gg <- ggplot(rv_gxe$TDStab$superiority) + 
-          geom_point(aes(x=Mean, y= sqrt(Superiority), text = Genotype)) +
+          geom_point(aes(x=Mean, y= sqrt(Superiority))) +
           ylab("Square root of superiority")
         rv_gxe$st_sup_plotdat <- gg$data
         if (input$STAB_plots_colorby!="Nothing"){
@@ -1856,13 +1856,14 @@ mod_gxe_server <- function(id, rv, parent_session){
       })
       #### Handle dbleclick event ####
       observeEvent(input$STAB_sup_plot_dblclick,{
+        req(abs(lastclick_stabsup - Sys.time()) >=0.8)
         rv_gxe$STSclicked_genotypes <- NULL
       })
       
       ### Static ####
       output$STAB_static_plot <- renderPlot({
         gg <- ggplot(rv_gxe$TDStab$static) + 
-          geom_point(aes(x=Mean, y= sqrt(Static), text = Genotype)) +
+          geom_point(aes(x=Mean, y= sqrt(Static))) +
           ylab("Square root of Static stability")
         rv_gxe$st_sta_plotdat <- gg$data
         if (input$STAB_plots_colorby!="Nothing"){
@@ -1908,6 +1909,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       })
       #### Handle dbleclick event ####
       observeEvent(input$STAB_static_plot_dblclick,{
+        req(abs(lastclick_stabsta - Sys.time()) >=0.8)
         rv_gxe$STSclicked_genotypes <- NULL
       })
       
@@ -1917,7 +1919,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       #### plot
       output$STAB_wricke_plot <- renderPlot({
         gg <- ggplot(rv_gxe$TDStab$wricke) + 
-          geom_point(aes(x=Mean, y= sqrt(Wricke), text = Genotype)) +
+          geom_point(aes(x=Mean, y= sqrt(Wricke))) +
           ylab("Square root of Wricke ecovalence")
         rv_gxe$st_stw_plotdat <- gg$data
         if (input$STAB_plots_colorby!="Nothing"){
@@ -1925,6 +1927,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           geompdat <- as.data.table(gg$data)
           geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$STAB_plots_colorby)]), by.x = "Genotype", by.y = "genotype", all = TRUE)
           gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
+
           
           gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
           gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrt(Wricke), color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
@@ -1963,6 +1966,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       })
       #### Handle dbleclick event ####
       observeEvent(input$STAB_wricke_plot_dblclick,{
+        req(abs(lastclick_stabwri - Sys.time()) >=0.8)
         rv_gxe$STSclicked_genotypes <- NULL
       })
       
