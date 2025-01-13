@@ -1,9 +1,7 @@
 library(shinybrapps)
 source("config.R")
-my_theme <- bslib::bs_theme(
-  version = 5)
 ui <- fluidPage(
-  theme = my_theme,
+  #theme = bslib::bs_theme(version = 5),
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "css/app.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/custom_styles.css"),

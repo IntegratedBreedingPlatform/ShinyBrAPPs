@@ -1,3 +1,4 @@
+#' @import bslib
 #' @export
 mod_groups_sidebar_ui <- function(id){
   ns <- NS(id)
@@ -7,12 +8,12 @@ mod_groups_sidebar_ui <- function(id){
     ),
     fluidRow(
       column(12,
-             bslib::card(
+             card(
                class = ns("at_least_one_group_selected"),
-               bslib::card_header(
+               card_header(
                  h4('Actions ', icon('screwdriver-wrench'))
                ),
-               bslib::card_body(
+               card_body(
                  #title = span('Options ', icon('screwdriver-wrench')),
                  #width = 12,
                  #h4('Actions ', icon('screwdriver-wrench')),
@@ -23,12 +24,12 @@ mod_groups_sidebar_ui <- function(id){
                  actionButton(ns("action_groups_delete"),label = "Delete", block = T, class =paste("btn btn-info", ns("at_least_one_group_selected")))
                )
              ),
-             bslib::card(
+             card(
                id = ns("export_box"),
-               bslib::card_header(
+               card_header(
                  h4('Export ')
                ),
-               bslib::card_body(
+               card_body(
                  downloadButton(ns("action_groups_export_group_details"),label = "Export Group Details", class = "btn-block btn-primary"),
                  actionButton(ns("action_groups_export_as_list"),label = "Export as List", block = T, class = "btn btn-primary", icon = icon("cloud"), icon.library = "font awesome"),
                  actionButton(ns("action_groups_mark_as_selection"),label = "Mark as Selection", block = T, class = "btn btn-primary", icon = icon("cloud"), icon.library = "font awesome")
@@ -51,7 +52,7 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
         req(rv$groups)
         req(length(rv$groups) > 0)
         output$ui_groups <- renderUI({
-          group_selector(input_id = ns("group_sel_input"), group_table = rv$groups, column_datasource = rv$column_datasource, data_plot = rv$data_plot, panel_style = "info")
+          group_selector(input_id = ns("group_sel_input"), group_table = rv$groups, column_datasource = rv$column_datasource, data_plot = rv$extradata, panel_style = "info")
         })
       })
       
@@ -162,7 +163,7 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
       observeEvent(input$action_groups_delete,{
         ## update selectors (shape, colour)
         for(k in input$group_sel_input){
-          rv$data_plot[,eval(rv$groups[group_id == k, group_name]) := NULL]
+          rv$extradata[,eval(rv$groups[group_id == k, group_name]) := NULL]
         }
         rv$column_datasource <- rv$column_datasource[!(cols %in% rv$groups[group_id %in% input$group_sel_input, group_name])]
         
@@ -251,7 +252,7 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
       ## Mark as selection ####
       observeEvent(input$action_groups_mark_as_selection,{
         req(length(input$group_sel_input)==1)
-        envs <- unique(rv$data_plot[,.(studyDbId, study_name_app)])
+        envs <- unique(rv$extradata[,.(studyDbId, study_name_app)])
         env_choices <- envs[,studyDbId]
         names(env_choices) <- envs[,study_name_app]
         
@@ -364,7 +365,7 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
           paste0("group_", input$group_sel_input, ".csv")
         },
         content = function(file) {
-          group_detail <- unique(rv$data_plot[
+          group_detail <- unique(rv$extradata[
             germplasmDbId %in% unlist(rv$groups[group_id%in%input$group_sel_input, germplasmDbIds]),
             .SD, .SD = rv$column_datasource[source == "germplasm", cols]
           ])

@@ -5,7 +5,7 @@ mod_banner_ui <- function(id){
 }
 
 #' @export
-mod_banner_server <- function(id, rv){
+mod_banner_server <- function(id, rv, appname){
   moduleServer(
     id,
     function(input, output, session){
@@ -17,7 +17,7 @@ mod_banner_server <- function(id, rv){
                   style="border-radius: 6px;
                 width:129px;
                 height:34px;
-                margin-right:10px"),paste(rv$appname," - Study: ", paste(rv$data[,unique(trialName)], collapse = ", ")),
+                margin-right:10px"),paste(appname," - Study: ", paste(rv$data[,unique(trialName)], collapse = ", ")),
           style="font: 500 20px/32px Roboto,Helvetica Neue,sans-serif;display: flex;justify-content: center;position: relative; z-index: 30;",
           div(style="margin-left: auto;",
               dropdown(
@@ -32,7 +32,7 @@ mod_banner_server <- function(id, rv){
                 #circle = FALSE,
                 #downloadBttn(ns("dwnld1"),label = "As csv", style = "minimal", size="xs"),
                 downloadButton(ns("dwnld1"),label = "As csv file"),
-                if (rv$appname!="BMS trial data explorer") downloadButton(ns("dwnld2"),label = "As TD object")
+                if (appname!="BMS trial data explorer") downloadButton(ns("dwnld2"),label = "As TD object")
               ))),
         style = "padding: 2px 0 2px 10px;
                     width:100%;
@@ -51,14 +51,14 @@ mod_banner_server <- function(id, rv){
           paste("data-", Sys.Date(), ".csv", sep="")
         },
         content = function(file) {
-          if (rv$appname=="DSBrAPP"){
-            write.csv(rv$data_plot, file, row.names = F)
+          if (appname=="DSBrAPP"){
+            write.csv(rv$extradata, file, row.names = F)
           } else {
-            if (rv$appname=="STABrAPP"){
+            if (appname=="STABrAPP"){
               write.csv(rv$data, file, row.names = F)
             } else {
-              if (rv$appname=="BMS trial data explorer"){
-                write.csv(rv$data_dq[,-c("facetrows", "facetcols"), with=F], file, row.names = F)
+              if (appname=="BMS trial data explorer"){
+                write.csv(rv$data[,-c("facetrows", "facetcols"), with=F], file, row.names = F)
               }
             }
           }
@@ -69,8 +69,8 @@ mod_banner_server <- function(id, rv){
           paste("data-", Sys.Date(), ".Rdata", sep="")
         },
         content = function(file) {
-          if (rv$appname=="DSBrAPP"){
-            write.csv(rv$data_plot, file, row.names = F)
+          if (appname=="DSBrAPP"){
+            write.csv(rv$data, file, row.names = F)
             if (is.null(rv$TD)){
               showNotification("You must select a Trait and a Variable to use as Environment Name to form the TD object", type = "error", duration = notification_duration)
             } else {
@@ -78,7 +78,7 @@ mod_banner_server <- function(id, rv){
               save(TD, file = file)
             }
           } else {
-            if (rv$appname=="STABrAPP"){
+            if (appname=="STABrAPP"){
               if (is.null(rv$TD)){
                 showNotification("Please fit a model first", type = "error", duration = notification_duration)
               } else {
