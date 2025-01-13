@@ -1966,6 +1966,32 @@ mod_gxe_server <- function(id, rv, parent_session){
         rv_gxe$STSclicked_genotypes <- NULL
       })
       
+      #### Handle group creation in Stability selection ####
+      observeEvent(rv$STSclicked_genotypes, {
+        if(length(rv$STSclicked_genotypes)<1){
+          shinyjs::disable("create_groups_from_STABsel")
+        } else {
+          shinyjs::enable("create_groups_from_STABsel")
+        }
+      })
+      
+      observeEvent(input$create_groups_from_STABsel,{
+        if(length(rv_gxe$STSclicked_genotypes)>0){
+          rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
+                                                               data.table(Genotype=rv_gxe$STSclicked_genotypes)),
+                                                  y=unique(rbindlist(rv$TD)),
+                                                  by.x = "Genotype",
+                                                  by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
+          showModal(groupModal(rv=rv, 
+                               parent_session = parent_session, 
+                               modal_title = "Create new group", 
+                               group_description = paste0("Group manually created from selected genotypes in Stability analysis of ", input$picker_trait, " variable"),
+                               group_prefix =paste0("M_STAB@",input$picker_trait,".")
+          )
+          )
+        }
+      })
+      
       ## MM Report ####
       output$MM_report <- downloadHandler(
         filename = function() {
