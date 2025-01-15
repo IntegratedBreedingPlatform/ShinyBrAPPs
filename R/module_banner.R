@@ -72,9 +72,13 @@ mod_banner_server <- function(id, rv, appname){
           if (appname=="DSBrAPP"){
             write.csv(rv$data, file, row.names = F)
             if (is.null(rv$TD)){
-              showNotification("You must select a Trait and a Variable to use as Environment Name to form the TD object", type = "error", duration = notification_duration)
+              showNotification("You must select a Trait and a Variable to use as Environment Name to form the TD object (all traits will be included)", type = "error", duration = notification_duration)
             } else {
               TD <- rv$TD
+              TDb <- rbindlist(TD)
+              TDb <- TDb[,.SD,.SDcols = colnames(TDb)[!colnames(TDb)%in%rv$column_datasource[source=="Means", cols]]]
+              TDb <- rv$extradata[,.SD, .SDcols = c("observationUnitDbId", rv$column_datasource[source=="Means", cols])][TDb, on=.(observationUnitDbId)]
+              TD <- split(TDb, f = TDb$trial)
               save(TD, file = file)
             }
           } else {
