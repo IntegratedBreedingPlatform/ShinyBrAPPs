@@ -86,11 +86,12 @@ mod_trialdataxplor_server <- function(id, rv){
       )
 
       find_outlier <- function(x,c=1.5) {
-        return(x < quantile(x, .25) - c*IQR(x) | x > quantile(x, .75) + c*IQR(x))
+        return(x < quantile(x, .25, na.rm = TRUE) - c*IQR(x, na.rm = TRUE) | x > quantile(x, .75, na.rm = TRUE) + c*IQR(x, na.rm = TRUE))
       }
 
       ## observe rv$data ####
-      observeEvent(rv$data, {
+      observeEvent(c(rv$data), {
+        req(rv$data)
         if(rv$data[observationLevel!="PLOT", .N]>0){
           showNotification(
             paste0("Taking away the level(s) of observation: ",
@@ -128,10 +129,11 @@ mod_trialdataxplor_server <- function(id, rv){
         data_dq[, study_label:=paste0(locationName," (",countryName,")")]
         data_dq[, observationValue:=as.numeric(observationValue)]
         data_dq[, replicate:=as.factor(replicate)]
+        #browser()
         if (any(!st$studyDbId%in%data_dq$studyDbId)){
           missingst <- st[!studyDbId%in%data_dq$studyDbId]
           missingmsg <- paste(paste0(missingst$study_label,"(",missingst$studyDbId,")"),collapse=", ")
-          showModal(modalDialog(paste0("The following studies had not observation data: ", missingmsg)))
+          showModal(modalDialog(paste0("The following studies had no observation data: ", missingmsg)))
           rv_tdx$study_no_dat <- missingst
           output$study_no_dat <- renderTable(missingst,digits=0)
         }
@@ -151,10 +153,13 @@ mod_trialdataxplor_server <- function(id, rv){
         ct <- dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(study=paste0(studyDbId,"-",locationName),Variable=observationVariableName)],
                     Variable~study, fill = 0)
         rv_tdx$counts <- ct
-        
+      
         vnd <- melt(ct, variable.name = "StudyLocation")[value==0,.(StudyLocation, Variable)]
         rv_tdx$var_no_dat <- vnd
-        
+      })
+      observeEvent(input$outslid,{
+        req(rv_tdx$data_dq, input$outslid)
+        data_dq <- rv_tdx$data_dq
         cdout0 <- data_dq[observationValue==0, .(reason="value=0",studyDbId, study_label, observationVariableDbId, observationVariableName, observationValue, germplasmName, replicate, blockNumber, plotNumber, entryNumber)]
         #norm_var <- data_dq[scale.dataType=="Numerical" & observationValue!=0][data_dq[!is.na(observationValue),.(sd=sd(observationValue)),.(studyDbId,observationVariableDbId)][sd!=0],on=.(studyDbId,observationVariableDbId)][!is.na(observationValue)][,.(shapiro.test(observationValue)$`p.value`),.(studyDbId,observationVariableDbId, observationVariableName)][V1>=0.05]
         #cdoutbp <-data_dq[data_dq[norm_var, on=.(studyDbId,observationVariableDbId)][,.(observationValue=boxplot.stats(observationValue, coef = input$outslid)$out),.(studyDbId,observationVariableDbId)],on=.(studyDbId,observationVariableDbId, observationValue)][, .(reason="boxplot-outliers",studyDbId, study_label, observationVariableDbId,observationVariableName, observationValue, germplasmName, replicate, blockNumber, plotNumber, entryNumber)]
@@ -174,7 +179,8 @@ mod_trialdataxplor_server <- function(id, rv){
       })
       
       output$candidat_out <- DT::renderDataTable({
-        datatable(cdout, options = list(paging = FALSE,searching = FALSE), selection = "none") |>
+        req(rv_tdx$cdout)
+        datatable(rv_tdx$cdout, options = list(paging = FALSE,searching = FALSE), selection = "none") |>
           formatRound(columns = "observationValue", digits = 2)
       })
       #output$candidat_out <-renderTable(cdout, digits=0)
@@ -233,7 +239,7 @@ mod_trialdataxplor_server <- function(id, rv){
         data_dq[, facetcols := paste0(studyDbId, "-", locationName,"\n",countryName)]
         loclabels <- unique(data_dq[,.(facetcols,locationName)])
         g<-ggplot(data_dq, aes(y=observationValue, x=replicate)) +
-          geom_boxplot(aes(fill=as.factor(replicate))) +
+          geom_boxplot(aes(fill=as.factor(replicate)), coef = input$outslid) +
           facet_grid(rows=vars(facetrows), cols=vars(facetcols), scales = "free") +
           ggtitle(input$trial) +
           theme(strip.text.y.right = element_text(angle = 0, vjust = 1, hjust=0, size = 10),
@@ -247,6 +253,7 @@ mod_trialdataxplor_server <- function(id, rv){
           hjust   = 0,
           vjust   = 1, angle=90
         )
+        #browser()
         g
         # g<-ggplot(toplot, aes(y=observationValue, fill=replicate, x=locationName)) +
         #   geom_boxplot() +
@@ -275,7 +282,7 @@ mod_trialdataxplor_server <- function(id, rv){
         )) +
           #geom_violin(alpha = 0.2) +
           geom_boxplot(
-            fill = grey(0.8), outlier.colour = "red",  outlier.size = 5
+            fill = grey(0.8), coef = input$outslid, outlier.colour = "red",  outlier.size = 5
           ) +
           # geom_point(
           geom_jitter(
@@ -342,11 +349,11 @@ mod_trialdataxplor_server <- function(id, rv){
         })
       })
       
-      output$selected_obs <- renderTable({
+      output$selected_obs <- DT::renderDataTable({
         req(rv_tdx$obs_btable)
-        datatable(rv$obs_btable, options = list(paging = FALSE,searching = FALSE), selection = "none") |>
+        datatable(rv_tdx$obs_btable, options = list(paging = FALSE,searching = FALSE), selection = "none") |>
           formatRound(columns = "observationValue", digits = 2)
-      }, width='50%')
+      })
 
       output$download_check <- downloadHandler(
         filename = function() {
