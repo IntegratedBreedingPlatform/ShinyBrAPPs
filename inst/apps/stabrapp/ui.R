@@ -57,7 +57,7 @@ ui <- fluidPage(
                     background-color: #225691;
                     margin-bottom: 5px;
                     border-color: #357ebd;"),
-  shinyjs::useShinyjs(),
+  #shinyjs::useShinyjs(),
   #shinysky::busyIndicator(wait = 200, text = NULL, img = "img/loading-animation.gif"),
   shinybusy::add_busy_spinner(spin = "fading-circle", position = "top-left", margins = c(110, 10), color = "#225691", height = 25, width =25, timeout = 200), 
   
@@ -98,6 +98,22 @@ ui <- fluidPage(
           h2("Session info"),
           verbatimTextOutput("Rsi")
         )
-      ))
+      ),
+      bslib::accordion(
+        id = "excluded_accordion",
+        bslib::accordion_panel(
+          value = "excluded_panel",
+          title = "Excluded observations",
+          actionButton(
+            inputId = "set_non_excluded_obs",
+            label = "Include selected observations",
+            disabled = T,
+            class = "btn btn-info",
+            style = "margin-bottom: 10px;"
+          ),
+          DT::dataTableOutput("excluded_obs_table")
+        )
+      )
+    )
   )
 )

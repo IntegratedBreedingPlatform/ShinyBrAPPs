@@ -63,31 +63,33 @@ mod_dataquality_ui <- function(id) {
             position = "right",
             width = "30%",
             open = F,
-            h3("Selected observations", class = "display_if_selection", style = "display: none"),
+            h3("Selected observations"),
             dataTableOutput(ns("selected_obs_table")),
             layout_columns(
-              col_widths = c(8, 4),
+              col_widths = c(6, 6),
               shiny::actionButton(
                 ns("set_excluded_obs"),
-                "Set selected row(s) as excluded observation(s)",
-                class = "btn btn-info display_if_selection",
-                style = "width: auto; display: none"
+                "Exclude selected rows",
+                class = "btn btn-info",
+                #style = "width: auto;"
+                disabled = T
               ),
               shiny::actionButton(
                 ns("unselect_obs"),
                 "Reset selection",
-                class = "btn btn-info display_if_selection",
-                style = "width: auto; display: none "
+                class = "btn btn-info",
+                #style = "width: auto;"
+                disabled = T
               )
             ),
-            h3("Excluded observations", class = "display_if_selection", style = "display: none"),
-            dataTableOutput(ns("excluded_obs_table")),
-            shiny::actionButton(
-              ns("set_non_excluded_obs"),
-              "Set selected row(s) as non-excluded observation(s)",
-              class = "btn btn-info display_if_exclusion",
-              style = "width: auto; display: none"
-            ),
+            #h3("Excluded observations", class = "display_if_selection", style = "display: none"),
+            #dataTableOutput(ns("excluded_obs_table")),
+            # shiny::actionButton(
+            #   ns("set_non_excluded_obs"),
+            #   "Set selected row(s) as non-excluded observation(s)",
+            #   class = "btn btn-info display_if_exclusion",
+            #   style = "width: auto; display: none"
+            # ),
           ),
           ### select obs input ####
           div(
@@ -152,7 +154,10 @@ mod_dataquality_server <- function(id, rv) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
     rv_dq <- reactiveValues(
-      width = 12
+      width = 12,
+      sel_observationDbIds = character(0),
+      data_viz = NULL,
+      data = NULL
     )
     
     ## observe rv$data ####
@@ -163,6 +168,10 @@ mod_dataquality_server <- function(id, rv) {
           "There is no trait data for this study"
         )
       )
+      
+      rv_dq$data <- rv$data
+      rv_dq$data[, status := "default"]
+      rv_dq$data[, status := factor(status, levels = c("default", "selected", "excluded"))]
       
       env_choices <- rv$data[!is.na(observationValue)][, unique(studyDbId)]
       names(env_choices) <- rv$data[!is.na(observationValue)][, unique(study_name_app)]
@@ -222,7 +231,6 @@ mod_dataquality_server <- function(id, rv) {
       choices_traits <- unique(rv$data[studyDbId %in% input$studies]$observationVariableName)
       if (input$trait %in% choices_traits) {
         selected_trait <- input$trait
-        loadData()
       } else {
         selected_trait <- choices_traits[1]
       }
@@ -239,17 +247,17 @@ mod_dataquality_server <- function(id, rv) {
       )
     })
     
-    ## observe input$studies ####
-    observeEvent(input$trait, {
+    ## update rv_dq$data_viz ####
+    #Filter data on selected trait and studies and convert values in numeric or dates
+    observeEvent(c(input$trait, input$studies, rv_dq$data), {
       req(rv$data)
       req(input$trait != "")
-      loadData()
-    })
-    
-    #Filter data on selected trait and studies and convert values in numeric or dates
-    loadData <- function() {
-      rv_dq$data_viz <- rv$data[observationVariableName == input$trait &
+      req(input$studies != "")
+      rv_dq$data_viz <- rv_dq$data[observationVariableName == input$trait &
                                   studyDbId %in% input$studies]
+      
+      rv_dq$data_viz[observationDbId %in% rv_dq$sel_observationDbIds &
+                       !(observationDbId %in% rv$excluded_obs$observationDbId)]
       if (length(unique(rv_dq$data_viz$scale.dataType)) &&
           unique(rv_dq$data_viz$scale.dataType) == "Numerical") {
         rv_dq$data_viz[, observationValue := as.numeric(observationValue)]
@@ -257,7 +265,12 @@ mod_dataquality_server <- function(id, rv) {
                  unique(rv_dq$data_viz$scale.dataType) == "Date") {
         rv_dq$data_viz[, observationValue := as.Date(observationValue)]
       }
-    }
+      
+      rv_dq$data_viz[, study_name_abbrev_app := factor(study_name_abbrev_app, levels = rev(levels(factor(
+        study_name_abbrev_app
+      ))))]
+
+    })
     
     ## observe input$select_variable ####
     observeEvent(input$select_variable, {
@@ -306,21 +319,10 @@ mod_dataquality_server <- function(id, rv) {
       } else {
         rv_dq$width <- 12
       }
+
+      data_dq <- rv_dq$data_viz
       
-      input$set_excluded_obs
-      input$set_non_excluded_obs
-      
-      data_dq <- rv_dq$data_viz[!(observationDbId %in% rv$excluded_obs)]
-      
-      data_dq[, is.selected := F]
-      data_dq[observationDbId %in% rv_dq$sel_observationDbIds, is.selected :=
-                T]
-      
-      data_dq[, study_name_abbrev_app := factor(study_name_abbrev_app, levels = rev(levels(factor(
-        study_name_abbrev_app
-      ))))]
-      
-      g1 <- ggplot(data_dq,
+      g1 <- ggplot(as.data.frame(data_dq),
                    aes(y = observationValue, x = study_name_abbrev_app)) +
         geom_violin(alpha = 0.2) +
         geom_boxplot(fill = grey(0.8), alpha = 0.2, ) +
@@ -340,19 +342,23 @@ mod_dataquality_server <- function(id, rv) {
             positionCoordinateY = positionCoordinateY,
             entryType = entryType,
             germplasmName = germplasmName,
-            stroke = ifelse(is.selected, 1, 0.1),
-            color = is.selected,
+            stroke = ifelse(status == "default", 0.1, 1),
+            color = status,
+            #fill = is.excluded,
             key = observationDbId
           ),
           size = 3
         ) +
-        scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black"),
-                           guide = "none") +
+        scale_color_manual(
+          values = c("default" = "black", "selected" = "red", "excluded" = "purple"),
+          name = NULL,
+          breaks = c("excluded"),
+          labels = c("excluded" = "Excluded")
+        ) +
         scale_alpha(guide = "none") + coord_flip() +
         theme_minimal() +
         ylab(input$trait) +
         theme(
-          legend.position = "none",
           axis.text.y = if (all(data_dq[, .(is.na(positionCoordinateX) |
                                             is.na(positionCoordinateY))]))
             element_text(angle = 90)
@@ -360,7 +366,7 @@ mod_dataquality_server <- function(id, rv) {
             element_blank(),
           axis.title.y = element_blank()
         )
-      ggplotly(
+      p <- ggplotly(
         height = length(unique(data_dq$studyName)) * 400,
         g1,
         dynamicTicks = "TRUE",
@@ -377,7 +383,15 @@ mod_dataquality_server <- function(id, rv) {
         )
       ) %>%
         style(hoverlabel = list(bgcolor = "white")) %>%
-        layout(dragmode = "lasso")
+        layout(dragmode = "lasso", legend = list(orientation = 'h', x = 0.9, y = 0.99, title = list(text = '')))
+      
+      # only show legend for excluded points
+      for (i in seq_along(p$x$data)) {
+        if (!is.null(p$x$data[[i]]$name) && p$x$data[[i]]$name != "excluded") {
+          p$x$data[[i]]$showlegend <- FALSE
+        }
+      }
+      p
     })
     
     
@@ -388,15 +402,9 @@ mod_dataquality_server <- function(id, rv) {
       req(input$studies)
       #req(all(input$studies%in%rv_dq$data_viz[,unique(studyDbId)]))
       req(input$trait)
-      
-      input$set_excluded_obs
-      input$set_non_excluded_obs
-      
+
       data_dq <- rv_dq$data_viz
-      
-      data_dq[, is.selected := F]
-      data_dq[observationDbId %in% rv_dq$sel_observationDbIds, is.selected :=
-                T]
+  
       data_dq[, positionCoordinateX := as.numeric(positionCoordinateX)]
       data_dq[, positionCoordinateY := as.numeric(positionCoordinateY)]
       
@@ -405,7 +413,7 @@ mod_dataquality_server <- function(id, rv) {
       #plot_text[,y:=1]
       #plot_text[N<=1,label:="No layout"]
       
-      g2 <- ggplot(data_dq[!(observationDbId %in% rv$excluded_obs)],
+      g2 <- ggplot(data_dq[!(observationDbId %in% rv$excluded_obs$observationDbId)],
                    aes(x = positionCoordinateX, y = positionCoordinateY)) +
         geom_point(# fixes shaky tile selection via plotly
           aes(fill = observationValue, key = observationDbId),
@@ -491,10 +499,10 @@ mod_dataquality_server <- function(id, rv) {
       }
       
       ## drawing a border (4 segments) for each tile that is selected
-      if (data_dq[is.selected == T, .N] > 0) {
+      if (data_dq[status == "selected", .N] > 0) {
         g2 <- g2 +
           geom_rect(
-            data = data_dq[data_dq$is.selected == TRUE, ],
+            data = data_dq[status == "selected", ],
             aes(
               xmin = positionCoordinateX - 0.5,
               xmax = positionCoordinateX + 0.5,
@@ -503,6 +511,24 @@ mod_dataquality_server <- function(id, rv) {
             ),
             fill = NA,
             color = "red",
+            size = 1,
+            alpha = 1
+          )
+      }
+      
+      ## drawing a border (4 segments) for each tile that is excluded
+      if (data_dq[status == "excluded", .N] > 0) {
+        g2 <- g2 +
+          geom_rect(
+            data = data_dq[status == "excluded", ],
+            aes(
+              xmin = positionCoordinateX - 0.5,
+              xmax = positionCoordinateX + 0.5,
+              ymin = positionCoordinateY - 0.5,
+              ymax = positionCoordinateY + 0.5
+            ),
+            fill = NA,
+            color = "purple",
             size = 1,
             alpha = 1
           )
@@ -561,10 +587,10 @@ mod_dataquality_server <- function(id, rv) {
         sel_observationDbIds <- unique(selection[!is.na(key), key])
         if (is.list(sel_observationDbIds)) {
           # in case an aggregated plot shape is selected like a boxplot
-          sel_observationDbIds <- NULL
+          sel_observationDbIds <- c()
         }
       } else{
-        sel_observationDbIds <- NULL
+        sel_observationDbIds <- c()
       }
       
       output$debug <- renderPrint({
@@ -586,10 +612,46 @@ mod_dataquality_server <- function(id, rv) {
       rv_dq$sel_observationDbIds <- sel_observationDbIds
     })
     
+    ## observe rv_dq$sel_observationDbIds ####
+    observeEvent(rv_dq$sel_observationDbIds, {
+      req(rv_dq$data_viz)
+      newdt <- copy(rv_dq$data_viz)
+      newdt[!observationDbId %in% rv$excluded_obs$observationDbId, status := "default"]
+      if (length(rv_dq$sel_observationDbIds) > 0) {
+        
+        newdt[
+          observationDbId %in% rv_dq$sel_observationDbIds & 
+            !(observationDbId %in% rv$excluded_obs$observationDbId), 
+          status := "selected"
+        ]
+        
+        updateActionButton(
+          inputId = "unselect_obs",
+          disabled = F
+        )
+        
+      } else {
+        bslib::toggle_sidebar(id = "sel_obs_sidebar", open = F)
+      }
+      rv_dq$data_viz <- newdt
+    }, ignoreNULL = F)
+    
+    ## observe rv$excluded_obs ####
+    observeEvent(rv$excluded_obs, {
+      req(rv_dq$data)
+      newdt <- copy(rv_dq$data)
+      newdt[status == "excluded", status := "default"]
+      newdt[observationDbId %in% rv_dq$sel_observationDbIds, status := "selected"]
+      if (length(rv$excluded_obs) > 0) {
+        newdt[observationDbId %in% rv$excluded_obs$observationDbId, status := "excluded"]
+      }
+      rv_dq$data <- newdt
+    }, ignoreNULL = F)
+    
     ## output correlation plot ####
     output$correlationPlot <- renderPlotly({
       data_dq_casted <- dcast(
-        rv_dq$data_viz[!(observationDbId %in% rv$excluded_obs) &
+        rv_dq$data_viz[!(observationDbId %in% rv$excluded_obs$observationDbId) &
                          studyDbId %in% input$studies],
         germplasmDbId + studyDbId + locationDbId + study_name_app + germplasmName +
           replicate + observationUnitDbId + positionCoordinateY +
@@ -622,7 +684,7 @@ mod_dataquality_server <- function(id, rv) {
     output$sumstats_table <- renderDataTable({
       req(rv_dq$data_viz)
       data_dq <- rv_dq$data_viz
-      data_dq_notexcl <- rv_dq$data_viz[!(observationDbId %in% rv$excluded_obs)]
+      data_dq_notexcl <- rv_dq$data_viz[!(observationDbId %in% rv$excluded_obs$observationDbId)]
       
       sumtable_all <- data_dq[, .("No. of values" = .N), study_name_app]
       
@@ -764,24 +826,18 @@ mod_dataquality_server <- function(id, rv) {
       )
     })
     
-    
     ## output selected_obs ####
     output$selected_obs_table <- renderDT({
-      shinyjs::hide(selector = ".display_if_selection")
-      
-      req(rv_dq$sel_observationDbIds)
-      req(input$studies)
-      
-      shinyjs::show(selector = ".display_if_selection")
-      
-      input$set_excluded_obs
-      input$set_non_excluded_obs
+      validate(
+        need(rv_dq$sel_observationDbIds, "Click and drag to select observations on graphs")
+      )
       selected_obs <- rv_dq$data_viz[observationDbId %in% rv_dq$sel_observationDbIds &
-                                       !(observationDbId %in% rv$excluded_obs)]
+                                       !(observationDbId %in% rv$excluded_obs$observationDbId)]
       setcolorder(selected_obs, visible_columns_selected_obs)
+      
       datatable(
         selected_obs,
-        extensions = 'Buttons',
+        extensions = c('Select', 'Buttons'),
         colnames = c("study" = "study_name_abbrev_app"),
         options = list(
           columnDefs = list(list(
@@ -794,41 +850,57 @@ mod_dataquality_server <- function(id, rv) {
           scrollY = "300px",
           scrollCollapse = T,
           dom = 'Bt',
-          buttons = I('colvis')
-        )
+          buttons = c('selectAll', 'selectNone', I('colvis')),
+          select = list(style = 'os', items = 'row')
+        ),
+        selection = 'none'
       ) %>%
         formatStyle(0, target = 'row', lineHeight = '90%')
-    })
+    }, server = F)
     
     ## observe input$unselect_obs ####
     observeEvent(input$unselect_obs, {
-      rv_dq$sel_observationDbIds <- NULL
+      rv_dq$sel_observationDbIds <- c()
     })
     
     ## observe input$set_excluded_obs ####
     observeEvent(input$set_excluded_obs, {
-      new_excluded_obs <- rv_dq$data_viz[observationDbId %in% rv_dq$sel_observationDbIds][input$selected_obs_table_rows_selected, observationDbId]
-      
+      req(input$selected_obs_table_rows_selected)
+      new_excluded_obs <- rv_dq$data_viz[observationDbId %in% rv_dq$sel_observationDbIds][input$selected_obs_table_rows_selected, .(observationDbId)]
+      new_excluded_obs <- new_excluded_obs[, reason := "user choice"]
       rv_dq$sel_observationDbIds <- setdiff(rv_dq$sel_observationDbIds, new_excluded_obs) # remove the "selected" status from the new excluded observations
-      rv$excluded_obs <- union(rv$excluded_obs, new_excluded_obs)
+      #rv$excluded_obs <- union(rv$excluded_obs, new_excluded_obs)
+      rv$excluded_obs <- unique(rbind(rv$excluded_obs, new_excluded_obs))
     })
+    
+    observeEvent(input$selected_obs_table_rows_selected, {
+      if (is.null(input$selected_obs_table_rows_selected)) {
+        updateActionButton(
+          inputId = "set_excluded_obs",
+          disabled = T
+        )
+      } else {
+        updateActionButton(
+          inputId = "set_excluded_obs",
+          disabled = F
+        )
+      }
+    }, ignoreNULL = F)
     
     ## output excluded_obs_table ####
     output$excluded_obs_table <- renderDT({
-      shinyjs::hide(selector = ".display_if_exclusion")
       req(rv_dq$data_viz)
-      # rv_dq$data_viz
-      # input$set_excluded_obs
-      # input$set_non_excluded_obs
-      req(rv_dq$data_viz[observationDbId %in% rv$excluded_obs, .N] > 0)
-      shinyjs::show(selector = ".display_if_exclusion")
       
-      selected_excl_obs <- rv_dq$data_viz[observationDbId %in% rv$excluded_obs]
+      validate(
+        need(nrow(rv$excluded_obs) > 0, "No excluded observations")
+      )
+
+      selected_excl_obs <- rv_dq$data_viz[observationDbId %in% rv$excluded_obs$observationDbId]
       setcolorder(selected_excl_obs, visible_columns_selected_obs)
       datatable(
         selected_excl_obs,
         colnames = c("study" = "study_name_abbrev_app"),
-        extensions = 'Buttons',
+        extensions = c('Select', 'Buttons'),
         options = list(
           columnDefs = list(list(
             visible = FALSE,
@@ -840,18 +912,12 @@ mod_dataquality_server <- function(id, rv) {
           scrollY = "300px",
           scrollCollapse = T,
           dom = 'Bt',
-          buttons = I('colvis')
+          buttons = c('selectAll', 'selectNone', I('colvis')),
+          select = list(style = 'os', items = 'row')
         )
       ) %>%
         formatStyle(0, target = 'row', lineHeight = '90%')
-    })
-    
-    ## observe input$set_non_excluded_obs ####
-    observeEvent(input$set_non_excluded_obs, {
-      non_excluded_obs <- rv_dq$data_viz[observationDbId %in% rv$excluded_obs][input$excluded_obs_table_rows_selected, observationDbId]
-      
-      rv$excluded_obs <- setdiff(rv$excluded_obs, non_excluded_obs)
-    })
+    }, server = F)
     
     observeEvent(input$envXtrait, {
       showModal(
@@ -866,6 +932,7 @@ mod_dataquality_server <- function(id, rv) {
       )
     })
     
+    ## envXtrait plot ####
     output$envXtraitViz <- renderPlot({
       req(rv$data)
       ggplot(rv$data[, .N, .(study_name_app,

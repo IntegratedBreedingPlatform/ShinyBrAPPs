@@ -330,6 +330,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             }else{
               rv$data <- studies
             }
+            rv$data[, observationDbId := as.character(observationDbId)]
           })
         })
   
