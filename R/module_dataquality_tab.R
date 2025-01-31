@@ -319,31 +319,8 @@ mod_dataquality_server <- function(id, rv) {
       } else {
         rv_dq$width <- 12
       }
-      
-      # input$set_excluded_obs
-      # input$set_non_excluded_obs
-      # 
-      
-      data_dq <- rv_dq$data_viz
-      
-      # data_dq <- rv_dq$data_viz[!(observationDbId %in% rv$excluded_obs)]
-      # 
-      # data_dq[, is.selected := F]
-      # data_dq[observationDbId %in% rv_dq$sel_observationDbIds, is.selected :=
-      #           T]
-      # data_dq[, is.excluded := F]
-      # data_dq[observationDbId %in% rv$excluded_obs, is.excluded :=
-      #           T]
-      
-      
-      
-      data_dq[, study_name_abbrev_app := factor(study_name_abbrev_app, levels = rev(levels(factor(
-        study_name_abbrev_app
-      ))))]
 
-      data_dq[, study_name_abbrev_app := factor(study_name_abbrev_app, levels = rev(levels(factor(
-        study_name_abbrev_app
-      ))))]
+      data_dq <- rv_dq$data_viz
       
       g1 <- ggplot(as.data.frame(data_dq),
                    aes(y = observationValue, x = study_name_abbrev_app)) +
@@ -374,21 +351,14 @@ mod_dataquality_server <- function(id, rv) {
         ) +
         scale_color_manual(
           values = c("default" = "black", "selected" = "red", "excluded" = "purple"),
-          #name = "Point Status", # Titre de la légende
-          labels = c(
-            "excluded" = "Excluded"
-          )#,
-          #guide = "none"
+          name = NULL,
+          breaks = c("excluded"),
+          labels = c("excluded" = "Excluded")
         ) +
-        # scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black"),
-        #                    guide = "none") +
-        # scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black"),
-        #            guide = "none") +
         scale_alpha(guide = "none") + coord_flip() +
         theme_minimal() +
         ylab(input$trait) +
         theme(
-          legend.position = "none",
           axis.text.y = if (all(data_dq[, .(is.na(positionCoordinateX) |
                                             is.na(positionCoordinateY))]))
             element_text(angle = 90)
@@ -396,7 +366,7 @@ mod_dataquality_server <- function(id, rv) {
             element_blank(),
           axis.title.y = element_blank()
         )
-      ggplotly(
+      p <- ggplotly(
         height = length(unique(data_dq$studyName)) * 400,
         g1,
         dynamicTicks = "TRUE",
@@ -413,7 +383,15 @@ mod_dataquality_server <- function(id, rv) {
         )
       ) %>%
         style(hoverlabel = list(bgcolor = "white")) %>%
-        layout(dragmode = "lasso")
+        layout(dragmode = "lasso", legend = list(orientation = 'h', x = 0.9, y = 0.99, title = list(text = '')))
+      
+      # only show legend for excluded points
+      for (i in seq_along(p$x$data)) {
+        if (!is.null(p$x$data[[i]]$name) && p$x$data[[i]]$name != "excluded") {
+          p$x$data[[i]]$showlegend <- FALSE
+        }
+      }
+      p
     })
     
     
@@ -424,20 +402,9 @@ mod_dataquality_server <- function(id, rv) {
       req(input$studies)
       #req(all(input$studies%in%rv_dq$data_viz[,unique(studyDbId)]))
       req(input$trait)
-      # 
-      # input$set_excluded_obs
-      # input$set_non_excluded_obs
-      
+
       data_dq <- rv_dq$data_viz
-      
-      
-      data_dq[, is.selected := F]
-      data_dq[observationDbId %in% rv_dq$sel_observationDbIds, is.selected :=
-                T]
   
-      data_dq[, is.selected := F]
-      data_dq[observationDbId %in% rv_dq$sel_observationDbIds, is.selected :=
-                T]
       data_dq[, positionCoordinateX := as.numeric(positionCoordinateX)]
       data_dq[, positionCoordinateY := as.numeric(positionCoordinateY)]
       
