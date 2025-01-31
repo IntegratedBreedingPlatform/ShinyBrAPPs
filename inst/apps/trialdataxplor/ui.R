@@ -7,11 +7,10 @@ ui <- bslib::page_fluid(theme = bslib::bs_theme(preset = "bootstrap"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/custom_styles.css")
   ),
   # Static App banner
-  tags$div(div(img(src="img/ibpcirad.png",
-                   height="34px",
+  tags$div(div(img(src="img/sticker.png",
                    border.radius="6px",
                    style="border-radius: 6px;
-                          width:129px;
+                          width:29px;
                           height:34px;
                           margin-right:10px"),
                appname,

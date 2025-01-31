@@ -5,6 +5,7 @@ server <- function(input, output, session){
     study_metadata = NULL,      # study metadata
     data = NULL                # trial data as a data.table object
   )
+  output$Rsi <- renderPrint(sessionInfo())
   
   mod_get_studydata_server("get_studydata", rv)
   mod_banner_server("banner", rv, appname)

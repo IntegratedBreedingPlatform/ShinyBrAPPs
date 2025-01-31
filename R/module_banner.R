@@ -13,9 +13,9 @@ mod_banner_server <- function(id, rv, appname){
       output$banner <- renderUI({
         req(rv$data)
         tags$div(
-          div(img(src="img/ibpcirad.png", height="34px", border.radius="6px",
+          div(img(src="img/sticker.png", height="34px", border.radius="6px",
                   style="border-radius: 6px;
-                width:129px;
+                width:29px;
                 height:34px;
                 margin-right:10px"),paste(appname," - Study: ", paste(rv$data[,unique(trialName)], collapse = ", ")),
           style="font: 500 20px/32px Roboto,Helvetica Neue,sans-serif;display: flex;justify-content: center;position: relative; z-index: 30;",
@@ -32,7 +32,7 @@ mod_banner_server <- function(id, rv, appname){
                 #circle = FALSE,
                 #downloadBttn(ns("dwnld1"),label = "As csv", style = "minimal", size="xs"),
                 downloadButton(ns("dwnld1"),label = "As csv file"),
-                if (appname!="BMS trial data explorer") downloadButton(ns("dwnld2"),label = "As TD object")
+                if (appname!="TDxPLOR") downloadButton(ns("dwnld2"),label = "As TD object")
               ))),
         style = "padding: 2px 0 2px 10px;
                     width:100%;
@@ -51,13 +51,14 @@ mod_banner_server <- function(id, rv, appname){
           paste("data-", Sys.Date(), ".csv", sep="")
         },
         content = function(file) {
-          if (appname=="DSBrAPP"){
+
+          if (appname=="BrAVISE"){
             write.csv(rv$extradata, file, row.names = F)
           } else {
             if (appname=="STABrAPP"){
               write.csv(rv$data, file, row.names = F)
             } else {
-              if (appname=="BMS trial data explorer"){
+              if (appname=="TDxPLOR"){
                 write.csv(rv$data[,-c("facetrows", "facetcols"), with=F], file, row.names = F)
               }
             }
@@ -69,8 +70,8 @@ mod_banner_server <- function(id, rv, appname){
           paste("data-", Sys.Date(), ".Rdata", sep="")
         },
         content = function(file) {
-          if (appname=="DSBrAPP"){
-            write.csv(rv$data, file, row.names = F)
+
+          if (appname=="BrAVISE"){
             if (is.null(rv$TD)){
               showNotification("You must select a Trait and a Variable to use as Environment Name to form the TD object (all traits will be included)", type = "error", duration = notification_duration)
             } else {

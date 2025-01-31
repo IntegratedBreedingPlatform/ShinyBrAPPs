@@ -12,4 +12,6 @@ server <- function(input, output, session){
   mod_banner_server("banner", rv, appname)
   mod_dataquality_server("dataquality", rv)
   mod_model_server("model", rv)
+  output$Rsi <- renderPrint(sessionInfo())
+  
 }

@@ -10,8 +10,7 @@ mod_trialdataxplor_ui <- function(id){
       # Sidebar
       tags$style(
         HTML(
-          ".nav .nav-item .nav-link { font-size: 20px; }
-        ",
+          ".nav .nav-item .nav-link { font-size: 20px; }",
         )
       ),
       bslib::page_navbar(title = "", id = ns("tabsetId"), 
@@ -54,7 +53,29 @@ mod_trialdataxplor_ui <- function(id){
                                       
                              ),
                          bslib::nav_panel("Locations map",value="map",
-                                      leaflet::leafletOutput(outputId = ns("locationmap"), height = 600))
+                                      leaflet::leafletOutput(outputId = ns("locationmap"), height = 600)),
+                         bslib::nav_spacer(),
+                         bslib::nav_panel(
+                           title = "About",
+                           h1("Trial Data Explorer"),
+                           img(src='img/sticker.png', height="178px", width="154px",  align = "right"),
+                           h2("Contributors"),
+                           p("Jean-François Rami (Maintainer) - rami 'at' cirad.fr"),
+                           p("Alice Boizet (Author) - alice.boizet 'at' cirad.fr"),
+                           hr(),hr(),
+                           img(src='img/ibpcirad.png', height="61px", width="231px",  align = "left"),
+                           br(),hr(),
+                           h2(a("github",href="https://github.com/IntegratedBreedingPlatform/ShinyBrAPPs", target="_blank", icon("github")), align="right"),
+                           hr(),hr(),
+                           h2("Funded by"),
+                           p("Trial Data Explorer development was funded by the ", a("ABEE project", href="https://capacity4dev.europa.eu/projects/desira/info/abee_en"), ", under the DESIRA initiative of the European Union"),
+                           img(src='img/ABEE_logo_trspbckgd.png', height="57px", width="84px",  align = "right"),
+                           hr(),hr(),
+                           img(src='img/desira.png', height="56px", width="252px",  align = "right"),
+                           hr(),hr(),
+                           h2("Session info"),
+                           verbatimTextOutput("Rsi")
+                         )
                              
                   )
   )
@@ -133,7 +154,7 @@ mod_trialdataxplor_server <- function(id, rv){
         if (any(!st$studyDbId%in%data_dq$studyDbId)){
           missingst <- st[!studyDbId%in%data_dq$studyDbId]
           missingmsg <- paste(paste0(missingst$study_label,"(",missingst$studyDbId,")"),collapse=", ")
-          showModal(modalDialog(paste0("The following studies had no observation data: ", missingmsg)))
+          showModal(modalDialog(paste0("The following studies had no observation data: ", missingmsg), fade = FALSE))
           rv_tdx$study_no_dat <- missingst
           output$study_no_dat <- renderTable(missingst,digits=0)
         }
@@ -153,7 +174,6 @@ mod_trialdataxplor_server <- function(id, rv){
         ct <- dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(study=paste0(studyDbId,"-",locationName),Variable=observationVariableName)],
                     Variable~study, fill = 0)
         rv_tdx$counts <- ct
-      
         vnd <- melt(ct, variable.name = "StudyLocation")[value==0,.(StudyLocation, Variable)]
         rv_tdx$var_no_dat <- vnd
       })
@@ -174,8 +194,8 @@ mod_trialdataxplor_server <- function(id, rv){
       })
       
       output$var_no_dat <- renderTable({
-        req(rv_tdx$vnd)
-        rv_tdx$vnd
+        req(rv_tdx$var_no_dat)
+        rv_tdx$var_no_dat
       })
       
       output$candidat_out <- DT::renderDataTable({
@@ -253,7 +273,6 @@ mod_trialdataxplor_server <- function(id, rv){
           hjust   = 0,
           vjust   = 1, angle=90
         )
-        #browser()
         g
         # g<-ggplot(toplot, aes(y=observationValue, fill=replicate, x=locationName)) +
         #   geom_boxplot() +

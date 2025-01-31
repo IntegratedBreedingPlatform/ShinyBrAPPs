@@ -1,5 +1,5 @@
 brapi_version <- "2.0"
-appname <- "DSBrAPP"
+appname <- "BrAVISE"
 selection_traitClass <- "Breedingprocess"
 selection_traitName <- "Selections"
 can_filter_obs_unit_level_in_url <- T
