@@ -108,9 +108,9 @@ mod_model_ui <- function(id){
     ## Fit model buttons ####
     layout_columns(
       col_widths = c(2, 2, 4),
-      shiny::actionButton(ns("go_fit_model"), "Fit model", class = "btn btn-info"),
-      hidden(shiny::actionButton(ns("go_fit_no_outlier"), "Refit without outliers", class = "btn btn-info")),
-      h4(textOutput(ns("fit_outliers_output")))
+      disabled(actionButton(ns("go_fit_model"), "Fit model", class = "btn btn-info")),
+      #hidden(shiny::actionButton(ns("go_fit_no_outlier"), "Refit without outliers", class = "btn btn-info")),
+      #h4(textOutput(ns("fit_outliers_output")))
     ),
     br(),
     navset_tab(
@@ -142,23 +142,17 @@ mod_model_ui <- function(id){
             pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL, width = "40%", inline = T, options = list(`style` = "margin-bottom: 0;")),
             dataTableOutput(ns("metrics_B_table"))
           )
-        ),
-        layout_columns(
-          col_widths = c(6,6),
-          dataTableOutput(ns("metrics_A_table")),
-          dataTableOutput(ns("metrics_B_table"))
         )
       ),
       ## Outliers panel ####
       nav_panel(
         "Outliers",
         fluidRow(
-          column(
-            4,
-            pickerInput(
-              ns("select_trait_outliers"),"Trait", multiple = F, choices = NULL, width = "100%"
-            )
-          )#,
+          column(6, pickerInput(
+            ns("select_trait_outliers"),"Trait", multiple = F, choices = NULL
+          )),
+          column(6, actionButton(ns("mark_outliers"), "Mark all outliers as excluded observation", class = "btn btn-info", disabled = T, style = "float:right; margin:5px"))
+          #,
           #column(
           #  4,
           #  sliderInput(ns("limit_residual"), label = "Threshold for standardized residuals", min = 0, max = 0, value = 0, width = "100%")
@@ -240,10 +234,6 @@ mod_model_server <- function(id, rv){
           )
         )
         
-        # req(rv$pushOK)
-        # if (rv$pushOK == TRUE) {
-          shinyjs::enable("push_metrics_to_BMS_B")
-        # }
         shinyjs::hide("go_fit_no_outlier")
         shinyjs::hide("fit_outliers_output")
         rv_mod$selected_env <- NULL
@@ -414,10 +404,14 @@ mod_model_server <- function(id, rv){
           updatePickerInput(
             session, "covariates", choices = choices_cov, selected = NULL
           )
-          
         }
-      }, 
-      ignoreNULL = FALSE)
+      })
+      
+      observeEvent(input$model_design, {
+        if (input$model_design != "") {
+          enable("go_fit_model")
+        }
+      })
       
       ## observe model_design_metadata_button ####
       observeEvent(input$model_design_metadata_button, {
@@ -500,26 +494,28 @@ mod_model_server <- function(id, rv){
         data_filtered <- rv$data[!(observationDbId %in% rv$excluded_obs)]
         rv_mod$fitted_data <- data_filtered
         fitModel(data_filtered)
-        output$fit_outliers_output = renderText({
-          ""
-        })
+        enable("push_metrics_to_BMS_B")
+      })
+      
+      ## observe button mark outliers ####
+      observeEvent(input$mark_outliers, {
+        new_excluded_obs <-  rv$data[observationDbId %in% rv_mod$obs_outliers, .(observationDbId)]
+        new_excluded_obs[, reason := "model outlier"]
+        rv$excluded_obs <- rbind(rv$excluded_obs, new_excluded_obs)
       })
       
       ## observe go_fit_no_outlier ####
-      observeEvent(input$go_fit_no_outlier,{
-        req(rv_mod$data_checks)
-        req(rv$obsUnit_outliers)
-        ## create TD without the excluded observations
-        ## exclude observations
-        rv$data[,observationValue:=as.numeric(observationValue)]
-        data_filtered <- rv$data[!(observationDbId %in% rv$excluded_obs)]
-        data_filtered <- data_filtered[!(observationUnitDbId %in% rv$obsUnit_outliers)]
-        rv_mod$fitted_data <- data_filtered
-        fitModel(data_filtered)
-        output$fit_outliers_output = renderText({
-          "The outliers were removed before fitting the model"
-        })
-      })
+      # observeEvent(input$go_fit_no_outlier,{
+      #   req(rv_mod$data_checks)
+      #   req(rv_mod$obsUnit_outliers)
+      #   ## create TD without the excluded observations
+      #   ## exclude observations
+      #   rv$data[,observationValue:=as.numeric(observationValue)]
+      #   data_filtered <- rv$data[!(observationDbId %in% rv$excluded_obs)]
+      #   data_filtered <- data_filtered[!(observationUnitDbId %in% rv_mod$obsUnit_outliers)]
+      #   rv_mod$fitted_data <- data_filtered
+      #   fitModel(data_filtered)
+      # })
       
       fitModel <- function(data_filtered) {
         
@@ -775,7 +771,12 @@ mod_model_server <- function(id, rv){
         req(input$select_trait_outliers)
         req(rv_mod$outliers)
         outliers_all <- as.data.table(rv_mod$outliers$outliers) #as.data.table(outliersSTA_all$outliers)
-        validate(need(outliers_all[,.N]>0 , "No outlier on this trait"))
+        if (outliers_all[,.N] > 0) {
+          updateActionButton(
+            inputId = "mark_outliers",
+            disabled = F
+          )
+        }
         
         # outliers for the selected trait
         outliers <- outliers_all[trait == input$select_trait_outliers]
@@ -797,6 +798,13 @@ mod_model_server <- function(id, rv){
         rv$obsUnit_outliers <- outliers_by_obsUnit[`#outliers` > 0]$observationUnitDbId
         shinyjs::show("go_fit_no_outlier")
         shinyjs::show("fit_outliers_output")
+        
+        rv_mod$obs_outliers <- merge(
+          as.data.table(rv_mod$outliers$outliers)[outlier == T,], 
+          rv$data, 
+          by.x = c("trial", "observationUnitDbId", "trait"), 
+          by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
+          )[, observationDbId]
         
         if(outliers[,.N]>0){
           setnames(outliers, "trial", "environment")
@@ -861,9 +869,13 @@ mod_model_server <- function(id, rv){
 
       ## output$metrics_A_table ####
       output$metrics_A_table <- renderDT({
-        req(rv_mod$fit)
-        req(rv_mod$fitextr)
+        # req(rv_mod$fit)
+        # req(rv_mod$fitextr)
 
+        validate(
+          need(rv_mod$fitextr, "you must fit a model")
+        )
+        
         ## heritability
         allex <- rv_mod$fitextr
         if(rv_mod$model_engine%in%c("lme4")){
@@ -899,7 +911,6 @@ mod_model_server <- function(id, rv){
 
       ## output$metrics_B_table ####
       output$metrics_B_table <- renderDataTable({
-        req(rv_mod$fit)
         req(input$select_metrics_B)
         req(input$select_environment_metrics)
         req(rv_mod$fitextr)
