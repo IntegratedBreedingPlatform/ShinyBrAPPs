@@ -38,5 +38,5 @@ jobs:
           cd ShinyBrAPPs
           git checkout dev
           git pull origin dev
-          docker build -t shinybrapps-dev .
+          docker build --progress=plain -t shinybrapps-dev .
         EOF
