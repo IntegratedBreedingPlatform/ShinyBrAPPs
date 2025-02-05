@@ -5,15 +5,15 @@ RUN echo "\noptions(shiny.port=3838, shiny.host='0.0.0.0')" >> /usr/local/lib/R/
 EXPOSE 3838 
 
 ## Install debian libs
-RUN apt-get update && apt-get install -y \
-	binutils \
-	libxml2-dev \
-	libssl-dev \
-	libcurl4-openssl-dev \
-	libgdal-dev \
-	libfontconfig1-dev \
-	pandoc \
-	cmake
+RUN apt-get update && apt-get install -y 
+	# binutils \
+	# libxml2-dev \
+	# libssl-dev \
+	# libcurl4-openssl-dev \
+	# libgdal-dev \
+	# libfontconfig1-dev \
+	# pandoc \
+	# cmake
 
 ## Install R deps
 RUN R -e "install.packages('shiny', repos='http://cran.rstudio.com/')"
@@ -46,7 +46,8 @@ RUN R -e "remotes::install_github('aliceboizet/brapir-v2@fix-perf-observationuni
 RUN R -e "install.packages('statgenGxE', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('ggnewscale', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('metan', repos='http://cran.rstudio.com/')"
-RUN R -e "remotes::install_gitlab('alice.boizet/brapir', host = 'https://gitlab.cirad.fr')"
+RUN R -e "install.packages('stringmagic', repos='http://cran.rstudio.com/')"
+
 
 ## Install shinybrapps
 # Note: presently the image is constructed from within the package directory because the repo "IntegratedBreedingPlatform/ShinyBrAPPs" is private. If it becomes public, it will be possible to construct the image from anywhere via "install_gihub()"
