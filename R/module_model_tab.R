@@ -771,12 +771,12 @@ mod_model_server <- function(id, rv){
         req(input$select_trait_outliers)
         req(rv_mod$outliers)
         outliers_all <- as.data.table(rv_mod$outliers$outliers) #as.data.table(outliersSTA_all$outliers)
-        if (outliers_all[,.N] > 0) {
-          updateActionButton(
-            inputId = "mark_outliers",
-            disabled = F
-          )
-        }
+        req(outliers_all[,.N] > 0)
+        
+        updateActionButton(
+          inputId = "mark_outliers",
+          disabled = F
+        )
         
         # outliers for the selected trait
         outliers <- outliers_all[trait == input$select_trait_outliers]

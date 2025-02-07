@@ -106,9 +106,10 @@ get_env_data <- function(con = NULL,
         return(NULL)
       }
     }
-
+    
     if (!"observations.observationDbId" %in% colnames(study_obs)) {
       study_obs <- NULL
+      return(study_obs)
     } else {
       
       #to manage the case when we get MEANS and PLOTS
@@ -179,9 +180,10 @@ get_env_data <- function(con = NULL,
       study_obs[,location_abbrev := loc_name_abbrev]
       study_obs[,study_name_app := stu_name_app]
       study_obs[,study_name_abbrev_app := stu_name_abbrev_app]
+      return(unique(study_obs))
     }
   })
-  return(unique(study_obs))
+  
 }
 
 #' @export

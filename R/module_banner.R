@@ -17,7 +17,7 @@ mod_banner_server <- function(id, rv, appname){
                   style="border-radius: 6px;
                 width:29px;
                 height:34px;
-                margin-right:10px"),paste(appname," - Study: ", paste(rv$data[,unique(trialName)], collapse = ", ")),
+                margin-right:10px"),paste(appname," - Study: ", paste(rv$study_metadata[,unique(trialName)], collapse = ", ")),
           style="font: 500 20px/32px Roboto,Helvetica Neue,sans-serif;display: flex;justify-content: center;position: relative; z-index: 30;",
           div(style="margin-left: auto;",
               dropdown(

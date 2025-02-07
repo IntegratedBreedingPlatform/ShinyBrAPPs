@@ -330,12 +330,14 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             }else{
               rv$data <- studies
             }
-            rv$data[, observationDbId := as.character(observationDbId)]
+            
+            if("observationDbId" %in% names(rv$data)){
+              rv$data[, observationDbId := as.character(observationDbId)]
+            }
           })
         })
   
         output$table_trial_metadata <- renderDT({
-          browser()
           req(input$trials)
           trial_metadata <- data.table(
             metadata = names(rv$trial_metadata[trialDbId==input$trials]),
