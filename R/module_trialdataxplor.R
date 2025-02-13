@@ -137,10 +137,9 @@ mod_trialdataxplor_server <- function(id, rv){
         variables[,observationVariableDbId:=as.numeric(observationVariableDbId)]
         rv_tdx$variables <- variables
         
-        locs <- do.call(gtools::smartbind, lapply(unique(rv$study_metadata$locationDbId), function(l){
-          brapi_get_locations(rv$con, locationDbId = l)
-        }))
-        setDT(locs)
+        locs <- rbindlist(lapply(unique(rv$study_metadata$locationDbId), function(l){
+           as.data.table(brapi_get_locations(rv$con, locationDbId = l))
+         }))
         st <- locs[,.(locationDbId,countryName)][rv$study_metadata, on=.(locationDbId)]
         st <- unique(st[,.(studyDbId,locationDbId,countryName,studyName,locationName)])
         st[, studyDbId:=as.numeric(studyDbId)]
@@ -225,9 +224,8 @@ mod_trialdataxplor_server <- function(id, rv){
       observeEvent(rv_tdx$locs, {
         locs <- rv_tdx$locs
         if ("coordinates.geometry.coordinates"%in%colnames(locs)){
-          locs[, c("lon", "lat") := tstrsplit(gsub("[c()]", "", coordinates.geometry.coordinates), ",", fixed = TRUE)]
-          locs[,lat:=as.numeric(lat)]
-          locs[,lon:=as.numeric(lon)]
+          locs[,lat:=unlist(lapply(coordinates.geometry.coordinates, function(a) a[2]))]
+          locs[,lon:=unlist(lapply(coordinates.geometry.coordinates, function(a) a[1]))]
           output$locationmap <- renderLeaflet(leaflet(data = locs) %>%  
                                               addCircleMarkers(popup = ~as.character(locationName),
                                                                 label=~as.character(locationName),
