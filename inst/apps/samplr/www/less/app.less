@@ -1,0 +1,158 @@
+// Bootstrap Framework
+@import "../../../../../../bower_components/bootstrap/less/bootstrap.less";
+// Bootstrap overrides
+@import "bootstrap-overrides-variables.less";
+// third party includes
+@import "../../../../../../bower_components/font-awesome/less/font-awesome.less";
+@import "datepicker3.less";
+@import  (less) "../css/select2.css";
+@import "select2-bootstrap.less";
+// app specific stylesheets
+@import  (less) "../fonts/font.less";
+
+@help-link: #337ab7;
+
+
+.main-content:extend(.well,.container-fluid) {
+	margin: @font-size-base;
+}
+
+h1 {
+	margin-top: 10px;
+	margin-bottom: 5px;
+}
+
+h1, h2 {
+	text-transform: uppercase;
+}
+
+.page-header {
+	margin: 0px;
+
+	.container-fluid {
+		padding: 0 18px;
+	}
+
+	a {
+		cursor: pointer;
+		color: #5A5A59;
+	}
+
+	a:before {
+		font-size: 20px;
+		padding-left: 20px;
+	}
+}
+
+/* ovveride select 2*/
+.select2-search input {
+	padding-left: 22px;
+	background-position-x: -36px;
+}
+
+.btn-sm {
+	font-weight: 600;
+}
+
+.content-header {
+	margin-bottom: 40px;
+}
+
+.badge-info:extend(.badge) {
+	background: @brand-info;
+}
+
+.badge-danger:extend(.badge) {
+	background: @brand-danger;
+}
+
+.table-hover,
+.pagination a {
+	cursor: pointer;
+}
+
+.modal-header {
+	border-bottom: none;
+	padding: 0 15px;
+
+	h3:extend(h2) {
+
+	}
+}
+
+.modal-footer {
+	background: transparent;
+	border: none;
+	padding: 0 20px 20px 20px;
+	margin-top: 0;
+}
+
+/*
+  Allow angular.js to be loaded in body, hiding cloaked elements until
+  templates compile.  The !important is important given that there may be
+  other selectors that are more specific or come later and might alter display.
+ */
+[ng\:cloak], [ng-cloak], .ng-cloak {
+	display: none !important;
+}
+
+/* help-box (for non-net help-link) */
+.help-box {
+	.modal-content {
+		background: white url('/ibpworkbench/VAADIN/themes/vaadin-retro/images/login.png');
+		width: 640px;
+	}
+
+	.modal-body {
+		height: 337px;
+		border: none;
+	}
+
+	.modal-header {
+		border: none;
+
+		.close {
+			color: white;
+			opacity: 1;
+			text-shadow: none;
+		}
+
+	}
+
+	.modal-title h1 {
+		color: white;
+		font-size: 2rem;
+		font-weight: 100;
+		margin: 22px 50px 0px 0px;
+
+		text-align: right;
+	}
+
+	.modal-title h2 {
+		color: white;
+		font-size: 1.3rem;
+		font-weight: 400;
+		text-align: right;
+		margin: 5px 50px 0;
+
+	}
+
+	.bootbox-body {
+		margin-top: 30px;
+	}
+
+	.helpPopup {
+		#help_header {
+			margin: 18px 0;
+			font-weight: 600;
+		}
+
+		a {
+			color: @help-link;
+		}
+
+		a:hover {
+			color: darken(@help-link,15%);
+		}
+	}
+}

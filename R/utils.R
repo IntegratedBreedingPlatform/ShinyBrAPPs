@@ -360,3 +360,96 @@ whoami_bmsapi <- function(con){
   uname <- strsplit(con$token,split = ":")[[1]][1]
   return(data.table(jsonlite::fromJSON(cont))[username==uname])
 }
+
+
+#' @title bmsapi_post_germplasm_search
+#' @description post a germplasm search. As compared to BrAPI implementation this call allows for incomplete search on names (starts with, ends with and contains)
+#' @param con a brapriv2 connection object
+#' @param gids a vector of gids
+#' @param nameFilter see details
+#' @param page
+#' @param pageSize
+#'
+#' @details nameFilter is a list with two character components:
+#'    \describe{
+#'      \item{type}{one of the following values : STARTSWITH, ENDSWITH, EXACTMATCH, CONTAINS.}
+#'      \item{value}{the text string to search for}
+#'    }
+
+
+#' @return
+#' @export
+#' @import httr
+#' @import jsonlite
+#' @examples
+bmsapi_post_germplasm_search <- function(con = NULL,
+                                         gids='',
+                                         nameFilter=NULL,
+                                         page = 0,
+                                         pageSize = 1000){
+  mf <- match.call()
+  mf <- mf[-1]
+  mf <- mf[!names(mf)%in%c("con","page","pageSize")]
+  args <- lapply(names(mf), function(a) get(a))
+  names(args) <- names(mf)
+  if (length(args)==0) args<-NULL
+  url1 <- bmscon_geturl(con)
+  cropdb <- con$commoncropname
+  url <- paste0(url1, "/crops/",cropdb,"/germplasm/search")
+  url <- httr::modify_url(url, query=list( page=page, pageSize=pageSize))
+  resp <- httr::POST(url,
+                     accept_json(),
+                     content_type_json(),
+                     body = jsonlite::toJSON(args, auto_unbox = T),
+                     httr::add_headers(Authorization=paste("Bearer", con$token)),
+                     encode = "json")
+  return(fromJSON(rawToChar(resp$content)))
+}
+
+
+#' bmsapi_get_germplasm_search_searchResultsDbId
+#'
+#' @param con
+#' @param searchRequestId
+#'
+#' @return
+#' @export
+#' @import httr
+#' @import jsonlite
+#' @examples
+bmsapi_get_germplasm_search_searchResultsDbId <- function(con = NULL,  searchRequestId=''){
+  url1 <- bmscon_geturl(con)
+  cropdb <- con$commoncropname
+  url <- paste0(url1, "/crops/",cropdb,"/germplasm/search?searchRequestId=",searchRequestId)
+  resp <- httr::GET(url,
+                    accept_json(),
+                    httr::add_headers(Authorization=paste("Bearer", con$token)))
+  respc <- rawToChar(resp$content)
+  if (respc=="[]"){
+    return(data.frame())
+  } else {
+    return(fromJSON(respc))
+  }
+}
+
+#' Title
+#'
+#' @param con
+#'
+#' @return
+#' @export
+#' @import httr
+#' @examples
+bmscon_geturl <- function(con){
+  if (is.null(con))
+    return(NULL)
+  if (!is.null(con$apipath)) {
+    con$apipath <- paste0("/", con$apipath)
+  }
+  if (con$secure) {
+    con$protocol <- "https://"
+  }
+  port <- ifelse(con$port == 80, "", paste0(":", con$port))
+  url <- paste0(con$protocol, con$db, port, con$apipath)
+  return(url)
+}

@@ -11,7 +11,7 @@ server <- function(input, output, session){
     visu_as_group = NULL,
     new_group_created = F
   )
-  
+  mod_connect_server("connect",rv)  
   mod_get_studydata_server("get_studydata", rv)
   mod_get_extradata_server("get_extradata", rv)
   print("appname")

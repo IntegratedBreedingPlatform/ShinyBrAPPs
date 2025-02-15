@@ -1,0 +1,29 @@
+<input type="text"
+	   ng-if="columnData.dataTypeCode === 'N' || columnData.dataTypeCode === 'T'"
+	   ng-blur="observation.change()"
+	   ng-keyup="doBlur($event)"
+	   ng-model="observation.value"
+	   style="width: 100%" />
+
+<input type="text"
+	   ng-if="columnData.dataTypeCode === 'D'"
+	   placeholder="yyyymmdd"
+	   ng-model="observation.value"
+	   style="width: 100%" />
+
+<ui-select ng-model="observation.value"
+		   ng-if="columnData.dataTypeCode === 'C'"
+		   uis-open-close="observation.onOpenClose(isOpen)"
+		   tagging="observation.newInlineValue"
+		   tagging-label="false"
+		   append-to-body="true"
+		   theme="select2"
+		   style="width: 100%">
+	<ui-select-match
+		class="ui-select-match">
+		<span ng-bind="$select.selected.name"></span>
+	</ui-select-match>
+	<ui-select-choices repeat="value.name as value in (columnData.possibleValues | orderBy: 'name' | filter: { name: $select.search }) track by value.name" >
+		<div title="{{value.description}}">{{isCategoricalDescriptionView ? value.displayDescription : value.displayValue}}</div>
+	</ui-select-choices>
+</ui-select>

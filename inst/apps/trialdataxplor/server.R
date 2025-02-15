@@ -9,5 +9,6 @@ server <- function(input, output, session){
   
   mod_get_studydata_server("get_studydata", rv)
   mod_banner_server("banner", rv, appname)
+  mod_connect_server("server", rv)
   mod_trialdataxplor_server("xplor", rv)
 }

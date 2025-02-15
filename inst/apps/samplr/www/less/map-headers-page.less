@@ -1,0 +1,128 @@
+@import "bootstrap-overrides-variables.less";
+
+@media (min-width: 1135px) {
+  .modal-huge .modal-dialog {
+    width: 60%;
+  }
+}
+
+@media (min-width: 980px) {
+  .modal-huge .modal-dialog {
+    width: 75%;
+  }
+}
+
+@media (max-width: 980px) {
+  .modal-huge .modal-dialog {
+    width: 90%;
+  }
+}
+
+.modal-very-huge .modal-dialog {
+  width: 90%;
+}
+
+@media (min-width: @screen-md-min) {
+  .unmapped-panel-affix.affix {
+    top: 125px;
+    width: 30.33%;
+
+    z-index: 1;
+    position: fixed;
+  }
+
+  .unmapped-panel-affix.affix-bottom {
+    z-index: 0;
+    position: absolute;
+    width: 96%;
+  }
+
+  .toolbar-affix.affix {
+    top: 0;
+    z-index: 1;
+    background-color: @gray-lighter;
+    padding: 20px 0 0px 0;
+    position: fixed;
+  }
+}
+
+
+/*
+section.container-fluid {
+    min-width: 950px !important;
+} */
+
+@media (max-width: @screen-md-min) {
+  .affix {
+    position: static;
+  }
+}
+
+.panel-heading a:hover {
+  text-decoration: none;
+}
+
+.panel-heading a:before {
+  position: relative;
+  right: 5px;
+  font-family: 'Glyphicons Halflings';
+  content: "\e114";
+}
+
+.panel-heading a.collapsed:before {
+  content: "\e080";
+}
+
+.unmapped.list-group {max-height: 300px; overflow-y: auto}
+
+.list-group {min-height: 100px}
+
+.select2-result-selectable {
+  border-bottom: 1px solid @gray-lighter;
+}
+
+.select2-results .select2-highlighted {
+  color: @text-color;
+}
+
+.select2-highlighted .text-info {
+  color: #000;
+}
+
+.select2-result-label b {
+  color: @brand-primary;
+}
+
+.sv-desc {font-size: 10pt;font-weight: 300;line-height: 1.25}
+.sv-subtitle { text-transform: uppercase; margin: 0; font-weight: 800}
+.sv-title {font-size: 15pt; font-weight: 800;}
+
+.sv-title, .psm-title {margin: 0; text-overflow: ellipsis; overflow: hidden}
+.sv-desc, .psm-desc { word-wrap: break-word }
+.psm-title {font-weight: 300; font-size: 13pt}
+.psm-subtitle {margin-bottom: 0; color: @gray-dark; text-transform: uppercase; font-weight: 800; font-size: 8pt}
+.psm-desc {font-size: 8pt}
+.psm-group { margin: 10pt 0}
+
+.show { display: initial }
+
+.list-group-item  {
+  cursor: pointer;
+}
+.unmapped.list-group .list-group-item:hover,
+.list-group-item[data-empty="false"]:hover,
+.select2-results .select2-highlighted {
+  cursor: pointer;
+  //background: #BED6B2;
+  background: @table-bg-hover;
+}
+
+.list-group-item[data-empty="true"] {
+  cursor: default;
+}
+
+.btn-action {
+  overflow: hidden;
+  width: 100%;
+  text-overflow: ellipsis;
+}

@@ -9,8 +9,9 @@ server <- function(input, output, session){
     pushOK = FALSE,             # to avoid pushing BLUES/BLUPS to easily
   )
   
-  mod_get_studydata_server("get_studydata", rv)
   mod_banner_server("banner", rv, appname)
+  mod_connect_server("connect",rv)
+  mod_get_studydata_server("get_studydata", rv)
   mod_dataquality_server("dataquality", rv)
   mod_model_server("model", rv)
 

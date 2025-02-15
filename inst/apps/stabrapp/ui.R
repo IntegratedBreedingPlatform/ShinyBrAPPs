@@ -57,12 +57,13 @@ ui <- fluidPage(
                     background-color: #225691;
                     margin-bottom: 5px;
                     border-color: #357ebd;"),
-  #shinyjs::useShinyjs(),
+  shinyjs::useShinyjs(),
   #shinysky::busyIndicator(wait = 200, text = NULL, img = "img/loading-animation.gif"),
   shinybusy::add_busy_spinner(spin = "fading-circle", position = "top-left", margins = c(110, 10), color = "#225691", height = 25, width =25, timeout = 200), 
   
   div(class = "container-fluid",
       mod_banner_ui("banner"),
+      mod_connect_ui("connect"),
       mod_get_studydata_ui("get_studydata"),
       div(style="position: relative; z-index: 10;",
       bslib::page_navbar(
