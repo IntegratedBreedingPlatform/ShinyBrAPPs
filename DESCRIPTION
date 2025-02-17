@@ -1,46 +1,50 @@
-Package: shinybrapps
 Type: Package
+Package: shinybrapps
 Title: ShinyBrAPPs
-Version: 0.1.0
+Version: 27.8
 Authors@R: c(
-  person("Léo", "Valette", email = "leovalette@posteo.net", role = c("aut", "ctb", "cre")),
-  person("Jean-François", "Rami", email = "rami@cirad.fr", role = c("aut", "ctb")),
-  person("Mariano", "Crimi", email = "mcrimi@cgiar.org", role = c("aut", "ctb"))
+    person("Jean-François", "Rami", email = "rami@cirad.fr", role = c("aut", "ctb", "cre")),
+    person("Alice", "Boizet", email = "alice.boizet@cirad.fr", role = c("aut", "ctb")),
+    person("Mariano", "Crimi", email = "mcrimi@cgiar.org", role = c("aut", "ctb")),
+    person("Léo", "Valette", email = "leovalette@posteo.net", role = c("aut"))
   )
 Maintainer: Leo Valette <leovalette@posteo.net>
-Description: ShinyBrAPPs 
-    Shiny apps integrated to the Breeding Management System
-License: TO BE DISCUSSED
+Description: ShinyBrAPPs Shiny apps integrated to the Breeding Management
+    System.
+License: GPL (>= 3)
+Depends:
+    R (>= 2.10),
+    data.table
+Imports: 
+    brapir,
+    brapirv2,
+    bslib,
+    DT,
+    e1071,
+    ggnewscale,
+    ggplot2,
+    ggpubr,
+    gridExtra,
+    gtools,
+    htmltools,
+    httr,
+    jsonlite,
+    leaflet,
+    metan,
+    openxlsx,
+    plotly,
+    rclipboard,
+    rmarkdown,
+    scales,
+    shiny,
+    shinycssloaders,
+    shinyjs,
+    shinyWidgets,
+    statgenGxE,
+    statgenSTA,
+    stringmagic,
+    tidyr,
+    varhandle
 Encoding: UTF-8
 LazyData: true
-Depends:
-    shiny,
-    shinyjs,
-    data.table,
-    ggplot2,
-    plotly,
-    DT,
-    gridExtra,
-    magrittr,
-    RColorBrewer,
-    e1071,
-    statgenSTA,
-    statgenGxE,
-    brapirv1,
-    brapirv2,
-    SpATS,
-    shinyWidgets,
-    shinybusy,
-    shinyBS,
-    varhandle,
-    ggpubr,
-    ggExtra,
-    leaflet,
-    rclipboard,
-    openxlsx,
-    shinycssloaders,
-    gtools,
-    ggnewscale,
-    metan,
-    R (>= 2.10)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.3.2

@@ -5,9 +5,6 @@
 #tabsetPanel_main li{
   font-size: large;
 }
-.navbar {
-  margin-right: 200px;
-}
 .navbar-static-top {
   z-index: 0;
   border-width: 0 0 1px;

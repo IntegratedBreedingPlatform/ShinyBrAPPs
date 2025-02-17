@@ -15,17 +15,20 @@ appname <- "STABrAPP"
 #   )
 visible_columns_selected_obs <- c(
   "study_name_abbrev_app",
-  "entryType",
-  "entryNumber",
   "germplasmName",
+  "observationVariableName",
+  "observationValue",
   "blockNumber",
   "replicate",
   "plotNumber",
   "positionCoordinateX",
-  "positionCoordinateY"
+  "positionCoordinateY",
+  "entryType",
+  "entryNumber"
 )
 
 ## correspondence of experimental designs
+library(data.table)
 exp_designs_corresp <- data.table(
   StatGenSTA_code = c(
     "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"

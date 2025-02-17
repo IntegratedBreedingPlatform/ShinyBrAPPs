@@ -21,7 +21,7 @@ knitr::kable(unique(data.table(rbindlist(rv$TD))[,.(trial,locationName,studyDbId
         TDAMMI <- tryCatch(gxeAmmi(TD = rv$TD,
                                       trait = input$picker_trait,
                                       nPC = switch((input$AMMI_nPC=="Auto")+1,  as.numeric(input$AMMI_nPC,NULL)),
-                                      byYear = input$AMMI_byYear,
+                                      byYear = F,
                                       center = input$AMMI_center,
                                       excludeGeno = input$AMMI_excludeGeno,
                                       useWt = input$use_weights), error=function(e) e)
@@ -34,7 +34,7 @@ summary(TDAMMI)
           statgenGxE:::plot.AMMI(TDAMMI,
                                  plotType = input$AMMI_plotType,
                                  scale = input$AMMI_scale,
-                                 plotGeno = input$AMMI_plotGeno,
+                                 plotGeno = T,
                                  colorGenoBy = switch((input$AMMI_colorGenoBy=="Nothing")+1,  input$AMMI_colorGenoBy, NULL),
                                  plotConvHull = input$AMMI_plotConvHull,
                                  colorEnvBy = input$AMMI_colorEnvBy,

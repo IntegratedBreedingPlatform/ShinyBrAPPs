@@ -1,3 +1,6 @@
+#' @import shinyWidgets
+#' @import shinyjs
+#' @import bslib
 #' @export
 # UI ####
 mod_scatterplot_ui <- function(id){
@@ -17,9 +20,9 @@ mod_scatterplot_ui <- function(id){
       )
     ),
     
-    bslib::layout_sidebar(
+    layout_sidebar(
       ## Param sidebar ####
-      sidebar = bslib::sidebar(
+      sidebar = sidebar(
         width = 350,
          pickerInput(
            inputId = ns("env"),
@@ -60,8 +63,8 @@ mod_scatterplot_ui <- function(id){
         ),
         ### Options card ####
          div(
-           bslib::card(
-             bslib::card_header(
+           card(
+             card_header(
                h4('Options ', icon('screwdriver-wrench')),
                class = "d-flex justify-content-between",
                actionBttn(
@@ -73,7 +76,7 @@ mod_scatterplot_ui <- function(id){
                  size = "xs"
               )
              ),
-             bslib::card_body(
+             card_body(
                fluidRow(
                  column(2),
                  column(5, strong("Variables")),
@@ -116,7 +119,7 @@ mod_scatterplot_ui <- function(id){
          )
       ),
       ## Plot card ####
-      bslib::card(height = "800px",
+      card(height = "800px",
         full_screen = TRUE,
          plotlyOutput(
            ns("scatterplot"), width = "100%", height = "600px"
@@ -124,7 +127,7 @@ mod_scatterplot_ui <- function(id){
            # hover = ns("scatterplot_hover"),
            # brush = ns("scatterplot_brush")
          ),
-         bsTooltip(ns("scatterplot"), title = "Tip: press the shift key for multiple mouse selection", placement = "left"),
+         #bsTooltip(ns("scatterplot"), title = "Tip: press the shift key for multiple mouse selection", placement = "left"),
          fluidRow(
            column(
              12,
@@ -133,8 +136,8 @@ mod_scatterplot_ui <- function(id){
              span(class = ns("ui_create_group"), style = "display: none;",
                   actionButton(ns("go_create_group"), "Create Group", class = "btn btn-info")
              ),
-             bsModal(ns("modal_create_group"), "Create Group", NULL, size = "small",
-                     uiOutput(ns("modal_create_group_ui")))
+             # bsModal(ns("modal_create_group"), "Create Group", NULL, size = "small",
+             #         uiOutput(ns("modal_create_group_ui")))
            )
          ),
          fluidRow(
@@ -148,6 +151,8 @@ mod_scatterplot_ui <- function(id){
   )
 }
 
+#' @import data.table
+#' @import ggplot2
 #' @export
 # SERVER ####
 mod_scatterplot_server <- function(id, rv, parent_session){
@@ -157,19 +162,15 @@ mod_scatterplot_server <- function(id, rv, parent_session){
     id,
     function(input, output, session){
       ns <- session$ns
-      rv_plot <- reactiveValues()
-      
-      rv$groups <- data.table()
-      rv$visu_as_group <- NULL
-      rv$new_group_created <- F
-      
-      rv_plot$draw_regression <- F
-      rv_plot$draw_clusters <- F
-      rv_plot$counter_hca <- 0
-      rv_plot$counter_kmeans <- 0
-      rv_plot$selected_express_X_as <- NULL
-      rv_plot$selected_express_Y_as <- NULL
-      rv_plot$selection_variables <- NULL
+      rv_plot <- reactiveValues(
+        draw_regression = F,
+        draw_clusters = F,
+        counter_hca = 0,
+        counter_kmeans = 0,
+        selected_express_X_as = NULL,
+        selected_express_Y_as = NULL,
+        selection_variables = NULL
+      )
       
       ## function for data aggregation
       aggreg_functions <- data.table(
@@ -193,22 +194,22 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         }
       }
      
-      observe({
-        req(rv$data_plot)
+      ## initialize selectinputs ####
+      observeEvent(rv$extradata, {
         req(rv$column_datasource)
 
         ## turn numeric variables that should not be numeric into text
-        for(col in names(rv$data_plot)[
-          rv$data_plot[, lapply(.SD, is.numeric)]==T &
-          names(rv$data_plot) %in% rv$column_datasource[type != "Numerical", cols]
+        for(col in names(rv$extradata)[
+          rv$extradata[, lapply(.SD, is.numeric)]==T &
+          names(rv$extradata) %in% rv$column_datasource[type != "Numerical", cols]
         ]){
-          rv$data_plot[, c(col) := list(as.character(eval(as.name(col))))]
+          rv$extradata[, c(col) := list(as.character(eval(as.name(col))))]
         }
         
         ## Set environments selector ####
         # don't change environment selection after creating a group
         if (!rv$new_group_created) {
-          envs <- unique(rv$data_plot[,.(studyDbId, study_name_app)])
+          envs <- unique(rv$extradata[,.(studyDbId, study_name_app)])
           env_choices <- envs[,studyDbId]
           names(env_choices) <- envs[,study_name_app]
           updatePickerInput(
@@ -219,7 +220,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         }
         
         ## Set germplasm refs ####
-        germplasmNames <- rv$data_plot[,.(germplasmNames = list(unique(germplasmName))), .(entryType)][order(entryType)]
+        germplasmNames <- rv$extradata[,.(germplasmNames = list(unique(germplasmName))), .(entryType)][order(entryType)]
         updatePickerInput(
           session = session, inputId = "ref_genotype_X",
           choices = setNames(germplasmNames[,germplasmNames], germplasmNames[,entryType]),
@@ -354,6 +355,8 @@ mod_scatterplot_server <- function(id, rv, parent_session){
           choices = c(no_selection, var_choices_COLOUR),
           selected = val_picker_COLOUR
         )
+        
+        rv_plot$data <- rv$extradata
 
       })
       
@@ -455,7 +458,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
       
       ## aggreg dataset ####
       observe({
-        req(rv$data_plot)
+        req(rv_plot$data)
         if(input$switch_aggregate== T){
           if(input$aggregate_by == "germplasm and environment"){
             group_by_cols <- c("studyName", "germplasmName", "germplasmDbId")
@@ -463,17 +466,17 @@ mod_scatterplot_server <- function(id, rv, parent_session){
             group_by_cols <- c("germplasmName", "germplasmDbId")
           }
         }else{
-          group_by_cols <- names(rv$data_plot)[grep("Id$|germplasmName",names(rv$data_plot))]
+          group_by_cols <- names(rv_plot$data)[grep("Id$|germplasmName",names(rv_plot$data))]
         }
-        req(input$picker_X %in% names(rv$data_plot))
-        req(input$picker_Y %in% names(rv$data_plot))
-        #req(input$picker_COLOUR %in% names(rv$data_plot))
-        #req(input$picker_SIZE %in% names(rv$data_plot))
-        #req(input$picker_SHAPE %in% names(rv$data_plot))
+        req(input$picker_X %in% names(rv_plot$data))
+        req(input$picker_Y %in% names(rv_plot$data))
+        #req(input$picker_COLOUR %in% names(rv_plot$data))
+        #req(input$picker_SIZE %in% names(rv_plot$data))
+        #req(input$picker_SHAPE %in% names(rv_plot$data))
         #req(input$aggreg_fun_COLOUR)
         #req(aggreg_functions[fun == input$aggreg_fun_COLOUR, for_num] == rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"])
 
-        data_plot_aggr <- rv$data_plot[
+        data_plot_aggr <- rv_plot$data[
           studyDbId %in% input$env,
           .(
             N_obs = .N,
@@ -567,7 +570,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
           }
         }
         
-        rv$data_plot_aggr <- data_plot_aggr
+        rv_plot$data_aggr <- data_plot_aggr
       })
       
       ## go regression ####
@@ -577,14 +580,14 @@ mod_scatterplot_server <- function(id, rv, parent_session){
       
       ## Plot ####
       output$scatterplot <- renderPlotly({
-        req(rv$data_plot_aggr)
+        req(rv_plot$data_aggr)
         #req(input$picker_COLOUR)
-        #req(rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"] == is.numeric(rv$data_plot_aggr[,VAR_COLOUR]))
+        #req(rv$column_datasource[cols == input$picker_COLOUR, type == "Numerical"] == is.numeric(rv_plot$data_aggr[,VAR_COLOUR]))
         
         rv_plot$draw_regression
         rv_plot$draw_clusters
         
-        d <- rv$data_plot_aggr
+        d <- rv_plot$data_aggr
         if(rv_plot$draw_clusters==T){
           if("cluster" %in% names(d)){d[,cluster := NULL]}
           d <- merge.data.table(x = d, y = rv_plot$clusters[,.(germplasmName, cluster)], by = "germplasmName")
@@ -653,7 +656,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
           scale_x_continuous(
             labels = if(isTruthy(input$express_X_relative) && isTruthy(input$ref_genotype_X)){scales::percent}else{waiver()},
             # trans = if(input$express_X_as=="as ranks"){"reverse"}else{"identity"}, # disabled to make regression computation and drawing more simple
-            breaks = if(isTruthy(input$express_X_as_ranks)){as.numeric(floor(quantile(rv$data_plot_aggr$VAR_X_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
+            breaks = if(isTruthy(input$express_X_as_ranks)){as.numeric(floor(quantile(rv_plot$data_aggr$VAR_X_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
             name = if(isTruthy(input$express_X_as_ranks)){
               paste(input$picker_X, "(ranks)")
             }else if(isTruthy(input$express_X_relative) & isTruthy(input$ref_genotype_X)){
@@ -665,7 +668,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
           scale_y_continuous(
             labels = if(isTruthy(input$express_Y_relative) && isTruthy(input$ref_genotype_Y)){scales::percent}else{waiver()},
             # trans = if(input$express_Y_as=="as ranks"){"reverse"}else{"identity"}, # disabled to make regression computation and drawing more simple
-            breaks = if(isTruthy(input$express_Y_as_ranks)){as.numeric(floor(quantile(rv$data_plot_aggr$VAR_Y_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
+            breaks = if(isTruthy(input$express_Y_as_ranks)){as.numeric(floor(quantile(rv_plot$data_aggr$VAR_Y_PLOT, na.rm = T, probs = seq(1,0,-0.2))))}else{waiver()},
             name = if(isTruthy(input$express_Y_as_ranks)){
               paste(input$picker_Y, "(ranks)")
             }else if(isTruthy(input$express_Y_relative) && isTruthy(input$ref_genotype_Y)){
@@ -724,7 +727,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
       observeEvent(rv_plot$plot_selection[,.N],{
         shinyjs::toggle(selector = paste0(".",ns("ui_create_group")), condition = rv_plot$plot_selection[,.N]>0)
         req(dim(rv_plot$plot_selection)[1]>0)
-        germplasms <- unique(rv$data_plot[germplasmDbId %in% rv_plot$plot_selection[,unique(key)], .(germplasmDbId, germplasmName)])
+        germplasms <- unique(rv_plot$data[germplasmDbId %in% rv_plot$plot_selection[,unique(key)], .(germplasmDbId, germplasmName)])
         group_id <- ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1)
         selection_data <- data.table(
           group_id = group_id,
@@ -821,8 +824,8 @@ mod_scatterplot_server <- function(id, rv, parent_session){
       
       output$ui_clusters <- renderUI({
         if(input$aggregate_by == "germplasm" & input$switch_aggregate == T){
-          req(rv$data_plot_aggr)
-          max_k <- rv$data_plot_aggr[,.N,germplasmName][,.N]
+          req(rv_plot$data_aggr)
+          max_k <- rv_plot$data_aggr[,.N,germplasmName][,.N]
           dropdownButton(
             label = "Cluster germplasms", status = "info", circle = F, inline = T, up = F, width = "500px",
             radioGroupButtons(ns("cluster_algo"), "Alogrithm", choiceNames = c("K-means", "HCA with Ward distance"), choiceValues = c("kmeans", "hca")),
@@ -837,9 +840,9 @@ mod_scatterplot_server <- function(id, rv, parent_session){
       
       ## go clustering ####
       observeEvent(input$go_clustering,{
-        req(rv$data_plot_aggr)
+        req(rv_plot$data_aggr)
         req(input$n_clusters)
-        max_k <- rv$data_plot_aggr[,.N,germplasmName][,.N]
+        max_k <- rv_plot$data_aggr[,.N,germplasmName][,.N]
         n_clusters <- input$n_clusters
         if(input$n_clusters > max_k){
           updateNumericInput(session, "n_clusters", value = max_k)
@@ -848,7 +851,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
           updateNumericInput(session, "n_clusters", value = 1)
           n_clusters <- 1
         }
-        d <- rv$data_plot_aggr[, .(scale(VAR_X, center = T, scale = T), scale(VAR_Y, center = T, scale = T))]
+        d <- rv_plot$data_aggr[, .(scale(VAR_X, center = T, scale = T), scale(VAR_Y, center = T, scale = T))]
         if(input$cluster_algo=="hca"){
           mat_dist <- dist(d, method = "euclidean")
           dend <- hclust(d = mat_dist, method = "ward.D2")
@@ -877,7 +880,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
           rv_plot$counter_kmeans <- rv_plot$counter_kmeans + 1
           counter <- rv_plot$counter_kmeans
         }
-        clusters <- data.table(rv$data_plot_aggr[,.(germplasmDbId, germplasmName)], cluster = clus, method = input$cluster_algo, counter = counter)
+        clusters <- data.table(rv_plot$data_aggr[,.(germplasmDbId, germplasmName)], cluster = clus, method = input$cluster_algo, counter = counter)
         rv_plot$clusters <- clusters
         rv_plot$draw_clusters <- T
         output$cluster_results <- renderUI({
@@ -1015,7 +1018,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         ), fill = T, use.names = T)
         
         ## update selectors (shape, colour)
-        data_plot <- copy(rv$data_plot) # to avoid reactivity issues related to assignment by reference
+        data_plot <- copy(rv_plot$data) # to avoid reactivity issues related to assignment by reference
         #for(id in clusters[,unique(group_id)]){
         #  group_name <- clusters[group_id == id,group_name]
         #  data_plot[germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)], eval(group_name) := paste0('In "', group_name,'"')]
@@ -1033,8 +1036,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
           ), 
           use.names = T
         )
-        rv$data_plot <- data_plot
-        
+        rv_plot$data <- data_plot
       })
       
       ## create group ####
@@ -1084,8 +1086,6 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         
         rv$visu_as_group <- NULL
       })
-      
-      return(rv)
     }
   )
 }
