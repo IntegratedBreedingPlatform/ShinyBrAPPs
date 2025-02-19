@@ -457,12 +457,14 @@ mod_model_server <- function(id, rv){
 
       ## observe model_engine ####
       observeEvent(input$model_engine,{
-        if(input$model_engine=="SpATS"){
-          shinyjs::show("spatial_opt")
+        if (input$model_engine=="SpATS") {
+          shinyjs::hide("spatial_opt")
           shinyjs::show("display_psanova_opt")
-        }else{
+        }else if (input$model_engine=="lme4") {
           shinyjs::hide("spatial_opt")
           shinyjs::hide("display_psanova_opt")
+        } else {
+          shinyjs::show("spatial_opt")
         }
       })
 
