@@ -138,7 +138,7 @@ mod_dataquality_ui <- function(id) {
       nav_panel(
         title = "Summary Statistics", 
         h2("Summary Statistics"), 
-        dataTableOutput(ns("sumstats_table"))
+        fluidRow(column(align = "center", width = 12, dataTableOutput(ns("sumstats_table"))))
       )
     )
   )
@@ -692,6 +692,7 @@ mod_dataquality_server <- function(id, rv) {
       
       if (dataType == "Date") {
         sumtable_notexcl <- data_dq_notexcl[, .(
+          "Environment" = study_name_app,
           "No. of observations" = .N,
           "Mean" = mean(observationValue, na.rm = T),
           "Minimum" = min(observationValue, na.rm = T),
@@ -714,6 +715,7 @@ mod_dataquality_server <- function(id, rv) {
         ), study_name_app]
         
         columns <- c(
+          "Environment",
           "No. of values",
           "No. of observations",
           "No. of excluded values",
@@ -726,6 +728,7 @@ mod_dataquality_server <- function(id, rv) {
         )
       } else {
         sumtable_notexcl <- data_dq_notexcl[, .(
+          "Environment" = study_name_app,
           "No. of observations" = .N,
           "Mean" = mean(observationValue, na.rm = T),
           "Minimum" = min(observationValue, na.rm = T),
@@ -780,6 +783,7 @@ mod_dataquality_server <- function(id, rv) {
         sumtable_notexcl[, "Range" := Maximum - Minimum]
         
         columns <- c(
+          "Environment",
           "No. of values",
           "No. of observations",
           "No. of excluded values",
@@ -809,19 +813,20 @@ mod_dataquality_server <- function(id, rv) {
       setkey(sumtable_notexcl, study_name_app)
       sumtable <- sumtable_all[sumtable_notexcl]
       sumtable[, "No. of excluded values" := `No. of values` - `No. of observations`]
-      
-      rownames_sumtable <- sumtable[, study_name_app]
-      
       sumtable <- sumtable[, columns, with = F]
-      rownames(sumtable) <- rownames_sumtable
+
       datatable(
         sumtable,
+        rownames = FALSE,
+        extensions = "FixedColumns",
         options = list(
           paging = F,
           scrollX = T,
           scrollY = "600px",
           scrollCollapse = T,
-          dom = 't'
+          dom = 't',
+          autoWidth = FALSE,
+          fixedColumns = list(leftColumns = 1)
         )
       )
     })
