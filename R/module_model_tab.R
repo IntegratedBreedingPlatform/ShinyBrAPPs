@@ -109,6 +109,8 @@ mod_model_ui <- function(id){
     layout_columns(
       col_widths = c(2, 2, 4),
       disabled(actionButton(ns("go_fit_model"), "Fit model", class = "btn btn-info")),
+      shiny::downloadButton(ns("STA_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary"),
+      prettySwitch(ns("report_toc"),label = "Include TOC in report", value = TRUE)
       #hidden(shiny::actionButton(ns("go_fit_no_outlier"), "Refit without outliers", class = "btn btn-info")),
       #h4(textOutput(ns("fit_outliers_output")))
     ),
@@ -203,7 +205,8 @@ mod_model_server <- function(id, rv){
         fit = NULL,
         obsUnit_outliers = NULL
       )
-
+      shinyjs::disable("STA_report")
+      
       ## observe rv$data ####
       observeEvent(rv$data, {
         req(rv$data)
@@ -345,6 +348,7 @@ mod_model_server <- function(id, rv){
           has_repIds = has_repIds,
           has_coords = has_coords
         )
+        shinyjs::disable("STA_report")
       })
       
       ## observe select_traits_open ####
@@ -405,6 +409,8 @@ mod_model_server <- function(id, rv){
             session, "covariates", choices = choices_cov, selected = NULL
           )
         }
+        shinyjs::disable("STA_report")
+        
       })
       
       observeEvent(input$model_design, {
@@ -436,6 +442,8 @@ mod_model_server <- function(id, rv){
           shinyjs::hide("spatial_opt")
           shinyjs::hide("display_psanova_opt")
         }
+        shinyjs::disable("STA_report")
+        
       })
 
       ## output$psanova_opt ####
@@ -495,6 +503,7 @@ mod_model_server <- function(id, rv){
         rv_mod$fitted_data <- data_filtered
         fitModel(data_filtered)
         enable("push_metrics_to_BMS_B")
+        enable("STA_report")
       })
       
       ## observe button mark outliers ####
@@ -503,7 +512,9 @@ mod_model_server <- function(id, rv){
         new_excluded_obs[, reason := "model outlier"]
         rv$excluded_obs <- rbind(rv$excluded_obs, new_excluded_obs)
       })
-      
+      observeEvent(rv$excluded_obs,{
+        shinyjs::disable("STA_report")
+      })
       ## observe go_fit_no_outlier ####
       # observeEvent(input$go_fit_no_outlier,{
       #   req(rv_mod$data_checks)
@@ -1394,6 +1405,32 @@ mod_model_server <- function(id, rv){
           return(NULL)
         })
       }
+      ## STA Report ####
+      output$STA_report <- downloadHandler(
+        filename = function() {
+          paste("STA-", Sys.Date(), ".docx", sep="")
+        },
+        content = function(file) {
+          if (is.null(rv_mod$fit)){
+            showNotification("Please fit a model first", type = "error", duration = notification_duration)
+            return(NULL)
+          } else {
+            #browser()
+            stareport(fit=rv_mod$fit,
+                      file=file,
+                      template="reports/STA_Model.docx",
+                      trialName=unique(rv$study_metadata$trialName),
+                      trialdesc = rv$trial_metadata[trialDbId==unique(rv$study_metadata$trialDbId),trialDescription],
+                      crop = rv$trial_metadata[trialDbId==unique(rv$study_metadata$trialDbId),commonCropName],
+                      spatial = rv_mod$data_checks$has_coords,
+                      outliers = rv_mod$outliers$outliers,
+                      excluded = if(nrow(rv$excluded_obs)>0) rv$data[observationDbId %in% rv$excluded_obs$observationDbId] else NULL,
+                      toc = input$report_toc)
+          }
+        }
+      )
+      
+      
     }
   )
 }
