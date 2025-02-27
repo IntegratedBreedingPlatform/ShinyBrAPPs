@@ -825,7 +825,7 @@ mod_dataquality_server <- function(id, rv) {
           scrollY = "600px",
           scrollCollapse = T,
           dom = 't',
-          autoWidth = FALSE,
+          #autoWidth = FALSE,
           fixedColumns = list(leftColumns = 1)
         )
       )
