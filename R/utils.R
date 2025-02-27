@@ -58,6 +58,7 @@ get_env_data <- function(con = NULL,
     commoncropname = con$commoncropname,
     token = con$token)
 
+  print(paste0("retrieving data from study ", studyDbId))
   try({
     if (is.null(obs_unit_level)) {
       res <- brapir::phenotyping_observationunits_post_search(
@@ -65,10 +66,7 @@ get_env_data <- function(con = NULL,
         studyDbIds = studyDbId,
         includeObservations = T
       )
-      res0 <- brapirv2::brapi_post_search_observationunits(
-        con = con,
-        studyDbIds = studyDbId,
-        includeObservations = T)
+      print(res$status_code)
     } else {
       obs_levels <- data.frame(levelName = obs_unit_level)
       res <- brapir::phenotyping_observationunits_post_search(
@@ -77,15 +75,12 @@ get_env_data <- function(con = NULL,
         observationLevels = obs_levels,
         includeObservations = T
       )
-      res0 <- brapirv2::brapi_post_search_observationunits(
-        con = con, 
-        studyDbIds = studyDbId,
-        observationLevels = obs_levels,
-        includeObservations = T)
+      print(res$status_code)
     }
     if (res$status_code == 200 | res$status_code == 202) {
       searchResultDbId <- as.character(res$data$searchResultsDbId)
       res <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con, searchResultsDbId = searchResultDbId)
+      print(res$status_code)
       if (res$status_code == 200) {
         if (nrow(res$data) > 0) {
           observations <- tidyr::unnest(res$data, cols = "observationUnitPosition.observationLevelRelationships", names_sep = ".", keep_empty = T)
@@ -106,6 +101,8 @@ get_env_data <- function(con = NULL,
         return(NULL)
       }
     }
+    
+    print(head(study_obs))
     
     if (!"observations.observationDbId" %in% colnames(study_obs)) {
       study_obs <- NULL
