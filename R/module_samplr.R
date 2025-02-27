@@ -23,7 +23,7 @@ mod_samplr_ui <- function(id){
                                                          selectInput(ns("program"),label = "Program", choices = NULL, selected = NULL),
                                                          selectInput(ns("trial"),label = "Study name", choices = NULL),
                                                          selectizeInput(ns("studies"),label = "Environments", choices = NULL, multiple=TRUE),
-                                                         div(style="display:flex",
+                                                         div(style="display:flex;gap: 10px;",
                                                              actionButton(ns("get_samples"),"Get samples"),
                                                              uiOutput(ns("dbutton_container"))),
                                                          tags$style(make_css(list('.container-fluid', 'padding-left', '0px'))),
@@ -40,8 +40,8 @@ mod_samplr_ui <- function(id){
                                           layout_sidebar(width = 1/3,
                                                          sidebar=bslib::sidebar(width = 350,
                                                                                 textInput(ns("germp_search"), "Search Germplasm by name"),
-                                                                                radioGroupButtons(ns("germp_s_how"), choices = c("Starts with","Ends with","Exact Match","Contains")),
-                                                                                div(style="display:flex",
+                                                                                radioGroupButtons(ns("germp_s_how"), status= "custom-class", choices = c("Starts with","Ends with","Exact Match","Contains")),
+                                                                                div(style="display:flex;gap: 10px;",
                                                                                     actionButton(ns("get_samples_byg"),"Get samples"),
                                                                                     uiOutput(ns("dbutton_byg_container"))),
                                                                                 tags$style(make_css(list('.container-fluid', 'padding-left', '0px'))),
@@ -284,7 +284,7 @@ mod_samplr_server <- function(id, rv){
                             "takenBy")
               colorder <- colorder[colorder%in%colnames(bc)]
               setcolorder(bc, colorder)
-              rv_samp$stdatadt_one <- bc
+              rv_samp$stdatadt_one <- data.table(crop=rv$con$commoncropname,bc)
             } else {
               showModal(modalDialog("There is no sample with this DbId", fade = F))
               rv_samp$stdatadt_one <- data.table()
@@ -356,7 +356,7 @@ mod_samplr_server <- function(id, rv){
                                 "takenBy")
                   colorder <- colorder[colorder%in%colnames(bc)]
                   setcolorder(bc, colorder)
-                  rv_samp$stdatadt_byg <- bc
+                  rv_samp$stdatadt_byg <- data.table(crop=rv$con$commoncropname,bc)
                 } else {
                   showModal(modalDialog("There is no sample associated to this germplasm name", fade = F))
                   rv_samp$stdatadt_byg <- data.table()
