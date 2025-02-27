@@ -17,42 +17,21 @@
 #' @examples
 stareport <- function(fit, file=file, template=templt, trialdesc="", trialName="", crop="", outliers=NULL, excluded=NULL, spatial=FALSE, toc=TRUE, table.dec=4){
   my_doc <- read_docx(template)
-  ## Add date in metadata
-  my_doc<-my_doc%>%
-         cursor_bookmark(id = "meta_date")%>%
-          body_add_par(value = format(Sys.time(), '%d %B, %Y - %H:%M:%S'),style = "Normal",pos="after" )%>%
-    cursor_bookmark(id = "meta_date")%>%
-    body_remove()
-  ## Add trialName in metadata
-  my_doc<-my_doc%>%
-    cursor_bookmark(id = "meta_trialName")%>%
-    body_add_par(value = trialName, style = "Normal",pos="after" )%>%
-    cursor_bookmark(id = "meta_trialName")%>%
-    body_remove()
-  ## Add trialdesc in metadata
-  my_doc<-my_doc%>%
-    cursor_bookmark(id = "meta_trialdesc")%>%
-    body_add_par(value = trialdesc, style = "Normal",pos="after" )%>%
-    cursor_bookmark(id = "meta_trialdesc")%>%
-    body_remove()
-  ## Add crop in metadata
-  my_doc<-my_doc%>%
-    cursor_bookmark(id = "meta_crop")%>%
-    body_add_par(value = crop, style = "Normal",pos="after" )%>%
-    cursor_bookmark(id = "meta_crop")%>%
-    body_remove()
-  ## Add design in metadata
-  my_doc<-my_doc%>%
-    cursor_bookmark(id = "meta_design")%>%
-    body_add_par(value = fit[[1]]$design, style = "Normal",pos="after" )%>%
-    cursor_bookmark(id = "meta_design")%>%
-    body_remove()
-  ## Add engine in metadata
-  my_doc<-my_doc%>%
-    cursor_bookmark(id = "meta_engine")%>%
-    body_add_par(value = fit[[1]]$engine, style = "Normal",pos="after" )%>%
-    cursor_bookmark(id = "meta_engine")%>%
-    body_remove()
+  ## Add metadata
+  metatab <- data.frame(V1=c("Date - Time",
+                             "Crop",
+                             "Trial",
+                             "Description",
+                             "Design",
+                             "Engine"),
+                        V2=c(format(Sys.time(), '%d %B, %Y - %H:%M:%S'),
+                             crop,
+                             trialName,
+                             trialdesc,
+                             fit[[1]]$design,
+                             fit[[1]]$engine))
+  my_doc<-my_doc%>%cursor_bookmark("meta")%>%
+    body_add_table(value = metatab, pos="after" , header = F, alignment = c("left","right"), style = "meta_table")
   
   my_doc <- my_doc%>%cursor_end()
   my_doc<-my_doc%>%body_add_break()
@@ -88,7 +67,7 @@ stareport <- function(fit, file=file, template=templt, trialdesc="", trialName="
       gg <- statgenSTA:::plot.STA(fit, trials = stname, traits = traits[tr], output = FALSE )[[1]][[1]]
       title <- cowplot::ggdraw() + 
         cowplot::draw_label(traits[tr], fontface = 'bold', x = 0, hjust = 0, size=12) +
-        theme(plot.margin = margin(0, 0, 0, 7))
+        ggplot2::theme(plot.margin = margin(0, 0, 0, 7))
       ggg <- cowplot::plot_grid(title, cowplot::plot_grid(plotlist = gg, ncol = 2), ncol=1, rel_heights = c(0.1, 1))
         my_doc<-my_doc%>%
           body_add_gg(value = ggg, height = length(gg)*1.25)
