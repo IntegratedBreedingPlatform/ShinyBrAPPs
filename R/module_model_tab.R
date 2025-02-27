@@ -491,7 +491,7 @@ mod_model_server <- function(id, rv){
         ## create TD without the excluded observations
         ## exclude observations
         rv$data[,observationValue:=as.numeric(observationValue)]
-        data_filtered <- rv$data[!(observationDbId %in% rv$excluded_obs)]
+        data_filtered <- rv$data[!(observationDbId %in% rv$excluded_obs$observationDbId)]
         rv_mod$fitted_data <- data_filtered
         fitModel(data_filtered)
         enable("push_metrics_to_BMS_B")
