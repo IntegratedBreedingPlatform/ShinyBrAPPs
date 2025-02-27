@@ -1,4 +1,4 @@
-#' Title
+#' Single Trial Analysis report generation as Word document using officer
 #'
 #' @param fit 
 #' @param file 
@@ -11,6 +11,8 @@
 #' @returns
 #' @export
 #' @import officer
+#' @import cowplot
+#' @import ggplot2
 #'
 #' @examples
 stareport <- function(fit, file=file, template=templt, trialdesc="", trialName="", crop="", outliers=NULL, excluded=NULL, spatial=FALSE, toc=TRUE, table.dec=4){
@@ -141,6 +143,5 @@ stareport <- function(fit, file=file, template=templt, trialdesc="", trialName="
   }
     
   print(my_doc, target = file)
-  #print(file)
 }
 
