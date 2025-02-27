@@ -48,6 +48,8 @@ RUN R -e "install.packages('ggnewscale', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('metan', repos='http://cran.rstudio.com/')"
 RUN R -e "remotes::install_gitlab('alice.boizet/brapir', host = 'https://gitlab.cirad.fr')"
 RUN R -e "install.packages('stringmagic', repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('officer', repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('cowplot', repos='http://cran.rstudio.com/')"
 
 
 ## Install shinybrapps
