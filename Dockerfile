@@ -50,7 +50,10 @@ RUN R -e "remotes::install_gitlab('alice.boizet/brapir', host = 'https://gitlab.
 RUN R -e "install.packages('stringmagic', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('officer', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('cowplot', repos='http://cran.rstudio.com/')"
-
+RUN R -e "remotes::install_github('hrbrmstr/qrencoder')"
+RUN R -e "install.packages('baRcodeR', repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('raster', repos='http://cran.rstudio.com/')"
+RUN R -e "install.packages('tableHTML', repos='http://cran.rstudio.com/')"
 
 ## Install shinybrapps
 # Note: presently the image is constructed from within the package directory because the repo "IntegratedBreedingPlatform/ShinyBrAPPs" is private. If it becomes public, it will be possible to construct the image from anywhere via "install_gihub()"
