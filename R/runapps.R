@@ -37,3 +37,14 @@ run_trialdataxplor <- function() {
 
   shiny::runApp(appDir, display.mode = "normal",launch.browser = T)
 }
+
+
+#' @export
+run_samplr <- function() {
+  appDir <- system.file("apps", "samplr", package = "shinybrapps")
+  if (appDir == "") {
+    stop("Could not find app directory. Try re-installing `samplr`.", call. = FALSE)
+  }
+  
+  shiny::runApp(appDir, display.mode = "normal",launch.browser = T)
+}

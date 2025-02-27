@@ -16,14 +16,17 @@ Depends:
     R (>= 2.10),
     data.table
 Imports: 
+    baRcodeR,
     brapir,
     brapirv2,
     bslib,
+    cowplot,
     DT,
     e1071,
     ggnewscale,
     ggplot2,
     ggpubr,
+    grid,
     gridExtra,
     gtools,
     htmltools,
@@ -31,8 +34,11 @@ Imports:
     jsonlite,
     leaflet,
     metan,
+    officer,
     openxlsx,
     plotly,
+    qrencoder,
+    raster,
     rclipboard,
     rmarkdown,
     scales,
@@ -43,6 +49,7 @@ Imports:
     statgenGxE,
     statgenSTA,
     stringmagic,
+    tableHTML,
     tidyr,
     varhandle
 Encoding: UTF-8
