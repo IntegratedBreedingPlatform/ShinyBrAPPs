@@ -115,8 +115,8 @@ stareport <- function(fit, file=file, template=templt, trialdesc="", trialName="
         colnames(best20)[seq(2,ncol(best20),by=2)] <- paste(colnames(best20)[seq(2,ncol(best20),by=2)],colnames(best20)[seq(1,ncol(best20),by=2)], sep="_")
         best20 <- data.frame(genotype=row.names(best20), best20)
         my_doc<-my_doc%>%
-        body_add_par(value = "Predicted means (BLUEs & BLUPs) - Best 20 genotypes",style = "heading 3",pos="after" )%>%
-        body_add_table(value = best20, pos="after" ,header = T,style = "STA_Table")
+        body_add_par(value = paste0(traits[tr], " - Predicted means (BLUEs & BLUPs) - Best 20 genotypes"),style = "heading 3",pos="after" )%>%
+        body_add_table(value = best20, pos="after" ,header = T,style = "STA_Table_boldh")
         
         my_doc<-my_doc%>%body_add_break()
         
