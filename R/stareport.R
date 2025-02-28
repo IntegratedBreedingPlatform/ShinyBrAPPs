@@ -111,6 +111,12 @@ stareport <- function(fit, file=file, template=templt, trialdesc="", trialName="
               body_add_table(value = outliers[outliers$trait==traits[tr] & outliers$trial==stname,c("genotype", "trait","outlier", "value")], pos="after" ,header = T, alignment = c("left","right"),style = "STA_Table")
           }
         }
+        best20 <- summary(fit,trait=traits[tr], trial=stname)$meanTab
+        colnames(best20)[seq(2,ncol(best20),by=2)] <- paste(colnames(best20)[seq(2,ncol(best20),by=2)],colnames(best20)[seq(1,ncol(best20),by=2)], sep="_")
+        best20 <- data.frame(genotype=row.names(best20), best20)
+        my_doc<-my_doc%>%
+        body_add_par(value = "Predicted means (BLUEs & BLUPs) - Best 20 genotypes",style = "heading 3",pos="after" )%>%
+        body_add_table(value = best20, pos="after" ,header = T,style = "STA_Table")
         
         my_doc<-my_doc%>%body_add_break()
         
