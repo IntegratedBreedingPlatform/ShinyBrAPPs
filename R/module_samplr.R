@@ -128,11 +128,13 @@ mod_samplr_server <- function(id, rv){
                                                    return '<div><strong>'+ escape(item.programName) + '</strong></div>';
                                         }}"))
           )
-          showNotification("Connection succesful", type = "message", duration = notification_duration)
-          shinyjs::runjs('
+          if (rv$connect_mode=="UI"){
+            showNotification("Connection successful", type = "message", duration = notification_duration)
+            shinyjs::runjs('
           var accordionBody = $("#connect-connectAccPanel");
           var accordionPanel = accordionBody.parent();
           accordionPanel.collapse("hide");')
+          }
           },
           error=function(e){
             showNotification("Check url, token and/or cropDb", type = "error", duration = notification_duration)
