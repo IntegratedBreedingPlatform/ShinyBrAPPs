@@ -30,7 +30,7 @@ mod_connect_ui <- function(id){
             title = "Connection parameters",
               div(
                 # div(id = "select_trialDbId_UI",style = "display:block",
-                textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://bms-uat-test.net/bmsapi", value = "https://bms-uat.ibp.services/bmsapi", width = "100%"),
+                textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://test-server.brapi.org/", value = "", width = "100%"),
                 textInput(ns("token"), "Token", placeholder = "Enter Token", value = "", width = "100%"),
                 textInput(ns("cropDb"), "CropDb", value = "maize", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
               )

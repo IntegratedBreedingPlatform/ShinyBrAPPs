@@ -658,7 +658,7 @@ mod_model_server <- function(id, rv){
         ## SPATs does not make prediction when genotypes are in the fixed part of the model
         # It causes the summary.TD and plot.TD functions to throw error when trying to compute the predictions
         # temporary fix: if there is no "fixed" modelling, then this list item is removed from the fitTD object
-        # example: ?cropDb=rice&token=jhjlkj&apiURL=https://www.bms-uat-test.net/bmsapi&studyDbIds=2705,2706
+        # example: ?cropDb=rice&token=jhjlkj&apiURL=https://test-server.brapi.org/&studyDbIds=2705,2706
         for(trial in names(rv_mod$fit)){
           if(all(unlist(lapply(rv_mod$fit[[trial]]$mFix, is.null)))){
             rv_mod$fit[[trial]][["mFix"]] <- NULL
