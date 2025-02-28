@@ -1277,7 +1277,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       
       observeEvent(input$sens_clusters_DT.clearsel,{
         rv_gxe$FWclicked_genotypes <- NULL
-        selectRows(dtproxy, selected=NULL)
+        DT::selectRows(dtproxy, selected=NULL)
       })
       
       #### Handle FW group creation ####
