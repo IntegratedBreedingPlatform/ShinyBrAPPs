@@ -48,7 +48,7 @@ stareport <- function(fit, file=file, template=templt, trialdesc="", trialName="
         body_add_par(value = paste0("Variable: ",traits[tr]),style = "heading 2",pos="after" )
       fitsum <- statgenSTA:::summary.STA(fit, trials = stname, trait = traits[tr])
       ss <- data.table(statistic=attr(fitsum$stats,which="dimnames")[[1]], value=as.numeric(fitsum$stats))
-      ss$value[ss$value!=0] <- gsub("0+$","",round(ss$value[ss$value!=0],table.dec))
+      ss$value[ss$value!=0] <- gsub("\\.0+$","",round(ss$value[ss$value!=0],table.dec))
       my_doc<-my_doc%>%
         body_add_par(value = "Summary Statistics",style = "heading 3",pos="after" )
       my_doc<-my_doc%>%
@@ -98,7 +98,7 @@ stareport <- function(fit, file=file, template=templt, trialdesc="", trialName="
             mstats <- rbind(mstats,data.frame(V1=paste0("varSpat.",names(varSpat)),V2=varSpat))
           }
         }
-        mstats$V2[mstats$V2!=0] <- gsub("0+$","",round(mstats$V2[mstats$V2!=0],table.dec))
+        mstats$V2[mstats$V2!=0] <- gsub("\\.0+$","",round(mstats$V2[mstats$V2!=0],table.dec))
         
         my_doc<-my_doc%>%
           body_add_par(value = "Model statistics",style = "heading 3",pos="after" )%>%
