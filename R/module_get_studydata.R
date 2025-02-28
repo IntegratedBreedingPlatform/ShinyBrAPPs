@@ -119,6 +119,8 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             
             # get study_metadata
             tryCatch({
+              print(rv$con$token)
+              print(rv$con$commoncropname)
               study_metadata <- make_study_metadata(con = rv$con, studyDbIds = rv_st$parse_GET_param$studyDbIds)
             }, error = function(e)({
               showNotification("Could not get environment metadata", type = "error", duration = notification_duration)
@@ -165,12 +167,12 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
                   onInitialize = I('function() { this.setValue(""); }')
                 )
               )
-              showNotification("Connection succesful", type = "message", duration = notification_duration)
-              shinyjs::runjs('
-                var accordionBody = $("#connect-connectAccPanel");
-                var accordionPanel = accordionBody.parent();
-                accordionPanel.collapse("hide");')
-              
+              if (rv$connect_mode=="UI"){
+                showNotification("Connection successful", type = "message", duration = notification_duration)
+                shinyjs::runjs('var accordionBody = $("#connect-connectAccPanel");
+                                var accordionPanel = accordionBody.parent();
+                                accordionPanel.collapse("hide");')
+              }              
             },
             error=function(e){
               showNotification("Check url, token and/or cropDb", type = "error", duration = notification_duration)

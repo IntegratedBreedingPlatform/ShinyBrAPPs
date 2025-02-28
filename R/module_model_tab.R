@@ -542,7 +542,7 @@ mod_model_server <- function(id, rv){
         new_excluded_obs[, reason := "model outlier"]
         rv$excluded_obs <- rbind(rv$excluded_obs, new_excluded_obs)
       })
-      observeEvent(rv$excluded_obs,{
+      observeEvent(c(rv$excluded_obs,input$model_design),{
         shinyjs::disable("STA_report")
       })
       ## observe go_fit_no_outlier ####
@@ -1613,7 +1613,6 @@ mod_model_server <- function(id, rv){
             showNotification("Please fit a model first", type = "error", duration = notification_duration)
             return(NULL)
           } else {
-            #browser()
             stareport(fit=rv_mod$fit,
                       file=file,
                       template="reports/STA_Model.docx",

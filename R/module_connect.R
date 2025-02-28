@@ -86,8 +86,10 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_de
               clientid = "brapir",
               bms = TRUE
             )
+            rv$connect_mode <- "url"
           } else {
               #### UI MODE
+              rv$connect_mode <- "UI"
               shinyjs::runjs("$('#get_connect_params_by_ui').css('display', 'block');") 
             } 
           })
