@@ -505,7 +505,8 @@ mod_gxe_server <- function(id, rv, parent_session){
       lastsel_stabtab <- Sys.time()
 
       ## initialize all inputs ####
-      observeEvent(rv$extradata, {
+      observe({
+        req(rv$extradata)
         req(rv$column_datasource)
         req(!isTRUE(input$picker_germplasm_attr_open))
         #update trait dropdown
