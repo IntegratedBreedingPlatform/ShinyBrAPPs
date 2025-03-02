@@ -1606,7 +1606,9 @@ mod_model_server <- function(id, rv){
       ## STA Report ####
       output$STA_report <- downloadHandler(
         filename = function() {
-          paste("STA-", Sys.Date(), ".docx", sep="")
+          username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
+          trial <- unique(rv$study_metadata$trialName)
+          paste0("STA-", username, "-",  trial, "-", format(Sys.time(), "%Y%m%d-%H%M%S"), ".docx")
         },
         content = function(file) {
           if (is.null(rv_mod$fit)){
