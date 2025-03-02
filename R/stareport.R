@@ -120,9 +120,18 @@ stareport <- function(fit, file=file, template=templt, trialdesc="", trialName="
         body_add_table(value = best20, pos="after" ,header = T,style = "STA_Table_boldh")
         
         my_doc<-my_doc%>%body_add_break()
-        
     }
   }
+  
+  if(fit[[1]]$engine=="lme4"){
+    metrics <- rbindlist(Map(function(f,t) data.table(Environment=t,Trait=names(f$heritability),Heritability=f$heritability, CV=f$CV, `Wald p.value`=unlist(lapply(f$wald,function(a) a$`p.value`))),fitex, names(fitex)))
+  }else{
+    metrics <- rbindlist(Map(function(f,t) data.table(Environment=t,Trait=names(f$heritability),Heritability=f$heritability),fitex, names(fitex)))
+  }
+  my_doc<-my_doc%>%
+    body_add_par(value = "Model Statistics Summary",style = "heading 1",pos="after" )%>%
+    body_add_table(value = metrics, pos="after" ,header = T,style = "STA_Table_boldh")
+  
   if (toc){
     my_doc<-my_doc%>%
       cursor_bookmark(id = "TOC")%>%body_add_toc(level = 2)
