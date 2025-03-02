@@ -1613,6 +1613,7 @@ mod_model_server <- function(id, rv){
             showNotification("Please fit a model first", type = "error", duration = notification_duration)
             return(NULL)
           } else {
+            withProgress(message = "Building report", value = 0,max = (length(rv_mod$fit[[1]]$traits)*length(rv_mod$fit))+1, {
             stareport(fit=rv_mod$fit,
                       file=file,
                       template="reports/STA_Model.docx",
@@ -1623,6 +1624,7 @@ mod_model_server <- function(id, rv){
                       outliers = rv_mod$outliers$outliers,
                       excluded = if(nrow(rv$excluded_obs)>0) rv$data[observationDbId %in% rv$excluded_obs$observationDbId] else NULL,
                       toc = input$report_toc)
+            })
           }
         }
       )

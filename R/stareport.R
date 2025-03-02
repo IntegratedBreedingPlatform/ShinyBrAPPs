@@ -44,6 +44,7 @@ stareport <- function(fit, file=file, template=templt, trialdesc="", trialName="
     fitst <- fit[[st]]
     traits <- fitst$traits
     for (tr in seq_along(traits)){
+      incProgress(amount = 1, message = paste0("Building report - Study ",st,"/",length(fit)," - Variable ",tr,"/",length(traits)))
       my_doc<-my_doc%>%
         body_add_par(value = paste0("Variable: ",traits[tr]),style = "heading 2",pos="after" )
       fitsum <- statgenSTA:::summary.STA(fit, trials = stname, trait = traits[tr])
@@ -126,7 +127,8 @@ stareport <- function(fit, file=file, template=templt, trialdesc="", trialName="
     my_doc<-my_doc%>%
       cursor_bookmark(id = "TOC")%>%body_add_toc(level = 2)
   }
-    
+  incProgress(amount = 1, message = "Printing report")
+  
   print(my_doc, target = file)
 }
 
