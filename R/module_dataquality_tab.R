@@ -104,7 +104,7 @@ mod_dataquality_ui <- function(id) {
                 multiple = F,
                 width = "100%",
                 options = list(
-                  title = 'Load Environments First',
+                  title = 'Select a variable to filter observations',
                   `live-search` = TRUE,
                   onInitialize = I('function() { this.setValue(""); }')
                 )
@@ -116,7 +116,7 @@ mod_dataquality_ui <- function(id) {
                 multiple = T,
                 width = "100%",
                 options = list(
-                  title = 'Load Environments First',
+                  title = 'Pick a value',
                   `live-search` = TRUE,
                   onInitialize = I('function() { this.setValue(""); }')
                 )
@@ -305,6 +305,7 @@ mod_dataquality_server <- function(id, rv) {
       req(rv_dq$data_viz)
       sel_observationDbIds <- rv_dq$data_viz[eval(as.name(input$select_variable)) %in% input$select_variable_value, observationDbId]
       rv_dq$sel_observationDbIds <- sel_observationDbIds
+      bslib::toggle_sidebar(id = "sel_obs_sidebar", open = T)
     })
     
     ## output distribution plot ####
