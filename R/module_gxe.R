@@ -505,7 +505,8 @@ mod_gxe_server <- function(id, rv, parent_session){
       lastsel_stabtab <- Sys.time()
 
       ## initialize all inputs ####
-      observeEvent(rv$extradata, {
+      observe({
+        req(rv$extradata)
         req(rv$column_datasource)
         req(!isTRUE(input$picker_germplasm_attr_open))
         #update trait dropdown
@@ -1276,7 +1277,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       
       observeEvent(input$sens_clusters_DT.clearsel,{
         rv_gxe$FWclicked_genotypes <- NULL
-        selectRows(dtproxy, selected=NULL)
+        DT::selectRows(dtproxy, selected=NULL)
       })
       
       #### Handle FW group creation ####
