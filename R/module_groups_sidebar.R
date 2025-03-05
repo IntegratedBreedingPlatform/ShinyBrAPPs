@@ -91,7 +91,6 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
       
       ## Intersect ####
       observeEvent(input$action_groups_intersect,{
-        toggleModal(session, "modal_create_group")
         intersect_germplasms_id <- Reduce(intersect, rv$groups[group_id %in% input$group_sel_input, germplasmDbIds])
         germplasms <- unique(rv$data[germplasmDbId %in% intersect_germplasms_id, .(germplasmDbId, germplasmName)])
         group_id <- ifelse(is.null(rv$groups$group_id), 1, max(rv$groups$group_id) + 1)
@@ -119,14 +118,13 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
             )
           )
         } else {
-          showModal(modalDialog(tags$label("This intersection results in an empty group.")))
+          showModal(modalDialog(tags$label("This intersection results in an empty group."), fade = F))
         }
         
       })
       
       ## Complement ####
       observeEvent(input$action_groups_complement,{
-        toggleModal(session, "modal_create_group")
         union_germplasms_id <- rv$groups[group_id %in% input$group_sel_input, unlist(germplasmDbIds)]
         germplasms <- unique(rv$data[!(germplasmDbId %in% union_germplasms_id), .(germplasmDbId, germplasmName)])
         group_id <- ifelse(is.null(rv$groups$group_id), 1, max(rv$groups$group_id) + 1)
