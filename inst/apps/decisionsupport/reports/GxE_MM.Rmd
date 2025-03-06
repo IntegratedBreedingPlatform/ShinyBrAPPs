@@ -15,7 +15,7 @@ library(statgenGxE)
 
 ## Studies:
 ```{r}
-knitr::kable(unique(data.table(rbindlist(params$data))[,.(trial,loc,studyDbId,studyName)]))
+  knitr::kable(unique(rv_gxe$data[,.(trialName, locationName, studyDbId, studyName)])[studyDbId%in%input$picker_env])
 ```
 
 ## Trait: `r params$trait`
