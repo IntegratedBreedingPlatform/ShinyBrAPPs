@@ -1130,7 +1130,9 @@ mod_gxe_server <- function(id, rv, parent_session){
           prox <- max(c(EF$EnvMean,EF$fittedValue))/30
           rv_gxe$FWclicked_genotypes <- unique(c(rv_gxe$FWclicked_genotypes,as.character(EF$genotype)[which.min(dist)]))
           dtsc <- dcast(rbindlist(rv$TD)[,c("genotype","trial",input$picker_trait), with = FALSE],genotype~trial)[rv_gxe$sensclust, on=.(genotype=Genotype)][,-c("SE_GenMean","SE_Sens","MSdeviation")]
-          rv_gxe$formatcols <- colnames(dtsc)[-which(colnames(dtsc)%in%c("genotype","sensitivity_cluster", "Rank"))]
+          genot_trial_counts <- rbindlist(rv$TD)[,.N,genotype]
+          dtsc <- genot_trial_counts[dtsc,on=.(genotype)]
+          rv_gxe$formatcols <- colnames(dtsc)[-which(colnames(dtsc)%in%c("genotype","N","sensitivity_cluster", "Rank"))]
           rv_gxe$dtsc <- dtsc
         }
       })
@@ -1153,8 +1155,8 @@ mod_gxe_server <- function(id, rv, parent_session){
         formatRound(
           dt,
           columns = rv_gxe$formatcols,
-          digits = 2
-        )},
+          digits = 2)
+        },
         server=TRUE
       )
       
@@ -1261,7 +1263,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       #### Render FW sensclusters DT ####
       observeEvent(rv_gxe$sensclust, {
         dtsc <- dcast(rbindlist(rv$TD)[,c("genotype","trial",input$picker_trait), with = F],genotype~trial)[rv_gxe$sensclust, on=.(genotype=Genotype)][,-c("SE_GenMean","SE_Sens","MSdeviation")]
-        rv_gxe$formatcols <- colnames(dtsc)[-which(colnames(dtsc)%in%c("genotype","sensitivity_cluster", "Rank"))]
+        genot_trial_counts <- rbindlist(rv$TD)[,.N,genotype]
+        dtsc <- genot_trial_counts[dtsc,on=.(genotype)]
+        rv_gxe$formatcols <- colnames(dtsc)[-which(colnames(dtsc)%in%c("genotype","N","sensitivity_cluster", "Rank"))]
         if (any(colnames(dtsc)%in%"sensitivity_cluster")){
           dtsc[,sensitivity_cluster:=as.character(sensitivity_cluster)]
         }
