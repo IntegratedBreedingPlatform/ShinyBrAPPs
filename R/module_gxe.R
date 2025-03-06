@@ -650,7 +650,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           selected = character(0)
         )
         output$sliderUI_exclude_geno_nb_env <- renderUI({
-          sliderInput(ns("exclude_geno_nb_env"),label = "Set the minimum number of environments in which each germplasm should be at least present", value = 1, min = 1, max = length(input$picker_env), step = 1 )
+          sliderInput(ns("exclude_geno_nb_env"),label = "Set the minimum number of environments in which each germplasm must be present", value = 1, min = 1, max = length(input$picker_env), step = 1 )
         })
       })
       
