@@ -235,16 +235,18 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
       # First, filter on traitClass = selection_trait_class (config param) in WS 
       # Then, get variables with traitName = selection_trait_name (config param)
       getSelectionVariables <- function(studyDbIds) {
-        res <- brapirv2::brapi_post_search_variables(
-          con = rv$con, 
-          studyDbId = as.character(studyDbIds),
-          traitClasses = selection_traitClass
-        )
-        var <- data.table(brapirv2::brapi_get_search_variables_searchResultsDbId(rv$con, res$searchResultsDbId))
-        if (nrow(var) > 0) {
-          var <- var[trait.traitName == selection_traitName, .(observationVariableDbId, observationVariableName)]
-        }
-        return(var)
+        withProgress(message = "Looking for variables of selection type", min=1, max=1, {
+          res <- brapirv2::brapi_post_search_variables(
+            con = rv$con, 
+            studyDbId = as.character(studyDbIds),
+            traitClasses = selection_traitClass
+          )
+          var <- data.table(brapirv2::brapi_get_search_variables_searchResultsDbId(rv$con, res$searchResultsDbId))
+          if (nrow(var) > 0) {
+            var <- var[trait.traitName == selection_traitName, .(observationVariableDbId, observationVariableName)]
+          }
+          return(var)
+        })
       }
       
       ## Mark as selection ####
@@ -263,7 +265,7 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
           
           showModal(modalDialog(
             fade = F,
-            title = "Export Group as List",
+            title = "Mark group as selection",
             tagList(
               awesomeCheckboxGroup(
                 inputId = ns("mark_as_sel_envs"),
@@ -303,7 +305,7 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
         } else {
           showModal(modalDialog(
             fade = F,
-            title = "Export Group as List",
+            title = "Mark group as selection",
             p("there is no variable of selection type in the system"),
             easyClose = TRUE,
             footer = tagList(
@@ -315,45 +317,59 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
       
       ## Go mark as selection ####
       observeEvent(input$action_groups_mark_as_selection_go,{
-        req(rv_plot$as_sel_data[,.N]>0)
-        withProgress(message = "POST brapi/v2/observations", value = 0, {
-          lapply(rownames(rv_plot$as_sel_data), function(x){
-            row_id <- as.numeric(x)
-            incProgress(1/length(rownames(rv_plot$as_sel_data)))
-            a <- tryCatch({
-              brapirv2::brapi_post_observations(
-                con = rv$con,
-                studyDbId = as.character(rv_plot$as_sel_data[row_id, studyDbId]),
-                germplasmDbId = as.character(rv_plot$as_sel_data[row_id, germplasmDbId]),
-                observationUnitDbId = as.character(rv_plot$as_sel_data[row_id, observationUnitDbId]),
-                observationVariableDbId = as.character(rv_plot$as_sel_data[row_id, observationVariableDbId]),
-                value = as.character(rv_plot$as_sel_data[row_id, observationValue]),
-                additionalInfo = list() # otherwise error message: "Argument: \"additionalInfo\" should be provided as a list, see the help page on how the list should be constructed."
-              )
-            }, error = function(e)({e})
-            )
-            mess <- a$message
-            if(!is.null(mess)){
-              showNotification(
-                ui =
-                  tagList(
-                    tags$p("Could not post observation"),
-                    tags$code(paste0(
-                      '{ "studyDbId":"', as.character(rv_plot$as_sel_data[row_id, studyDbId]),'",',
-                      '"germplasmDbId":"', as.character(rv_plot$as_sel_data[row_id, germplasmDbId]),'",',
-                      '"observationUnitDbId":"', as.character(rv_plot$as_sel_data[row_id, observationUnitDbId]),'",',
-                      '"observationVariableDbId":"', as.character(rv_plot$as_sel_data[row_id, observationVariableDbId]),'",',
-                      '"value":"', as.character(rv_plot$as_sel_data[row_id, observationValue]),'"'
-                    )),
-                    tags$code(mess)
-                  ),
-                type = "error", duration = notification_duration
-              )
+        req(input$mark_as_sel_var_to_use, input$mark_as_sel_all_plots_radio, input$mark_as_sel_envs)
+        
+        varname = unique(rv$data[observationVariableDbId == input$mark_as_sel_var_to_use,.(observationVariableName)])
+        envs <- unique(rv$extradata[,.(studyDbId, study_name_app)])
+        
+        brapir_con <- brapir::brapi_connect(
+          secure = rv$con$secure, 
+          db = rv$con$db, 
+          port = rv$con$port, 
+          apipath = rv$con$apipath, 
+          multicrop = rv$con$multicrop, 
+          commoncropname = rv$con$commoncropname,
+          token = rv$con$token
+        )
+        
+        withProgress(message = paste("Post", varname, "observations"), value = 0, {
+          for (i in 1:length(input$mark_as_sel_envs)) {
+            env_name <- envs[studyDbId == input$mark_as_sel_envs[i], study_name_app]
+            incProgress(1/length(input$mark_as_sel_envs), detail = env_name)
+            as_sel_data <- rv$data[
+              observationLevel == "PLOT" & studyDbId %in% input$mark_as_sel_envs[i] &
+                germplasmDbId %in% rv$groups[group_id == input$group_sel_input, germplasmDbIds][[1]]
+            ]
+            if(input$mark_as_sel_all_plots_radio=="rep1" & as_sel_data[replicate=="1",.N]>0){
+              as_sel_data <- as_sel_data[replicate == "1"]
             }
-          })
+            as_sel_data <- unique(as_sel_data[,.(germplasmDbId, observationUnitDbId, studyDbId)])
+            
+            as_sel_data[,observationVariableDbId := input$mark_as_sel_var_to_use]
+            as_sel_data[,value := "1"]
+            
+            # Building body POST request
+            body <- apply(as_sel_data,1,function(a){
+              list(
+                germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
+                observationUnitDbId = jsonlite::unbox(as.character(a["observationUnitDbId"])),
+                studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
+                observationVariableDbId = jsonlite::unbox(as.character(a["observationVariableDbId"])),
+                value = jsonlite::unbox(as.numeric(a["value"]))
+              )
+            })
+            
+            resp <- brapir::phenotyping_observations_post_batch(con = brapir_con, data = body)
+            if (resp$status_code == 200) {
+              created_observations_df <- resp$data
+              showNotification(paste(nrow(created_observations_df), varname, "observations were pushed to BMS"), type = "message", duration = notification_duration)
+            } else {
+              showNotification(paste0("An error occured while creating BLUES/BLUPS observations for ", var_name), type = "error", duration = notification_duration)
+              showNotification(paste0(resp$metadata), type = "error", duration = notification_duration)
+            }
+          }
         })
         removeModal()
-        rv_plot$as_sel_data <- NULL
       })
       
       
