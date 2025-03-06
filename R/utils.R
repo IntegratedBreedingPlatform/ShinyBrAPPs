@@ -101,9 +101,6 @@ get_env_data <- function(con = NULL,
         return(NULL)
       }
     }
-    
-    print(head(study_obs))
-    
     if (!"observations.observationDbId" %in% colnames(study_obs)) {
       study_obs <- NULL
       return(study_obs)
