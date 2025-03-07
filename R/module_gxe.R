@@ -421,7 +421,7 @@ mod_gxe_ui <- function(id){
                     "Shukla's stability variance",
                     "Wricke's ecovalence"),
             accordion_panel(
-              title = "Superiority measure of Lin and Binns, Shukla's stability variance & Wricke's ecovalence",
+              title = "Superiority measure of Lin and Binns, Static stability (envt. variance) & Wricke's ecovalence",
               layout_columns(
                 col_widths = 6,
                 card(
@@ -733,7 +733,15 @@ mod_gxe_server <- function(id, rv, parent_session){
       #    updateMaterialSwitch(session, "check_combine_scenario", value = FALSE)
       #  }
       #})
-      
+      observeEvent(input$picker_scenario,{
+        env_details <- c(rv$column_datasource[source == "environment" & visible == T,]$cols, "study_startYear")
+        env_details <- c(env_details, "scenario")
+        updatePickerInput(
+          session, "AMMI_colorEnvBy",
+          choices = env_details,
+          selected = character(0)
+        )
+      })
       ## main observer to build TD object and output basic plots ####
       observe({
         req(rv_gxe$data)
@@ -1029,6 +1037,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       ### FW plot ####
       #### renderPlot observer ####
       output$FW_plot <- renderPlot({
+        #browser()
         req(rv_gxe$TDFWplot)
         TDFWplot <- rv_gxe$TDFWplot
         if (is.null(input$FW_picker_color_by)){
@@ -1112,6 +1121,22 @@ mod_gxe_server <- function(id, rv, parent_session){
                 TDFWplot$TD <- rv$TD
               }
               p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
+              # In case there is only two classes in color geno by
+              # rebuild the line plot so that the smallest class is on top
+              if (length(unique(p$data[[input$FW_picker_color_by]]))==2){
+                levs <- names(sort(table(p$data[[input$FW_picker_color_by]])))
+                cols <- getOption("statgen.genoColors")[1:2]
+                names(cols) <- levs
+                # Remove existing geom_point and geom_line layers
+                p$layers[[1]] <- NULL
+                p$layers[[2]] <- NULL
+                p <- p + 
+                  ggplot2::geom_line(data=p$data[p$data[[input$FW_picker_color_by]]==levs[2],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=0.5) +
+                  ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[2],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=1) +
+                  ggplot2::geom_line(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=2) +
+                  ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=2) +
+                  scale_color_manual(values=cols)
+              }
               if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
                 rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
                 p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
@@ -1159,6 +1184,11 @@ mod_gxe_server <- function(id, rv, parent_session){
         #  p + geom_text(data = p$data[which.min(dist),], aes(x=EnvMean,y=fitted,label = genotype, size = 12))
         #} else {
         #  print("clicknull")
+        
+        # Rotate legend title so that it doesnt't take too much space
+        # in case of long group name
+        p <- p + theme(legend.title = element_text(angle = 90))
+        
         if (input$FW_picker_plot_type=="line" & !input$FW_coord_equal){
           p + coord_cartesian()
         } else {
@@ -1847,15 +1877,22 @@ mod_gxe_server <- function(id, rv, parent_session){
         TDStab <- tryCatch(statgenGxE::gxeStability(TD = rv$TD,
                                                         trait = input$picker_trait), error=function(e) e)
         dtsup <- as.data.table(TDStab$superiority)
+        setnames(dtsup, old = "Superiority", new = "Sup")
         dtsta <- as.data.table(TDStab$static)
+        setnames(dtsta, old = "Static", new = "S")
+        dtsta[,sqrtS:= sqrt(S)]
         dtwri <- as.data.table(TDStab$wricke)
-        TDStab$dtres <- as.data.frame(dtsup[dtsta[,.(Genotype,Static)], on=.(Genotype)][dtwri[,.(Genotype,Wricke)], on=.(Genotype)])
+        setnames(dtwri, old = "Wricke", new = "W")
+        nenv <- rbindlist(rv$TD)[,.N,.(genotype)]
+        dtwri <- nenv[dtwri, on=.(genotype=Genotype)]
+        dtwri[,sqrtWe := sqrt(W/N)]
+        TDStab$dtres <- as.data.frame(dtsup[dtsta[,.(Genotype,S,sqrtS)], on=.(Genotype)][dtwri[,.(Genotype,W,sqrtWe)], on=.(Genotype)])
         rv_gxe$TDStab <- TDStab
 
         if (nrow(rv_gxe$TDStab$superiority)>0) {
           output$copy_STABsup_table <- renderUI({
-            rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv_gxe$TDStab$superiority),collapse="\t"),
-                                                                            paste(apply(rv_gxe$TDStab$superiority,1,paste,collapse="\t"),collapse = "\n"),
+            rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv_gxe$TDStab$dtres),collapse="\t"),
+                                                                            paste(apply(rv_gxe$TDStab$dtres,1,paste,collapse="\t"),collapse = "\n"),
                                                                             sep="\n"))#, shiny::icon("clipboard"))
           })
         }
@@ -1868,7 +1905,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                               options = list(pageLength = 30),
                               selection = list(mode="multiple", 
                                                selected=which(rv_gxe$TDStab$dtres$Genotype[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes)]%in%rv_gxe$STSclicked_genotypes))),
-                    columns = c("Mean", "Superiority", "Static", "Wricke"), 
+                    columns = c("Mean", "Sup", "S", "W", "sqrtS", "sqrtWe"), 
                     digits=3)
       })
 
@@ -1886,8 +1923,8 @@ mod_gxe_server <- function(id, rv, parent_session){
       
       #### plot ####
       output$STAB_sup_plot <- renderPlot({
-        gg <- ggplot(rv_gxe$TDStab$superiority) + 
-          geom_point(aes(x=Mean, y= sqrt(Superiority))) +
+        gg <- ggplot(rv_gxe$TDStab$dtres) + 
+          geom_point(aes(x=Mean, y= sqrt(Sup))) +
           ylab("Square root of superiority")
         rv_gxe$st_sup_plotdat <- gg$data
         if (input$STAB_plots_colorby!="Nothing"){
@@ -1897,7 +1934,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
           
           gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
-          gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrt(Superiority), color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
+          gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrt(Sup), color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
             scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
             scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
         }
@@ -1905,9 +1942,9 @@ mod_gxe_server <- function(id, rv, parent_session){
           clickgeno <- gg$data[gg$data$Genotype%in%rv_gxe$STSclicked_genotypes,]
           #browser()
           #gg + ggnewscale::new_scale_color()
-          gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Superiority)), shape = 21, size=3, color="red") +
-            geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Superiority), label=Genotype), size=2, color="red",
-                      position = position_nudge(y=max(gg$data[,"Superiority"])/150))
+          gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Sup)), shape = 21, size=3, color="red") +
+            geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Sup), label=Genotype), size=2, color="red",
+                      position = position_nudge(y=max(gg$data[,"Sup"])/150))
         }
         gg
       })
@@ -1937,8 +1974,8 @@ mod_gxe_server <- function(id, rv, parent_session){
       
       ### Static ####
       output$STAB_static_plot <- renderPlot({
-        gg <- ggplot(rv_gxe$TDStab$static) + 
-          geom_point(aes(x=Mean, y= sqrt(Static))) +
+        gg <- ggplot(rv_gxe$TDStab$dtres) + 
+          geom_point(aes(x=Mean, y= sqrt(S))) +
           ylab("Square root of Static stability")
         rv_gxe$st_sta_plotdat <- gg$data
         if (input$STAB_plots_colorby!="Nothing"){
@@ -1948,7 +1985,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
           
           gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
-          gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrt(Static), color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
+          gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrtS, color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
             scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
             scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
         }
@@ -1956,9 +1993,9 @@ mod_gxe_server <- function(id, rv, parent_session){
           clickgeno <- gg$data[gg$data$Genotype%in%rv_gxe$STSclicked_genotypes,]
           #browser()
           #gg + ggnewscale::new_scale_color()
-          gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Static)), shape = 21, size=3, color="red") + 
-            geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Static), label=Genotype), size=2, color="red",
-                      position = position_nudge(y=max(gg$data[,"Static"])/150))
+          gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(S)), shape = 21, size=3, color="red") + 
+            geom_text(data = clickgeno, aes(x=Mean , y = sqrt(S), label=Genotype), size=2, color="red",
+                      position = position_nudge(y=max(gg$data[,"S"])/150))
           
         }
         gg
@@ -1993,9 +2030,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       
       #### plot
       output$STAB_wricke_plot <- renderPlot({
-        gg <- ggplot(rv_gxe$TDStab$wricke) + 
-          geom_point(aes(x=Mean, y= sqrt(Wricke))) +
-          ylab("Square root of Wricke ecovalence")
+        gg <- ggplot(rv_gxe$TDStab$dtres) + 
+          geom_point(aes(x=Mean, y= sqrtWe)) +
+          ylab("Square root of Wricke ecovalence/Ne")
         rv_gxe$st_stw_plotdat <- gg$data
         if (input$STAB_plots_colorby!="Nothing"){
           #browser() 
@@ -2005,7 +2042,7 @@ mod_gxe_server <- function(id, rv, parent_session){
 
           
           gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
-          gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrt(Wricke), color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
+          gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrtWe, color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
             scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
             scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
         }
@@ -2013,9 +2050,9 @@ mod_gxe_server <- function(id, rv, parent_session){
           clickgeno <- gg$data[gg$data$Genotype%in%rv_gxe$STSclicked_genotypes,]
           #browser()
           #gg + ggnewscale::new_scale_color()
-          gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Wricke)), shape = 21, size=3, color="red") +
-            geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Wricke), label=Genotype), size=2, color="red",
-                      position = position_nudge(y=max(gg$data[,"Wricke"])/150))
+          gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrtWe), shape = 21, size=3, color="red") +
+            geom_text(data = clickgeno, aes(x=Mean , y = sqrtWe, label=Genotype), size=2, color="red",
+                      position = position_nudge(y=max(gg$data[,"W"])/150))
           
         }
         gg
