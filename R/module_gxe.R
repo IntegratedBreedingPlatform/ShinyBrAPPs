@@ -1106,6 +1106,11 @@ mod_gxe_server <- function(id, rv, parent_session){
         #  p + geom_text(data = p$data[which.min(dist),], aes(x=EnvMean,y=fitted,label = genotype, size = 12))
         #} else {
         #  print("clicknull")
+        
+        # Rotate legend title so that it doesnt't take too much space
+        # in case of long group name
+        p <- p + theme(legend.title = element_text(angle = 90))
+        
         if (input$FW_picker_plot_type=="line" & !input$FW_coord_equal){
           p + coord_cartesian()
         } else {
