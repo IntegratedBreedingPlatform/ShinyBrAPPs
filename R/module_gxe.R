@@ -159,9 +159,14 @@ mod_gxe_ui <- function(id){
                            accordion_panel(title = "Model plot", 
                                                   plotOutput(ns("MM_plot_output")) 
                            ),
-                           accordion_panel(title = "Predictions",
-                                                  pickerInput(ns("MM_predict_level"), label = "Prediction level", choices = c("genotype")),
-                                                  DT::dataTableOutput(ns("MM_predictions"))
+                           accordion_panel(
+                             title = "Predictions",
+                             div(
+                               style = "display: flex; align-items: flex-end; justify-content: space-between;",
+                               pickerInput(ns("MM_predict_level"), label = "Prediction level", choices = c("genotype")),
+                               shinyjs::disabled(actionButton(ns("MM_create_group"), label = "Create group from genotype selection", style = "margin-bottom: 15px;"))
+                             ),
+                             DT::dataTableOutput(ns("MM_predictions"))
                            )
           )
           
@@ -861,46 +866,46 @@ mod_gxe_server <- function(id, rv, parent_session){
                                  `4`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "loc"), error=function(e) e)},
                                  `5`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, regionLocationYear = TRUE), error=function(e) e)},
                                  `6`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "scenario"), error=function(e) e)})
-          output$MM_text_output <- renderPrint({
-            if ("varComp"%in%class(rv_gxe$TDVarComp)){
-              summary(rv_gxe$TDVarComp)
-            } else {
-              rv_gxe$TDVarComp
-            }
-          })
-          output$MM_diagnostics <- renderPrint({
-            if ("varComp"%in%class(rv_gxe$TDVarComp)){
-              diagnostics(rv_gxe$TDVarComp)
-            } else {
-              "Model failed"
-            }
-          })
-          output$MM_vc <- renderPrint({
-            if ("varComp"%in%class(rv_gxe$TDVarComp)){
-              list(`Variance components`=vc(rv_gxe$TDVarComp), heritability=herit(rv_gxe$TDVarComp))
-            } else {
-              "Model failed"
-            }
-          })
-          output$MM_plot_output <- renderPlot({
-            if ("varComp"%in%class(rv_gxe$TDVarComp)){
-              plot(rv_gxe$TDVarComp)
-            } else {
-              "Model failed"
-            }
-          })
-          output$MM_predictions <- DT::renderDataTable({
-            if ("varComp"%in%class(rv_gxe$TDVarComp)){
-              predict(rv_gxe$TDVarComp)
-            } else {
-              data.table()[]
-            }
-          }, rownames= FALSE)
+          
           accordion_panel_set(id="MM_accord1", values=TRUE)
           accordion_panel_set(id="MM_accord2", values=TRUE)
           }, message = function(m) rv_gxe$console <- paste(rv_gxe$console, paste0("Mixed model run at ",Sys.time(), " : ",m), sep=""),
              warning = function(w) rv_gxe$console <- paste(rv_gxe$console, paste0("Mixed model run at ",Sys.time(), " : ",w), sep=""))}
       })
+      
+      output$MM_text_output <- renderPrint({
+        req(rv_gxe$TDVarComp)
+        if ("varComp"%in%class(rv_gxe$TDVarComp)){
+          summary(rv_gxe$TDVarComp)
+        } else {
+          rv_gxe$TDVarComp
+        }
+      })
+      output$MM_diagnostics <- renderPrint({
+        req(rv_gxe$TDVarComp)
+        if ("varComp"%in%class(rv_gxe$TDVarComp)){
+          diagnostics(rv_gxe$TDVarComp)
+        } else {
+          "Model failed"
+        }
+      })
+      output$MM_vc <- renderPrint({
+        req(rv_gxe$TDVarComp)
+        if ("varComp"%in%class(rv_gxe$TDVarComp)){
+          list(`Variance components`=vc(rv_gxe$TDVarComp), heritability=herit(rv_gxe$TDVarComp))
+        } else {
+          "Model failed"
+        }
+      })
+      output$MM_plot_output <- renderPlot({
+        req(rv_gxe$TDVarComp)
+        if ("varComp"%in%class(rv_gxe$TDVarComp)){
+          plot(rv_gxe$TDVarComp)
+        } else {
+          "Model failed"
+        }
+      })
+      
       
       ### Rendering console ####
       observeEvent(rv_gxe$console, {
@@ -919,20 +924,54 @@ mod_gxe_server <- function(id, rv, parent_session){
           predict_levels <- c("genotype",rv_gxe$TDVarComp$nestingFactor)
         }
         updatePickerInput(session, "MM_predict_level", choices = predict_levels, selected = "genotype")
+
+        if ("varComp"%in%class(rv_gxe$TDVarComp)){
+          rv_gxe$MM_predict_table <- predict(rv_gxe$TDVarComp, predictLevel=input$MM_predict_level)
+        } else {
+          rv_gxe$MM_predict_table <- data.table()[]
+        }
       })
       
       ### Change prediction level ####
       observeEvent(input$MM_predict_level,{
-        output$MM_predictions <- DT::renderDataTable({
-          if ("varComp"%in%class(rv_gxe$TDVarComp)){
-            predict(rv_gxe$TDVarComp, predictLevel=input$MM_predict_level)
-          } else {
-            data.table()[]
-          }
-        },rownames= FALSE)
-        
+        if ("varComp"%in%class(rv_gxe$TDVarComp)){
+          rv_gxe$MM_predict_table <- predict(rv_gxe$TDVarComp, predictLevel=input$MM_predict_level)
+        } else {
+          rv_gxe$MM_predict_table <- data.table()[]
+        }
       })
       
+      ### Predictions table ####
+      output$MM_predictions <- DT::renderDataTable({
+        req(rv_gxe$MM_predict_table)
+        rv_gxe$MM_predict_table
+      },rownames= FALSE, filter = "top")
+      
+      ### Enable/disable group creation button ####
+      observeEvent(input$MM_predictions_rows_selected, {
+        if (!is.null(input$MM_predictions_rows_selected)) {
+          shinyjs::enable("MM_create_group")
+        } else {
+          shinyjs::disable("input$MM_create_group")
+        }
+      }, ignoreNULL = F)
+      
+      ### Handle group creation ####
+      observeEvent(input$MM_create_group,{
+        req(length(input$MM_predictions_rows_selected) > 0)
+        selected_genotypes = rv_gxe$MM_predict_table[input$MM_predictions_rows_selected,]$genotype
+        rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
+                                                             data.table(Genotype=selected_genotypes)),
+                                                y=unique(rbindlist(rv$TD)),
+                                                by.x = "Genotype",
+                                                by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
+        showModal(groupModal(rv=rv, 
+                             parent_session = parent_session, 
+                             modal_title = "Create new group", 
+                             group_description = paste0("Group manually created from selected genotypes in mixed model analysis of ", input$picker_trait, " variable"),
+                             group_prefix =paste0("M_MM@",input$picker_trait,".")
+        ))
+      })
       
       ## FW ####
       ### Run FW ####
@@ -2051,6 +2090,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           #}
         }
       )
+     
     }
   )
 }
