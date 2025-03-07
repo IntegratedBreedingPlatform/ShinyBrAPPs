@@ -959,6 +959,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       ### FW plot ####
       #### renderPlot observer ####
       output$FW_plot <- renderPlot({
+        #browser()
         req(rv_gxe$TDFWplot)
         TDFWplot <- rv_gxe$TDFWplot
         if (is.null(input$FW_picker_color_by)){
@@ -1042,6 +1043,22 @@ mod_gxe_server <- function(id, rv, parent_session){
                 TDFWplot$TD <- rv$TD
               }
               p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
+              # In case there is only two classes in color geno by
+              # rebuild the line plot so that the smallest class is on top
+              if (length(unique(p$data[[input$FW_picker_color_by]]))==2){
+                levs <- names(sort(table(p$data[[input$FW_picker_color_by]])))
+                cols <- getOption("statgen.genoColors")[1:2]
+                names(cols) <- levs
+                # Remove existing geom_point and geom_line layers
+                p$layers[[1]] <- NULL
+                p$layers[[2]] <- NULL
+                p <- p + 
+                  ggplot2::geom_line(data=p$data[p$data[[input$FW_picker_color_by]]==levs[2],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=0.5) +
+                  ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[2],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=1) +
+                  ggplot2::geom_line(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=2) +
+                  ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=2) +
+                  scale_color_manual(values=cols)
+              }
               if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
                 rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
                 p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +

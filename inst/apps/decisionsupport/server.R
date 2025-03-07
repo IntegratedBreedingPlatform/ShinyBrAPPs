@@ -35,8 +35,8 @@ server <- function(input, output, session){
 
     ## update selectors (shape, colour)
     data_plot <- copy(rv$extradata) # to avoid issues related to assignment by reference
-    data_plot[germplasmDbId %in% rv$selection[,unlist(germplasmDbIds)], eval(input$modal_create_group_text_input_label) := paste0('In "', input$modal_create_group_text_input_label,'"')]
-    data_plot[!(germplasmDbId %in% rv$selection[,unlist(germplasmDbIds)]), eval(input$modal_create_group_text_input_label) := paste0('Not in "', input$modal_create_group_text_input_label,'"')]
+    data_plot[germplasmDbId %in% rv$selection[,unlist(germplasmDbIds)], eval(input$modal_create_group_text_input_label) := paste0('In')]
+    data_plot[!(germplasmDbId %in% rv$selection[,unlist(germplasmDbIds)]), eval(input$modal_create_group_text_input_label) := paste0('Out')]
     rv$column_datasource <- rbindlist(
       list(
         rv$column_datasource,
