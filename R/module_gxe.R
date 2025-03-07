@@ -1883,8 +1883,8 @@ mod_gxe_server <- function(id, rv, parent_session){
 
         if (nrow(rv_gxe$TDStab$superiority)>0) {
           output$copy_STABsup_table <- renderUI({
-            rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv_gxe$TDStab$superiority),collapse="\t"),
-                                                                            paste(apply(rv_gxe$TDStab$superiority,1,paste,collapse="\t"),collapse = "\n"),
+            rclipboard::rclipButton("clipbtnsup_table", "Copy table", paste(paste(colnames(rv_gxe$TDStab$dtres),collapse="\t"),
+                                                                            paste(apply(rv_gxe$TDStab$dtres,1,paste,collapse="\t"),collapse = "\n"),
                                                                             sep="\n"))#, shiny::icon("clipboard"))
           })
         }
