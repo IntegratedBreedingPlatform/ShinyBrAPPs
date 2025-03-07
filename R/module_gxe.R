@@ -91,18 +91,18 @@ mod_gxe_ui <- function(id){
           #   h4('Options ', icon('screwdriver-wrench'))
           # ),
             width = 350,
+            pickerInput(ns("picker_gxe_mm_env_struct"),
+                        label = "Environment structure",
+                        options = list(container = "body"), 
+                        choices = c(`Trials correspond to environments`=1,
+                                    `Trials form a factorial structure of locations x years`=2,
+                                    `Trials are nested within year`=3,
+                                    `Trials are nested within locations`=4,
+                                    `Trials correspond to locations within regions across years`=5,
+                                    `Trials are nested within scenarios`=6)),
             div(style="display: flex;",
                 actionBttn(ns("mm_run_model"),"Run model", block = TRUE),
                 a(href="https://biometris.github.io/statgenGxE/articles/statgenGxE.html#vcomp",icon("fas fa-question-circle"), target="_blank")),
-            pickerInput(ns("picker_gxe_mm_env_struct"),
-                      label = "Environment structure",
-                      options = list(container = "body"), 
-                      choices = c(`Trials correspond to environments`=1,
-                                  `Trials form a factorial structure of locations x years`=2,
-                                  `Trials are nested within year`=3,
-                                  `Trials are nested within locations`=4,
-                                  `Trials correspond to locations within regions across years`=5,
-                                  `Trials are nested within scenarios`=6)),
           shiny::downloadButton(ns("MM_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
         ),
         # layout_columns(
@@ -260,14 +260,14 @@ mod_gxe_ui <- function(id){
           ### Sidebar ####
           sidebar=sidebar(
             width = 350,
-            div(style="display: flex;",
-                actionBttn(ns("GGE_run"), "Run GGE analysis", block = TRUE),
-                a(href="https://tiagoolivoto.github.io/metan/articles/vignettes_gge.html",icon("fas fa-question-circle"), target="_blank")),
             bslib::accordion(id = ns("GGE_adv_settings_acc"),
                              bslib::accordion_panel(title = "Analysis settings", value = "advs",
                                                     pickerInput(ns("GGE_advs_centering"), label = "centering", options = list(container = "body"), choices = c(none=0, global=1, environment=2, double=3), selected = 2),
                                                     pickerInput(ns("GGE_advs_scaling"), label = "scaling", options = list(container = "body"), choices = c(none=0, sd=1), selected = 0),
                                                     pickerInput(ns("GGE_advs_svp"), label = "svp", options = list(container = "body"), choices = c(genotype=1, environment=2, symmetrical=3), selected = 2))),
+            div(style="display: flex;",
+                actionBttn(ns("GGE_run"), "Run GGE analysis", block = TRUE),
+                a(href="https://tiagoolivoto.github.io/metan/articles/vignettes_gge.html",icon("fas fa-question-circle"), target="_blank")),
             pickerInput(ns("GGE_picker_plot_type"),
                         label="Plot type",
                         choices = c(`1-A basic biplot`=1,
@@ -339,9 +339,6 @@ mod_gxe_ui <- function(id){
           ### Sidebar ####
           sidebar=sidebar(
             width = 350,
-            div(style="display: flex;",
-                actionBttn(ns("AMMI_run"), "Run AMMI analysis", block = TRUE),
-                a(href="https://biometris.github.io/statgenGxE/articles/statgenGxE.html#am",icon("fas fa-question-circle"), target="_blank")),
             bslib::accordion(id = ns("AMMI_adv_settings_acc"),
                              bslib::accordion_panel(title = "Analysis settings", value = "advs",
                                                     pickerInput(ns("AMMI_nPC"),
@@ -349,8 +346,11 @@ mod_gxe_ui <- function(id){
                                                                 choices = c("Auto"), selected = "Auto"),
                                                     materialSwitch(ns("AMMI_center"), "center", value = TRUE, status = "info"),
                                                     pickerInput(ns("AMMI_excludeGeno"), label="Exclude genotypes", multiple = T, choices = c(), options = pickerOptions(liveSearch = TRUE))
-                                                    )
+                             )
             ),
+            div(style="display: flex;",
+                actionBttn(ns("AMMI_run"), "Run AMMI analysis", block = TRUE),
+                a(href="https://biometris.github.io/statgenGxE/articles/statgenGxE.html#am",icon("fas fa-question-circle"), target="_blank")),
             #materialSwitch(ns("AMMI_byYear"), "Run by year", value = FALSE, status = "info"),
             #hr(style = "border-top: 1px solid #000000;"),
             pickerInput(ns("AMMI_plotType"), label="Plot type", choices = c("AMMI1", "AMMI2"), selected = "AMMI2"),
@@ -656,7 +656,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           selected = character(0)
         )
         output$sliderUI_exclude_geno_nb_env <- renderUI({
-          sliderInput(ns("exclude_geno_nb_env"),label = "Set the minimum number of environments in which each germplasm should be at least present", value = 1, min = 1, max = length(input$picker_env), step = 1 )
+          sliderInput(ns("exclude_geno_nb_env"),label = "Set the minimum number of environments in which each germplasm must be present", value = 1, min = 1, max = length(input$picker_env), step = 1 )
         })
       })
       
@@ -1170,7 +1170,9 @@ mod_gxe_server <- function(id, rv, parent_session){
           prox <- max(c(EF$EnvMean,EF$fittedValue))/30
           rv_gxe$FWclicked_genotypes <- unique(c(rv_gxe$FWclicked_genotypes,as.character(EF$genotype)[which.min(dist)]))
           dtsc <- dcast(rbindlist(rv$TD)[,c("genotype","trial",input$picker_trait), with = FALSE],genotype~trial)[rv_gxe$sensclust, on=.(genotype=Genotype)][,-c("SE_GenMean","SE_Sens","MSdeviation")]
-          rv_gxe$formatcols <- colnames(dtsc)[-which(colnames(dtsc)%in%c("genotype","sensitivity_cluster", "Rank"))]
+          genot_trial_counts <- rbindlist(rv$TD)[,.N,genotype]
+          dtsc <- genot_trial_counts[dtsc,on=.(genotype)]
+          rv_gxe$formatcols <- colnames(dtsc)[-which(colnames(dtsc)%in%c("genotype","N","sensitivity_cluster", "Rank"))]
           rv_gxe$dtsc <- dtsc
         }
       })
@@ -1193,8 +1195,8 @@ mod_gxe_server <- function(id, rv, parent_session){
         formatRound(
           dt,
           columns = rv_gxe$formatcols,
-          digits = 2
-        )},
+          digits = 2)
+        },
         server=TRUE
       )
       
@@ -1301,7 +1303,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       #### Render FW sensclusters DT ####
       observeEvent(rv_gxe$sensclust, {
         dtsc <- dcast(rbindlist(rv$TD)[,c("genotype","trial",input$picker_trait), with = F],genotype~trial)[rv_gxe$sensclust, on=.(genotype=Genotype)][,-c("SE_GenMean","SE_Sens","MSdeviation")]
-        rv_gxe$formatcols <- colnames(dtsc)[-which(colnames(dtsc)%in%c("genotype","sensitivity_cluster", "Rank"))]
+        genot_trial_counts <- rbindlist(rv$TD)[,.N,genotype]
+        dtsc <- genot_trial_counts[dtsc,on=.(genotype)]
+        rv_gxe$formatcols <- colnames(dtsc)[-which(colnames(dtsc)%in%c("genotype","N","sensitivity_cluster", "Rank"))]
         if (any(colnames(dtsc)%in%"sensitivity_cluster")){
           dtsc[,sensitivity_cluster:=as.character(sensitivity_cluster)]
         }

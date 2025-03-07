@@ -12,7 +12,7 @@ library(metan)
 
 ## Studies:
 ```{r}
-knitr::kable(unique(data.table(rbindlist(rv$TD))[,.(trial,locationName,studyDbId,studyName)]))
+knitr::kable(unique(rv_gxe$data[,.(trialName, locationName, studyDbId, studyName)])[studyDbId%in%input$picker_env])
 ```
 
 ## Trait: `r input$picker_trait`
