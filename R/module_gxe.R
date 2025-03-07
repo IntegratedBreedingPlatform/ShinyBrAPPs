@@ -162,9 +162,16 @@ mod_gxe_ui <- function(id){
                            accordion_panel(
                              title = "Predictions",
                              div(
-                               style = "display: flex; align-items: flex-end; justify-content: space-between;",
+                               style = "display: flex; align-items: flex-end;",
                                pickerInput(ns("MM_predict_level"), label = "Prediction level", choices = c("genotype")),
-                               shinyjs::disabled(actionButton(ns("MM_create_group"), label = "Create group from genotype selection", style = "margin-bottom: 15px;"))
+                               downloadButton(ns("MM_predict_download"), "CSV export", class = "btn btn-primary", style = "margin-bottom: 15px; margin-left: auto;")
+                             ),
+                             div(
+                               style="display: flex;gap: 10px;",
+                               actionButton(ns("MM_predict_select_all"), label = "Select all", class = "btn")|>
+                                 tooltip("Select all filtered rows", options = list(trigger="hover")),
+                               shinyjs::disabled(actionButton(ns("MM_predict_unselect"), "Deselect all", class = "btn")),
+                               shinyjs::disabled(actionButton(ns("MM_create_group"), label = "Create group from selection", class = "btn btn-info"))
                              ),
                              DT::dataTableOutput(ns("MM_predictions"))
                            )
@@ -500,6 +507,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       )
       
       dtproxy <<- dataTableProxy('FW_sens_clusters_DT')
+      predictDTproxy <<- dataTableProxy('MM_predictions')
       
       accordion_panel_close("GGE_adv_settings_acc", values="advs", session = session)
       accordion_panel_close("AMMI_adv_settings_acc", values="advs", session = session)
@@ -951,10 +959,33 @@ mod_gxe_server <- function(id, rv, parent_session){
       observeEvent(input$MM_predictions_rows_selected, {
         if (!is.null(input$MM_predictions_rows_selected)) {
           shinyjs::enable("MM_create_group")
+          shinyjs::enable("MM_predict_unselect")
         } else {
-          shinyjs::disable("input$MM_create_group")
+          shinyjs::disable("MM_create_group")
+          shinyjs::disable("MM_predict_unselect")
         }
       }, ignoreNULL = F)
+      
+      ### handle select all ####
+      observeEvent(input$MM_predict_select_all, {
+        filtered_rows <- input$MM_predictions_rows_all
+        DT::selectRows(predictDTproxy, selected=filtered_rows)
+      })
+      
+      ### handle unselect ####
+      observeEvent(input$MM_predict_unselect, {
+        DT::selectRows(predictDTproxy, selected=NULL)
+      })
+      
+      ### handle download csv ####
+      output$MM_predict_download <- downloadHandler(
+        filename = function() {
+          paste0("predicted_values.csv")
+        },
+        content = function(file) {
+          write.csv(rv_gxe$MM_predict_table, file, row.names = F)
+        }
+      )
       
       ### Handle group creation ####
       observeEvent(input$MM_create_group,{
