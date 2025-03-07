@@ -733,7 +733,15 @@ mod_gxe_server <- function(id, rv, parent_session){
       #    updateMaterialSwitch(session, "check_combine_scenario", value = FALSE)
       #  }
       #})
-      
+      observeEvent(input$picker_scenario,{
+        env_details <- c(rv$column_datasource[source == "environment" & visible == T,]$cols, "study_startYear")
+        env_details <- c(env_details, "scenario")
+        updatePickerInput(
+          session, "AMMI_colorEnvBy",
+          choices = env_details,
+          selected = character(0)
+        )
+      })
       ## main observer to build TD object and output basic plots ####
       observe({
         req(rv_gxe$data)
