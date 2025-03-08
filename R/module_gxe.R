@@ -292,6 +292,7 @@ mod_gxe_ui <- function(id){
             pickerInput(ns("GGE_picker_gen_select"), label="Plot type 7&9 - Select a genotype", multiple = F, choices = c()),
             pickerInput(ns("GGE_picker_gen2_select"), label="Plot type 9 - Select a second genotypes", multiple = F, choices = c()),
             pickerInput(ns("GGE_colorGenoBy"), label="Color genotypes by", choices = "Nothing", selected = "Nothing"),
+            pickerInput(ns("GGE_colorEnvBy"), label="Color Environments by", choices = "Nothing", selected = "Nothing"),
             shiny::downloadButton(ns("GGE_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
             
           ),
@@ -629,7 +630,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       observeEvent(input$picker_env,{
         ## update env details dropdowns
         colnames(rv_gxe$data)
-        env_details <- c(rv$column_datasource[source == "environment" & visible == T,]$cols, "study_startYear")
+        env_details <- c("Nothing", rv$column_datasource[source == "environment" & visible == T,]$cols, "study_startYear")
         updatePickerInput(
           session, "picker_scenario",
           choices = env_details,
@@ -654,7 +655,12 @@ mod_gxe_server <- function(id, rv, parent_session){
         updatePickerInput(
           session, "AMMI_colorEnvBy",
           choices = env_details,
-          selected = character(0)
+          selected = "Nothing"
+        )
+        updatePickerInput(
+          session, "GGE_colorEnvBy",
+          choices = env_details,
+          selected = "Nothing"
         )
         
         germplasm_attr <- rv$column_datasource[source == "germplasm" & visible == T,]$cols
@@ -735,11 +741,16 @@ mod_gxe_server <- function(id, rv, parent_session){
       #})
       observeEvent(input$picker_scenario,{
         env_details <- c(rv$column_datasource[source == "environment" & visible == T,]$cols, "study_startYear")
-        env_details <- c(env_details, "scenario")
+        env_details <- c("Nothing", env_details, "scenario")
         updatePickerInput(
           session, "AMMI_colorEnvBy",
           choices = env_details,
-          selected = character(0)
+          selected = "Nothing"
+        )
+        updatePickerInput(
+          session, "GGE_colorEnvBy",
+          choices = env_details,
+          selected = "Nothing"
         )
       })
       ## main observer to build TD object and output basic plots ####
@@ -1623,15 +1634,79 @@ mod_gxe_server <- function(id, rv, parent_session){
             rv_gxe$gp_WwW <- gg$layers[[length(gg$layers)]]$data$label
           }
         }
-        if (input$GGE_colorGenoBy!="Nothing" & input$GGE_picker_plot_type!=2){
+        if ((input$GGE_colorGenoBy!="Nothing" || input$GGE_colorEnvBy!="Nothing") & input$GGE_picker_plot_type!=2){
           #browser() 
           geompdat <- as.data.table(gg$data)
-          geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$GGE_colorGenoBy)]), by.x = "label", by.y = "genotype", all = TRUE)
           
+          if (input$GGE_colorGenoBy!="Nothing"){
+            geompdat <- merge.data.table(x=geompdat, 
+                                         y=setnames(unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$GGE_colorGenoBy)]),new = c("genotype","colorby1")),
+                                         by.x = "label", by.y = "genotype", all = TRUE)
+          } else {
+            geompdat[, colorby1:=NA]
+          }
+          if (input$GGE_colorEnvBy!="Nothing"){
+            geompdat <- merge.data.table(x=geompdat, 
+                                         y=setnames(unique(rbindlist(rv$TD)[,.SD,.SDcols=c("trial",input$GGE_colorEnvBy)]),new = c("trial","colorby2")),
+                                         by.x = "label", by.y = "trial", all = TRUE)
+          } else {
+            geompdat[, colorby2:=NA]
+          }
+          geompdat[, colorby:=""]
+          geompdat[is.na(colorby1), colorby:=colorby2]
+          geompdat[is.na(colorby2), colorby:=colorby1]
+
           gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
-          gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
-          gg <- gg + geom_point(data=geompdat, aes(d1, d2, color=as.factor(.data[[input$GGE_colorGenoBy]]), fill = as.factor(.data[[input$GGE_colorGenoBy]]), shape = type), size = input$GGE_plot_size.shape, 
-                                stroke = input$GGE_plot_size.stroke, alpha = input$GGE_plot_col.alpha) + scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
+
+          if (input$GGE_colorGenoBy!="Nothing"){
+            gg <- gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
+            gg <- gg + geom_point(data=geompdat[type=="genotype"], 
+                                  aes(d1, d2, color=as.factor(.data[["colorby"]]), 
+                                      fill = as.factor(.data[["colorby"]])), 
+                                  shape = 21, 
+                                  size = input$GGE_plot_size.shape, 
+                                  stroke = input$GGE_plot_size.stroke, 
+                                  alpha = input$GGE_plot_col.alpha) + 
+            scale_fill_manual(values=getOption("statgen.genoColors")) + 
+            scale_color_manual(values=getOption("statgen.genoColors"), guide="none") 
+          } else {
+            gg <- gg + geom_point(data=geompdat[type=="genotype"], 
+                                  aes(d1, d2, color=as.factor(.data[["colorby"]])), 
+                                  shape = 21, color= input$GGE_plot_col.stroke, 
+                                  fill= input$GGE_plot_col.gen, 
+                                  size = input$GGE_plot_size.shape,
+                                  stroke = input$GGE_plot_size.stroke, 
+                                  alpha = input$GGE_plot_col.alpha) 
+          }
+          if (input$GGE_colorEnvBy!="Nothing"){
+            gg <- gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
+            gg <- gg + geom_point(data=geompdat[type=="environment"], 
+                                  aes(d1, d2, color=as.factor(.data[["colorby"]]), 
+                                      fill = as.factor(.data[["colorby"]])), 
+                                  shape = 23, size = input$GGE_plot_size.text.env, 
+                                  stroke = input$GGE_plot_size.stroke, 
+                                  alpha = input$GGE_plot_col.alpha) + 
+            scale_fill_manual(values=getOption("statgen.trialColors")) + 
+            scale_color_manual(values=getOption("statgen.trialColors"), guide="none")
+          } else {
+            gg <- gg + geom_point(data=geompdat[type=="environment"], 
+                                  aes(d1, d2, color=as.factor(.data[["colorby"]])), 
+                                  shape = 23, color= input$GGE_plot_col.stroke, 
+                                  fill= input$GGE_plot_col.env, 
+                                  size = input$GGE_plot_size.text.env, 
+                                  stroke = input$GGE_plot_size.stroke, 
+                                  alpha = input$GGE_plot_col.alpha) 
+          }
+          
+          if (input$GGE_colorGenoBy!="Nothing" & input$GGE_colorEnvBy!="Nothing") {
+            gg <- gg + guides(fill = guide_legend(override.aes = list(shape=21))) + guides(fill = guide_legend(override.aes = list(shape=23)))
+          } else if (input$GGE_colorGenoBy!="Nothing") {
+            gg <- gg + guides(fill = guide_legend(override.aes = list(shape=21)), shape = "none")
+          } else if (input$GGE_colorEnvBy!="Nothing"){
+            gg <- gg + guides(fill = guide_legend(override.aes = list(shape=23)), size = "none")
+          } else {
+            gg <- gg + guides(fill = "none")
+          }
         }
         #browser()
         rv_gxe$GGEplotdat <- gg$data
@@ -1640,7 +1715,8 @@ mod_gxe_server <- function(id, rv, parent_session){
           gg + ggnewscale::new_scale_fill()
           gg <- gg + geom_point(data = clickgeno, aes(x=d1, y = d2), shape = 21, size=input$GGE_plot_size.shape+2, stroke=input$GGE_plot_size.stroke, color="red") 
         }
-        gg
+        gg + theme(legend.position.inside=NULL, legend.position = "right")
+
         
       })      
       
