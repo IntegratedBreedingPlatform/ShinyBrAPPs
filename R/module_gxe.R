@@ -1051,6 +1051,13 @@ mod_gxe_server <- function(id, rv, parent_session){
         #browser()
         req(rv_gxe$TDFWplot)
         TDFWplot <- rv_gxe$TDFWplot
+        if (any(colnames(rbindlist(rv$TD))=="scenario")){
+          ts <- rbindlist(rv$TD)[,.N,.(trial, scenario)]
+          ts [,newtrial:=paste0(trial," (",scenario,")")]
+          TDFWplot$fittedGeno$trial <- ts$newtrial[match(TDFWplot$fittedGeno$trial, ts$trial)]
+          TDFWplot$envEffs$Trial <- ts$newtrial[match(TDFWplot$envEffs$Trial, ts$trial)]
+          TDFWplot$TD <- rename_envs(TDFWplot$TD, ts$trial, ts$newtrial)
+        }
         if (is.null(input$FW_picker_color_by)){
             p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
         } else {
@@ -1129,7 +1136,8 @@ mod_gxe_server <- function(id, rv, parent_session){
               
             } else {
               if (!input$FW_picker_color_by%in%colnames(TDFWplot$TD)){
-                TDFWplot$TD <- rv$TD
+                TDFWplot$TD <- lapply(seq_along(TDFWplot$TD),function(a) data.table(TDFWplot$TD[[a]], setnames(data.table(rv$TD[[a]][[input$FW_picker_color_by]]),input$FW_picker_color_by)))
+                #browser()
               }
               p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
               # In case there is only two classes in color geno by

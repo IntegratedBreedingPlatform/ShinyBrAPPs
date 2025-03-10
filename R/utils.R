@@ -447,3 +447,13 @@ bmscon_geturl <- function(con){
   url <- paste0(con$protocol, con$db, port, con$apipath)
   return(url)
 }
+
+
+rename_envs <- function(TD, old, new){
+  names(TD) <- new[match(names(TD),old)]
+  TD <- lapply(TD, function(a) {
+    a$trial <- new[match(a$trial,old)]
+    return(a)
+  })
+  return(TD)
+}
