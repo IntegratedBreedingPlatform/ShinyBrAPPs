@@ -630,7 +630,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       observeEvent(input$picker_env,{
         ## update env details dropdowns
         colnames(rv_gxe$data)
-        env_details <- c("Nothing", rv$column_datasource[source == "environment" & visible == T,]$cols, "study_startYear")
+        env_details <- c(rv$column_datasource[source == "environment" & visible == T,]$cols, "study_startYear")
         updatePickerInput(
           session, "picker_scenario",
           choices = env_details,
@@ -654,12 +654,12 @@ mod_gxe_server <- function(id, rv, parent_session){
         )
         updatePickerInput(
           session, "AMMI_colorEnvBy",
-          choices = env_details,
+          choices = c("Nothing", env_details),
           selected = "Nothing"
         )
         updatePickerInput(
           session, "GGE_colorEnvBy",
-          choices = env_details,
+          choices = c("Nothing", env_details),
           selected = "Nothing"
         )
         
@@ -1852,7 +1852,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                                     plotGeno = TRUE,
                                     colorGenoBy = switch((input$AMMI_colorGenoBy=="Nothing")+1,  input$AMMI_colorGenoBy, NULL),
                                     plotConvHull = input$AMMI_plotConvHull,
-                                    colorEnvBy = input$AMMI_colorEnvBy,
+                                    colorEnvBy = switch((input$AMMI_colorEnvBy=="Nothing")+1,  input$AMMI_colorEnvBy, NULL),
                                     rotatePC = input$AMMI_rotatePC,
                                     primAxis = input$AMMI_primAxis,
                                     secAxis = input$AMMI_secAxis,
