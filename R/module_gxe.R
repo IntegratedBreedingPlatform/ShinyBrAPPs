@@ -606,7 +606,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           choices = colorbychoices,
           #choices = c("Nothing",colorbychoices, "sensitivity clusters"),
           selected = "Nothing"
-        )
+        )          
       })
       
       ## update env picker when trait or env_variable is chosen ####
@@ -2192,7 +2192,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       ## MM Report ####
       output$MM_report <- downloadHandler(
         filename = function() {
-          paste("GxE_MM-", Sys.Date(), ".html", sep="")
+          username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
+          trial <- unique(rv$study_metadata$trialName)
+          paste0("GxE_MM-", username, "-",  trial, "-", format(Sys.time(), "%Y%m%d-%H%M%S"), ".html")
         },
         content = function(file) {
           rmarkdown::render(
@@ -2204,7 +2206,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       ## FW Report ####
       output$FW_report <- downloadHandler(
         filename = function() {
-          paste("GxE_FW-", Sys.Date(), ".html", sep="")
+          username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
+          trial <- unique(rv$study_metadata$trialName)
+          paste0("GxE_FW-", username, "-",  trial, "-", format(Sys.time(), "%Y%m%d-%H%M%S"), ".html")
         },
         content = function(file) {
           rmarkdown::render(
@@ -2216,7 +2220,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       ## GGE Report ####
       output$GGE_report <- downloadHandler(
         filename = function() {
-          paste("GxE_GGE-", Sys.Date(), ".html", sep="")
+          username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
+          trial <- unique(rv$study_metadata$trialName)
+          paste0("GxE_GGE-", username, "-",  trial, "-", format(Sys.time(), "%Y%m%d-%H%M%S"), ".html")
         },
         content = function(file) {
           if (is.null(rv$TD.metangge)){
@@ -2231,7 +2237,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       ## AMMI Report ####
       output$AMMI_report <- downloadHandler(
         filename = function() {
-          paste("GxE_AMMI-", Sys.Date(), ".html", sep="")
+          username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
+          trial <- unique(rv$study_metadata$trialName)
+          paste0("GxE_AMMI-", username, "-",  trial, "-", format(Sys.time(), "%Y%m%d-%H%M%S"), ".html")
         },
         content = function(file) {
           #if (is.null(rv$TDAMMI)){
