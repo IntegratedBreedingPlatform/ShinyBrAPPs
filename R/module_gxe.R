@@ -418,11 +418,8 @@ mod_gxe_ui <- function(id){
           ### Results ####
           accordion(
             id = ns("STAB_accordsup"),
-            open = c("Superiority measure of Lin and Binns",
-                    "Shukla's stability variance",
-                    "Wricke's ecovalence"),
             accordion_panel(
-              title = "Superiority measure of Lin and Binns, Static stability (envt. variance) & Wricke's ecovalence",
+              title = "S: Static stability (envt. variance), W: Wricke's ecovalence, and Sup: Superiority measure of Lin and Binns",
               layout_columns(
                 col_widths = 6,
                 card(
@@ -437,13 +434,6 @@ mod_gxe_ui <- function(id){
                 layout_columns(
                   col_widths = 12,
                   card(full_screen = TRUE,
-                    plotOutput(ns("STAB_sup_plot"),
-                                #hover = hoverOpts(id =ns("STAB_sup_plot_hover"),delay = 50),
-                                click = clickOpts(id=ns("STAB_sup_plot_click")),
-                                #brush = brushOpts(id=ns("STAB_sup_plot_brush")),
-                                dblclick = dblclickOpts(id=ns("STAB_sup_plot_dblclick"), delay = 1000))
-                    ),
-                  card(full_screen = TRUE,
                     plotOutput(ns("STAB_static_plot"),
                                 #hover = hoverOpts(id =ns("STAB_static_plot_hover"),delay = 50),
                                 click = clickOpts(id=ns("STAB_static_plot_click")),
@@ -456,6 +446,13 @@ mod_gxe_ui <- function(id){
                                 click = clickOpts(id=ns("STAB_wricke_plot_click")),
                                 #brush = brushOpts(id=ns("STAB_wricke_plot_brush")),
                                 dblclick = dblclickOpts(id=ns("STAB_wricke_plot_dblclick"), delay = 1000))
+                  ),
+                  card(full_screen = TRUE,
+                       plotOutput(ns("STAB_sup_plot"),
+                                  #hover = hoverOpts(id =ns("STAB_sup_plot_hover"),delay = 50),
+                                  click = clickOpts(id=ns("STAB_sup_plot_click")),
+                                  #brush = brushOpts(id=ns("STAB_sup_plot_brush")),
+                                  dblclick = dblclickOpts(id=ns("STAB_sup_plot_dblclick"), delay = 1000))
                   )
                 )
               )
@@ -1967,7 +1964,8 @@ mod_gxe_server <- function(id, rv, parent_session){
         nenv <- rbindlist(rv$TD)[,.N,.(genotype)]
         dtwri <- nenv[dtwri, on=.(genotype=Genotype)]
         dtwri[,sqrtWe := sqrt(W/N)]
-        TDStab$dtres <- as.data.frame(dtsup[dtsta[,.(Genotype,S,sqrtS)], on=.(Genotype)][dtwri[,.(Genotype,W,sqrtWe)], on=.(Genotype)])
+        TDStab$dtres <- setcolorder(as.data.frame(dtsup[dtsta[,.(Genotype,S,sqrtS)], on=.(Genotype)][dtwri[,.(Genotype,W,sqrtWe)], on=.(Genotype)]), 
+                                    neworder = c("Genotype","Mean","S","sqrtS","W","sqrtWe","Sup"))
         rv_gxe$TDStab <- TDStab
 
         if (nrow(rv_gxe$TDStab$superiority)>0) {
