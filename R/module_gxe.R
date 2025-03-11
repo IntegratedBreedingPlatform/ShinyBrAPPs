@@ -1136,8 +1136,7 @@ mod_gxe_server <- function(id, rv, parent_session){
               
             } else {
               if (!input$FW_picker_color_by%in%colnames(TDFWplot$TD)){
-                TDFWplot$TD <- lapply(seq_along(TDFWplot$TD),function(a) data.table(TDFWplot$TD[[a]], setnames(data.table(rv$TD[[a]][[input$FW_picker_color_by]]),input$FW_picker_color_by)))
-                #browser()
+                TDFWplot$TD <- lapply(seq_along(TDFWplot$TD),function(a) data.table(TDFWplot$TD[[a]])[data.table(rv$TD[[a]])[,.SD, .SDcols=c("genotype",input$FW_picker_color_by)], on=.(genotype)])
               }
               p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
               # In case there is only two classes in color geno by
@@ -1207,7 +1206,6 @@ mod_gxe_server <- function(id, rv, parent_session){
         # Rotate legend title so that it doesnt't take too much space
         # in case of long group name
         p <- p + theme(legend.title = element_text(angle = 90))
-        
         if (input$FW_picker_plot_type=="line" & !input$FW_coord_equal){
           p + coord_cartesian()
         } else {
@@ -1318,12 +1316,13 @@ mod_gxe_server <- function(id, rv, parent_session){
         input$FW_picker_color_by
         input$FW_cluster_sensitivity_nb
         input$FW_picker_cluster_on
-        input$FW_picker_plot_type
+        #input$FW_picker_plot_type
         input$FW_picker_cluster_meth
         rv_gxe$TDFW
       }, handlerExpr = {
         req(rv_gxe$TDFW)
         req(input$FW_cluster_sensitivity_nb, input$FW_picker_cluster_on)
+        #req(input$FW_picker_color_by=="sensitivity clusters")
         #browser()
         #if (input$FW_picker_plot_type=="trellis"){
         #  output$FW_trellis_genot_select_ui <- renderUI({
@@ -1347,7 +1346,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           sensclustren[,renum:=NULL]
           rv_gxe$sensclust <- sensclustren
           rv_gxe$TDFWplot <- rv_gxe$TDFW
-          rv_gxe$TDFWplot$TD <- lapply(rv_gxe$TDFWplot$TD, function(a) data.table(a)[rv_gxe$sensclust, on=.(genotype=Genotype)])
+          rv_gxe$TDFWplot$TD <- lapply(rv_gxe$TDFWplot$TD, function(a) data.table(a)[rv_gxe$sensclust, on=.(genotype=Genotype)][!is.na(trial)])
           output$FW_sens_clust_select <- renderUI(
             prettyRadioButtons( 
               inputId = ns("FW_sens_clust_select_buttons"),
@@ -1361,8 +1360,11 @@ mod_gxe_server <- function(id, rv, parent_session){
             )
           )
         } else {
-          sensclust <- data.table(rv_gxe$TDFW$estimates)
-          rv_gxe$sensclust <- sensclust
+          if (is.null(rv_gxe$sensclust)){
+            sensclust <- data.table(rv_gxe$TDFW$estimates)
+            sensclust[,sensitivity_cluster:=NA]
+            rv_gxe$sensclust <- sensclust
+          }
           output$FW_sens_clust_select <- renderUI(expr = NULL)
         }
       })
@@ -1438,16 +1440,10 @@ mod_gxe_server <- function(id, rv, parent_session){
           clusters
         ), fill = T, use.names = T)
         
-        ## update selectors (shape, colour)
+        # Add a column to 
         data_plot <- copy(rv$extradata) # to avoid reactivity issues related to assignment by reference
-        ## Revoir ca pour ne créer qu'un seule varaible dans data.plot avec les numéros de clusters
-        #browser()
-        #for(id in clusters[,unique(group_id)]){
-        #  group_name <- clusters[group_id == id,group_name]
-        #  data_plot[germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)], eval(group_name) := paste0('In "', group_name,'"')]
-        #  data_plot[!(germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)]), eval(group_name) := paste0('Not in "', group_name,'"')]
-        #}
-        data_plot <- setnames(data_plot[clusters[,.(germplasmDbId=unlist(germplasmDbIds)),sensitivity_cluster],on=.(germplasmDbId)],old = "sensitivity_cluster",new = paste0("cl",clustering_id,"_FW@",input$picker_trait))[]
+        data_plot <- data_plot[clusters[,.(germplasmDbId=unlist(germplasmDbIds)),sensitivity_cluster],on=.(germplasmDbId)]
+        setnames(data_plot,old = "sensitivity_cluster",new = paste0("cl",clustering_id,"_FW@",input$picker_trait))
         rv$column_datasource <- rbindlist(
           list(
             rv$column_datasource,
@@ -1455,6 +1451,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             data.table(cols = paste0("cl",clustering_id,"_FW@",input$picker_trait) ,  type = "Text", source = "group", visible = T)
           )
         )
+        #browser()
         rv$extradata <- data_plot
       })
       
