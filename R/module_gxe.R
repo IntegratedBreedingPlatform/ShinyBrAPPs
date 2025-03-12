@@ -1852,7 +1852,6 @@ mod_gxe_server <- function(id, rv, parent_session){
         # this occurs for example at group creation, a column with group memberships
         # is added to the TD object and available in the colorGenoBy picker input
         rv_gxe$TDAMMI$dat <- rbindlist(rv$TD)
-        browser()
         p <- statgenGxE:::plot.AMMI(rv_gxe$TDAMMI,
                                     plotType = input$AMMI_plotType,
                                     scale = input$AMMI_scale,
