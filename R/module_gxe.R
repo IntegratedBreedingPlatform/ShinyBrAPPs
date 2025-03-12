@@ -418,11 +418,8 @@ mod_gxe_ui <- function(id){
           ### Results ####
           accordion(
             id = ns("STAB_accordsup"),
-            open = c("Superiority measure of Lin and Binns",
-                    "Shukla's stability variance",
-                    "Wricke's ecovalence"),
             accordion_panel(
-              title = "Superiority measure of Lin and Binns, Static stability (envt. variance) & Wricke's ecovalence",
+              title = "S: Static stability (envt. variance), W: Wricke's ecovalence, and Sup: Superiority measure of Lin and Binns",
               layout_columns(
                 col_widths = 6,
                 card(
@@ -437,13 +434,6 @@ mod_gxe_ui <- function(id){
                 layout_columns(
                   col_widths = 12,
                   card(full_screen = TRUE,
-                    plotOutput(ns("STAB_sup_plot"),
-                                #hover = hoverOpts(id =ns("STAB_sup_plot_hover"),delay = 50),
-                                click = clickOpts(id=ns("STAB_sup_plot_click")),
-                                #brush = brushOpts(id=ns("STAB_sup_plot_brush")),
-                                dblclick = dblclickOpts(id=ns("STAB_sup_plot_dblclick"), delay = 1000))
-                    ),
-                  card(full_screen = TRUE,
                     plotOutput(ns("STAB_static_plot"),
                                 #hover = hoverOpts(id =ns("STAB_static_plot_hover"),delay = 50),
                                 click = clickOpts(id=ns("STAB_static_plot_click")),
@@ -456,6 +446,13 @@ mod_gxe_ui <- function(id){
                                 click = clickOpts(id=ns("STAB_wricke_plot_click")),
                                 #brush = brushOpts(id=ns("STAB_wricke_plot_brush")),
                                 dblclick = dblclickOpts(id=ns("STAB_wricke_plot_dblclick"), delay = 1000))
+                  ),
+                  card(full_screen = TRUE,
+                       plotOutput(ns("STAB_sup_plot"),
+                                  #hover = hoverOpts(id =ns("STAB_sup_plot_hover"),delay = 50),
+                                  click = clickOpts(id=ns("STAB_sup_plot_click")),
+                                  #brush = brushOpts(id=ns("STAB_sup_plot_brush")),
+                                  dblclick = dblclickOpts(id=ns("STAB_sup_plot_dblclick"), delay = 1000))
                   )
                 )
               )
@@ -606,7 +603,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           choices = colorbychoices,
           #choices = c("Nothing",colorbychoices, "sensitivity clusters"),
           selected = "Nothing"
-        )
+        )          
       })
       
       ## update env picker when trait or env_variable is chosen ####
@@ -630,7 +627,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       observeEvent(input$picker_env,{
         ## update env details dropdowns
         colnames(rv_gxe$data)
-        env_details <- c("Nothing", rv$column_datasource[source == "environment" & visible == T,]$cols, "study_startYear")
+        env_details <- c(rv$column_datasource[source == "environment" & visible == T,]$cols, "study_startYear")
         updatePickerInput(
           session, "picker_scenario",
           choices = env_details,
@@ -654,12 +651,12 @@ mod_gxe_server <- function(id, rv, parent_session){
         )
         updatePickerInput(
           session, "AMMI_colorEnvBy",
-          choices = env_details,
+          choices = c("Nothing", env_details),
           selected = "Nothing"
         )
         updatePickerInput(
           session, "GGE_colorEnvBy",
-          choices = env_details,
+          choices = c("Nothing", env_details),
           selected = "Nothing"
         )
         
@@ -1051,6 +1048,13 @@ mod_gxe_server <- function(id, rv, parent_session){
         #browser()
         req(rv_gxe$TDFWplot)
         TDFWplot <- rv_gxe$TDFWplot
+        if (any(colnames(rbindlist(rv$TD))=="scenario")){
+          ts <- rbindlist(rv$TD)[,.N,.(trial, scenario)]
+          ts [,newtrial:=paste0(trial," (",scenario,")")]
+          TDFWplot$fittedGeno$trial <- ts$newtrial[match(TDFWplot$fittedGeno$trial, ts$trial)]
+          TDFWplot$envEffs$Trial <- ts$newtrial[match(TDFWplot$envEffs$Trial, ts$trial)]
+          TDFWplot$TD <- rename_envs(TDFWplot$TD, ts$trial, ts$newtrial)
+        }
         if (is.null(input$FW_picker_color_by)){
             p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
         } else {
@@ -1129,7 +1133,7 @@ mod_gxe_server <- function(id, rv, parent_session){
               
             } else {
               if (!input$FW_picker_color_by%in%colnames(TDFWplot$TD)){
-                TDFWplot$TD <- rv$TD
+                TDFWplot$TD <- lapply(seq_along(TDFWplot$TD),function(a) data.table(TDFWplot$TD[[a]])[data.table(rv$TD[[a]])[,.SD, .SDcols=c("genotype",input$FW_picker_color_by)], on=.(genotype)])
               }
               p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
               # In case there is only two classes in color geno by
@@ -1143,9 +1147,9 @@ mod_gxe_server <- function(id, rv, parent_session){
                 p$layers[[2]] <- NULL
                 p <- p + 
                   ggplot2::geom_line(data=p$data[p$data[[input$FW_picker_color_by]]==levs[2],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=0.5) +
-                  ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[2],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=1) +
-                  ggplot2::geom_line(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=2) +
-                  ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=2) +
+                  ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[2],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=0.5) +
+                  ggplot2::geom_line(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=1) +
+                  ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=1) +
                   scale_color_manual(values=cols)
               }
               if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
@@ -1199,7 +1203,6 @@ mod_gxe_server <- function(id, rv, parent_session){
         # Rotate legend title so that it doesnt't take too much space
         # in case of long group name
         p <- p + theme(legend.title = element_text(angle = 90))
-        
         if (input$FW_picker_plot_type=="line" & !input$FW_coord_equal){
           p + coord_cartesian()
         } else {
@@ -1310,12 +1313,13 @@ mod_gxe_server <- function(id, rv, parent_session){
         input$FW_picker_color_by
         input$FW_cluster_sensitivity_nb
         input$FW_picker_cluster_on
-        input$FW_picker_plot_type
+        #input$FW_picker_plot_type
         input$FW_picker_cluster_meth
         rv_gxe$TDFW
       }, handlerExpr = {
         req(rv_gxe$TDFW)
         req(input$FW_cluster_sensitivity_nb, input$FW_picker_cluster_on)
+        #req(input$FW_picker_color_by=="sensitivity clusters")
         #browser()
         #if (input$FW_picker_plot_type=="trellis"){
         #  output$FW_trellis_genot_select_ui <- renderUI({
@@ -1339,7 +1343,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           sensclustren[,renum:=NULL]
           rv_gxe$sensclust <- sensclustren
           rv_gxe$TDFWplot <- rv_gxe$TDFW
-          rv_gxe$TDFWplot$TD <- lapply(rv_gxe$TDFWplot$TD, function(a) data.table(a)[rv_gxe$sensclust, on=.(genotype=Genotype)])
+          rv_gxe$TDFWplot$TD <- lapply(rv_gxe$TDFWplot$TD, function(a) data.table(a)[rv_gxe$sensclust, on=.(genotype=Genotype)][!is.na(trial)])
           output$FW_sens_clust_select <- renderUI(
             prettyRadioButtons( 
               inputId = ns("FW_sens_clust_select_buttons"),
@@ -1353,8 +1357,11 @@ mod_gxe_server <- function(id, rv, parent_session){
             )
           )
         } else {
-          sensclust <- data.table(rv_gxe$TDFW$estimates)
-          rv_gxe$sensclust <- sensclust
+          if (is.null(rv_gxe$sensclust)){
+            sensclust <- data.table(rv_gxe$TDFW$estimates)
+            sensclust[,sensitivity_cluster:=NA]
+            rv_gxe$sensclust <- sensclust
+          }
           output$FW_sens_clust_select <- renderUI(expr = NULL)
         }
       })
@@ -1430,16 +1437,10 @@ mod_gxe_server <- function(id, rv, parent_session){
           clusters
         ), fill = T, use.names = T)
         
-        ## update selectors (shape, colour)
+        # Add a column to 
         data_plot <- copy(rv$extradata) # to avoid reactivity issues related to assignment by reference
-        ## Revoir ca pour ne créer qu'un seule varaible dans data.plot avec les numéros de clusters
-        #browser()
-        #for(id in clusters[,unique(group_id)]){
-        #  group_name <- clusters[group_id == id,group_name]
-        #  data_plot[germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)], eval(group_name) := paste0('In "', group_name,'"')]
-        #  data_plot[!(germplasmDbId %in% clusters[group_id == id,unlist(germplasmDbIds)]), eval(group_name) := paste0('Not in "', group_name,'"')]
-        #}
-        data_plot <- setnames(data_plot[clusters[,.(germplasmDbId=unlist(germplasmDbIds)),sensitivity_cluster],on=.(germplasmDbId)],old = "sensitivity_cluster",new = paste0("cl",clustering_id,"_FW@",input$picker_trait))[]
+        data_plot <- data_plot[clusters[,.(germplasmDbId=unlist(germplasmDbIds)),sensitivity_cluster],on=.(germplasmDbId)]
+        setnames(data_plot,old = "sensitivity_cluster",new = paste0("cl",clustering_id,"_FW@",input$picker_trait))
         rv$column_datasource <- rbindlist(
           list(
             rv$column_datasource,
@@ -1447,6 +1448,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             data.table(cols = paste0("cl",clustering_id,"_FW@",input$picker_trait) ,  type = "Text", source = "group", visible = T)
           )
         )
+        #browser()
         rv$extradata <- data_plot
       })
       
@@ -1852,7 +1854,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                                     plotGeno = TRUE,
                                     colorGenoBy = switch((input$AMMI_colorGenoBy=="Nothing")+1,  input$AMMI_colorGenoBy, NULL),
                                     plotConvHull = input$AMMI_plotConvHull,
-                                    colorEnvBy = input$AMMI_colorEnvBy,
+                                    colorEnvBy = switch((input$AMMI_colorEnvBy=="Nothing")+1,  input$AMMI_colorEnvBy, NULL),
                                     rotatePC = input$AMMI_rotatePC,
                                     primAxis = input$AMMI_primAxis,
                                     secAxis = input$AMMI_secAxis,
@@ -1962,7 +1964,8 @@ mod_gxe_server <- function(id, rv, parent_session){
         nenv <- rbindlist(rv$TD)[,.N,.(genotype)]
         dtwri <- nenv[dtwri, on=.(genotype=Genotype)]
         dtwri[,sqrtWe := sqrt(W/N)]
-        TDStab$dtres <- as.data.frame(dtsup[dtsta[,.(Genotype,S,sqrtS)], on=.(Genotype)][dtwri[,.(Genotype,W,sqrtWe)], on=.(Genotype)])
+        TDStab$dtres <- setcolorder(as.data.frame(dtsup[dtsta[,.(Genotype,S,sqrtS)], on=.(Genotype)][dtwri[,.(Genotype,W,sqrtWe)], on=.(Genotype)]), 
+                                    neworder = c("Genotype","Mean","S","sqrtS","W","sqrtWe","Sup"))
         rv_gxe$TDStab <- TDStab
 
         if (nrow(rv_gxe$TDStab$superiority)>0) {
@@ -2187,7 +2190,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       ## MM Report ####
       output$MM_report <- downloadHandler(
         filename = function() {
-          paste("GxE_MM-", Sys.Date(), ".html", sep="")
+          username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
+          trial <- unique(rv$study_metadata$trialName)
+          paste0("GxE_MM-", username, "-",  trial, "-", format(Sys.time(), "%Y%m%d-%H%M%S"), ".html")
         },
         content = function(file) {
           rmarkdown::render(
@@ -2199,7 +2204,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       ## FW Report ####
       output$FW_report <- downloadHandler(
         filename = function() {
-          paste("GxE_FW-", Sys.Date(), ".html", sep="")
+          username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
+          trial <- unique(rv$study_metadata$trialName)
+          paste0("GxE_FW-", username, "-",  trial, "-", format(Sys.time(), "%Y%m%d-%H%M%S"), ".html")
         },
         content = function(file) {
           rmarkdown::render(
@@ -2211,7 +2218,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       ## GGE Report ####
       output$GGE_report <- downloadHandler(
         filename = function() {
-          paste("GxE_GGE-", Sys.Date(), ".html", sep="")
+          username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
+          trial <- unique(rv$study_metadata$trialName)
+          paste0("GxE_GGE-", username, "-",  trial, "-", format(Sys.time(), "%Y%m%d-%H%M%S"), ".html")
         },
         content = function(file) {
           if (is.null(rv$TD.metangge)){
@@ -2226,7 +2235,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       ## AMMI Report ####
       output$AMMI_report <- downloadHandler(
         filename = function() {
-          paste("GxE_AMMI-", Sys.Date(), ".html", sep="")
+          username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
+          trial <- unique(rv$study_metadata$trialName)
+          paste0("GxE_AMMI-", username, "-",  trial, "-", format(Sys.time(), "%Y%m%d-%H%M%S"), ".html")
         },
         content = function(file) {
           #if (is.null(rv$TDAMMI)){
