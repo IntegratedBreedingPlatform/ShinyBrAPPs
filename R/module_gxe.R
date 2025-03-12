@@ -18,6 +18,10 @@ mod_gxe_ui <- function(id){
         font-weight: bold;
         overflow-y:scroll;
         max-height: 250px;
+      }
+                      
+      .btn:focus {
+        color: black;
       }"))
     ),
     navset_tab(
@@ -1848,6 +1852,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         # this occurs for example at group creation, a column with group memberships
         # is added to the TD object and available in the colorGenoBy picker input
         rv_gxe$TDAMMI$dat <- rbindlist(rv$TD)
+        browser()
         p <- statgenGxE:::plot.AMMI(rv_gxe$TDAMMI,
                                     plotType = input$AMMI_plotType,
                                     scale = input$AMMI_scale,
@@ -1899,7 +1904,6 @@ mod_gxe_server <- function(id, rv, parent_session){
             clickedgeno <- as.character(row.names(AG))[which.min(dist)]
           } else {
             AG <- rv_gxe$AMMIplotdat
-            click=input$AMMIplot_click
             dist=sqrt((click$x-AG$x)^2+(click$y-AG$y)^2)
             clickedgeno <- as.character(row.names(AG))[which.min(dist)]
           }
