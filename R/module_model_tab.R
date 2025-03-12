@@ -108,11 +108,13 @@ mod_model_ui <- function(id){
     ## Fit model buttons ####
     layout_columns(
       col_widths = c(2, 2, 4),
-      disabled(actionButton(ns("go_fit_model"), "Fit model", class = "btn btn-info")),
+      div(
+        style="display: flex;",
+        disabled(actionBttn(ns("go_fit_model"), "Fit model", block = TRUE)),
+        a(href="https://biometris.github.io/statgenSTA/articles/statgenSTA.html#modeling",icon("fas fa-question-circle"), target="_blank")
+      ),
       shiny::downloadButton(ns("STA_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary"),
       prettySwitch(ns("report_toc"),label = "Include TOC in report", value = TRUE)
-      #hidden(shiny::actionButton(ns("go_fit_no_outlier"), "Refit without outliers", class = "btn btn-info")),
-      #h4(textOutput(ns("fit_outliers_output")))
     ),
     br(),
     navset_tab(
