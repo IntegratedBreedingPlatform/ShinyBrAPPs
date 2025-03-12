@@ -115,6 +115,8 @@ mod_model_ui <- function(id){
       ),
       shiny::downloadButton(ns("STA_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary"),
       prettySwitch(ns("report_toc"),label = "Include TOC in report", value = TRUE)
+      #hidden(shiny::actionButton(ns("go_fit_no_outlier"), "Refit without outliers", class = "btn btn-info")),
+      #h4(textOutput(ns("fit_outliers_output")))
     ),
     br(),
     navset_tab(
@@ -206,7 +208,6 @@ mod_model_server <- function(id, rv){
       # store blues before confirmation modal
       bluesToPush <- NULL
       methodIds <- NULL
-      obs_units <- NULL
       brapir_con <- NULL
       
       outliersDTproxy <<- dataTableProxy('outliers_DT')
@@ -1183,20 +1184,30 @@ mod_model_server <- function(id, rv){
         }
       })
       
-      existingBluesModal <- function() {
+      confirmationModal <- function(obs_count, existing_obs_count) {
+        if (existing_obs_count == 0) {
+          message <- paste0("You are going to push to BMS ", obs_count, " new \"MEANS\" observations.")
+          warning_message <- ""
+        } else {
+          message <- paste0("You are going to push to BMS ", obs_count, " \"MEANS\" observations.")
+          warning_message <- paste0("Some BLUEs/BLUPs have already been pushed to BMS (", existing_obs_count," data). They will be erased by new values.")
+        }
+        
         modalDialog(
           title = "Confirmation",
-          "Some BLUEs/BLUPs have already been pushed to BMS. They will be erased by these new values. Are you sure you still want to push those BLUEs/BLUPs ?",
+          p(message),
+          p(warning_message),
+          p("Are you sure you still want to push those BLUEs/BLUPs ?"),
           footer = tagList(
             modalButton("Cancel"),
-            shiny::actionButton(ns("push_erase_ok"), "Push BLUEs/BLUPs anyway", class = "btn btn-primary")
+            shiny::actionButton(ns("push_ok"), "Push BLUEs/BLUPs anyway", class = "btn btn-primary")
           ),
           fade = F
         )
       }
       
       ## observe button OK in existingBluesModal####
-      observeEvent(input$push_erase_ok, {
+      observeEvent(input$push_ok, {
         removeModal()
         postObservations()
       })
@@ -1204,6 +1215,103 @@ mod_model_server <- function(id, rv){
       postObservations <- function() {  
         req(bluesToPush)
         tryCatch({
+          ## push observationunits ####
+          withProgress(message = "Looking for existing observationUnits", min=1, max=1, {
+            # Getting existing observationunits
+            print("Checking if observationUnits already exist")
+            needed_env <- unique(bluesToPush[,environment])
+            needed_observation_units <- unique(rv$data[study_name_app %in% needed_env,.(germplasmDbId, germplasmName, studyDbId, study_name_app, programDbId, trialDbId, entryType)])
+            needed_observation_units$studyDbId <- as.character(needed_observation_units$studyDbId)
+            needed_observation_units$trialDbId <- as.character(needed_observation_units$trialDbId)
+            setnames(needed_observation_units, "study_name_app","environment")
+
+            bluesToPush <<- merge(needed_observation_units, bluesToPush, by=c("germplasmName", "environment", "studyDbId"))
+            
+            studyDbIds <- as.character(unique(bluesToPush[, studyDbId]))
+            print(studyDbIds)
+            resp_post_search_obsunit <- brapir::phenotyping_observationunits_post_search(con = brapir_con, 
+                                                                                         observationLevels = data.frame(levelName = c("MEANS")),
+                                                                                         studyDbIds = studyDbIds)
+            print(resp_post_search_obsunit$status_code)
+            if (resp_post_search_obsunit$status_code == 200 | resp_post_search_obsunit$status_code == 202) {
+              resp_get_search_obsunit <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = brapir_con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId)
+              if (resp_post_search_obsunit$status_code == 200) {
+                existing_obs_units <- resp_get_search_obsunit$data
+                pagination <- resp_get_search_obsunit$metadata$pagination
+                page = 0
+                while (pagination$totalCount > (pagination$currentPage + 1)*pagination$pageSize) {
+                  page = page + 1
+                  resp_get_search_obsunit <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = brapir_con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId, page = page)
+                  pagination <- resp_get_search_obsunit$metadata$pagination
+                  existing_obs_units <- rbindlist(list(existing_obs_units, resp_get_search_obsunit$data))
+                }
+              }
+            } 
+          })
+          
+          observation_units <- NULL
+          if (nrow(existing_obs_units)==0) {
+            print("no existing_obs_units")
+            missing_observation_units <- needed_observation_units
+          } else {
+            print("existing_obs_units:")
+            print(head(existing_obs_units))
+            existing_obs_units <- data.table(existing_obs_units)
+            existing_obs_units <- existing_obs_units[,.(observationUnitDbId, 
+                                                        germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId, 
+                                                        entryType = observationUnitPosition.entryType)]
+            # COMPARE EXISTING OBSERVATION UNITS GERMPLASM TO DATA GERMPLASM
+            merge <- merge(needed_observation_units, existing_obs_units, by = c("studyDbId", "germplasmDbId", "germplasmName", "programDbId", "trialDbId", "entryType"), all = TRUE)
+            observation_units <- merge[!is.na(observationUnitDbId)] 
+            missing_observation_units <- merge[is.na(observationUnitDbId)] 
+          }
+          
+          print("missing_observation_units:")
+          print(missing_observation_units)
+          
+          # POSTING MISSING OBSERVATION UNITS
+          if (!is.null(missing_observation_units) && nrow(missing_observation_units) > 0) {
+            withProgress(message = "Creating new observationUnits", min=1, max=1, {
+              print("Posting observationUnits")
+              
+              # Building body POST request
+              body <- apply(missing_observation_units,1,function(a){
+                list(
+                  observationUnitPosition = list(
+                    entryType =jsonlite::unbox(a["entryType"]), 
+                    observationLevel = list(levelName = jsonlite::unbox("MEANS"))),
+                  germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
+                  programDbId = jsonlite::unbox(as.character(a["programDbId"])),
+                  studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
+                  trialDbId = jsonlite::unbox(as.character(a["trialDbId"]))
+                )
+              })
+              
+              resp <- brapir::phenotyping_observationunits_post_batch(con = brapir_con, body)
+              print(resp$status_code)
+              
+              new_observation_units <- resp$data
+              new_observation_units <- data.table(new_observation_units)
+              new_observation_units <- new_observation_units[,.(observationUnitDbId, 
+                                                                germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId, 
+                                                                entryType = observationUnitPosition.entryType)]
+              
+              print("created observation_units:")
+              print(new_observation_units)
+              
+              if (!is.null(observation_units)) {
+                observation_units[,environment:=NULL]
+                observation_units <- rbind(observation_units, new_observation_units)
+              } else { #no existing observation_units
+                observation_units <- new_observation_units
+              }              
+            })
+          }
+          
+          observation_units <- observation_units[,.(observationUnitDbId, germplasmDbId, studyDbId)] 
+          print("all observation_units:")
+          print(observation_units)
+          
           origin_variable_names <- unique(bluesToPush[,originVariableName])
           methods <- data.table(result = names(methodIds), methodDbId = unname(unlist(methodIds)))
         
@@ -1317,7 +1425,7 @@ mod_model_server <- function(id, rv){
                     ## push observations ####
                     print("Posting observations")
                     data_to_push$studyDbId = as.character(data_to_push$studyDbId)
-                    data_to_push <- merge(data_to_push, obs_units, by=c("germplasmDbId","studyDbId"))
+                    data_to_push <- merge(data_to_push, observation_units, by=c("germplasmDbId","studyDbId"))
                     
                     # Building body POST request
                     body <- apply(data_to_push,1,function(a){
@@ -1371,6 +1479,7 @@ mod_model_server <- function(id, rv){
           
           print("PUSH BLUEs/BLUPs")
           colnames(table_metrics) = c("germplasmName", "environment", "result", "originVariableName", "value")
+          table_metrics <- merge(table_metrics, unique(rv$data[,.(environment = study_name_app, studyDbId = as.character(studyDbId))]))
           bluesToPush <<- table_metrics
           
           #exit the function if missing method ids
@@ -1516,125 +1625,12 @@ mod_model_server <- function(id, rv){
           print("All variables:")
           print(existing_variables)
           
-          ## push observationunits ####
-          withProgress(message = "Looking for existing observationUnits", min=1, max=1, {
-            # Getting existing observationunits
-            print("Checking if observationUnits already exist")
-            needed_env <- unique(bluesToPush[,environment])
-            needed_observation_units <- unique(rv$data[study_name_app %in% needed_env,.(germplasmDbId, germplasmName, studyDbId, study_name_app, programDbId, trialDbId, entryType)])
-            needed_observation_units$studyDbId <- as.character(needed_observation_units$studyDbId)
-            needed_observation_units$trialDbId <- as.character(needed_observation_units$trialDbId)
-            setnames(needed_observation_units, "study_name_app","environment")
-            bluesToPush <<- merge(needed_observation_units, bluesToPush, by=c("germplasmName", "environment"))
-            
-            studyDbIds <- as.character(unique(bluesToPush[, studyDbId]))
-            print(studyDbIds)
-            resp_post_search_obsunit <- brapir::phenotyping_observationunits_post_search(con = brapir_con, 
-                                                             observationLevels = data.frame(levelName = c("MEANS")),
-                                                             studyDbIds = studyDbIds)
-            print(resp_post_search_obsunit$status_code)
-            if (resp_post_search_obsunit$status_code == 200 | resp_post_search_obsunit$status_code == 202) {
-              resp_get_search_obsunit <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = brapir_con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId)
-              if (resp_post_search_obsunit$status_code == 200) {
-                existing_obs_units <- resp_get_search_obsunit$data
-                pagination <- resp_get_search_obsunit$metadata$pagination
-                page = 0
-                while (pagination$totalCount > (pagination$currentPage + 1)*pagination$pageSize) {
-                  page = page + 1
-                  resp_get_search_obsunit <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = brapir_con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId, page = page)
-                  pagination <- resp_get_search_obsunit$metadata$pagination
-                  existing_obs_units <- rbindlist(list(existing_obs_units, resp_get_search_obsunit$data))
-                }
-              }
-            } 
-          })
-
-          observation_units <- NULL
-          if (nrow(existing_obs_units)==0) {
-            print("no existing_obs_units")
-            missing_observation_units <- needed_observation_units
-          } else {
-            print("existing_obs_units:")
-            print(head(existing_obs_units))
-            existing_obs_units <- data.table(existing_obs_units)
-            existing_obs_units <- existing_obs_units[,.(observationUnitDbId, 
-              germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId, 
-              entryType = observationUnitPosition.entryType)]
-            # COMPARE EXISTING OBSERVATION UNITS GERMPLASM TO DATA GERMPLASM
-            merge <- merge(needed_observation_units, existing_obs_units, by = c("studyDbId", "germplasmDbId", "germplasmName", "programDbId", "trialDbId", "entryType"), all = TRUE)
-            observation_units <- merge[!is.na(observationUnitDbId)] 
-            missing_observation_units <- merge[is.na(observationUnitDbId)] 
-          }
-          
-          print("missing_observation_units:")
-          print(missing_observation_units)
-          
-          # POSTING MISSING OBSERVATION UNITS
-          if (!is.null(missing_observation_units) && nrow(missing_observation_units) > 0) {
-            withProgress(message = "Creating new observationUnits", min=1, max=1, {
-              print("Posting observationUnits")
-              
-              #TODO Remove this step when not necessary anymore
-              #Create dataset MEANS with PUT variables before posting observationUnits
-              # var <- apply(metrics_variables_df,1,function(a){
-              #   list(
-              #     contextOfUse = c("MEANS"),
-              #     observationVariableDbId = jsonlite::unbox(a["observationVariableDbId"]),
-              #     method = list(methodDbId = jsonlite::unbox(a["methodDbId"])),
-              #     observationVariableName = jsonlite::unbox(a["observationVariableName"]),
-              #     scale = list(scaleDbId = jsonlite::unbox(a["scaleDbId"])),
-              #     trait = list(traitDbId = jsonlite::unbox(a["traitDbId"])),
-              #     studyDbIds = as.character(studyDbIds)
-              #   )
-              # })
-              # resp <- brapi_put_variable(rv$con, jsonlite::toJSON(var), metrics_variables_df[1, "observationVariableDbId"])
-              #TODO end
-              
-              # Building body POST request
-              body <- apply(missing_observation_units,1,function(a){
-                list(
-                  observationUnitPosition = list(
-                    entryType =jsonlite::unbox(a["entryType"]), 
-                    observationLevel = list(levelName = jsonlite::unbox("MEANS"))),
-                  germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
-                  programDbId = jsonlite::unbox(as.character(a["programDbId"])),
-                  studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
-                  trialDbId = jsonlite::unbox(as.character(a["trialDbId"]))
-                )
-              })
-              
-              resp <- brapir::phenotyping_observationunits_post_batch(con = brapir_con, body)
-              print(resp$status_code)
-              
-              new_observation_units <- resp$data
-              new_observation_units <- data.table(new_observation_units)
-              new_observation_units <- new_observation_units[,.(observationUnitDbId, 
-              germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId, 
-              entryType = observationUnitPosition.entryType)]
-              
-              print("created observation_units:")
-              print(new_observation_units)
-
-              if (!is.null(observation_units)) {
-                observation_units[,environment:=NULL]
-                observation_units <- rbind(observation_units, new_observation_units)
-              } else { #no existing observation_units
-                observation_units <- new_observation_units
-              }              
-            })
-          }
-          
-          observation_units <- observation_units[,.(observationUnitDbId, germplasmDbId, studyDbId)] 
-          print("all observation_units:")
-          print(observation_units)
-          obs_units <<- observation_units
-
           ## check if existing BLUEs/BLUPs ####          
           withProgress(message = "check if BLUEs/BLUPs are already stored in the database", min=1, max=1, {
             print("Look for existing BLUEs/BLUPs")
             resp <- brapir::phenotyping_observations_post_search(
               con = brapir_con, 
-              observationUnitDbIds = observation_units$observationUnitDbId, 
+              studyDbIds = as.character(unique(bluesToPush$studyDbId)), 
               observationVariableDbIds = existing_variables$observationVariableDbId,
               pageSize = 1)
             if (resp$status_code == 200) {
@@ -1646,12 +1642,9 @@ mod_model_server <- function(id, rv){
                 existing_obs_count = resp$metadata$pagination$totalCount
               }
             }
-          })          
-          if (existing_obs_count > 0) {
-            showModal(existingBluesModal())
-          } else {
-            postObservations()
-          }
+          })
+          showModal(confirmationModal(nrow(bluesToPush), existing_obs_count))
+          
         },
         error = function(e) {
           showNotification(paste0("An error occured: ", e), type = "error", duration = notification_duration)
@@ -1659,6 +1652,7 @@ mod_model_server <- function(id, rv){
           return(NULL)
         })
       }
+      
       ## STA Report ####
       output$STA_report <- downloadHandler(
         filename = function() {
@@ -1686,8 +1680,6 @@ mod_model_server <- function(id, rv){
           }
         }
       )
-      
-      
     }
   )
 }
