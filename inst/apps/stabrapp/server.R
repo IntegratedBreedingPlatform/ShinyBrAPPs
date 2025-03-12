@@ -73,6 +73,7 @@ server <- function(input, output, session){
         id = "excluded_accordion",
         value = "excluded_panel"
       )
+      session$sendCustomMessage(type = 'scrollToBottom', list())
     } else {
       disable_btn = T # hide button
       bslib::accordion_panel_update(

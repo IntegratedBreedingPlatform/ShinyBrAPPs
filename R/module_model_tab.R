@@ -108,7 +108,11 @@ mod_model_ui <- function(id){
     ## Fit model buttons ####
     layout_columns(
       col_widths = c(2, 2, 4),
-      disabled(actionButton(ns("go_fit_model"), "Fit model", class = "btn btn-info")),
+      div(
+        style="display: flex;",
+        disabled(actionBttn(ns("go_fit_model"), "Fit model", block = TRUE)),
+        a(href="https://biometris.github.io/statgenSTA/articles/statgenSTA.html#modeling",icon("fas fa-question-circle"), target="_blank")
+      ),
       shiny::downloadButton(ns("STA_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary"),
       prettySwitch(ns("report_toc"),label = "Include TOC in report", value = TRUE)
       #hidden(shiny::actionButton(ns("go_fit_no_outlier"), "Refit without outliers", class = "btn btn-info")),
@@ -149,21 +153,21 @@ mod_model_ui <- function(id){
       ## Outliers panel ####
       nav_panel(
         "Outliers",
-        fluidRow(
-          column(6, pickerInput(
-            ns("select_trait_outliers"),"Trait", multiple = F, choices = NULL
-          )),
-          column(6, actionButton(ns("mark_outliers"), "Mark all outliers as excluded observation", class = "btn btn-info", disabled = T, style = "float:right; margin:5px"))
-          #,
-          #column(
-          #  4,
-          #  sliderInput(ns("limit_residual"), label = "Threshold for standardized residuals", min = 0, max = 0, value = 0, width = "100%")
-          #)
+        div(
+          style = "display: block ruby;",
+          pickerInput(ns("select_trait_outliers"),"Trait", multiple = F, choices = NULL),
+          div(
+            #style="margin-bottom: 15px; margin-left: auto;",
+            actionButton(ns("outliers_select_all"), label = "Select all", class = "btn"),
+            shinyjs::disabled(actionButton(ns("outliers_unselect"), "Deselect all", class = "btn")),
+            shinyjs::disabled(actionButton(ns("mark_outliers"), "Mark selected outliers as excluded observation", class = "btn btn-info", )),
+            shinyjs::disabled(downloadButton(ns("outliers_download"), "CSV export", class = "btn btn-primary"))
+          )
         ),
         fluidRow(
           column(
             12,
-            dataTableOutput(ns("table_outliers"))
+            dataTableOutput(ns("outliers_DT"))
           )
         )
       ),
@@ -204,8 +208,9 @@ mod_model_server <- function(id, rv){
       # store blues before confirmation modal
       bluesToPush <- NULL
       methodIds <- NULL
-      obs_units <- NULL
       brapir_con <- NULL
+      
+      outliersDTproxy <<- dataTableProxy('outliers_DT')
 
       rv_mod <- reactiveValues(
         fit = NULL,
@@ -538,9 +543,13 @@ mod_model_server <- function(id, rv){
       
       ## observe button mark outliers ####
       observeEvent(input$mark_outliers, {
-        new_excluded_obs <-  rv$data[observationDbId %in% rv_mod$obs_outliers, .(observationDbId)]
-        new_excluded_obs[, reason := "model outlier"]
-        rv$excluded_obs <- rbind(rv$excluded_obs, new_excluded_obs)
+        req(input$outliers_DT_rows_selected)
+        new_excluded_obs <-  data.table(
+          observationDbId = rv_mod$outliers_table[input$outliers_DT_rows_selected,observationDbId], 
+          reason = "model outlier"
+        )
+        rv$excluded_obs <- funion(rv$excluded_obs, new_excluded_obs,)
+        DT::selectRows(outliersDTproxy, selected=NULL)
       })
       observeEvent(c(rv$excluded_obs,input$model_design),{
         shinyjs::disable("STA_report")
@@ -642,9 +651,15 @@ mod_model_server <- function(id, rv){
             rv_mod$fitextr <- extractSTA(rv_mod$fit)
           })
           withProgress(message = "Looking for outliers", min=1, max=1,{
-            rv_mod$outliers <-  outlierSTA(rv_mod$fit, 
+            outliers <-  outlierSTA(rv_mod$fit, 
                                        what = "random",
-                                       commonFactors = "genotype")
+                                       commonFactors = "genotype")$outliers
+            rv_mod$outliers <- merge(
+              as.data.table(outliers),
+              rv$data[,.(study_name_app, observationUnitDbId, observationVariableName, observationDbId)],
+              by.x = c("trial", "observationUnitDbId", "trait"),
+              by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
+            )
           })
           },
           error=function(e){ e })
@@ -805,63 +820,63 @@ mod_model_server <- function(id, rv){
           )          
 
       })
-
-      ## output$table_outliers ####
-      output$table_outliers <- renderDataTable({
+      
+      observeEvent(c(input$select_trait_outliers, rv_mod$outliers), {
         req(rv_mod$fit)
-        req(input$select_trait_outliers)
         req(rv_mod$outliers)
-        outliers_all <- as.data.table(rv_mod$outliers$outliers) #as.data.table(outliersSTA_all$outliers)
-        req(outliers_all[,.N] > 0)
+        req(input$select_trait_outliers)
         
-        updateActionButton(
-          inputId = "mark_outliers",
-          disabled = F
-        )
-        
+        outliers_all <- rv_mod$outliers
         # outliers for the selected trait
         outliers <- outliers_all[trait == input$select_trait_outliers]
         
         validate(need(outliers[,.N]>0 , "No outlier on this trait"))
         
         req(rv_mod$fitted_data)
-
+        
         which(colnames(outliers_all) == "subBlock")
         outliers_nb <- outliers_all[, .(`#outliers` = sum(outlier)), by = observationUnitDbId]
         
         variables_index <- which(colnames(outliers_all) %in% unique(rv_mod$fitted_data$observationVariableName))
         first_var_index <- variables_index[1]
         last_var_index <- variables_index[length(variables_index)]
-
+        
         obs_nb <- unique(outliers_all[, .(observationUnitDbId,  `#observations` = rowSums(!is.na(.SD[, (first_var_index):(last_var_index)])))])
         outliers_by_obsUnit <- merge(outliers_nb, obs_nb, by="observationUnitDbId")   
         
         rv$obsUnit_outliers <- outliers_by_obsUnit[`#outliers` > 0]$observationUnitDbId
-        shinyjs::show("go_fit_no_outlier")
-        shinyjs::show("fit_outliers_output")
-        
-        rv_mod$obs_outliers <- merge(
-          as.data.table(rv_mod$outliers$outliers)[outlier == T,], 
-          rv$data, 
-          by.x = c("trial", "observationUnitDbId", "trait"), 
-          by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
-          )[, observationDbId]
         
         if(outliers[,.N]>0){
           setnames(outliers, "trial", "environment")
         }
-
+        
         outliers <- merge(outliers, outliers_by_obsUnit, by="observationUnitDbId")
         
         #Sort outliers on genotype, environment and repetition
         outliers <- outliers[order(genotype, environment, repId)]
         
+        rv_mod$outliers_table <- outliers
+        shinyjs::enable("outliers_download")
+        
+      }, ignoreInit = F)
+
+      ## output$outliers_DT ####
+      output$outliers_DT <- renderDataTable({
+        req(rv_mod$outliers_table)
+        outliers <- rv_mod$outliers_table
         # change columns order (move variables columns at the end)
         cols <- colnames(outliers)
-        first_var_index <- which(colnames(outliers_all) %in% unique(rv_mod$fitted_data$observationVariableName))[1]
+        first_var_index <- which(colnames(outliers) %in% unique(rv_mod$fitted_data$observationVariableName))[1]
         outlier_index <- which(cols == "outlier")
-        new_cols_order <- c(cols[1:first_var_index-1], cols[outlier_index:length(cols)], cols[(first_var_index):(outlier_index-1)])
-        setcolorder(outliers, new_cols_order)
+        if (outlier_index > first_var_index) {
+          new_cols_order <- c(cols[1:first_var_index-1], cols[outlier_index:length(cols)], cols[(first_var_index):(outlier_index-1)])
+          setcolorder(outliers, new_cols_order)
+        }
+        # only true outliers can be selected and mark as outlier
+        selectable_rows <- outliers[outlier == T, which = TRUE]
+        
+        # to show outliers that were excluded (before refitting model)
+        excluded_rows <- outliers[observationDbId %in% rv$excluded_obs[,observationDbId], which = T]
         
         # set a color for each environment/genotype couple
         # 2 colors depending on even or odd row
@@ -883,22 +898,32 @@ mod_model_server <- function(id, rv){
         formatRound(datatable(
           outliers,
           rownames = F,
+          selection = list(
+            target = 'row',
+            selectable = selectable_rows
+          ),
           options = list(
             paging = F,
             scrollX = T,
-            scrollY = "500px",
+            scrollY = "400px",
             scrollCollapse = T,
             dom = 't',
             rowCallback = JS(
               sprintf(
-                "function(row, data) {
+                "function(row, data, index) {
                   var groups = {%s};
+                  var excludedRows = [%s];
                   $('td', row).css('background-color', groups[data[%i].concat('|', data[%i])]);
                   if (data[%i]) {
                     $('td', row).css('font-weight', 'bold');
                   }
+                  if (excludedRows.includes(index+1)) {
+                    console.log(index)
+                    $('td', row).css('color', '#ac8888'); 
+                  }
                 }",
                 group_colors,
+                paste(excluded_rows, collapse = ","),
                 env_col_index,
                 genotype_col_index,
                 outlier_col_index
@@ -907,6 +932,38 @@ mod_model_server <- function(id, rv){
           )
         ),digits = 2, columns = dec_cols)
       })
+      
+      ### handle select all ####
+      observeEvent(input$outliers_select_all, {
+        filtered_rows <- input$outliers_DT_rows_all
+        DT::selectRows(outliersDTproxy, selected=filtered_rows)
+      })
+      
+      ### handle unselect ####
+      observeEvent(input$outliers_unselect, {
+        DT::selectRows(outliersDTproxy, selected=NULL)
+      })
+      
+      ### Enable/disable select and mark as outliers buttons ####
+      observeEvent(input$outliers_DT_rows_selected, {
+        if (!is.null(input$outliers_DT_rows_selected)) {
+          shinyjs::enable("mark_outliers")
+          shinyjs::enable("outliers_unselect")
+        } else {
+          shinyjs::disable("mark_outliers")
+          shinyjs::disable("outliers_unselect")
+        }
+      }, ignoreNULL = F)
+      
+      ### handle download csv ####
+      output$outliers_download <- downloadHandler(
+        filename = function() {
+          paste0(input$select_trait_outliers, "_outliers.csv")
+        },
+        content = function(file) {
+          write.csv(rv_mod$outliers_table, file, row.names = F)
+        }
+      )
 
       ## output$metrics_A_table ####
       output$metrics_A_table <- renderDT({
@@ -1127,20 +1184,30 @@ mod_model_server <- function(id, rv){
         }
       })
       
-      existingBluesModal <- function() {
+      confirmationModal <- function(obs_count, existing_obs_count) {
+        if (existing_obs_count == 0) {
+          message <- paste0("You are going to push to BMS ", obs_count, " new \"MEANS\" observations.")
+          warning_message <- ""
+        } else {
+          message <- paste0("You are going to push to BMS ", obs_count, " \"MEANS\" observations.")
+          warning_message <- paste0("Some BLUEs/BLUPs have already been pushed to BMS (", existing_obs_count," data). They will be erased by new values.")
+        }
+        
         modalDialog(
           title = "Confirmation",
-          "Some BLUEs/BLUPs have already been pushed to BMS. They will be erased by these new values. Are you sure you still want to push those BLUEs/BLUPs ?",
+          p(message),
+          p(warning_message),
+          p("Are you sure you still want to push those BLUEs/BLUPs ?"),
           footer = tagList(
             modalButton("Cancel"),
-            shiny::actionButton(ns("push_erase_ok"), "Push BLUEs/BLUPs anyway", class = "btn btn-primary")
+            shiny::actionButton(ns("push_ok"), "Push BLUEs/BLUPs anyway", class = "btn btn-primary")
           ),
           fade = F
         )
       }
       
       ## observe button OK in existingBluesModal####
-      observeEvent(input$push_erase_ok, {
+      observeEvent(input$push_ok, {
         removeModal()
         postObservations()
       })
@@ -1148,6 +1215,103 @@ mod_model_server <- function(id, rv){
       postObservations <- function() {  
         req(bluesToPush)
         tryCatch({
+          ## push observationunits ####
+          withProgress(message = "Looking for existing observationUnits", min=1, max=1, {
+            # Getting existing observationunits
+            print("Checking if observationUnits already exist")
+            needed_env <- unique(bluesToPush[,environment])
+            needed_observation_units <- unique(rv$data[study_name_app %in% needed_env,.(germplasmDbId, germplasmName, studyDbId, study_name_app, programDbId, trialDbId, entryType)])
+            needed_observation_units$studyDbId <- as.character(needed_observation_units$studyDbId)
+            needed_observation_units$trialDbId <- as.character(needed_observation_units$trialDbId)
+            setnames(needed_observation_units, "study_name_app","environment")
+
+            bluesToPush <<- merge(needed_observation_units, bluesToPush, by=c("germplasmName", "environment", "studyDbId"))
+            
+            studyDbIds <- as.character(unique(bluesToPush[, studyDbId]))
+            print(studyDbIds)
+            resp_post_search_obsunit <- brapir::phenotyping_observationunits_post_search(con = brapir_con, 
+                                                                                         observationLevels = data.frame(levelName = c("MEANS")),
+                                                                                         studyDbIds = studyDbIds)
+            print(resp_post_search_obsunit$status_code)
+            if (resp_post_search_obsunit$status_code == 200 | resp_post_search_obsunit$status_code == 202) {
+              resp_get_search_obsunit <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = brapir_con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId)
+              if (resp_post_search_obsunit$status_code == 200) {
+                existing_obs_units <- resp_get_search_obsunit$data
+                pagination <- resp_get_search_obsunit$metadata$pagination
+                page = 0
+                while (pagination$totalCount > (pagination$currentPage + 1)*pagination$pageSize) {
+                  page = page + 1
+                  resp_get_search_obsunit <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = brapir_con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId, page = page)
+                  pagination <- resp_get_search_obsunit$metadata$pagination
+                  existing_obs_units <- rbindlist(list(existing_obs_units, resp_get_search_obsunit$data))
+                }
+              }
+            } 
+          })
+          
+          observation_units <- NULL
+          if (nrow(existing_obs_units)==0) {
+            print("no existing_obs_units")
+            missing_observation_units <- needed_observation_units
+          } else {
+            print("existing_obs_units:")
+            print(head(existing_obs_units))
+            existing_obs_units <- data.table(existing_obs_units)
+            existing_obs_units <- existing_obs_units[,.(observationUnitDbId, 
+                                                        germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId, 
+                                                        entryType = observationUnitPosition.entryType)]
+            # COMPARE EXISTING OBSERVATION UNITS GERMPLASM TO DATA GERMPLASM
+            merge <- merge(needed_observation_units, existing_obs_units, by = c("studyDbId", "germplasmDbId", "germplasmName", "programDbId", "trialDbId", "entryType"), all = TRUE)
+            observation_units <- merge[!is.na(observationUnitDbId)] 
+            missing_observation_units <- merge[is.na(observationUnitDbId)] 
+          }
+          
+          print("missing_observation_units:")
+          print(missing_observation_units)
+          
+          # POSTING MISSING OBSERVATION UNITS
+          if (!is.null(missing_observation_units) && nrow(missing_observation_units) > 0) {
+            withProgress(message = "Creating new observationUnits", min=1, max=1, {
+              print("Posting observationUnits")
+              
+              # Building body POST request
+              body <- apply(missing_observation_units,1,function(a){
+                list(
+                  observationUnitPosition = list(
+                    entryType =jsonlite::unbox(a["entryType"]), 
+                    observationLevel = list(levelName = jsonlite::unbox("MEANS"))),
+                  germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
+                  programDbId = jsonlite::unbox(as.character(a["programDbId"])),
+                  studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
+                  trialDbId = jsonlite::unbox(as.character(a["trialDbId"]))
+                )
+              })
+              
+              resp <- brapir::phenotyping_observationunits_post_batch(con = brapir_con, body)
+              print(resp$status_code)
+              
+              new_observation_units <- resp$data
+              new_observation_units <- data.table(new_observation_units)
+              new_observation_units <- new_observation_units[,.(observationUnitDbId, 
+                                                                germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId, 
+                                                                entryType = observationUnitPosition.entryType)]
+              
+              print("created observation_units:")
+              print(new_observation_units)
+              
+              if (!is.null(observation_units)) {
+                observation_units[,environment:=NULL]
+                observation_units <- rbind(observation_units, new_observation_units)
+              } else { #no existing observation_units
+                observation_units <- new_observation_units
+              }              
+            })
+          }
+          
+          observation_units <- observation_units[,.(observationUnitDbId, germplasmDbId, studyDbId)] 
+          print("all observation_units:")
+          print(observation_units)
+          
           origin_variable_names <- unique(bluesToPush[,originVariableName])
           methods <- data.table(result = names(methodIds), methodDbId = unname(unlist(methodIds)))
         
@@ -1261,7 +1425,7 @@ mod_model_server <- function(id, rv){
                     ## push observations ####
                     print("Posting observations")
                     data_to_push$studyDbId = as.character(data_to_push$studyDbId)
-                    data_to_push <- merge(data_to_push, obs_units, by=c("germplasmDbId","studyDbId"))
+                    data_to_push <- merge(data_to_push, observation_units, by=c("germplasmDbId","studyDbId"))
                     
                     # Building body POST request
                     body <- apply(data_to_push,1,function(a){
@@ -1315,6 +1479,7 @@ mod_model_server <- function(id, rv){
           
           print("PUSH BLUEs/BLUPs")
           colnames(table_metrics) = c("germplasmName", "environment", "result", "originVariableName", "value")
+          table_metrics <- merge(table_metrics, unique(rv$data[,.(environment = study_name_app, studyDbId = as.character(studyDbId))]))
           bluesToPush <<- table_metrics
           
           #exit the function if missing method ids
@@ -1460,125 +1625,12 @@ mod_model_server <- function(id, rv){
           print("All variables:")
           print(existing_variables)
           
-          ## push observationunits ####
-          withProgress(message = "Looking for existing observationUnits", min=1, max=1, {
-            # Getting existing observationunits
-            print("Checking if observationUnits already exist")
-            needed_env <- unique(bluesToPush[,environment])
-            needed_observation_units <- unique(rv$data[study_name_app %in% needed_env,.(germplasmDbId, germplasmName, studyDbId, study_name_app, programDbId, trialDbId, entryType)])
-            needed_observation_units$studyDbId <- as.character(needed_observation_units$studyDbId)
-            needed_observation_units$trialDbId <- as.character(needed_observation_units$trialDbId)
-            setnames(needed_observation_units, "study_name_app","environment")
-            bluesToPush <<- merge(needed_observation_units, bluesToPush, by=c("germplasmName", "environment"))
-            
-            studyDbIds <- as.character(unique(bluesToPush[, studyDbId]))
-            print(studyDbIds)
-            resp_post_search_obsunit <- brapir::phenotyping_observationunits_post_search(con = brapir_con, 
-                                                             observationLevels = data.frame(levelName = c("MEANS")),
-                                                             studyDbIds = studyDbIds)
-            print(resp_post_search_obsunit$status_code)
-            if (resp_post_search_obsunit$status_code == 200 | resp_post_search_obsunit$status_code == 202) {
-              resp_get_search_obsunit <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = brapir_con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId)
-              if (resp_post_search_obsunit$status_code == 200) {
-                existing_obs_units <- resp_get_search_obsunit$data
-                pagination <- resp_get_search_obsunit$metadata$pagination
-                page = 0
-                while (pagination$totalCount > (pagination$currentPage + 1)*pagination$pageSize) {
-                  page = page + 1
-                  resp_get_search_obsunit <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = brapir_con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId, page = page)
-                  pagination <- resp_get_search_obsunit$metadata$pagination
-                  existing_obs_units <- rbindlist(list(existing_obs_units, resp_get_search_obsunit$data))
-                }
-              }
-            } 
-          })
-
-          observation_units <- NULL
-          if (nrow(existing_obs_units)==0) {
-            print("no existing_obs_units")
-            missing_observation_units <- needed_observation_units
-          } else {
-            print("existing_obs_units:")
-            print(head(existing_obs_units))
-            existing_obs_units <- data.table(existing_obs_units)
-            existing_obs_units <- existing_obs_units[,.(observationUnitDbId, 
-              germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId, 
-              entryType = observationUnitPosition.entryType)]
-            # COMPARE EXISTING OBSERVATION UNITS GERMPLASM TO DATA GERMPLASM
-            merge <- merge(needed_observation_units, existing_obs_units, by = c("studyDbId", "germplasmDbId", "germplasmName", "programDbId", "trialDbId", "entryType"), all = TRUE)
-            observation_units <- merge[!is.na(observationUnitDbId)] 
-            missing_observation_units <- merge[is.na(observationUnitDbId)] 
-          }
-          
-          print("missing_observation_units:")
-          print(missing_observation_units)
-          
-          # POSTING MISSING OBSERVATION UNITS
-          if (!is.null(missing_observation_units) && nrow(missing_observation_units) > 0) {
-            withProgress(message = "Creating new observationUnits", min=1, max=1, {
-              print("Posting observationUnits")
-              
-              #TODO Remove this step when not necessary anymore
-              #Create dataset MEANS with PUT variables before posting observationUnits
-              # var <- apply(metrics_variables_df,1,function(a){
-              #   list(
-              #     contextOfUse = c("MEANS"),
-              #     observationVariableDbId = jsonlite::unbox(a["observationVariableDbId"]),
-              #     method = list(methodDbId = jsonlite::unbox(a["methodDbId"])),
-              #     observationVariableName = jsonlite::unbox(a["observationVariableName"]),
-              #     scale = list(scaleDbId = jsonlite::unbox(a["scaleDbId"])),
-              #     trait = list(traitDbId = jsonlite::unbox(a["traitDbId"])),
-              #     studyDbIds = as.character(studyDbIds)
-              #   )
-              # })
-              # resp <- brapi_put_variable(rv$con, jsonlite::toJSON(var), metrics_variables_df[1, "observationVariableDbId"])
-              #TODO end
-              
-              # Building body POST request
-              body <- apply(missing_observation_units,1,function(a){
-                list(
-                  observationUnitPosition = list(
-                    entryType =jsonlite::unbox(a["entryType"]), 
-                    observationLevel = list(levelName = jsonlite::unbox("MEANS"))),
-                  germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
-                  programDbId = jsonlite::unbox(as.character(a["programDbId"])),
-                  studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
-                  trialDbId = jsonlite::unbox(as.character(a["trialDbId"]))
-                )
-              })
-              
-              resp <- brapir::phenotyping_observationunits_post_batch(con = brapir_con, body)
-              print(resp$status_code)
-              
-              new_observation_units <- resp$data
-              new_observation_units <- data.table(new_observation_units)
-              new_observation_units <- new_observation_units[,.(observationUnitDbId, 
-              germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId, 
-              entryType = observationUnitPosition.entryType)]
-              
-              print("created observation_units:")
-              print(new_observation_units)
-
-              if (!is.null(observation_units)) {
-                observation_units[,environment:=NULL]
-                observation_units <- rbind(observation_units, new_observation_units)
-              } else { #no existing observation_units
-                observation_units <- new_observation_units
-              }              
-            })
-          }
-          
-          observation_units <- observation_units[,.(observationUnitDbId, germplasmDbId, studyDbId)] 
-          print("all observation_units:")
-          print(observation_units)
-          obs_units <<- observation_units
-
           ## check if existing BLUEs/BLUPs ####          
           withProgress(message = "check if BLUEs/BLUPs are already stored in the database", min=1, max=1, {
             print("Look for existing BLUEs/BLUPs")
             resp <- brapir::phenotyping_observations_post_search(
               con = brapir_con, 
-              observationUnitDbIds = observation_units$observationUnitDbId, 
+              studyDbIds = as.character(unique(bluesToPush$studyDbId)), 
               observationVariableDbIds = existing_variables$observationVariableDbId,
               pageSize = 1)
             if (resp$status_code == 200) {
@@ -1590,12 +1642,9 @@ mod_model_server <- function(id, rv){
                 existing_obs_count = resp$metadata$pagination$totalCount
               }
             }
-          })          
-          if (existing_obs_count > 0) {
-            showModal(existingBluesModal())
-          } else {
-            postObservations()
-          }
+          })
+          showModal(confirmationModal(nrow(bluesToPush), existing_obs_count))
+          
         },
         error = function(e) {
           showNotification(paste0("An error occured: ", e), type = "error", duration = notification_duration)
@@ -1603,6 +1652,7 @@ mod_model_server <- function(id, rv){
           return(NULL)
         })
       }
+      
       ## STA Report ####
       output$STA_report <- downloadHandler(
         filename = function() {
@@ -1630,8 +1680,6 @@ mod_model_server <- function(id, rv){
           }
         }
       )
-      
-      
     }
   )
 }
