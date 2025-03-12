@@ -5,6 +5,14 @@ ui <- fluidPage(
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "css/app.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/custom_styles.css"),
+    tags$script(
+      "Shiny.addCustomMessageHandler('scrollToBottom', function(message) {
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: 'smooth'
+        });
+      });"
+    ),
     tags$style(HTML("
     
       /* Ensure that the 'Deselect All' button stays on top */

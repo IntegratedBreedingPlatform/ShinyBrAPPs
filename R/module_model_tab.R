@@ -149,21 +149,21 @@ mod_model_ui <- function(id){
       ## Outliers panel ####
       nav_panel(
         "Outliers",
-        fluidRow(
-          column(6, pickerInput(
-            ns("select_trait_outliers"),"Trait", multiple = F, choices = NULL
-          )),
-          column(6, actionButton(ns("mark_outliers"), "Mark all outliers as excluded observation", class = "btn btn-info", disabled = T, style = "float:right; margin:5px"))
-          #,
-          #column(
-          #  4,
-          #  sliderInput(ns("limit_residual"), label = "Threshold for standardized residuals", min = 0, max = 0, value = 0, width = "100%")
-          #)
+        div(
+          style = "display: block ruby;",
+          pickerInput(ns("select_trait_outliers"),"Trait", multiple = F, choices = NULL),
+          div(
+            #style="margin-bottom: 15px; margin-left: auto;",
+            actionButton(ns("outliers_select_all"), label = "Select all", class = "btn"),
+            shinyjs::disabled(actionButton(ns("outliers_unselect"), "Deselect all", class = "btn")),
+            shinyjs::disabled(actionButton(ns("mark_outliers"), "Mark selected outliers as excluded observation", class = "btn btn-info", )),
+            shinyjs::disabled(downloadButton(ns("outliers_download"), "CSV export", class = "btn btn-primary"))
+          )
         ),
         fluidRow(
           column(
             12,
-            dataTableOutput(ns("table_outliers"))
+            dataTableOutput(ns("outliers_DT"))
           )
         )
       ),
@@ -206,6 +206,8 @@ mod_model_server <- function(id, rv){
       methodIds <- NULL
       obs_units <- NULL
       brapir_con <- NULL
+      
+      outliersDTproxy <<- dataTableProxy('outliers_DT')
 
       rv_mod <- reactiveValues(
         fit = NULL,
@@ -538,9 +540,13 @@ mod_model_server <- function(id, rv){
       
       ## observe button mark outliers ####
       observeEvent(input$mark_outliers, {
-        new_excluded_obs <-  rv$data[observationDbId %in% rv_mod$obs_outliers, .(observationDbId)]
-        new_excluded_obs[, reason := "model outlier"]
-        rv$excluded_obs <- rbind(rv$excluded_obs, new_excluded_obs)
+        req(input$outliers_DT_rows_selected)
+        new_excluded_obs <-  data.table(
+          observationDbId = rv_mod$outliers_table[input$outliers_DT_rows_selected,observationDbId], 
+          reason = "model outlier"
+        )
+        rv$excluded_obs <- funion(rv$excluded_obs, new_excluded_obs,)
+        DT::selectRows(outliersDTproxy, selected=NULL)
       })
       observeEvent(c(rv$excluded_obs,input$model_design),{
         shinyjs::disable("STA_report")
@@ -642,9 +648,15 @@ mod_model_server <- function(id, rv){
             rv_mod$fitextr <- extractSTA(rv_mod$fit)
           })
           withProgress(message = "Looking for outliers", min=1, max=1,{
-            rv_mod$outliers <-  outlierSTA(rv_mod$fit, 
+            outliers <-  outlierSTA(rv_mod$fit, 
                                        what = "random",
-                                       commonFactors = "genotype")
+                                       commonFactors = "genotype")$outliers
+            rv_mod$outliers <- merge(
+              as.data.table(outliers),
+              rv$data[,.(study_name_app, observationUnitDbId, observationVariableName, observationDbId)],
+              by.x = c("trial", "observationUnitDbId", "trait"),
+              by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
+            )
           })
           },
           error=function(e){ e })
@@ -805,63 +817,63 @@ mod_model_server <- function(id, rv){
           )          
 
       })
-
-      ## output$table_outliers ####
-      output$table_outliers <- renderDataTable({
+      
+      observeEvent(c(input$select_trait_outliers, rv_mod$outliers), {
         req(rv_mod$fit)
-        req(input$select_trait_outliers)
         req(rv_mod$outliers)
-        outliers_all <- as.data.table(rv_mod$outliers$outliers) #as.data.table(outliersSTA_all$outliers)
-        req(outliers_all[,.N] > 0)
+        req(input$select_trait_outliers)
         
-        updateActionButton(
-          inputId = "mark_outliers",
-          disabled = F
-        )
-        
+        outliers_all <- rv_mod$outliers
         # outliers for the selected trait
         outliers <- outliers_all[trait == input$select_trait_outliers]
         
         validate(need(outliers[,.N]>0 , "No outlier on this trait"))
         
         req(rv_mod$fitted_data)
-
+        
         which(colnames(outliers_all) == "subBlock")
         outliers_nb <- outliers_all[, .(`#outliers` = sum(outlier)), by = observationUnitDbId]
         
         variables_index <- which(colnames(outliers_all) %in% unique(rv_mod$fitted_data$observationVariableName))
         first_var_index <- variables_index[1]
         last_var_index <- variables_index[length(variables_index)]
-
+        
         obs_nb <- unique(outliers_all[, .(observationUnitDbId,  `#observations` = rowSums(!is.na(.SD[, (first_var_index):(last_var_index)])))])
         outliers_by_obsUnit <- merge(outliers_nb, obs_nb, by="observationUnitDbId")   
         
         rv$obsUnit_outliers <- outliers_by_obsUnit[`#outliers` > 0]$observationUnitDbId
-        shinyjs::show("go_fit_no_outlier")
-        shinyjs::show("fit_outliers_output")
-        
-        rv_mod$obs_outliers <- merge(
-          as.data.table(rv_mod$outliers$outliers)[outlier == T,], 
-          rv$data, 
-          by.x = c("trial", "observationUnitDbId", "trait"), 
-          by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
-          )[, observationDbId]
         
         if(outliers[,.N]>0){
           setnames(outliers, "trial", "environment")
         }
-
+        
         outliers <- merge(outliers, outliers_by_obsUnit, by="observationUnitDbId")
         
         #Sort outliers on genotype, environment and repetition
         outliers <- outliers[order(genotype, environment, repId)]
         
+        rv_mod$outliers_table <- outliers
+        shinyjs::enable("outliers_download")
+        
+      }, ignoreInit = F)
+
+      ## output$outliers_DT ####
+      output$outliers_DT <- renderDataTable({
+        req(rv_mod$outliers_table)
+        outliers <- rv_mod$outliers_table
         # change columns order (move variables columns at the end)
         cols <- colnames(outliers)
-        first_var_index <- which(colnames(outliers_all) %in% unique(rv_mod$fitted_data$observationVariableName))[1]
+        first_var_index <- which(colnames(outliers) %in% unique(rv_mod$fitted_data$observationVariableName))[1]
         outlier_index <- which(cols == "outlier")
-        new_cols_order <- c(cols[1:first_var_index-1], cols[outlier_index:length(cols)], cols[(first_var_index):(outlier_index-1)])
-        setcolorder(outliers, new_cols_order)
+        if (outlier_index > first_var_index) {
+          new_cols_order <- c(cols[1:first_var_index-1], cols[outlier_index:length(cols)], cols[(first_var_index):(outlier_index-1)])
+          setcolorder(outliers, new_cols_order)
+        }
+        # only true outliers can be selected and mark as outlier
+        selectable_rows <- outliers[outlier == T, which = TRUE]
+        
+        # to show outliers that were excluded (before refitting model)
+        excluded_rows <- outliers[observationDbId %in% rv$excluded_obs[,observationDbId], which = T]
         
         # set a color for each environment/genotype couple
         # 2 colors depending on even or odd row
@@ -883,22 +895,32 @@ mod_model_server <- function(id, rv){
         formatRound(datatable(
           outliers,
           rownames = F,
+          selection = list(
+            target = 'row',
+            selectable = selectable_rows
+          ),
           options = list(
             paging = F,
             scrollX = T,
-            scrollY = "500px",
+            scrollY = "400px",
             scrollCollapse = T,
             dom = 't',
             rowCallback = JS(
               sprintf(
-                "function(row, data) {
+                "function(row, data, index) {
                   var groups = {%s};
+                  var excludedRows = [%s];
                   $('td', row).css('background-color', groups[data[%i].concat('|', data[%i])]);
                   if (data[%i]) {
                     $('td', row).css('font-weight', 'bold');
                   }
+                  if (excludedRows.includes(index+1)) {
+                    console.log(index)
+                    $('td', row).css('color', '#ac8888'); 
+                  }
                 }",
                 group_colors,
+                paste(excluded_rows, collapse = ","),
                 env_col_index,
                 genotype_col_index,
                 outlier_col_index
@@ -907,6 +929,38 @@ mod_model_server <- function(id, rv){
           )
         ),digits = 2, columns = dec_cols)
       })
+      
+      ### handle select all ####
+      observeEvent(input$outliers_select_all, {
+        filtered_rows <- input$outliers_DT_rows_all
+        DT::selectRows(outliersDTproxy, selected=filtered_rows)
+      })
+      
+      ### handle unselect ####
+      observeEvent(input$outliers_unselect, {
+        DT::selectRows(outliersDTproxy, selected=NULL)
+      })
+      
+      ### Enable/disable select and mark as outliers buttons ####
+      observeEvent(input$outliers_DT_rows_selected, {
+        if (!is.null(input$outliers_DT_rows_selected)) {
+          shinyjs::enable("mark_outliers")
+          shinyjs::enable("outliers_unselect")
+        } else {
+          shinyjs::disable("mark_outliers")
+          shinyjs::disable("outliers_unselect")
+        }
+      }, ignoreNULL = F)
+      
+      ### handle download csv ####
+      output$outliers_download <- downloadHandler(
+        filename = function() {
+          paste0(input$select_trait_outliers, "_outliers.csv")
+        },
+        content = function(file) {
+          write.csv(rv_mod$outliers_table, file, row.names = F)
+        }
+      )
 
       ## output$metrics_A_table ####
       output$metrics_A_table <- renderDT({
