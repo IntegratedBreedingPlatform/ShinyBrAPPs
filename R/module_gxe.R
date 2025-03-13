@@ -2092,7 +2092,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           #browser()
           #gg + ggnewscale::new_scale_color()
           gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Sup)), shape = 21, size=3, color="red") +
-            geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Sup), label=Genotype), size=2, color="red",
+            geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Sup), label=Genotype), size=3, color="red",
                       position = position_nudge(y=max(sqrt(gg$data[,"Sup"]))/50))
         }
         gg
@@ -2143,7 +2143,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           #browser()
           #gg + ggnewscale::new_scale_color()
           gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(S)), shape = 21, size=3, color="red") + 
-            geom_text(data = clickgeno, aes(x=Mean , y = sqrt(S), label=Genotype), size=2, color="red",
+            geom_text(data = clickgeno, aes(x=Mean , y = sqrt(S), label=Genotype), size=3, color="red",
                       position = position_nudge(y=max(sqrt(gg$data[,"S"]))/50))
           
         }
@@ -2200,7 +2200,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           #browser()
           #gg + ggnewscale::new_scale_color()
           gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrtWe), shape = 21, size=3, color="red") +
-            geom_text(data = clickgeno, aes(x=Mean , y = sqrtWe, label=Genotype), size=2, color="red",
+            geom_text(data = clickgeno, aes(x=Mean , y = sqrtWe, label=Genotype), size=3, color="red",
                       position = position_nudge(y=max(gg$data[,"sqrtWe"])/50))
           
         }
