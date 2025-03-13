@@ -1154,7 +1154,7 @@ mod_model_server <- function(id, rv){
           "The heritability is 0 for some traits and environment. Are you sure you still want to push all BLUEs/BLUPs ? You can select for which traits end environments you want to push BLUEs/BLUPs by clicking on lines in the statistics table",
           footer = tagList(
             modalButton("Cancel"),
-            shiny::actionButton(ns("ok"), "Push BLUEs/BLUPs anyway", class = "btn btn-primary")
+            shiny::actionButton(ns("ok"), "Push BLUEs/BLUPs", class = "btn btn-primary")
           ),
           fade = F
         )
@@ -1200,7 +1200,7 @@ mod_model_server <- function(id, rv){
           p("Are you sure you still want to push those BLUEs/BLUPs ?"),
           footer = tagList(
             modalButton("Cancel"),
-            shiny::actionButton(ns("push_ok"), "Push BLUEs/BLUPs anyway", class = "btn btn-primary")
+            shiny::actionButton(ns("push_ok"), "Push BLUEs/BLUPs", class = "btn btn-primary")
           ),
           fade = F
         )
@@ -1227,11 +1227,10 @@ mod_model_server <- function(id, rv){
 
             bluesToPush <<- merge(needed_observation_units, bluesToPush, by=c("germplasmName", "environment", "studyDbId"))
             
-            studyDbIds <- as.character(unique(bluesToPush[, studyDbId]))
-            print(studyDbIds)
+            env <- unique(bluesToPush[, .(environment, studyDbId)])
             resp_post_search_obsunit <- brapir::phenotyping_observationunits_post_search(con = brapir_con, 
                                                                                          observationLevels = data.frame(levelName = c("MEANS")),
-                                                                                         studyDbIds = studyDbIds)
+                                                                                         studyDbIds = env$studyDbId)
             print(resp_post_search_obsunit$status_code)
             if (resp_post_search_obsunit$status_code == 200 | resp_post_search_obsunit$status_code == 202) {
               resp_get_search_obsunit <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = brapir_con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId)
@@ -1314,17 +1313,20 @@ mod_model_server <- function(id, rv){
           
           origin_variable_names <- unique(bluesToPush[,originVariableName])
           methods <- data.table(result = names(methodIds), methodDbId = unname(unlist(methodIds)))
+          
+          #data_to_push$studyDbId = as.character(data_to_push$studyDbId)
+          bluesToPush <<- merge(bluesToPush, observation_units, by=c("germplasmDbId","studyDbId"))
         
           ## push BLUES per variable ####
-          withProgress(message = "Pushing BLUES/BLUPS for", value = 0, {
+          comb <- unique(bluesToPush[,.(environment, originVariableName)])
+          withProgress(message = "Pushing BLUES/BLUPS", value = 0, {
             for (i in 1:length(origin_variable_names)) {
               var_name <- as.character(origin_variable_names[i])
-              print(var_name)
-              incProgress(1/length(origin_variable_names), detail = var_name)
+
               variable <- unique(rv$data[observationVariableName==var_name, .(observationVariableDbId)])
               variableDbId <- as.character(variable[1, observationVariableDbId])
               #filter table_metrics on variable
-              data_to_push <- bluesToPush[originVariableName==var_name,]
+              data_to_push_by_var <- bluesToPush[originVariableName==var_name,]
               
               ## push missing variables ####
               # Get variable scale and trait
@@ -1420,31 +1422,34 @@ mod_model_server <- function(id, rv){
                     }
                     
                     # add variableDbIds to data table
-                    data_to_push <- merge(data_to_push, existing_variables, by=c("originVariableName","result"))
+                    data_to_push_by_var <- merge(data_to_push_by_var, existing_variables, by=c("originVariableName","result"))
                     
-                    ## push observations ####
-                    print("Posting observations")
-                    data_to_push$studyDbId = as.character(data_to_push$studyDbId)
-                    data_to_push <- merge(data_to_push, observation_units, by=c("germplasmDbId","studyDbId"))
-                    
-                    # Building body POST request
-                    body <- apply(data_to_push,1,function(a){
-                      list(
-                        germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
-                        observationUnitDbId = jsonlite::unbox(as.character(a["observationUnitDbId"])),
-                        studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
-                        observationVariableDbId = jsonlite::unbox(as.character(a["observationVariableDbId"])),
-                        value = jsonlite::unbox(as.numeric(a["value"]))
-                      )
-                    })
-                    
-                    resp <- brapir::phenotyping_observations_post_batch(con = brapir_con, data = body)
-                    if (resp$status_code == 200) {
-                      created_observations_df <- resp$data
-                      showNotification(paste0(var_name, " BLUES/BLUPS were pushed to BMS (",nrow(created_observations_df), " data)"), type = "message", duration = notification_duration)
-                    } else {
-                      showNotification(paste0("An error occured while creating BLUES/BLUPS observations for ", var_name), type = "error", duration = notification_duration)
-                      showNotification(paste0(resp$metadata), type = "error", duration = notification_duration)
+                    env_names <- comb[originVariableName == var_name, environment]  
+                    for (j in 1:length(env_names)) {
+                      incProgress(1/nrow(comb), detail = paste0(var_name, " - ", env_names[j]))
+                      ## push observations ####
+                      print("Posting observations")
+                      #filter on env
+                      data_to_push <- data_to_push_by_var[environment == env_names[j],]
+                      # Building body POST request
+                      body <- apply(data_to_push,1,function(a){
+                        list(
+                          germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
+                          observationUnitDbId = jsonlite::unbox(as.character(a["observationUnitDbId"])),
+                          studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
+                          observationVariableDbId = jsonlite::unbox(as.character(a["observationVariableDbId"])),
+                          value = jsonlite::unbox(as.numeric(a["value"]))
+                        )
+                      })
+                      
+                      resp <- brapir::phenotyping_observations_post_batch(con = brapir_con, data = body)
+                      if (resp$status_code == 200) {
+                        created_observations_df <- resp$data
+                        showNotification(paste0(var_name, " BLUES/BLUPS were pushed to ", env_names[j], " (",nrow(created_observations_df), " data)"), type = "message", duration = notification_duration)
+                      } else {
+                        showNotification(paste0("An error occured while creating BLUES/BLUPS observations for ", var_name), type = "error", duration = notification_duration)
+                        showNotification(paste0(resp$metadata), type = "error", duration = notification_duration)
+                      }
                     }
                   }
                 }
