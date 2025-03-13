@@ -1061,6 +1061,10 @@ mod_gxe_server <- function(id, rv, parent_session){
       output$FW_plot <- renderPlot({
         #browser()
         req(rv_gxe$TDFWplot)
+        validate(
+          need({!(input$FW_picker_color_by=="sensitivity clusters" & !("sensitivity_cluster"%in%colnames(rbindlist(rv_gxe$TDFWplot$TD))))}, "You must make clusters first"),
+        )
+        
         TDFWplot <- rv_gxe$TDFWplot
         if (any(colnames(rbindlist(rv$TD))=="scenario")){
           ts <- rbindlist(rv$TD)[,.N,.(trial, scenario)]
