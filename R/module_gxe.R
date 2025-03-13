@@ -200,18 +200,24 @@ mod_gxe_ui <- function(id){
                         choices = c("scatter", "line", "trellis", "scatterFit"), selected = "line"),
             pickerInput(ns("FW_picker_color_by"), label="Color genotypes by", multiple = F, choices = c("Nothing","sensitivity clusters"), selected = "Nothing"),
             #materialSwitch(ns("FW_cluster_sensitivity"), "Color by sensitivity clusters", value = FALSE, status = "info"),
-            numericInput(ns("FW_cluster_sensitivity_nb"),"Number of clusters", min = 2, max = 8, step = 1, value = 2),
-            pickerInput(ns("FW_picker_cluster_on"), label="Cluster on", choices = c(sensitivity="Sens", `genotype means`="GenMean"), multiple = TRUE, selected = "Sens"),
-            prettyRadioButtons( 
-              inputId = ns("FW_picker_cluster_meth"),
-              label = "Clustering method",
-              choices = c("Kmeans", "hclust"),
-              inline = TRUE,
-              shape = "round",
-              status = "primary",
-              fill = TRUE,
-              bigger = TRUE
-            ),
+            bslib::accordion(id = ns("FW_clustering_acc"),
+              bslib::accordion_panel(title = "Clustering", value = "fwclust",
+                numericInput(ns("FW_cluster_sensitivity_nb"),"Number of clusters", min = 2, max = 8, step = 1, value = 2),
+                pickerInput(ns("FW_picker_cluster_on"), label="Cluster on", choices = c(sensitivity="Sens", `genotype means`="GenMean"), multiple = TRUE, selected = "Sens"),
+                prettyRadioButtons( 
+                  inputId = ns("FW_picker_cluster_meth"),
+                  label = "Clustering method",
+                  choices = c("Kmeans", "hclust"),
+                  inline = TRUE,
+                  shape = "round",
+                  status = "primary",
+                  fill = TRUE,
+                  bigger = TRUE),
+                div(style="display: flex;gap: 10px;",
+                    shiny::actionButton(inputId = ns("FW_cluster"), label = "Make clusters", icon = icon(NULL), class = "btn btn-info")
+                    )
+                
+            )),
             shiny::downloadButton(ns("FW_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
           ),
           #layout_columns(
@@ -581,7 +587,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         #colorbychoices <- c(colorbychoices,rv$column_datasource[source %in% "group"]$cols)
         colorbychoices <- list(Nothing=c("Nothing"))
         if (nrow(rv$column_datasource[source %in% "group"])>0){
-          colorbychoices <- c(colorbychoices, list(`Groups and clusters`=as.list(rv$column_datasource[source %in% "group"]$cols)))
+          colorbychoices <- c(colorbychoices, list(`Groups`=as.list(rv$column_datasource[source %in% "group"]$cols)))
         }
         if (!is.null(input$picker_germplasm_attr)){
           colorbychoices <- c(colorbychoices, list(`Germplasm attributes`=as.list(input$picker_germplasm_attr)))
@@ -601,7 +607,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           choices = colorbychoices,
           selected = "Nothing"
         )
-        colorbychoices <- c(colorbychoices, list(`Compute new clusters`=list("sensitivity clusters")))
+        colorbychoices <- c(colorbychoices, list(`Clusters`=list("sensitivity clusters")))
         updatePickerInput(
           session, "FW_picker_color_by",
           choices = colorbychoices,
@@ -1037,6 +1043,10 @@ mod_gxe_server <- function(id, rv, parent_session){
           message = function(m) rv_gxe$console <- paste(rv_gxe$console, paste0("FW run at ",Sys.time(), " : ",m), sep=""),
           warning = function(w) rv_gxe$console <- paste(rv_gxe$console, paste0("FW run at ",Sys.time(), " : ",w), sep=""))
           rv_gxe$TDFWplot <- rv_gxe$TDFW
+          sensclust <- data.table(rv_gxe$TDFW$estimates)
+          sensclust[,sensitivity_cluster:=NA]
+          rv_gxe$sensclust <- sensclust
+          
           output$FW_text_output <- renderPrint({
             if ("FW"%in%class(rv_gxe$TDFW)){
               summary(rv_gxe$TDFW)
@@ -1063,6 +1073,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
         } else {
           if (input$FW_picker_color_by=="sensitivity clusters"){
+            shinyjs::show(id="FW_sens_clust_select_buttons")
             #browser()
             p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
             req(input$FW_sens_clust_select_buttons)
@@ -1104,6 +1115,8 @@ mod_gxe_server <- function(id, rv, parent_session){
             }
 
           } else {
+            shinyjs::hide(id="FW_sens_clust_select_buttons")
+            
             if (input$FW_picker_color_by=="Nothing"){
               if (input$FW_picker_plot_type=="trellis"){
                 if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
@@ -1312,14 +1325,15 @@ mod_gxe_server <- function(id, rv, parent_session){
         #   }
         # })
       
-      #### compute sensitivity_clusters whenever a picker changes ####
+      #### compute sensitivity_clusters when ####
       observeEvent(  eventExpr = {
-        input$FW_picker_color_by
-        input$FW_cluster_sensitivity_nb
-        input$FW_picker_cluster_on
-        #input$FW_picker_plot_type
-        input$FW_picker_cluster_meth
-        rv_gxe$TDFW
+        #input$FW_picker_color_by
+        #input$FW_cluster_sensitivity_nb
+        #input$FW_picker_cluster_on
+        ##input$FW_picker_plot_type
+        #input$FW_picker_cluster_meth
+        #rv_gxe$TDFW
+        input$FW_cluster
       }, handlerExpr = {
         req(rv_gxe$TDFW)
         req(input$FW_cluster_sensitivity_nb, input$FW_picker_cluster_on)
@@ -1333,7 +1347,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         #} else {
         #  output$FW_trellis_genot_select_ui <- renderUI({NULL})
         #}
-        if (input$FW_picker_plot_type=="line" & input$FW_picker_color_by=="sensitivity clusters"){
+        #if (input$FW_picker_plot_type=="line" & input$FW_picker_color_by=="sensitivity clusters"){
           sensclust <- data.table(rv_gxe$TDFW$estimates)
           sensclust <- sensclust[!is.na(Sens)]
           if (input$FW_picker_cluster_meth=="Kmeans"){
@@ -1360,14 +1374,19 @@ mod_gxe_server <- function(id, rv, parent_session){
               bigger = TRUE
             )
           )
-        } else {
-          if (is.null(rv_gxe$sensclust)){
-            sensclust <- data.table(rv_gxe$TDFW$estimates)
-            sensclust[,sensitivity_cluster:=NA]
-            rv_gxe$sensclust <- sensclust
-          }
-          output$FW_sens_clust_select <- renderUI(expr = NULL)
-        }
+          updatePickerInput(
+            session, "FW_picker_color_by",
+            selected = "sensitivity clusters"
+          )          
+          
+        #} else {
+        #  if (is.null(rv_gxe$sensclust)){
+        #    sensclust <- data.table(rv_gxe$TDFW$estimates)
+        #    sensclust[,sensitivity_cluster:=NA]
+        #    rv_gxe$sensclust <- sensclust
+        #  }
+        #  output$FW_sens_clust_select <- renderUI(expr = NULL)
+        #}
       })
       
       observeEvent(input$FW_sens_clusters_DT_rows_selected, ignoreNULL = FALSE, {
@@ -1389,9 +1408,9 @@ mod_gxe_server <- function(id, rv, parent_session){
         genot_trial_counts <- rbindlist(rv$TD)[,.N,genotype]
         dtsc <- genot_trial_counts[dtsc,on=.(genotype)]
         rv_gxe$formatcols <- colnames(dtsc)[-which(colnames(dtsc)%in%c("genotype","N","sensitivity_cluster", "Rank"))]
-        if (any(colnames(dtsc)%in%"sensitivity_cluster")){
-          dtsc[,sensitivity_cluster:=as.character(sensitivity_cluster)]
-        }
+        #if (any(colnames(dtsc)%in%"sensitivity_cluster")){
+        #  dtsc[,sensitivity_cluster:=as.character(sensitivity_cluster)]
+        #}
         if (any(colnames(rv_gxe$sensclust)=="sensitivity_cluster")){
           shinyjs::enable("create_groups_from_sensclusters")
           #shinyjs::addClass("create_groups_from_sensclusters", "active")
