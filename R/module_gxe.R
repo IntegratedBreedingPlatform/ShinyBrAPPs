@@ -42,7 +42,7 @@ mod_gxe_ui <- function(id){
             materialSwitch(ns("use_weights"),label = "Use weights", value = FALSE, inline = T, status = "info"),
             div(style="display: flex;gap: 10px;",
                 pickerInput(ns("weight_var"), label = "Weight variable", choices = c()),
-                materialSwitch(ns("transf_weights"),label = "Weight variable is seBLUE/P", value = TRUE, inline = T, status = "info"))|>
+                materialSwitch(ns("transf_weights"),label = "Weight variable is the standard error of BLUE or BLUP", value = TRUE, inline = T, status = "info"))|>
                 tooltip("When this option is selected weights will be calculated as 1/x^2, x being the selected weight variable", options = list(trigger="hover")),
             pickerInput(ns("picker_germplasm_level"), label = tags$span(style="color: red;","Germplasm level"), choices = c("germplasmDbId","germplasmName"), selected = "GermplasmName")|>
               tooltip("Select how genotypes will be identified (either germplasmDbId or germplasmName). In the second case, germplasm that have different DbIds in different environments but sharing a common preferred name will be considered as the same.", options = list(trigger="hover")),
@@ -74,13 +74,17 @@ mod_gxe_ui <- function(id){
             bslib::card(full_screen = FALSE, height = "650px",
                         bslib::card_header("Included genotypes"),
                         DT::dataTableOutput(ns("TD_included_geno")),
-                        card_footer(uiOutput(ns("copy_incgeno_table")))
+                        card_footer(div(style="display: flex;gap: 10px;",
+                                        shiny::actionButton(ns("inclgeno_excl"), label = "Exclude selected genotypes", class = "btn btn-info"),
+                                        uiOutput(ns("copy_incgeno_table"))))
                         #plotOutput(ns("TD_scatterplots"))
             ),
             bslib::card(full_screen = FALSE, height = "650px",
                         bslib::card_header("Excluded genotypes"),
                         DT::dataTableOutput(ns("TD_excluded_geno")),
-                        card_footer(uiOutput(ns("copy_excgeno_table")))
+                        card_footer(div(style="display: flex;gap: 10px;",
+                                        shiny::actionButton(ns("exclgeno_incl"), label = "Include selected genotypes", class = "btn btn-info"),
+                                        uiOutput(ns("copy_excgeno_table"))))
             )
           )
           #)
@@ -569,6 +573,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             selected = character(0)
           )
         }
+        
         if (!is.null(input$weight_var)){
           updatePickerInput(
             session, "weight_var",
@@ -582,6 +587,30 @@ mod_gxe_server <- function(id, rv, parent_session){
             selected = character(0)
           )
         }
+        if (!is.null(input$picker_trait)){
+          if (grepl("BLUEs",input$picker_trait) || grepl("BLUPs",input$picker_trait)){
+            # is any weight variable 
+            trait_name <- gsub(paste0("(.*)",variable_regexp),"\\1",input$picker_trait)
+            blueorblup <- gsub(paste0(".*(",variable_regexp,")"),"\\1",input$picker_trait)
+            if(any(grepl(trait_name,weight_choices))){
+              
+              updateMaterialSwitch(
+                session, "use_weights",
+                value = TRUE
+              )
+              updateMaterialSwitch(
+                session, "transf_weights",
+                value = TRUE
+              )
+              updatePickerInput(
+                session, "weight_var",
+                choices = weight_choices,
+                selected = grep(paste0(trait_name,gsub("_","_se",blueorblup)),weight_choices,value = T)
+              )
+            }
+          }          
+        }
+
         #browser()
         #colorbychoices <- input$picker_germplasm_attr
         #colorbychoices <- c(colorbychoices,rv$column_datasource[source %in% "group"]$cols)
@@ -760,6 +789,17 @@ mod_gxe_server <- function(id, rv, parent_session){
           selected = "Nothing"
         )
       })
+      observeEvent(input$inclgeno_excl,{
+        if (!is.null(input$TD_included_geno_rows_selected)){
+          rv_gxe$genot_manexcl <- rbind(rv_gxe$genot_manexcl,
+                                        rv_gxe$genot_incl[input$TD_included_geno_rows_selected,])
+        }
+      })
+      observeEvent(input$exclgeno_incl,{
+        if (!is.null(input$TD_excluded_geno_rows_selected)){
+          rv_gxe$genot_manexcl <- rv_gxe$genot_manexcl[!genotype%in%rv_gxe$genot_to_excl[input$TD_excluded_geno_rows_selected,genotype]]
+        }
+      })
       ## main observer to build TD object and output basic plots ####
       observe({
         req(rv_gxe$data)
@@ -776,6 +816,8 @@ mod_gxe_server <- function(id, rv, parent_session){
         }        
         
         genot_to_excl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype][N<input$exclude_geno_nb_env]
+        genot_to_excl <- rbind(genot_to_excl, rv_gxe$genot_manexcl)
+        #browser()
         data2TD <- data2TD[!genotype%in%genot_to_excl$genotype]
         genot_incl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype]
         output$TD_included_geno <- DT::renderDataTable(datatable(genot_incl,
@@ -785,9 +827,8 @@ mod_gxe_server <- function(id, rv, parent_session){
                                                                           paste(apply(genot_incl,1,paste,collapse="\t"),collapse = "\n"),
                                                                           sep="\n"))#, shiny::icon("clipboard"))
         })
-          
         #if (exists("genot_to_excl")){
-          if (nrow(genot_to_excl)>1){
+          if (nrow(genot_to_excl)>0){
             #showNotification(paste0("Excluding ", nrow(genot_to_excl)," genotypes"), type = "message")
             output$TD_excluded_geno <- DT::renderDataTable(datatable(genot_to_excl,
                                                                       options = list(dom="if<t>lpr"), rownames= FALSE))
@@ -802,6 +843,9 @@ mod_gxe_server <- function(id, rv, parent_session){
             output$TD_excluded_geno <- DT::renderDataTable(data.table()[0L], rownames= FALSE)
             output$copy_excgeno_table <- renderUI({NULL})
           }
+        rv_gxe$genot_incl <- genot_incl  
+        rv_gxe$genot_to_excl <- genot_to_excl  
+        
           
         #}
 
