@@ -93,9 +93,12 @@ Genotypes were clustered based on Finlay Wilkinson results using the following p
 
 
 ```{r, fig.height=10, fig.width=10, eval="sensitivity_cluster"%in%colnames(rbindlist(TDFWplot$TD)), message=FALSE, warning=FALSE, results='hide'}
-          if("sensitivity_cluster"%in%colnames(rbindlist(TDFWplot$TD))){
-            p <- plot(TDFWplot, plotType = "line", colorGenoBy="sensitivity_cluster", output=FALSE)
-            print(p)
+if("sensitivity_cluster"%in%colnames(rbindlist(TDFWplot$TD))){
+  p <- plot(TDFWplot, plotType = "line", colorGenoBy="sensitivity_cluster", output=FALSE)
+  if (!input$FW_coord_equal){
+    p <- p + coord_cartesian()
+  } 
+  print(p)
           
 for (cl in sort(unique(rv_gxe$sensclust$sensitivity_cluster))){
               stacolors <- getOption("statgen.genoColors")
@@ -103,7 +106,10 @@ for (cl in sort(unique(rv_gxe$sensclust$sensitivity_cluster))){
               p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") + ggtitle(label = paste0("Sensitivity cluster ",cl)) +
                 ggnewscale::new_scale_color() + 
                 ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$sensclust[sensitivity_cluster==cl, Genotype],], aes(y = fitted, color=sensitivity_cluster), size=1) + scale_color_manual(values = stacolors)
-              print(p)
+  if (!input$FW_coord_equal){
+    p <- p + coord_cartesian()
+  } 
+  print(p)
 }
 }
 ```
@@ -131,8 +137,11 @@ knitr::kable(dtsc[input$FW_sens_clusters_DT_rows_selected,])
                     #if (input$FW_display_raw_data){
                     #  p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
                     #}
-                print(p + theme(legend.position = "bottom"))
-              }
+     if (!input$FW_coord_equal){
+       p <- p + coord_cartesian()
+     } 
+    print(p + theme(legend.position = "bottom"))
+}
 ```
 
 #### `r if (!is.null(input$FW_sens_clusters_DT_rows_selected)){"Selected genotypes: trellis plot"}`
@@ -147,6 +156,6 @@ knitr::kable(dtsc[input$FW_sens_clusters_DT_rows_selected,])
 ```{r, eval=!is.null(input$FW_sens_clusters_DT_rows_selected), fig.height=trellis.fig.height, fig.width=10, fig.width=10, message=FALSE, warning=FALSE, results='hide'}
                 rv$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
                 p <- plot(TDFWplot, plotType = "trellis", genotypes=rv_gxe$selected_genotypes, output=FALSE)
-                print(p)
+  print(p)
 ```
 
