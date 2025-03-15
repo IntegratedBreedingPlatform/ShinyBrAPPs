@@ -1707,7 +1707,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             rv_gxe$gp_WwW <- gg$layers[[length(gg$layers)]]$data$label
           }
         }
-        if ((input$GGE_colorGenoBy!="Nothing" || input$GGE_colorEnvBy!="Nothing") & input$GGE_picker_plot_type!=2){
+        if ((input$GGE_colorGenoBy!="Nothing" || input$GGE_colorEnvBy!="Nothing") & input$GGE_picker_plot_type==1){
           #browser() 
           geompdat <- as.data.table(gg$data)
           
