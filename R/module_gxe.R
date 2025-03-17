@@ -428,7 +428,12 @@ mod_gxe_ui <- function(id){
           ### Sidebar ####
           sidebar=sidebar(
             width = 350,
-            pickerInput(ns("STAB_plots_colorby"),"Color Genotypes by", choices = c())),
+            div(style="display: flex;",
+                a(href="https://biometris.github.io/statgenGxE/articles/statgenGxE.html#st",icon("fas fa-question-circle"), target="_blank")),
+            
+            pickerInput(ns("STAB_plots_colorby"),"Color Genotypes by", choices = c()),
+            shiny::downloadButton(ns("Stab_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
+          ),
           ### Results ####
           accordion(
             id = ns("STAB_accordsup"),
@@ -2326,7 +2331,24 @@ mod_gxe_server <- function(id, rv, parent_session){
           #}
         }
       )
-     
+      ## Stab Report ####
+      output$Stab_report <- downloadHandler(
+        filename = function() {
+          username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
+          trial <- unique(rv$study_metadata$trialName)
+          paste0("GxE_Stab-", username, "-",  trial, "-", format(Sys.time(), "%Y%m%d-%H%M%S"), ".html")
+        },
+        content = function(file) {
+          #if (is.null(rv$TDAMMI)){
+          #  showNotification("Please Run analysis once first", type = "warning", duration = notification_duration)
+          #} else {
+          rmarkdown::render(
+            input="reports/GxE_Stab.Rmd", output_file = file
+          )
+          #}
+        }
+      )
+      
     }
   )
 }
