@@ -473,13 +473,13 @@ mod_gxe_ui <- function(id){
             )
           )
         )
-      ),
-      nav_panel(
-        ## Mega-env panel ####
-        title = "Mega-envs",
-        layout_sidebar(
-        )
-      )      
+      )#,
+      #nav_panel(
+      #  ## Mega-env panel ####
+      #  title = "Mega-envs",
+      #  layout_sidebar(
+      #  )
+      #)      
     ),
     accordion(
       id = ns("console_accord"),
