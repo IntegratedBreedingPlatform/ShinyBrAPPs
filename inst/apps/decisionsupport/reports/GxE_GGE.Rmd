@@ -9,6 +9,12 @@ knitr::opts_chunk$set(echo = FALSE)
 library(statgenGxE)
 library(metan)
 ```
+```{r, echo=FALSE}
+htmltools::img(src = "sticker.png", 
+               alt = 'logo',
+               width = '150px',
+               style = 'position:absolute; top:0; left:0; padding:10px;')
+```
 
 ## Studies:
 ```{r}

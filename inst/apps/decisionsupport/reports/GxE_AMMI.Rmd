@@ -7,7 +7,12 @@ date: "`r format(Sys.time(), '%d %B, %Y - %H:%M:%S')`"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(statgenGxE)
-library(metan)
+```
+```{r, echo=FALSE}
+htmltools::img(src = "sticker.png", 
+               alt = 'logo',
+               width = '150px',
+               style = 'position:absolute; top:0; left:0; padding:10px;')
 ```
 
 ## Studies:
@@ -38,7 +43,7 @@ summary(TDAMMI)
                                  plotGeno = T,
                                  colorGenoBy = switch((input$AMMI_colorGenoBy=="Nothing")+1,  input$AMMI_colorGenoBy, NULL),
                                  plotConvHull = input$AMMI_plotConvHull,
-                                 colorEnvBy = input$AMMI_colorEnvBy,
+                                 colorEnvBy = switch((input$AMMI_colorEnvBy=="Nothing")+1,  input$AMMI_colorEnvBy, NULL),
                                  rotatePC = input$AMMI_rotatePC,
                                  primAxis = input$AMMI_primAxis,
                                  secAxis = input$AMMI_secAxis,
