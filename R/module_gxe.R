@@ -318,8 +318,8 @@ mod_gxe_ui <- function(id){
                                                       bslib::card(full_screen = T,height = "800",max_height = "800",
                                                                   bslib::card_body(plotOutput(ns("GGE_plot"), click = clickOpts(id=ns("GGEplot_click")), dblclick = dblclickOpts(id=ns("GGEplot_dblclick")))),
                                                                   bslib::card_footer(div(style="display: flex;gap: 10px;",
-                                                                    shiny::actionButton(ns("create_groups_from_GGEsel"), "Create group from selection", icon = icon(NULL), class = "btn btn-info"),
-                                                                    shiny::actionButton(ns("create_group_from_wWw"), "Create groups from which won where", icon = icon(NULL), class = "btn btn-info")
+                                                                    shiny::actionButton(ns("create_groups_from_GGEsel"), "Create group from selection", icon = icon(NULL), class = "btn btn-info")#,
+                                                                    #shiny::actionButton(ns("create_group_from_wWw"), "Create groups from which won where", icon = icon(NULL), class = "btn btn-info")
                                                                   ))
                                                       ),
                                                       sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,#full_screen = F,
@@ -1814,24 +1814,24 @@ mod_gxe_server <- function(id, rv, parent_session){
         rv_gxe$GGEclicked_genotypes <- NULL
       })
       
-      observeEvent(input$create_group_from_wWw,{
-        #browser()
-        if(length(rv_gxe$gp_WwW)>0){
-          #browser()
-          rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
-                                                               Genotype=rv_gxe$gp_WwW),
-                                                  y=unique(rbindlist(rv$TD)),
-                                                  by.x = "Genotype",
-                                                  by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
-          showModal(groupModal(rv=rv, 
-                               parent_session = parent_session, 
-                               modal_title = "Create new group", 
-                               group_description = paste0("Group of which won where genotypes in GGE analysis of ", input$picker_trait, " variable"),
-                               group_prefix =paste0("www_GGE@",input$picker_trait,".")
-          )
-          )
-        }
-      })
+      #observeEvent(input$create_group_from_wWw,{
+      #  #browser()
+      #  if(length(rv_gxe$gp_WwW)>0){
+      #    #browser()
+      #    rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
+      #                                                         Genotype=rv_gxe$gp_WwW),
+      #                                            y=unique(rbindlist(rv$TD)),
+      #                                            by.x = "Genotype",
+      #                                            by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
+      #    showModal(groupModal(rv=rv, 
+      #                         parent_session = parent_session, 
+      #                         modal_title = "Create new group", 
+      #                         group_description = paste0("Group of which won where genotypes in GGE analysis of ", input$picker_trait, " variable"),
+      #                         group_prefix =paste0("www_GGE@",input$picker_trait,".")
+      #    )
+      #    )
+      #  }
+      #})
       ### Handle group creation in GGE plot ####
       observe({
         if(length(rv_gxe$GGEclicked_genotypes)<1){
