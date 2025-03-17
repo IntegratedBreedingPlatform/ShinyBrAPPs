@@ -2054,7 +2054,6 @@ mod_gxe_server <- function(id, rv, parent_session){
         }
       })
       
-      ### Superiority ####
       #### table ####
       output$STAB_sup <- renderDataTable({
         formatRound(datatable(rv_gxe$TDStab$dtres[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes),], rownames = FALSE,
@@ -2077,56 +2076,6 @@ mod_gxe_server <- function(id, rv, parent_session){
         }
       })
       
-      #### plot ####
-      output$STAB_sup_plot <- renderPlot({
-        gg <- ggplot(rv_gxe$TDStab$dtres) + 
-          geom_point(aes(x=Mean, y= sqrt(Sup))) +
-          ylab("Square root of superiority")
-        rv_gxe$st_sup_plotdat <- gg$data
-        if (input$STAB_plots_colorby!="Nothing"){
-          #browser() 
-          geompdat <- as.data.table(gg$data)
-          geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$STAB_plots_colorby)]), by.x = "Genotype", by.y = "genotype", all = TRUE)
-          gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
-          
-          gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
-          gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrt(Sup), color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
-            scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
-            scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
-        }
-        if(length(rv_gxe$STSclicked_genotypes)>0){
-          clickgeno <- gg$data[gg$data$Genotype%in%rv_gxe$STSclicked_genotypes,]
-          #browser()
-          #gg + ggnewscale::new_scale_color()
-          gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Sup)), shape = 21, size=3, color="red") +
-            geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Sup), label=Genotype), size=3, color="red",
-                      position = position_nudge(y=max(sqrt(gg$data[,"Sup"]))/50))
-        }
-        gg
-      })
-      
-      #### Handle click event ####
-      observeEvent(input$STAB_sup_plot_click,{
-        req(abs(lastclick_stabsup - Sys.time()) >=0.8)
-        if(!is.null(input$STAB_sup_plot_click)) {
-          clicked_genotypes <- rv_gxe$STSclicked_genotypes
-          sts <- rv_gxe$st_sup_plotdat
-          click=input$STAB_sup_plot_click
-          dist=sqrt((click$x-sts[,2])^2+(click$y-sqrt(sts[,3]))^2)
-          clickedgeno <- as.character(sts$Genotype[which.min(dist)])
-          if (clickedgeno%in%clicked_genotypes){
-            rv_gxe$STSclicked_genotypes <- clicked_genotypes[-which(clicked_genotypes==clickedgeno)]
-          } else {
-            rv_gxe$STSclicked_genotypes <- unique(c(clicked_genotypes,clickedgeno))
-          }
-          lastclick_stabsup <<- Sys.time()
-        }
-      })
-      #### Handle dbleclick event ####
-      observeEvent(input$STAB_sup_plot_dblclick,{
-        req(abs(lastclick_stabsup - Sys.time()) >=0.8)
-        rv_gxe$STSclicked_genotypes <- NULL
-      })
       
       ### Static ####
       output$STAB_static_plot <- renderPlot({
@@ -2222,7 +2171,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           clicked_genotypes <- rv_gxe$STSclicked_genotypes
           stw <- rv_gxe$st_stw_plotdat
           click=input$STAB_wricke_plot_click
-          dist=sqrt((click$x-stw[,2])^2+(click$y-sqrt(stw[,3]))^2)
+          dist=sqrt((click$x-stw[,2])^2+(click$y-stw[,6])^2)
           clickedgeno <- as.character(stw$Genotype[which.min(dist)])
           if (clickedgeno%in%clicked_genotypes){
             rv_gxe$STSclicked_genotypes <- clicked_genotypes[-which(clicked_genotypes==clickedgeno)]
@@ -2237,8 +2186,59 @@ mod_gxe_server <- function(id, rv, parent_session){
         req(abs(lastclick_stabwri - Sys.time()) >=0.8)
         rv_gxe$STSclicked_genotypes <- NULL
       })
+      ### Superiority ####
+      #### plot ####
+      output$STAB_sup_plot <- renderPlot({
+        gg <- ggplot(rv_gxe$TDStab$dtres) + 
+          geom_point(aes(x=Mean, y= sqrt(Sup))) +
+          ylab("Square root of superiority")
+        rv_gxe$st_sup_plotdat <- gg$data
+        if (input$STAB_plots_colorby!="Nothing"){
+          #browser() 
+          geompdat <- as.data.table(gg$data)
+          geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$STAB_plots_colorby)]), by.x = "Genotype", by.y = "genotype", all = TRUE)
+          gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
+          
+          gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
+          gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrt(Sup), color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
+            scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
+            scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
+        }
+        if(length(rv_gxe$STSclicked_genotypes)>0){
+          clickgeno <- gg$data[gg$data$Genotype%in%rv_gxe$STSclicked_genotypes,]
+          #browser()
+          #gg + ggnewscale::new_scale_color()
+          gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Sup)), shape = 21, size=3, color="red") +
+            geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Sup), label=Genotype), size=3, color="red",
+                      position = position_nudge(y=max(sqrt(gg$data[,"Sup"]))/50))
+        }
+        gg
+      })
       
-      #### Handle group creation in Stability selection ####
+      #### Handle click event ####
+      observeEvent(input$STAB_sup_plot_click,{
+        req(abs(lastclick_stabsup - Sys.time()) >=0.8)
+        if(!is.null(input$STAB_sup_plot_click)) {
+          clicked_genotypes <- rv_gxe$STSclicked_genotypes
+          sts <- rv_gxe$st_sup_plotdat
+          click=input$STAB_sup_plot_click
+          dist=sqrt((click$x-sts[,2])^2+(click$y-sqrt(sts[,7]))^2)
+          clickedgeno <- as.character(sts$Genotype[which.min(dist)])
+          if (clickedgeno%in%clicked_genotypes){
+            rv_gxe$STSclicked_genotypes <- clicked_genotypes[-which(clicked_genotypes==clickedgeno)]
+          } else {
+            rv_gxe$STSclicked_genotypes <- unique(c(clicked_genotypes,clickedgeno))
+          }
+          lastclick_stabsup <<- Sys.time()
+        }
+      })
+      #### Handle dbleclick event ####
+      observeEvent(input$STAB_sup_plot_dblclick,{
+        req(abs(lastclick_stabsup - Sys.time()) >=0.8)
+        rv_gxe$STSclicked_genotypes <- NULL
+      })
+      
+      ### Handle group creation in Stability selection ####
       observeEvent(rv$STSclicked_genotypes, {
         if(length(rv$STSclicked_genotypes)<1){
           shinyjs::disable("create_groups_from_STABsel")
