@@ -812,7 +812,14 @@ mod_gxe_server <- function(id, rv, parent_session){
         if (input$picker_germplasm_level=="germplasmDbId"){
           data2TD[, genotype:=paste0(germplasmDbId," (",germplasmName,")")]
         } else {
-          data2TD[, genotype:=germplasmName]
+          if(any(length(data2TD[, .N,.(germplasmName,studyDbId)][N>1, germplasmName]))){
+            namedups <- unique(data2TD[, .N,.(germplasmName,studyDbId)][N>1, germplasmName])
+            data2TD[germplasmName%in%unique(data2TD[, .N,.(germplasmName,studyDbId)][N>1, germplasmName]),germplasmName:=paste0(germplasmName,".",1:.N),.(germplasmName, studyDbId)]
+            data2TD[, genotype:=germplasmName]
+            showNotification(paste0("Duplicates found in germplasmName for germplasm(s) ",paste(namedups, collapse = ", "),". Germplasms were renamed with a suffix number."), type = "warning", duration = NULL)
+          } else {
+            data2TD[, genotype:=germplasmName]
+          }
         }        
         
         genot_to_excl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype][N<input$exclude_geno_nb_env]
