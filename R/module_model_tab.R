@@ -654,12 +654,14 @@ mod_model_server <- function(id, rv){
             outliers <-  outlierSTA(rv_mod$fit, 
                                        what = "random",
                                        commonFactors = "genotype")$outliers
-            rv_mod$outliers <- merge(
-              as.data.table(outliers),
-              rv$data[,.(study_name_app, observationUnitDbId, observationVariableName, observationDbId)],
-              by.x = c("trial", "observationUnitDbId", "trait"),
-              by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
-            )
+            if (!is.null(rv_mod$outliers)) {
+              rv_mod$outliers <- merge(
+                as.data.table(outliers),
+                rv$data[,.(study_name_app, observationUnitDbId, observationVariableName, observationDbId)],
+                by.x = c("trial", "observationUnitDbId", "trait"),
+                by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
+              )
+            }
           })
           },
           error=function(e){ e })
@@ -826,6 +828,8 @@ mod_model_server <- function(id, rv){
         req(rv_mod$outliers)
         req(input$select_trait_outliers)
         
+        browser()
+        
         outliers_all <- rv_mod$outliers
         # outliers for the selected trait
         outliers <- outliers_all[trait == input$select_trait_outliers]
@@ -862,7 +866,10 @@ mod_model_server <- function(id, rv){
 
       ## output$outliers_DT ####
       output$outliers_DT <- renderDataTable({
-        req(rv_mod$outliers_table)
+        validate(
+          need(rv_mod$outliers_table, message = "No outlier for this trait")
+        )
+            
         outliers <- rv_mod$outliers_table
         # change columns order (move variables columns at the end)
         cols <- colnames(outliers)
@@ -1220,12 +1227,15 @@ mod_model_server <- function(id, rv){
             # Getting existing observationunits
             print("Checking if observationUnits already exist")
             needed_env <- unique(bluesToPush[,environment])
-            needed_observation_units <- unique(rv$data[study_name_app %in% needed_env,.(germplasmDbId, germplasmName, studyDbId, study_name_app, programDbId, trialDbId, entryType)])
+            needed_observation_units <- unique(rv$data[study_name_app %in% needed_env,.(
+              germplasmDbId, germplasmName, studyDbId = as.character(studyDbId), study_name_app, 
+              programDbId, trialDbId = as.character(trialDbId), entryType, entryNumber = as.character(entryNumber))])
             needed_observation_units$studyDbId <- as.character(needed_observation_units$studyDbId)
             needed_observation_units$trialDbId <- as.character(needed_observation_units$trialDbId)
+            needed_observation_units$entryNumber <- as.character(needed_observation_units$entryNumber)
             setnames(needed_observation_units, "study_name_app","environment")
 
-            bluesToPush <<- merge(needed_observation_units, bluesToPush, by=c("germplasmName", "environment", "studyDbId"))
+            bluesToPush <<- merge(needed_observation_units, bluesToPush, by=c("germplasmName", "environment", "studyDbId", "entryNumber"))
             
             env <- unique(bluesToPush[, .(environment, studyDbId)])
             resp_post_search_obsunit <- brapir::phenotyping_observationunits_post_search(con = brapir_con, 
@@ -1258,9 +1268,10 @@ mod_model_server <- function(id, rv){
             existing_obs_units <- data.table(existing_obs_units)
             existing_obs_units <- existing_obs_units[,.(observationUnitDbId, 
                                                         germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId, 
-                                                        entryType = observationUnitPosition.entryType)]
+                                                        entryType = observationUnitPosition.entryType,
+                                                        entryNumber = additionalInfo.ENTRY_NO)]
             # COMPARE EXISTING OBSERVATION UNITS GERMPLASM TO DATA GERMPLASM
-            merge <- merge(needed_observation_units, existing_obs_units, by = c("studyDbId", "germplasmDbId", "germplasmName", "programDbId", "trialDbId", "entryType"), all = TRUE)
+            merge <- merge(needed_observation_units, existing_obs_units, by = c("studyDbId", "germplasmDbId", "germplasmName", "programDbId", "trialDbId", "entryType", "entryNumber"), all = TRUE)
             observation_units <- merge[!is.na(observationUnitDbId)] 
             missing_observation_units <- merge[is.na(observationUnitDbId)] 
           }
@@ -1276,6 +1287,7 @@ mod_model_server <- function(id, rv){
               # Building body POST request
               body <- apply(missing_observation_units,1,function(a){
                 list(
+                  additionalInfo = list(ENTRY_NO = jsonlite::unbox(a["entryNumber"])),
                   observationUnitPosition = list(
                     entryType =jsonlite::unbox(a["entryType"]), 
                     observationLevel = list(levelName = jsonlite::unbox("MEANS"))),
@@ -1293,7 +1305,8 @@ mod_model_server <- function(id, rv){
               new_observation_units <- data.table(new_observation_units)
               new_observation_units <- new_observation_units[,.(observationUnitDbId, 
                                                                 germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId, 
-                                                                entryType = observationUnitPosition.entryType)]
+                                                                entryType = observationUnitPosition.entryType,
+                                                                entryNumber = additionalInfo.ENTRY_NO)]
               
               print("created observation_units:")
               print(new_observation_units)
@@ -1484,7 +1497,7 @@ mod_model_server <- function(id, rv){
           
           print("PUSH BLUEs/BLUPs")
           colnames(table_metrics) = c("germplasmName", "environment", "result", "originVariableName", "value")
-          table_metrics <- merge(table_metrics, unique(rv$data[,.(environment = study_name_app, studyDbId = as.character(studyDbId))]))
+          table_metrics <- merge(table_metrics, unique(rv$data[,.(environment = study_name_app, studyDbId = as.character(studyDbId), germplasmName, entryNumber = as.character(entryNumber))]))
           bluesToPush <<- table_metrics
           
           #exit the function if missing method ids
