@@ -828,8 +828,6 @@ mod_model_server <- function(id, rv){
         req(rv_mod$outliers)
         req(input$select_trait_outliers)
         
-        browser()
-        
         outliers_all <- rv_mod$outliers
         # outliers for the selected trait
         outliers <- outliers_all[trait == input$select_trait_outliers]
