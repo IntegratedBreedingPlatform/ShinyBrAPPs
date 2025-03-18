@@ -21,7 +21,8 @@ htmltools::img(src = "sticker.png",
 
 ## Studies:
 ```{r}
-knitr::kable(unique(rv_gxe$data[,.(trialName, locationName, studyDbId, studyName)])[studyDbId%in%input$picker_env])
+TD <- unique(rbindlist(rv$TD)[,.(studyDbId, `Environment Name`=trial)])
+knitr::kable(TD[unique(rv_gxe$data[,.(trialName, locationName, studyDbId, studyName)])[studyDbId%in%input$picker_env], on=.(studyDbId)])
 ```
 
 ## Trait: `r params$trait`

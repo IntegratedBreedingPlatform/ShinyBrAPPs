@@ -318,8 +318,8 @@ mod_gxe_ui <- function(id){
                                                       bslib::card(full_screen = T,height = "800",max_height = "800",
                                                                   bslib::card_body(plotOutput(ns("GGE_plot"), click = clickOpts(id=ns("GGEplot_click")), dblclick = dblclickOpts(id=ns("GGEplot_dblclick")))),
                                                                   bslib::card_footer(div(style="display: flex;gap: 10px;",
-                                                                    shiny::actionButton(ns("create_groups_from_GGEsel"), "Create group from selection", icon = icon(NULL), class = "btn btn-info"),
-                                                                    shiny::actionButton(ns("create_group_from_wWw"), "Create groups from which won where", icon = icon(NULL), class = "btn btn-info")
+                                                                    shiny::actionButton(ns("create_groups_from_GGEsel"), "Create group from selection", icon = icon(NULL), class = "btn btn-info")#,
+                                                                    #shiny::actionButton(ns("create_group_from_wWw"), "Create groups from which won where", icon = icon(NULL), class = "btn btn-info")
                                                                   ))
                                                       ),
                                                       sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,#full_screen = F,
@@ -428,7 +428,12 @@ mod_gxe_ui <- function(id){
           ### Sidebar ####
           sidebar=sidebar(
             width = 350,
-            pickerInput(ns("STAB_plots_colorby"),"Color Genotypes by", choices = c())),
+            div(style="display: flex;",
+                a(href="https://biometris.github.io/statgenGxE/articles/statgenGxE.html#st",icon("fas fa-question-circle"), target="_blank")),
+            
+            pickerInput(ns("STAB_plots_colorby"),"Color Genotypes by", choices = c()),
+            shiny::downloadButton(ns("Stab_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
+          ),
           ### Results ####
           accordion(
             id = ns("STAB_accordsup"),
@@ -473,13 +478,13 @@ mod_gxe_ui <- function(id){
             )
           )
         )
-      ),
-      nav_panel(
-        ## Mega-env panel ####
-        title = "Mega-envs",
-        layout_sidebar(
-        )
-      )      
+      )#,
+      #nav_panel(
+      #  ## Mega-env panel ####
+      #  title = "Mega-envs",
+      #  layout_sidebar(
+      #  )
+      #)      
     ),
     accordion(
       id = ns("console_accord"),
@@ -812,7 +817,14 @@ mod_gxe_server <- function(id, rv, parent_session){
         if (input$picker_germplasm_level=="germplasmDbId"){
           data2TD[, genotype:=paste0(germplasmDbId," (",germplasmName,")")]
         } else {
-          data2TD[, genotype:=germplasmName]
+          if(any(length(data2TD[, .N,.(germplasmName,studyDbId)][N>1, germplasmName]))){
+            namedups <- unique(data2TD[, .N,.(germplasmName,studyDbId)][N>1, germplasmName])
+            data2TD[germplasmName%in%unique(data2TD[, .N,.(germplasmName,studyDbId)][N>1, germplasmName]),germplasmName:=paste0(germplasmName,".",1:.N),.(germplasmName, studyDbId)]
+            data2TD[, genotype:=germplasmName]
+            showNotification(paste0("Duplicates found in germplasmName for germplasm(s) ",paste(namedups, collapse = ", "),". Germplasms were renamed with a suffix number."), type = "warning", duration = NULL)
+          } else {
+            data2TD[, genotype:=germplasmName]
+          }
         }        
         
         genot_to_excl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype][N<input$exclude_geno_nb_env]
@@ -1814,24 +1826,24 @@ mod_gxe_server <- function(id, rv, parent_session){
         rv_gxe$GGEclicked_genotypes <- NULL
       })
       
-      observeEvent(input$create_group_from_wWw,{
-        #browser()
-        if(length(rv_gxe$gp_WwW)>0){
-          #browser()
-          rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
-                                                               Genotype=rv_gxe$gp_WwW),
-                                                  y=unique(rbindlist(rv$TD)),
-                                                  by.x = "Genotype",
-                                                  by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
-          showModal(groupModal(rv=rv, 
-                               parent_session = parent_session, 
-                               modal_title = "Create new group", 
-                               group_description = paste0("Group of which won where genotypes in GGE analysis of ", input$picker_trait, " variable"),
-                               group_prefix =paste0("www_GGE@",input$picker_trait,".")
-          )
-          )
-        }
-      })
+      #observeEvent(input$create_group_from_wWw,{
+      #  #browser()
+      #  if(length(rv_gxe$gp_WwW)>0){
+      #    #browser()
+      #    rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
+      #                                                         Genotype=rv_gxe$gp_WwW),
+      #                                            y=unique(rbindlist(rv$TD)),
+      #                                            by.x = "Genotype",
+      #                                            by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
+      #    showModal(groupModal(rv=rv, 
+      #                         parent_session = parent_session, 
+      #                         modal_title = "Create new group", 
+      #                         group_description = paste0("Group of which won where genotypes in GGE analysis of ", input$picker_trait, " variable"),
+      #                         group_prefix =paste0("www_GGE@",input$picker_trait,".")
+      #    )
+      #    )
+      #  }
+      #})
       ### Handle group creation in GGE plot ####
       observe({
         if(length(rv_gxe$GGEclicked_genotypes)<1){
@@ -2047,7 +2059,6 @@ mod_gxe_server <- function(id, rv, parent_session){
         }
       })
       
-      ### Superiority ####
       #### table ####
       output$STAB_sup <- renderDataTable({
         formatRound(datatable(rv_gxe$TDStab$dtres[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes),], rownames = FALSE,
@@ -2070,56 +2081,6 @@ mod_gxe_server <- function(id, rv, parent_session){
         }
       })
       
-      #### plot ####
-      output$STAB_sup_plot <- renderPlot({
-        gg <- ggplot(rv_gxe$TDStab$dtres) + 
-          geom_point(aes(x=Mean, y= sqrt(Sup))) +
-          ylab("Square root of superiority")
-        rv_gxe$st_sup_plotdat <- gg$data
-        if (input$STAB_plots_colorby!="Nothing"){
-          #browser() 
-          geompdat <- as.data.table(gg$data)
-          geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$STAB_plots_colorby)]), by.x = "Genotype", by.y = "genotype", all = TRUE)
-          gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
-          
-          gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
-          gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrt(Sup), color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
-            scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
-            scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
-        }
-        if(length(rv_gxe$STSclicked_genotypes)>0){
-          clickgeno <- gg$data[gg$data$Genotype%in%rv_gxe$STSclicked_genotypes,]
-          #browser()
-          #gg + ggnewscale::new_scale_color()
-          gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Sup)), shape = 21, size=3, color="red") +
-            geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Sup), label=Genotype), size=3, color="red",
-                      position = position_nudge(y=max(sqrt(gg$data[,"Sup"]))/50))
-        }
-        gg
-      })
-      
-      #### Handle click event ####
-      observeEvent(input$STAB_sup_plot_click,{
-        req(abs(lastclick_stabsup - Sys.time()) >=0.8)
-        if(!is.null(input$STAB_sup_plot_click)) {
-          clicked_genotypes <- rv_gxe$STSclicked_genotypes
-          sts <- rv_gxe$st_sup_plotdat
-          click=input$STAB_sup_plot_click
-          dist=sqrt((click$x-sts[,2])^2+(click$y-sqrt(sts[,3]))^2)
-          clickedgeno <- as.character(sts$Genotype[which.min(dist)])
-          if (clickedgeno%in%clicked_genotypes){
-            rv_gxe$STSclicked_genotypes <- clicked_genotypes[-which(clicked_genotypes==clickedgeno)]
-          } else {
-            rv_gxe$STSclicked_genotypes <- unique(c(clicked_genotypes,clickedgeno))
-          }
-          lastclick_stabsup <<- Sys.time()
-        }
-      })
-      #### Handle dbleclick event ####
-      observeEvent(input$STAB_sup_plot_dblclick,{
-        req(abs(lastclick_stabsup - Sys.time()) >=0.8)
-        rv_gxe$STSclicked_genotypes <- NULL
-      })
       
       ### Static ####
       output$STAB_static_plot <- renderPlot({
@@ -2215,7 +2176,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           clicked_genotypes <- rv_gxe$STSclicked_genotypes
           stw <- rv_gxe$st_stw_plotdat
           click=input$STAB_wricke_plot_click
-          dist=sqrt((click$x-stw[,2])^2+(click$y-sqrt(stw[,3]))^2)
+          dist=sqrt((click$x-stw[,2])^2+(click$y-stw[,6])^2)
           clickedgeno <- as.character(stw$Genotype[which.min(dist)])
           if (clickedgeno%in%clicked_genotypes){
             rv_gxe$STSclicked_genotypes <- clicked_genotypes[-which(clicked_genotypes==clickedgeno)]
@@ -2230,8 +2191,59 @@ mod_gxe_server <- function(id, rv, parent_session){
         req(abs(lastclick_stabwri - Sys.time()) >=0.8)
         rv_gxe$STSclicked_genotypes <- NULL
       })
+      ### Superiority ####
+      #### plot ####
+      output$STAB_sup_plot <- renderPlot({
+        gg <- ggplot(rv_gxe$TDStab$dtres) + 
+          geom_point(aes(x=Mean, y= sqrt(Sup))) +
+          ylab("Square root of superiority")
+        rv_gxe$st_sup_plotdat <- gg$data
+        if (input$STAB_plots_colorby!="Nothing"){
+          #browser() 
+          geompdat <- as.data.table(gg$data)
+          geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$STAB_plots_colorby)]), by.x = "Genotype", by.y = "genotype", all = TRUE)
+          gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
+          
+          gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
+          gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrt(Sup), color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
+            scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
+            scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
+        }
+        if(length(rv_gxe$STSclicked_genotypes)>0){
+          clickgeno <- gg$data[gg$data$Genotype%in%rv_gxe$STSclicked_genotypes,]
+          #browser()
+          #gg + ggnewscale::new_scale_color()
+          gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Sup)), shape = 21, size=3, color="red") +
+            geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Sup), label=Genotype), size=3, color="red",
+                      position = position_nudge(y=max(sqrt(gg$data[,"Sup"]))/50))
+        }
+        gg
+      })
       
-      #### Handle group creation in Stability selection ####
+      #### Handle click event ####
+      observeEvent(input$STAB_sup_plot_click,{
+        req(abs(lastclick_stabsup - Sys.time()) >=0.8)
+        if(!is.null(input$STAB_sup_plot_click)) {
+          clicked_genotypes <- rv_gxe$STSclicked_genotypes
+          sts <- rv_gxe$st_sup_plotdat
+          click=input$STAB_sup_plot_click
+          dist=sqrt((click$x-sts[,2])^2+(click$y-sqrt(sts[,7]))^2)
+          clickedgeno <- as.character(sts$Genotype[which.min(dist)])
+          if (clickedgeno%in%clicked_genotypes){
+            rv_gxe$STSclicked_genotypes <- clicked_genotypes[-which(clicked_genotypes==clickedgeno)]
+          } else {
+            rv_gxe$STSclicked_genotypes <- unique(c(clicked_genotypes,clickedgeno))
+          }
+          lastclick_stabsup <<- Sys.time()
+        }
+      })
+      #### Handle dbleclick event ####
+      observeEvent(input$STAB_sup_plot_dblclick,{
+        req(abs(lastclick_stabsup - Sys.time()) >=0.8)
+        rv_gxe$STSclicked_genotypes <- NULL
+      })
+      
+      ### Handle group creation in Stability selection ####
       observeEvent(rv$STSclicked_genotypes, {
         if(length(rv$STSclicked_genotypes)<1){
           shinyjs::disable("create_groups_from_STABsel")
@@ -2319,7 +2331,24 @@ mod_gxe_server <- function(id, rv, parent_session){
           #}
         }
       )
-     
+      ## Stab Report ####
+      output$Stab_report <- downloadHandler(
+        filename = function() {
+          username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
+          trial <- unique(rv$study_metadata$trialName)
+          paste0("GxE_Stab-", username, "-",  trial, "-", format(Sys.time(), "%Y%m%d-%H%M%S"), ".html")
+        },
+        content = function(file) {
+          #if (is.null(rv$TDAMMI)){
+          #  showNotification("Please Run analysis once first", type = "warning", duration = notification_duration)
+          #} else {
+          rmarkdown::render(
+            input="reports/GxE_Stab.Rmd", output_file = file
+          )
+          #}
+        }
+      )
+      
     }
   )
 }

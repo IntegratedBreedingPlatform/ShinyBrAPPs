@@ -9,10 +9,17 @@ knitr::opts_chunk$set(echo = FALSE)
 library(statgenGxE)
 library(metan)
 ```
+```{r, echo=FALSE}
+htmltools::img(src = "sticker.png", 
+               alt = 'logo',
+               width = '150px',
+               style = 'position:absolute; top:0; left:0; padding:10px;')
+```
 
 ## Studies:
 ```{r}
-knitr::kable(unique(rv_gxe$data[,.(trialName, locationName, studyDbId, studyName)])[studyDbId%in%input$picker_env])
+TD <- unique(rbindlist(rv$TD)[,.(studyDbId, `Environment Name`=trial)])
+knitr::kable(TD[unique(rv_gxe$data[,.(trialName, locationName, studyDbId, studyName)])[studyDbId%in%input$picker_env], on=.(studyDbId)])
 ```
 
 ## Trait: `r input$picker_trait`
@@ -37,7 +44,7 @@ TDGGE <- tryCatch(gxeGGE(TD = rv$TD, trait = input$picker_trait, useWt = input$u
 
 ## GGE plots
 
-```{r, fig.height=10, fig.width=10, results='hide'}
+```{r, fig.height=10, fig.width=10, results='hide', warning=FALSE, message=FALSE}
 TDGGEplot <- TDGGEmetan
 lapply(1:10, function(ptype){
   if (ptype==5){
@@ -118,7 +125,7 @@ lapply(1:10, function(ptype){
                                                                                  plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
             )
           } else {
-            metan:::plot.gge(TDGGEplot,
+            gg <- metan:::plot.gge(TDGGEplot,
                              type = ptype,
                              size.text.gen = input$GGE_plot_size.text.gen,
                              repulsion = input$GGE_plot_repulsion,
@@ -141,7 +148,87 @@ lapply(1:10, function(ptype){
                              plot_theme = metan:::theme_metan() %+replace% theme(plot.title = element_text(size = input$GGE_plot_title_size, face = "bold", hjust = 0, vjust = 3),
                                                                                  plot.subtitle = element_text(size = input$GGE_plot_title_size-2, face = "italic", hjust = 0, vjust = 2))
             )
+                  if ((input$GGE_colorGenoBy!="Nothing" || input$GGE_colorEnvBy!="Nothing") & ptype==1){
+          geompdat <- as.data.table(gg$data)
+          
+          if (input$GGE_colorGenoBy!="Nothing"){
+            geompdat <- merge.data.table(x=geompdat, 
+                                         y=setnames(unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$GGE_colorGenoBy)]),new = c("genotype","colorby1")),
+                                         by.x = "label", by.y = "genotype", all = TRUE)
+          } else {
+            geompdat[, colorby1:=NA]
           }
+          if (input$GGE_colorEnvBy!="Nothing"){
+            geompdat <- merge.data.table(x=geompdat, 
+                                         y=setnames(unique(rbindlist(rv$TD)[,.SD,.SDcols=c("trial",input$GGE_colorEnvBy)]),new = c("trial","colorby2")),
+                                         by.x = "label", by.y = "trial", all = TRUE)
+          } else {
+            geompdat[, colorby2:=NA]
+          }
+          geompdat[, colorby:=""]
+          geompdat[is.na(colorby1), colorby:=colorby2]
+          geompdat[is.na(colorby2), colorby:=colorby1]
+
+          gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
+
+          if (input$GGE_colorGenoBy!="Nothing"){
+            gg <- gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
+            gg <- gg + geom_point(data=geompdat[type=="genotype"], 
+                                  aes(d1, d2, color=as.factor(.data[["colorby"]]), 
+                                      fill = as.factor(.data[["colorby"]])), 
+                                  shape = 21, 
+                                  size = input$GGE_plot_size.shape, 
+                                  stroke = input$GGE_plot_size.stroke, 
+                                  alpha = input$GGE_plot_col.alpha) + 
+            scale_fill_manual(values=getOption("statgen.genoColors")) + 
+            scale_color_manual(values=getOption("statgen.genoColors"), guide="none") 
+          } else {
+            gg <- gg + geom_point(data=geompdat[type=="genotype"], 
+                                  aes(d1, d2, color=as.factor(.data[["colorby"]])), 
+                                  shape = 21, color= input$GGE_plot_col.stroke, 
+                                  fill= input$GGE_plot_col.gen, 
+                                  size = input$GGE_plot_size.shape,
+                                  stroke = input$GGE_plot_size.stroke, 
+                                  alpha = input$GGE_plot_col.alpha) 
+          }
+          if (input$GGE_colorEnvBy!="Nothing"){
+            gg <- gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
+            gg <- gg + geom_point(data=geompdat[type=="environment"], 
+                                  aes(d1, d2, color=as.factor(.data[["colorby"]]), 
+                                      fill = as.factor(.data[["colorby"]])), 
+                                  shape = 23, size = input$GGE_plot_size.text.env, 
+                                  stroke = input$GGE_plot_size.stroke, 
+                                  alpha = input$GGE_plot_col.alpha) + 
+            scale_fill_manual(values=getOption("statgen.trialColors")) + 
+            scale_color_manual(values=getOption("statgen.trialColors"), guide="none")
+          } else {
+            gg <- gg + geom_point(data=geompdat[type=="environment"], 
+                                  aes(d1, d2, color=as.factor(.data[["colorby"]])), 
+                                  shape = 23, color= input$GGE_plot_col.stroke, 
+                                  fill= input$GGE_plot_col.env, 
+                                  size = input$GGE_plot_size.text.env, 
+                                  stroke = input$GGE_plot_size.stroke, 
+                                  alpha = input$GGE_plot_col.alpha) 
+          }
+          
+          if (input$GGE_colorGenoBy!="Nothing" & input$GGE_colorEnvBy!="Nothing") {
+            gg <- gg + guides(fill = guide_legend(override.aes = list(shape=21))) + guides(fill = guide_legend(override.aes = list(shape=23)))
+          } else if (input$GGE_colorGenoBy!="Nothing") {
+            gg <- gg + guides(fill = guide_legend(override.aes = list(shape=21)), shape = "none")
+          } else if (input$GGE_colorEnvBy!="Nothing"){
+            gg <- gg + guides(fill = guide_legend(override.aes = list(shape=23)), size = "none")
+          } else {
+            gg <- gg + guides(fill = "none")
+          }
+        }
+        if(length(rv_gxe$GGEclicked_genotypes)>0){
+          clickgeno <- gg$data[gg$data$type=="genotype" & gg$data$label%in%rv_gxe$GGEclicked_genotypes,]
+          gg + ggnewscale::new_scale_fill()
+          gg <- gg + geom_point(data = clickgeno, aes(x=d1, y = d2), shape = 21, size=input$GGE_plot_size.shape+2, stroke=input$GGE_plot_size.stroke, color="red") 
+        }
+        gg + theme(legend.position.inside=NULL, legend.position = "right")
+
+            }
 })
 ```
 

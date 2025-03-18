@@ -7,12 +7,18 @@ date: "`r format(Sys.time(), '%d %B, %Y - %H:%M:%S')`"
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(statgenGxE)
-library(metan)
+```
+```{r, echo=FALSE}
+htmltools::img(src = "sticker.png", 
+               alt = 'logo',
+               width = '150px',
+               style = 'position:absolute; top:0; left:0; padding:10px;')
 ```
 
 ## Studies:
 ```{r}
-knitr::kable(unique(rv_gxe$data[,.(trialName, locationName, studyDbId, studyName)])[studyDbId%in%input$picker_env])
+TD <- unique(rbindlist(rv$TD)[,.(studyDbId, `Environment Name`=trial)])
+knitr::kable(TD[unique(rv_gxe$data[,.(trialName, locationName, studyDbId, studyName)])[studyDbId%in%input$picker_env], on=.(studyDbId)])
 ```
 
 ## Trait: `r input$picker_trait`
@@ -30,21 +36,40 @@ summary(TDAMMI)
 
 ## AMMI plot
 
-```{r, fig.height=10, fig.width=10, results='hide'}
-          statgenGxE:::plot.AMMI(TDAMMI,
+```{r, fig.height=10, fig.width=10, results='hide', warning=FALSE, message=FALSE}
+          p <- statgenGxE:::plot.AMMI(TDAMMI,
                                  plotType = input$AMMI_plotType,
                                  scale = input$AMMI_scale,
                                  plotGeno = T,
                                  colorGenoBy = switch((input$AMMI_colorGenoBy=="Nothing")+1,  input$AMMI_colorGenoBy, NULL),
                                  plotConvHull = input$AMMI_plotConvHull,
-                                 colorEnvBy = input$AMMI_colorEnvBy,
+                                 colorEnvBy = switch((input$AMMI_colorEnvBy=="Nothing")+1,  input$AMMI_colorEnvBy, NULL),
                                  rotatePC = input$AMMI_rotatePC,
                                  primAxis = input$AMMI_primAxis,
                                  secAxis = input$AMMI_secAxis,
                                  envFactor = input$AMMI_plot_envFactor,
                                  sizeGeno = input$AMMI_plot_sizeGeno,
                                  sizeEnv = input$AMMI_plot_sizeEnv,
-                                 title = switch((input$AMMI_plot_title=="")+1,  input$AMMI_plot_title, NULL))
+                                 title = switch((input$AMMI_plot_title=="")+1,  input$AMMI_plot_title, NULL), output = FALSE)
+        if (input$AMMI_plotType=="AMMI2"){
+          p$layers[[1]] <- NULL
+          p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]]), size=input$AMMI_plot_sizePoint) +
+            geom_text(data=p$data[p$data$type=="env",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="env",]))) +
+            geom_text(data =p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="geno",]), size=input$AMMI_plot_sizeGeno), position = position_nudge(y=input$AMMI_plot_envFactor*max(p$data[p$data$type=="geno",input$AMMI_secAxis])/8))
+          
+          if (!is.null(rv_gxe$AMMIclicked_genotypes)){
+            clickgeno <- p$data[p$data$type=="geno" & row.names(p$data)%in%rv_gxe$AMMIclicked_genotypes,]
+            p <- p + geom_point(data = clickgeno, aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]]), shape = 21, color="red", size=input$AMMI_plot_sizePoint+1)
+          }
+        } else {
+          p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=x, y = y), size=input$AMMI_plot_sizePoint) #+ 
+          if (!is.null(rv_gxe$AMMIclicked_genotypes)){
+            clickgeno <- p$data[p$data$type=="geno" & row.names(p$data)%in%rv_gxe$AMMIclicked_genotypes,]
+            p <- p + ggnewscale::new_scale_color()
+            p <- p + geom_point(data = clickgeno, aes(x=x, y = y), shape = 21, color="red", size=input$AMMI_plot_sizePoint+1)
+          }
+        }
+        p + theme(legend.position = "bottom")
 
 ```
 

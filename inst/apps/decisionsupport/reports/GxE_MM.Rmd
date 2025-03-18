@@ -12,10 +12,17 @@ params:
 knitr::opts_chunk$set(echo = FALSE)
 library(statgenGxE)
 ```
+```{r, echo=FALSE}
+htmltools::img(src = "sticker.png", 
+               alt = 'logo',
+               width = '150px',
+               style = 'position:absolute; top:0; left:0; padding:10px;')
+```
 
 ## Studies:
 ```{r}
-  knitr::kable(unique(rv_gxe$data[,.(trialName, locationName, studyDbId, studyName)])[studyDbId%in%input$picker_env])
+TD <- unique(rbindlist(rv$TD)[,.(studyDbId, `Environment Name`=trial)])
+knitr::kable(TD[unique(rv_gxe$data[,.(trialName, locationName, studyDbId, studyName)])[studyDbId%in%input$picker_env], on=.(studyDbId)])
 ```
 
 ## Trait: `r params$trait`
