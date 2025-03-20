@@ -277,48 +277,6 @@ mod_model_server <- function(id, rv){
         
       })
       
-      ## observe select_environments_open ####
-      observeEvent(input$select_environments_open, {
-        req(rv$data)
-        #update traits dropdown when closing environment dropdown and only if the environments selection has changed
-        if (!isTRUE(input$select_environments_open) && !identical(input$select_environments, rv_mod$selected_env)) {
-          rv_mod$selected_env <- input$select_environments
-          shinyjs::hide("go_fit_no_outlier")
-          # Update traits dropdown
-          if (is.null(input$select_environments)) {            
-            choices_traits <- unique(rv$data[scale.dataType == "Numerical"]$observationVariableName)            
-            if (is.null(input$select_traits)) {
-              selected_traits <- NULL
-            } else {
-              selected_traits <- input$select_traits
-            }
-  
-          } else {
-            ## only traits found in all selected environments can be selected
-            trait_by_studyDbIds <- rv$data[scale.dataType == "Numerical"][study_name_app %in% input$select_environments, .(trait = unique(observationVariableName)), .(studyDbId)]
-            choices_traits <- trait_by_studyDbIds[, .N, trait][N == length(trait_by_studyDbIds[, unique(studyDbId)]), trait]
-            if (is.null(input$select_traits)) {
-              selected_traits <- choices_traits
-            } else {
-              if (all(input$select_traits %in% choices_traits)) {
-                selected_traits <- input$select_traits
-              } else {
-                selected_traits <- choices_traits
-              }
-            }
-          }
-          updatePickerInput(
-            session, "select_traits",
-            choices = choices_traits,
-            selected = selected_traits,
-            options = list(
-              placeholder = 'Select 1 or more traits',
-              onInitialize = I('function() { this.setValue(""); }')
-            )
-          )
-        }
-      }, ignoreNULL = FALSE)
-      
       ## observe select_environments ####
       observeEvent(input$select_environments, {
         ## restrict the design choices to the available column in the environment datasets
@@ -381,75 +339,35 @@ mod_model_server <- function(id, rv){
           has_repIds = has_repIds,
           has_coords = has_coords
         )
-        shinyjs::disable("STA_report")
       })
       
-      ## observe select_traits_open ####
-      observeEvent(c(input$select_traits_open, req(!is.null(rv$data))), {
-        #update environmentq dropdown when closing traits dropdown and only if the traits selection has changed
-        if (!isTRUE(input$select_traits_open) && !identical(input$select_traits, rv_mod$selected_traits)) {
-          rv_mod$selected_traits <- input$select_traits
-          shinyjs::hide("go_fit_no_outlier")
-          # Update environments dropdown
-          if (is.null(input$select_traits)) {
-            req("observationVariableName"%in%names(rv$data))
-            choices_env <- rv$data[,unique(study_name_app)]
-            if (is.null(input$select_environments)) {
-              selected_env <- NULL
-            } else {
-              selected_env <- input$select_environments
-            }
-          } else {
-            ## only environment with all selected traits can be selected
-            env_by_traits <- rv$data[observationVariableName %in% input$select_traits, .(env = unique(study_name_app)), .(observationVariableName)]
-            choices_env <- env_by_traits[, .N, env][N == length(env_by_traits[, unique(observationVariableName)]), env]
-            if (is.null(input$select_environments)) {
-              selected_env <- choices_env
-            } else {
-              if (all(input$select_environments %in% choices_env)) {
-                selected_env <- input$select_environments
-              } else {
-                selected_env <- choices_env
-              }
-            }
-          }
-          updatePickerInput(
-            session, "select_environments",
-            choices = choices_env,
-            selected = selected_env,
-            options = list(
-              placeholder = 'Select 1 or more traits',
-              onInitialize = I('function() { this.setValue(""); }')
-            )
-          )
-          
-          ## the possible covariates
-          # - have to be numerical
-          # - must not be some columns (like ids)
-          # - can be traits
-          all_traits <- rv$data[,unique(observationVariableName)]
-          remaining_traits <- setdiff(all_traits, input$select_traits)
-          choices_cov <- c(names(rv$data)[unlist(rv$data[,lapply(.SD, is.numeric)])], remaining_traits)
-          not_cov <- c(
-            "studyDbId", "trialDbId","observationDbId",
-            "environment_number",
-            "observationVariableDbId",
-            "observationValue",
-            "programDbId"
-          )
-          choices_cov <- choices_cov[!(choices_cov%in%not_cov)]
-          updatePickerInput(
-            session, "covariates", choices = choices_cov, selected = NULL
-          )
-        }
-        shinyjs::disable("STA_report")
-        
+      ## observe select_traits ####
+      observeEvent(input$select_traits, {       
+        req(rv$data)   
+        ## the possible covariates
+        # - have to be numerical
+        # - must not be some columns (like ids)
+        # - can be traits
+        all_traits <- rv$data[,unique(observationVariableName)]
+        remaining_traits <- setdiff(all_traits, input$select_traits)
+        choices_cov <- c(names(rv$data)[unlist(rv$data[,lapply(.SD, is.numeric)])], remaining_traits)
+        not_cov <- c(
+          "studyDbId", "trialDbId","observationDbId",
+          "environment_number",
+          "observationVariableDbId",
+          "observationValue",
+          "programDbId"
+        )
+        choices_cov <- choices_cov[!(choices_cov%in%not_cov)]
+        updatePickerInput(
+          session, "covariates", choices = choices_cov, selected = NULL
+        )        
       })
       
-      observeEvent(input$model_design, {
-        if (input$model_design != "") {
-          enable("go_fit_model")
-        }
+      observeEvent(c(input$model_design, input$select_traits, input$select_environments, input$model_engine), {
+        req(input$model_design, input$select_traits, input$select_environments, input$model_engine)
+        enable("go_fit_model")
+        disable("STA_report")
       })
       
       ## observe model_design_metadata_button ####
@@ -476,9 +394,7 @@ mod_model_server <- function(id, rv){
           shinyjs::hide("display_psanova_opt")
         } else {
           shinyjs::show("spatial_opt")
-        }
-        shinyjs::disable("STA_report")
-        
+        }        
       })
 
       ## output$psanova_opt ####
@@ -585,6 +501,9 @@ mod_model_server <- function(id, rv){
           observationValue
         )]
         
+        comb_env_trait <- unique(data[,.(observationVariableName, trial)])
+        rv_mod$comb_env_trait <- comb_env_trait
+        
         formula <- "observationUnitDbId + genotype + trial + loc"
         
         if(rv_mod$data_checks$has_subBlocks){
@@ -623,8 +542,6 @@ mod_model_server <- function(id, rv){
         rv$TD <- do.call(what = createTD, args = createTD_args)
         rv$TD <- rv$TD
         
-        
-        
         if (input$model_engine == "SpATS" && input$display_psanova_opt==T) {
           cntrl <- list(nSeg = c(input$spColSeg, input$spRowSeg),
                         nestDiv = input$spNestDiv)
@@ -633,43 +550,57 @@ mod_model_server <- function(id, rv){
         }
         
         ### fit TD
+        rv_mod$fit <- list()
+        rv_mod$fitextr <- list()
+        rv_mod$outliers <- list()
         a <- tryCatch({
-          withProgress(message = "Fitting model", min=1, max=1, {
-            rv_mod$fit <- fitTD(
-              TD = rv$TD,
-              trials = input$select_environments,
-              design = input$model_design,
-              traits = input$select_traits,
-              engine = input$model_engine,
-              covariates = input$covariates,
-              what = input$what,
-              # useCheckId = FALSE,
-              spatial = ifelse(input$model_engine=="SpATS", input$spatial_opt, F),
-              control = cntrl
-            )})
-          withProgress(message = "Extracting statistics from fitted models", min=1, max=1,{ 
-            rv_mod$fitextr <- extractSTA(rv_mod$fit)
-          })
-          withProgress(message = "Looking for outliers", min=1, max=1,{
-            outliers <-  outlierSTA(rv_mod$fit, 
-                                       what = "random",
-                                       commonFactors = "genotype")$outliers
-            if (!is.null(rv_mod$outliers)) {
-              rv_mod$outliers <- merge(
-                as.data.table(outliers),
-                rv$data[,.(study_name_app, observationUnitDbId, observationVariableName, observationDbId)],
-                by.x = c("trial", "observationUnitDbId", "trait"),
-                by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
+          withProgress(message = "Fitting model", value = 0, {
+            for (i in 1:length(input$select_environments)) {
+              incProgress(1/length(input$select_environments), detail = input$select_environments[i])
+              env_traits <- comb_env_trait[trial == input$select_environments[i], observationVariableName]
+              
+              fit <- fitTD(
+                TD = rv$TD,
+                trials = input$select_environments[i],
+                design = input$model_design,
+                traits = env_traits,
+                engine = input$model_engine,
+                covariates = input$covariates,
+                what = input$what,
+                # useCheckId = FALSE,
+                spatial = ifelse(input$model_engine=="SpATS", input$spatial_opt, F),
+                control = cntrl
               )
+              
+              rv_mod$fit <- append(rv_mod$fit, fit)
+              
+              fitextr <- extractSTA(fit)
+              rv_mod$fitextr <- append(rv_mod$fitextr, fitextr)
+              
+              outliers <-  outlierSTA(fit, 
+                                      what = "random",
+                                      commonFactors = "genotype")$outliers
+              if (!is.null(outliers)) {
+                outliers <- merge(
+                  as.data.table(outliers),
+                  rv$data[,.(study_name_app, observationUnitDbId, observationVariableName, observationDbId)],
+                  by.x = c("trial", "observationUnitDbId", "trait"),
+                  by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
+                )
+                rv_mod$outliers <- append(rv_mod$outliers, list(outliers))
+              }
             }
+            
           })
-          },
-          error=function(e){ e })
+        },
+        error=function(e){ e })
         mess <- a$message
         if(!is.null(mess)){
           showNotification(mess, type = "error", duration = notification_duration)
         }
-        
+
+        rv_mod$fit <- structure(rv_mod$fit,
+                                class = c("STA", "list"))
         req(rv_mod$fit)
         
         ## SPATs does not make prediction when genotypes are in the fixed part of the model
@@ -723,112 +654,121 @@ mod_model_server <- function(id, rv){
         # assign input$model_engine to a reactive variable (isolated in the "observeEvent-go fit model") to prevent the app from changing model results unless "go fit model" is clicked
         rv_mod$model_engine <- input$model_engine
       }
-
+      
+      
       ## show fitted models per trait and environments ####
-      observeEvent(c(input$select_environment_fit, input$select_trait_fit),{
+      observeEvent(c(input$select_trait_fit, input$select_environment_fit), {
+        rv_mod$result_envs <- rv_mod$comb_env_trait[trial %in% input$select_environment_fit
+                                                    & observationVariableName == input$select_trait_fit, trial]
+      })
+      
+      output$fit_summary <- renderPrint({
+        req(rv_mod$fit)
+        req(rv_mod$result_envs)
+        req(input$select_environment_fit)
+        req(input$select_trait_fit)
+        
+        # s_all <- summary(
+        #   rv_mod$fit,
+        #   trait = input$select_trait_fit,
+        #   trials = input$select_environment_fit
+        # )
+        envs <- rv_mod$result_envs
+        s <- lapply(envs, function(env){
+          summary(
+            rv_mod$fit,
+            trait = input$select_trait_fit,
+            trials = env
+          )
+        })
+        names(s) <- envs
+        # s["all environments"] <- s_all
+        s
+      })
+          
+      output$fit_residuals <- renderPlot({
+        req(rv_mod$fit)
+        req(rv_mod$result_envs)
+        envs <- rv_mod$result_envs
+        plots_envs <- lapply(envs, function(trial){
+          plot(
+            rv_mod$fit,
+            traits = input$select_trait_fit,
+            trials = trial,
+            output = F
+            # output = F,
+            # what = c("random","fixed")[c(
+            #   !is.null(rv_mod$fit[[trial]]$mRand),
+            #   !is.null(rv_mod$fit[[trial]]$mFixed)
+            # )]
+          )
+        })
+          
+        plot_envs <- lapply(1:length(envs), function(k){
+          do.call("arrangeGrob",
+                  c(
+                    plots_envs[[k]][[envs[k]]][[input$select_trait_fit]],
+                    ncol=2,
+                    top = paste0("Trial: ", envs[k],
+                                 "\nTrait: ", input$select_trait_fit)
+                  )
+          )
+        })
+        plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
+        plot(plot_multi_env)
+      },
+      height = function(){ length(rv_mod$result_envs)*500}
+      )
+          
+      output$fit_spatial <- renderPlot({
+        isolate(req(rv_mod$data_checks$has_coords))
         req(input$select_environment_fit)
         req(input$select_trait_fit)
         req(rv_mod$fit)
-          output$fit_summary <- renderPrint({
-            # s_all <- summary(
-            #   rv_mod$fit,
-            #   trait = input$select_trait_fit,
-            #   trials = input$select_environment_fit
-            # )
-            s <- lapply(input$select_environment_fit, function(env){
-              summary(
-                rv_mod$fit,
-                trait = input$select_trait_fit,
-                trials = env
-              )
-            })
-            names(s) <- input$select_environment_fit
-            # s["all environments"] <- s_all
-            s
-          })
-          #browser()
-          output$fit_residuals <- renderPlot({
-            req(rv_mod$fit)
-            req(input$select_environment_fit)
-            plots_envs <- lapply(input$select_environment_fit, function(trial){
-              plot(
-                rv_mod$fit,
-                traits = input$select_trait_fit,
-                trials = trial,
-                output = F
-                # output = F,
-                # what = c("random","fixed")[c(
-                #   !is.null(rv_mod$fit[[trial]]$mRand),
-                #   !is.null(rv_mod$fit[[trial]]$mFixed)
-                # )]
-              )
-            })
-            
-            plot_envs <- lapply(1:length(input$select_environment_fit), function(k){
-              do.call("arrangeGrob",
-                      c(
-                        plots_envs[[k]][[input$select_environment_fit[k]]][[input$select_trait_fit]],
-                        ncol=2,
-                        top = paste0("Trial: ", input$select_environment_fit[k],
-                                     "\nTrait: ", input$select_trait_fit)
-                      )
-              )
-            })
-            plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
-            plot(plot_multi_env)
-          },
-          height=length(input$select_environment_fit)*500
+        envs <- rv_mod$result_envs
+        plots_envs <- lapply(envs, function(trial){
+          if(rv$data[observationVariableName == input$select_trait_fit & study_name_app == trial,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
+            p <- plot(
+              rv_mod$fit,
+              plotType = "spatial",
+              traits = input$select_trait_fit,
+              trials = trial,
+              output = F
+              # output = F,
+              # what = c("random","fixed")[c(
+              #   !is.null(rv_mod$fit[[trial]]$mRand),
+              #   !is.null(rv_mod$fit[[trial]]$mFixed)
+              # )]
+            )
+            p
+          }else{
+            a_STATgen_like_list <- list()
+            a_STATgen_like_list[[trial]][[input$select_trait_fit]][["p1"]] <- ggplot() + geom_text(aes(x = 0, y = 0), label = "no spatial data") + theme_void()
+            a_STATgen_like_list
+          }
+        })
+        plot_envs <- lapply(1:length(envs), function(k){
+          do.call("arrangeGrob",
+                  c(
+                    plots_envs[[k]][[envs[k]]][[input$select_trait_fit]],
+                    ncol=2,
+                    top = paste0("Trial: ", envs[k],
+                                 "\nTrait: ", input$select_trait_fit)
+                  )
           )
-          
-          output$fit_spatial <- renderPlot({
-            req(rv_mod$fit)
-            isolate(req(rv_mod$data_checks$has_coords))
-            req(input$select_environment_fit)
-            plots_envs <- lapply(input$select_environment_fit, function(trial){
-              if(rv$data[observationVariableName == input$select_trait_fit & study_name_app == trial,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
-                p <- plot(
-                  rv_mod$fit,
-                  plotType = "spatial",
-                  traits = input$select_trait_fit,
-                  trials = trial,
-                  output = F
-                  # output = F,
-                  # what = c("random","fixed")[c(
-                  #   !is.null(rv_mod$fit[[trial]]$mRand),
-                  #   !is.null(rv_mod$fit[[trial]]$mFixed)
-                  # )]
-                )
-                p
-              }else{
-                a_STATgen_like_list <- list()
-                a_STATgen_like_list[[trial]][[input$select_trait_fit]][["p1"]] <- ggplot() + geom_text(aes(x = 0, y = 0), label = "no spatial data") + theme_void()
-                a_STATgen_like_list
-              }
-            })
-            plot_envs <- lapply(1:length(input$select_environment_fit), function(k){
-              do.call("arrangeGrob",
-                      c(
-                        plots_envs[[k]][[input$select_environment_fit[k]]][[input$select_trait_fit]],
-                        ncol=2,
-                        top = paste0("Trial: ", input$select_environment_fit[k],
-                                     "\nTrait: ", input$select_trait_fit)
-                      )
-              )
-            })
-            plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
-            plot(plot_multi_env)
-          },
-          height=length(input$select_environment_fit)*500
-          )          
-
-      })
+        })
+        plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
+        plot(plot_multi_env)
+      },
+      height = function(){ length(rv_mod$result_envs)*500}
+      )
       
       observeEvent(c(input$select_trait_outliers, rv_mod$outliers), {
         req(rv_mod$fit)
         req(rv_mod$outliers)
         req(input$select_trait_outliers)
         
-        outliers_all <- rv_mod$outliers
+        outliers_all <- rbindlist(rv_mod$outliers)
         # outliers for the selected trait
         outliers <- outliers_all[trait == input$select_trait_outliers]
         
@@ -867,7 +807,7 @@ mod_model_server <- function(id, rv){
         validate(
           need(rv_mod$outliers_table, message = "No outlier for this trait")
         )
-            
+        
         outliers <- rv_mod$outliers_table
         # change columns order (move variables columns at the end)
         cols <- colnames(outliers)
@@ -1075,27 +1015,26 @@ mod_model_server <- function(id, rv){
       extract_all_BLUEs_BLUPs <- reactive({
         req(rv_mod$fitextr)
         
-        table_metrics <- NULL
+        table_metrics <- list()
         for (i in 1:length(rv_mod$fitextr)) {
+          table_metrics_env <- list()
           for (j in c("BLUEs", "seBLUEs","BLUPs", "seBLUPs")) {
             dt <- as.data.table(rv_mod$fitextr[[i]][[j]])[, environment:=names(rv_mod$fitextr)[i]][,result:=j]
-            if (is.null(table_metrics)) {
-              table_metrics <- dt
-            } else {
-              table_metrics <- rbindlist(list(table_metrics, dt))
+            if (!is.null(table_metrics)) {
+              table_metrics_env <- append(table_metrics_env, list(dt))
             }
           }
+          table_metrics_env <- rbindlist(table_metrics_env, fill = T)
+          
+          table_metrics_env <- melt(
+            data = table_metrics_env,
+            measure.vars = names(table_metrics_env)[!(names(table_metrics_env)%in%c("genotype","environment","result"))],
+            variable.name = "trait"
+          )
+          
+          table_metrics <- append(table_metrics, list(table_metrics_env))
         }
-
-        table_metrics <- melt(
-          data = table_metrics,
-          measure.vars = names(table_metrics)[!(names(table_metrics)%in%c("genotype","environment","result"))],
-          variable.name = "trait"
-        )
-        
-        # table_metrics <- table_metrics[, genotype:=as.character(genotype)]
-        # table_metrics <- table_metrics[, trait:=as.character(trait)]
-        
+        table_metrics <- rbindlist(table_metrics)
         return(table_metrics)
       })
 
@@ -1105,8 +1044,7 @@ mod_model_server <- function(id, rv){
         content = function(file) {
           withProgress(message = "Generating csv", min=1, max=1, {
             req(rv_mod$fitextr)
-            
-            table_metrics <- NULL
+            table_metrics <- list()
             for (i in 1:length(rv_mod$fitextr)) {
               dt_BLUPs <- as.data.table(rv_mod$fitextr[[i]][["BLUPs"]])
               dt_seBLUPs <- as.data.table(rv_mod$fitextr[[i]][["seBLUPs"]])
@@ -1118,29 +1056,25 @@ mod_model_server <- function(id, rv){
                 colnames(dt_BLUEs)[j] <- paste0(colnames(dt_BLUEs)[j], "_BLUEs")
                 colnames(dt_seBLUEs)[j] <- paste0(colnames(dt_seBLUEs)[j], "_seBLUEs")
               }
-
+              
               table_metrics_env <- merge(dt_BLUPs, dt_seBLUPs, by=c("genotype"))
               table_metrics_env <- merge(table_metrics_env, dt_BLUEs, by=c("genotype"))
               table_metrics_env <- merge(table_metrics_env, dt_seBLUEs, by=c("genotype"))
               
-              #add environment column
-              table_metrics_env[, environment:=names(rv_mod$fitextr)[i]]
-
+              #add environment column at first position
+              #table_metrics_env[, environment:=names(rv_mod$fitextr)[i]]
+              table_metrics_env <- data.table(environment = names(rv_mod$fitextr)[i], table_metrics_env)
+              
               #concatenate table_metrics for each environment
-              if (is.null(table_metrics_env)) {
-                table_metrics <- table_metrics_env
-              } else {
-                table_metrics <- rbindlist(list(table_metrics, table_metrics_env))
+              if (!is.null(table_metrics_env)) {
+                table_metrics <- append(table_metrics, list(table_metrics_env))
               }
             }
             
+            table_metrics <- rbindlist(table_metrics, fill = T)
+            
             #change col name genotype
             setnames(table_metrics, "genotype", "germplasm")
-            
-            #put environment column in first position (environment, germplasm, var1_BLUPs, var2_BLUPs,var1_seBLUPs, var2_seBLUPs, etc)
-            cols <- colnames(table_metrics)
-            new_col_order <- append(c(cols[length(table_metrics)], cols[1]), cols[2:(length(cols)-1)]) 
-            table_metrics <- setcolorder(table_metrics, new_col_order)
             
             write.csv(table_metrics, file, row.names = FALSE)
           })
