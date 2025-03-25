@@ -484,7 +484,7 @@ mod_model_server <- function(id, rv){
       # })
       
       fitModel <- function(data_filtered) {
-        
+
         ## parametrization
         createTD_args <- list(
           genotype = "genotype",
@@ -557,7 +557,7 @@ mod_model_server <- function(id, rv){
           withProgress(message = "Fitting model", value = 0, {
             for (i in 1:length(input$select_environments)) {
               incProgress(1/length(input$select_environments), detail = input$select_environments[i])
-              env_traits <- comb_env_trait[trial == input$select_environments[i], observationVariableName]
+              env_traits <- comb_env_trait[trial == input$select_environments[i] & observationVariableName %in% input$select_traits, observationVariableName]
               
               fit <- fitTD(
                 TD = rv$TD,
