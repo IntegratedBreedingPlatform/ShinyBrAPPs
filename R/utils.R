@@ -154,7 +154,7 @@ get_env_data <- function(con = NULL,
                              by = grouping_cols]
       
       variables <- as.data.table(brapirv2::brapi_get_variables(con = con, studyDbId = studyDbId))
-      variables <- variables[, .(observationVariableDbId, scale.dataType)] 
+      variables <- variables[trait.traitClass != "Breedingprocess", .(observationVariableDbId, scale.dataType)] 
       if (any(colnames(study_obs)=="observationVariableDbId")){
         study_obs <- merge(study_obs, variables, 
                        by.x = "observationVariableDbId", 
