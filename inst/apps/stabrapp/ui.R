@@ -99,7 +99,7 @@ ui <- fluidPage(
           h2(a("github",href="https://github.com/IntegratedBreedingPlatform/ShinyBrAPPs", target="_blank", icon("github")), align="right"),
           hr(),hr(),
           h2("Funded by"),
-          p("STABrAPP development was funded by the ", a("ABEE project", href="https://capacity4dev.europa.eu/projects/desira/info/abee_en"), ", under the DESIRA initiative of the European Union"),
+          p("STABrAPP development was funded by the ", a("ABEE project", href="https://capacity4dev.europa.eu/projects/desira/info/abee_en", target="_blank"), ", under the DESIRA initiative of the European Union"),
           img(src='img/ABEE_logo_trspbckgd.png', height="57px", width="84px",  align = "right"),
           hr(),hr(),
           img(src='img/desira.png', height="56px", width="252px",  align = "right"),
