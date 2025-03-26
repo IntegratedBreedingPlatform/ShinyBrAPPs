@@ -942,26 +942,34 @@ mod_gxe_server <- function(id, rv, parent_session){
       ## MM model ####
       ### Run MM model ####
       observeEvent(input$mm_run_model,{
-        #browser()
         if (any(c(is.null(input$picker_trait),is.null(input$picker_env_variable), is.null(input$picker_germplasm_level)))){
           misspicks <- c("'Trait'","'Variable to use as Environment'", "'Germplasm level'")[c(is.null(input$picker_trait),is.null(input$picker_env_variable), is.null(input$picker_germplasm_level))] 
           showNotification(stringmagic::string_magic("{enum ? misspicks}  should be selected first on Data preparation Tab"), type = "error", duration = notification_duration)
         } else {
           #rv$console <- NULL
+          
+          updatePickerInput(session, "MM_predict_level", choices = "genotype", selected = "genotype")
+          
           withCallingHandlers({
           rv_gxe$TDVarComp <- switch(input$picker_gxe_mm_env_struct,
-                                 `1`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) e)},
-                                 `2`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, locationYear = TRUE), error=function(e) e)},
-                                 `3`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "year"), error=function(e) e)},
-                                 `4`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "loc"), error=function(e) e)},
-                                 `5`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, regionLocationYear = TRUE), error=function(e) e)},
-                                 `6`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "scenario"), error=function(e) e)})
-          
+                                 `1`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights), error=function(e) {rv_gxe$console <- paste(rv_gxe$console, paste0("Mixed model run at ",Sys.time(), " : ",e), sep="")
+                                 return(NULL)})},
+                                 `2`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, locationYear = TRUE), error=function(e) {rv_gxe$console <- paste(rv_gxe$console, paste0("Mixed model run at ",Sys.time(), " : ",e), sep="")
+                                 return(NULL)})},
+                                 `3`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "year"), error=function(e) {rv_gxe$console <- paste(rv_gxe$console, paste0("Mixed model run at ",Sys.time(), " : ",e), sep="")
+                                 return(NULL)})},
+                                 `4`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "loc"), error=function(e) {rv_gxe$console <- paste(rv_gxe$console, paste0("Mixed model run at ",Sys.time(), " : ",e), sep="")
+                                 return(NULL)})},
+                                 `5`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, regionLocationYear = TRUE), error=function(e) {rv_gxe$console <- paste(rv_gxe$console, paste0("Mixed model run at ",Sys.time(), " : ",e), sep="")
+                                 return(NULL)})},
+                                 `6`={tryCatch(gxeVarComp(TD = rv$TD, trait = input$picker_trait, useWt = input$use_weights, nestingFactor = "scenario"), error=function(e) {rv_gxe$console <- paste(rv_gxe$console, paste0("Mixed model run at ",Sys.time(), " : ",e), sep="")
+                                 return(NULL)})})
           accordion_panel_set(id="MM_accord1", values=TRUE)
           accordion_panel_set(id="MM_accord2", values=TRUE)
           }, message = function(m) rv_gxe$console <- paste(rv_gxe$console, paste0("Mixed model run at ",Sys.time(), " : ",m), sep=""),
-             warning = function(w) rv_gxe$console <- paste(rv_gxe$console, paste0("Mixed model run at ",Sys.time(), " : ",w), sep=""))}
-      })
+             warning = function(w) rv_gxe$console <- paste(rv_gxe$console, paste0("Mixed model run at ",Sys.time(), " : ",w), sep=""))
+      }
+})
       
       output$MM_text_output <- renderPrint({
         req(rv_gxe$TDVarComp)
@@ -1003,29 +1011,45 @@ mod_gxe_server <- function(id, rv, parent_session){
       })
       
       observeEvent(rv_gxe$TDVarComp, {
-        if (is.null(rv_gxe$TDVarComp$nestingFactor)){
-          predict_levels <- "genotype"
-          if (!is.null(rv_gxe$TDVarComp$useLocYear)){
-            if (rv_gxe$TDVarComp$useLocYear){
-              predict_levels <- c("genotype","trial")
-            }
-          }
-        } else {
-          predict_levels <- c("genotype",rv_gxe$TDVarComp$nestingFactor)
+        req(rv_gxe$TDVarComp)
+        if (rv_gxe$TDVarComp$useLocYear) {
+          predict_levels <- c("genotype", "trial", "loc", "year")
         }
+        else if (rv_gxe$TDVarComp$useRegionLocYear) {
+          predict_levels <- c("genotype", "trial", "region", "loc", 
+                        "year")
+        }
+        else {
+          predict_levels <- c("genotype", "trial", rv_gxe$TDVarComp$nestingFactor)
+        }
+        
+        #if (is.null(rv_gxe$TDVarComp$nestingFactor)){
+        #  predict_levels <- "genotype"
+        #  if (!is.null(rv_gxe$TDVarComp$useLocYear)){
+        #    if (rv_gxe$TDVarComp$useLocYear){
+        #      predict_levels <- c("genotype","trial","loc","year")
+        #    }
+        #  }
+        #} else {
+        #  predict_levels <- c("genotype",rv_gxe$TDVarComp$nestingFactor)
+        #}
         updatePickerInput(session, "MM_predict_level", choices = predict_levels, selected = "genotype")
 
         if ("varComp"%in%class(rv_gxe$TDVarComp)){
-          rv_gxe$MM_predict_table <- predict(rv_gxe$TDVarComp, predictLevel=input$MM_predict_level)
+          rv_gxe$MM_predict_table <- tryCatch(predict(rv_gxe$TDVarComp, predictLevel=input$MM_predict_level), 
+                                              error=function(e) {data.table()[]})
+            
         } else {
           rv_gxe$MM_predict_table <- data.table()[]
         }
       })
       
       ### Change prediction level ####
-      observeEvent(input$MM_predict_level,{
+      observeEvent(eventExpr = {input$MM_predict_level
+                                rv_gxe$TDVarComp}, ignoreNULL = FALSE, {
         if ("varComp"%in%class(rv_gxe$TDVarComp)){
-          rv_gxe$MM_predict_table <- predict(rv_gxe$TDVarComp, predictLevel=input$MM_predict_level)
+          rv_gxe$MM_predict_table <-tryCatch(predict(rv_gxe$TDVarComp, predictLevel=input$MM_predict_level), 
+                                             error=function(e) {data.table()[]})
         } else {
           rv_gxe$MM_predict_table <- data.table()[]
         }
@@ -1567,6 +1591,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         req(rv$TD)
         #browser()
         rv$TD.metangge <- rbindlist(rv$TD)[,.SD, .SDcols=c("trial","genotype",input$picker_trait)]
+        
         withCallingHandlers({
         rv_gxe$TDGGEmetan <- tryCatch(metan::gge(rv$TD.metangge,
                                              env=trial,
