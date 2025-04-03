@@ -10,6 +10,7 @@
 #' @param inner.border should borders of individual rectangles be drawn (TRUE/FALSE)
 #'
 #' @export
+#' @import grid
 make_single_label <- function(layout,
                                texts,
                                labels,
@@ -87,6 +88,7 @@ make_single_label <- function(layout,
 #' @param outer.border draw rectangle around label
 #'
 #' @export
+#' @import grid
 print_labels <- function(data, filename, layout, columns, bccol, bctype = '128', label_sizes, byrow=TRUE, fontface="normal", fontsize=6 , inner.border=TRUE, outer.border=TRUE){
   data <- as.data.table(data)
   page_wdt <- label_sizes$pg.W.in
@@ -155,3 +157,26 @@ print_labels <- function(data, filename, layout, columns, bccol, bctype = '128',
   dev.off()
   
 }
+
+#' @export
+#' @import qrencoder
+#' @import raster
+#' @import baRcodeR
+#' @import grid
+make_qrcode <- function (my_id, ec_level = 3, type="qr") 
+{
+  assertthat::assert_that(!missing(my_id), msg = "Please provide a unique ID.")
+  assertthat::assert_that(ec_level >= 0 && ec_level <= 3, 
+                          msg = "Please provide an error\n
+                                 correction level value in the range 0 - 3.")
+  if (type=="qr"){
+    aa <- raster::raster(qrencoder::qrencode_raw(as.character(my_id), 
+                                                 ec_level))
+    qr <- grid::rasterGrob(raster::as.raster(aa, col = c("white", 
+                                                         "black")), interpolate = FALSE)
+  } else {
+    qr <- baRcodeR:::code_128_make(my_id)
+    
+  }
+  return(qr)
+} 
