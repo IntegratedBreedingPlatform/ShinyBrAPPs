@@ -457,3 +457,31 @@ rename_envs <- function(TD, old, new){
   })
   return(TD)
 }
+
+#' @export
+generate_ui_with_grid <- function(num_rows, num_cols, choices, ns=ns, control_label_stem="Field") {
+  # Créer une liste pour stocker les lignes
+  rows_list <- list()
+  num <- 0
+  for (i in 1:num_rows) {
+    # Créer une liste pour stocker les colonnes de la ligne actuelle
+    columns_list <- list()
+    
+    for (j in 1:num_cols) {
+      num <- num + 1
+      # Ajouter une colonne à la liste avec un selectInput
+      columns_list[[j]] <- column(
+        width = 12 / num_cols,
+        selectInput(ns(paste0("select_", num)), paste(control_label_stem, num),
+                    choices = choices,
+                    selected = choices[num])
+      )
+    }
+    
+    # Ajouter la ligne à la liste des lignes
+    rows_list[[i]] <- fluidRow(columns_list)
+  }
+  
+  # Retourner un div contenant toutes les lignes
+  return(div(rows_list))
+}
