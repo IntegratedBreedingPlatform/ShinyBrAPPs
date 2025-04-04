@@ -2,10 +2,9 @@ pandoc: 3.1.11
 pkgdown: 2.1.1
 pkgdown_sha: ~
 articles:
-  articles/article_test: article_test.html
   articles/load_data: load_data.html
   articles/STABrAPP: STABrAPP.html
-last_built: 2025-04-04T06:59Z
+last_built: 2025-04-04T08:47Z
 urls:
   reference: https://integratedbreedingplatform.github.io/ShinyBrAPPs/reference
   article: https://integratedbreedingplatform.github.io/ShinyBrAPPs/articles
