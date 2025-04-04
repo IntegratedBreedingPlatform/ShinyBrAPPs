@@ -58,6 +58,7 @@ RUN R -e "install.packages('raster', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('tableHTML', repos='http://cran.rstudio.com/')"
 RUN R -e "remotes::install_version('httr2', version = '1.0.0', repos = 'http://cran.us.r-project.org')"
 RUN R -e "remotes::install_version('data.table', version = '1.16.4', repos = 'http://cran.us.r-project.org')" 
+RUN R -e "remotes::install_github('Biometris/statgenGxE', ref = 'develop', dependencies = TRUE, upgrade = 'never')"
 
 ## Install shinybrapps
 # Note: presently the image is constructed from within the package directory because the repo "IntegratedBreedingPlatform/ShinyBrAPPs" is private. If it becomes public, it will be possible to construct the image from anywhere via "install_gihub()"
