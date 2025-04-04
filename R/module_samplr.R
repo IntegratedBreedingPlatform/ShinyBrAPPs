@@ -98,7 +98,15 @@ mod_samplr_ui <- function(id){
                                                          sidebar=bslib::sidebar(width = 350,
                                                                                 selectInput(ns("label_layout"), "Label layout", choices =  names(label_layouts)),
                                                                                 selectInput(ns("label_page"), "Page settings", choices = label_sizes$Template),
-                                                                                switchInput(ns("barcode_type"), onLabel = "Barcode", offLabel = "QRcode", value = FALSE),
+                                                                                radioGroupButtons(
+                                                                                  inputId = ns("barcode_type"),
+                                                                                  label = "Barcode type",
+                                                                                  choices = c(QRcode="qr", Barcode="128"),
+                                                                                  status = "info",
+                                                                                  checkIcon = list(
+                                                                                    yes = icon("ok", lib = "glyphicon"),
+                                                                                    no = icon("xmark", lib = "glyphicon"))
+                                                                                ),
                                                                                 div(class = "p-3 flex-container",
                                                                                     div(class = "flex-item", numericInput(ns("fontsize"), label = "Font size", value = 6, min = 4, max = 12, step = 1)),
                                                                                     div(class = "flex-item", checkboxInput(ns("labelbold"), label = "Bold"))
@@ -127,7 +135,7 @@ mod_samplr_ui <- function(id){
                          bslib::nav_spacer(),
                          bslib::nav_panel(
                            title = "About",
-                           h1("SamplR"),
+                           h1("SampleR"),
                            img(src='img/sticker.png', height="178px", width="154px",  align = "right"),
                            h2("Contributors"),
                            p("Jean-François Rami (Maintainer) - rami 'at' cirad.fr"),
@@ -488,11 +496,7 @@ mod_samplr_server <- function(id, rv){
               } else {
                 ff <- "plain"
               }
-              if (input$barcode_type){
-                bct <- "128"
-              } else {
-                bct <- "qr"
-              }
+              bct <-  input$barcode_type
               #cols <- cols[length(cols):1]
               #texts <- texts[length(texts):1]
               #browser()
@@ -506,11 +510,7 @@ mod_samplr_server <- function(id, rv){
             },
             content = function(file) {
               layout <- label_layouts[[input$label_layout]]
-              if (input$barcode_type){
-                bct <- "128"
-              } else {
-                bct <- "qr"
-              }
+              bct <- input$barcode_type
               if (input$labelbold){
                 ff <- "bold"
               } else {
