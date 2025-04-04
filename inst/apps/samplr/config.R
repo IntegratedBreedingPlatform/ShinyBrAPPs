@@ -1,10 +1,7 @@
 brapi_version <- "2.0"
 appname <- "SampleR"
-#selection_traitClass <- "Breedingprocess"
-#selection_traitName <- "Selections"
-#can_filter_obs_unit_level_in_url <- T
-#allowed_obs_unit_levels <- c("PLOT", "MEANS")
-#variable_regexp <- "_BLU[E,P]s$"
-#variable_wt_regexp <- "_seBLU[E,P]s$"
 
 notification_duration = 10 # in seconds
+label_sizes <- fread("data/common_labels.csv")
+label_layouts <- jsonlite::fromJSON(paste(readLines("data/layouts.json"), collapse=""), simplifyMatrix = F)
+barcode_field <- "sampleDbId"

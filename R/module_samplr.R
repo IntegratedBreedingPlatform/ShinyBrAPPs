@@ -14,8 +14,36 @@ mod_samplr_ui <- function(id){
         .navbar-nav > li{
           margin-left:20px;
           margin-right:20px;
-        }")
-      ),
+        }"),
+        HTML("
+      .card-body select {
+        z-index: 1000; /* Assurez-vous que la liste déroulante est au-dessus de tout autre élément */
+      }
+      .dropdown-menu {
+        position: absolute !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        bottom: auto !important;
+        z-index: 1050; /* Assurez-vous que la liste déroulante est au-dessus de tout autre élément */
+      }
+         .bslib-card, .tab-content, .tab-pane, .card-body {
+      overflow: visible !important;
+    }
+    "),
+        HTML("
+      .flex-container {
+        display: flex;
+        gap: 50px;
+        overflow-x: visible;
+        align-items: flex-end;
+        margin-left: 50px;
+        }
+      .flex-item {
+        flex: 1; /* Permet aux éléments de prendre l'espace disponible */
+      }
+    ")
+    ),
       bslib::page_navbar(title = "", id = ns("tabsetId"), 
                          bslib::nav_panel("Search samples by trial/study",value="bystudy",
                                           layout_sidebar(
@@ -65,13 +93,49 @@ mod_samplr_ui <- function(id){
                                                               ))
                                           )
                          ),
-                         bslib::nav_panel("Print labels",value="printlabels"
-                           
+                         bslib::nav_panel("Print labels",value="printlabels",
+                                          layout_sidebar(width = 1/3,
+                                                         sidebar=bslib::sidebar(width = 350,
+                                                                                selectInput(ns("label_layout"), "Label layout", choices =  names(label_layouts)),
+                                                                                selectInput(ns("label_page"), "Page settings", choices = label_sizes$Template),
+                                                                                radioGroupButtons(
+                                                                                  inputId = ns("barcode_type"),
+                                                                                  label = "Barcode type",
+                                                                                  choices = c(QRcode="qr", Barcode="128"),
+                                                                                  status = "info",
+                                                                                  checkIcon = list(
+                                                                                    yes = icon("ok", lib = "glyphicon"),
+                                                                                    no = icon("xmark", lib = "glyphicon"))
+                                                                                ),
+                                                                                div(class = "p-3 flex-container",
+                                                                                    div(class = "flex-item", numericInput(ns("fontsize"), label = "Font size", value = 6, min = 4, max = 12, step = 1)),
+                                                                                    div(class = "flex-item", checkboxInput(ns("labelbold"), label = "Bold"))
+                                                                                ),
+                                                                                div(class = "p-3 flex-container",
+                                                                                    div(class = "flex-item", checkboxInput(ns("inborder"), label = "Inner border", value = TRUE)),
+                                                                                    div(class = "flex-item", checkboxInput(ns("outborder"), label = "Outer border", value = TRUE))
+                                                                                ),
+                                                                                downloadButton(ns("print_labels"),"Print labels")
+
+                                                         ),
+                                                         card(full_screen = FALSE,
+                                                              card_body(min_height = "400px",
+                                                              uiOutput(ns("label_inputs"))
+                                                              )
+                                                              ),
+                                                         card(full_screen = FALSE,
+                                                              card_body(min_height = "400px",
+                                                              plotOutput(ns("label_preview"), width = "300px", height = "200px")
+                                                              )
+                                                         )
+                                                         
+
+                                          )
                          ),
                          bslib::nav_spacer(),
                          bslib::nav_panel(
                            title = "About",
-                           h1("SamplR"),
+                           h1("SampleR"),
                            img(src='img/sticker.png', height="178px", width="154px",  align = "right"),
                            h2("Contributors"),
                            p("Jean-François Rami (Maintainer) - rami 'at' cirad.fr"),
@@ -404,6 +468,69 @@ mod_samplr_server <- function(id, rv){
             
           })
           
+          output$label_inputs <- renderUI({
+            req(rv_samp$stdatadt)
+            #browser()
+            layout <- label_layouts[[input$label_layout]]
+            choices <- colnames(rv_samp$stdatadt)
+            num_rows <- length(unique(unlist(lapply(layout,function(a) a[[1]][2]))))
+            num_cols <- length(unique(unlist(lapply(layout,function(a) a[[1]][1]))))
+            
+            generate_ui_with_grid(num_rows, num_cols, choices=choices, ns=ns)
+          })
+          
+          #observe({
+          #  req(rv_samp$stdatadt)
+          #  updateSelectInput(session = session, inputId = "bc_field", choices = colnames(rv_samp$stdatadt))
+          #})
+          
+          observe({
+            output$label_preview <- renderPlot({
+              layout <- label_layouts[[input$label_layout]]
+              dat <- t(rv_samp$stdatadt[1,])[,1]
+              cols <- sapply(1:length(layout), function(a) input[[paste0("select_",a)]])
+              texts <- dat[match(cols,names(rv_samp$stdatadt))]
+              bc <- dat[match(barcode_field,names(rv_samp$stdatadt))]
+              if (input$labelbold){
+                ff <- "bold"
+              } else {
+                ff <- "plain"
+              }
+              bct <-  input$barcode_type
+              #cols <- cols[length(cols):1]
+              #texts <- texts[length(texts):1]
+              #browser()
+              make_single_label(layout, texts = texts, labels = cols, bctype = bct, bc = bc, fontsize = rep(input$fontsize,length(layout)), fontface=rep(ff,length(layout)), inner.border = input$inborder)
+            }, height = 100*label_sizes[Template==input$label_page,Lab.H.in], width = 100*label_sizes[Template==input$label_page,Lab.W.in])
+          })
+
+          output$print_labels <- downloadHandler(
+            filename = function() {
+              paste("labels-", Sys.Date(), ".pdf", sep="")
+            },
+            content = function(file) {
+              layout <- label_layouts[[input$label_layout]]
+              bct <- input$barcode_type
+              if (input$labelbold){
+                ff <- "bold"
+              } else {
+                ff <- "plain"
+              }
+              
+              #browser()
+              print_labels(filename = file,
+                           data = rv_samp$stdatadt,
+                           layout = layout,
+                           columns = sapply(1:length(layout), function(a) input[[paste0("select_",a)]]),
+                           bccol = barcode_field,
+                           bctype = bct,
+                           label_sizes = label_sizes[Template==input$label_page],
+                           fontsize = input$fontsize, 
+                           fontface = ff,
+                           inner.border = input$inborder,
+                           outer.border = input$outborder)
+            }
+          )
           
           output$download_data <- downloadHandler(
             filename = function() {
