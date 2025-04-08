@@ -1,0 +1,20 @@
+---
+title: "Loading data"
+---
+
+All ShinyBrAPPs use the same module to load data.
+
+## Use the application with any endpoint
+Fill all connection parameters:
+
+- BrAPI endpoint is the web services URL
+- Token: Token to be used for authorization
+- cropDB: crop name to be used (for multicrop systems)
+
+In Data Import, you can specify which kind of observations you want to import (PLOT and/or MEANS, depending of the application)  
+You have to select the studies you want to import the observations from.
+
+![Caption for the picture.](figures/connection_params.png)
+
+## Use the application directly from BMS
+For BMS users, you can have the possibility to run STABrAPP directly from the study Action menu. 
