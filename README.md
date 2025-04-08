@@ -1,4 +1,4 @@
-# ShinyBrAPPs <img src="man/figures/shinybrapps.png" align="right" height="200"/>
+# ShinyBrAPPs <img src="vignettes/articles/figures/shinybrapps.png" align="right" height="200"/>
 
 The ShinyBrAPPs package contains shiny applications designed for plant breeders. An international collaboration of developers from CIRAD and the IBP have been working together as part of the [IAVAO](https://www.iavao.org/) breeders community to develop these ShinyBrAPPs, in support of national breeding programs in Western Africa. 
 
