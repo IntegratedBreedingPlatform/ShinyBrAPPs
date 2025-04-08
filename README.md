@@ -55,4 +55,15 @@ snpclust enables a user to check and manually correct the clustering of fluoresc
 
 ## Deployment and Integration with BrAPI compliant system
 
+ShinyBrAPPs can be deployed using docker.
+
+Once deployed, the BrAPPs can be launched using the following URL parameters
+
+|   Parameter    |                                   Description                                   |      Used in      |                       Example                       |
+|----------------|---------------------------------------------------------------------------------|-------------------|-----------------------------------------------------|
+| apiURL         | base URL for the BrAPI server that the BrAPP needs to connect to                | All               | https://test-server.brapi.org/brapi/v2/             |
+| cropDb         | crop database name                                                              | All               | Maize                                               |
+| token          | a valid token                                                                   | All               | user:1742574955165:2e8db1fb5e66d52b50b9b4ad66e15d3c |
+| studyDbIds     | a comma separated list of studyDbIds that the BrAPP needs to retrieve data from | STABrAPP, BrAVISE | 121,122,123                                         |
+| obs_unit_level | a comma separated list observation unit levels to                               | STABrAPP, BrAVISE | PLOT,MEANS                                          |
 
