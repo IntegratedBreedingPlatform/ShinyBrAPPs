@@ -63,7 +63,15 @@ Once deployed, the BrAPPs can be launched using the following URL parameters
 |----------------|---------------------------------------------------------------------------------|-------------------|-----------------------------------------------------|
 | apiURL         | base URL for the BrAPI server that the BrAPP needs to connect to                | All               | https://test-server.brapi.org/brapi/v2/             |
 | cropDb         | crop database name                                                              | All               | Maize                                               |
-| token          | a valid token                                                                   | All               | user:1742574955165:2e8db1fb5e66d52b50b9b4ad66e15d3c |
+| token          | a valid token                                                                   | All               |                                                     |
 | studyDbIds     | a comma separated list of studyDbIds that the BrAPP needs to retrieve data from | STABrAPP, BrAVISE | 121,122,123                                         |
 | obs_unit_level | a comma separated list observation unit levels to                               | STABrAPP, BrAVISE | PLOT,MEANS                                          |
 
+
+## Funding
+
+ShinyBrAPPs development was funded by the [ABEE project](https://capacity4dev.europa.eu/projects/desira/info/abee_en) under the DESIRA initiative of the European Union.
+
+
+<img src="inst/apps/decisionsupport/www/img/ABEE_logo_trspbckgd.png" align="center" height="57" width="84"/>
+<img src="inst/apps/decisionsupport/www/img/desira.png" align="center" height="56" width="252"/>
