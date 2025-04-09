@@ -61,11 +61,11 @@ Once deployed, the BrAPPs can be launched using the following URL parameters
 
 |   Parameter    |                                   Description                                   |      Used in      |                       Example                       |
 |----------------|---------------------------------------------------------------------------------|-------------------|-----------------------------------------------------|
-| apiURL         | base URL for the BrAPI server that the BrAPP needs to connect to                | All               | https://test-server.brapi.org/brapi/v2/             |
-| cropDb         | crop database name                                                              | All               | Maize                                               |
-| token          | a valid token                                                                   | All               |                                                     |
-| studyDbIds     | a comma separated list of studyDbIds that the BrAPP needs to retrieve data from | STABrAPP, BrAVISE | 121,122,123                                         |
-| obs_unit_level | a comma separated list observation unit levels to                               | STABrAPP, BrAVISE | PLOT,MEANS                                          |
+| apiURL         | base URL for the BrAPI server that the BrAPP needs to connect to                | All               | ?apiURL=https://test-server.brapi.org/brapi/v2/     |
+| cropDb         | crop database name                                                              | All               | ?cropDb=Maize                                       |
+| token          | a valid token                                                                   | All               | ?token=user:avalidtoken                             |
+| studyDbIds     | a comma separated list of studyDbIds that the BrAPP needs to retrieve data from | STABrAPP, BrAVISE | ?studyDbIds=121,122,123                             |
+| obs_unit_level | a comma separated list of observation unit levels to filter on                  | STABrAPP, BrAVISE | ?obs_unit_level=PLOT,MEANS                          |
 
 
 ## Funding
