@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   articles/load_data: load_data.html
   articles/STABrAPP: STABrAPP.html
-last_built: 2025-04-04T08:47Z
+last_built: 2025-04-16T16:28Z
 urls:
   reference: https://integratedbreedingplatform.github.io/ShinyBrAPPs/reference
   article: https://integratedbreedingplatform.github.io/ShinyBrAPPs/articles
