@@ -58,6 +58,7 @@ RUN R -e "install.packages('raster', repos='http://cran.rstudio.com/')"
 RUN R -e "install.packages('tableHTML', repos='http://cran.rstudio.com/')"
 RUN R -e "remotes::install_version('httr2', version = '1.0.0', repos = 'http://cran.us.r-project.org')"
 RUN R -e "remotes::install_version('data.table', version = '1.16.4', repos = 'http://cran.us.r-project.org')" 
+RUN R -e "remotes::install_gitlab('alice.boizet/brapir@master', host = 'https://gitlab.cirad.fr')"
 RUN R -e "remotes::install_github('Biometris/statgenGxE', ref = 'develop', dependencies = TRUE, upgrade = 'never')"
 
 ## Install shinybrapps
