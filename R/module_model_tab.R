@@ -765,7 +765,7 @@ mod_model_server <- function(id, rv){
       
       observeEvent(c(input$select_trait_outliers, rv_mod$outliers), {
         req(rv_mod$fit)
-        req(rv_mod$outliers)
+        req(length(rv_mod$outliers)>0)
         req(input$select_trait_outliers)
         
         outliers_all <- rbindlist(rv_mod$outliers)
