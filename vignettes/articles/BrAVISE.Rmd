@@ -1,0 +1,94 @@
+---
+title: BrAVISE
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+---
+
+
+```{r, echo=FALSE}
+htmltools::img(src = knitr::image_uri("figures/bravise/sticker.png"), 
+               alt = 'logo', height="200px",
+               style = 'position:absolute; top:0; right:0; padding:10px;')
+```
+
+Decoding Data, Driving Decisions.
+
+BrAVISE is a Decision Support application that helps breeders to get the most of experimental data, especially in a multi-environments perspective, and turn it into breeding decisions.
+
+
+## [Loading Data](load_data.html)
+
+## Application components
+
+BrAVISE contains two main tabs corresponding to two different ways of analyzing the same dataset:
+
+- GxE analysis: allows to run a large range of GxE analysis on observation data at the MEANS observation unit level. In other words, it performs the second stage of a two-stage analysis of multi-environment trials. It is built on top of the [statgenGxE](https://biometris.github.io/statgenGxE/index.html) package.
+- Correlate: allows to build complex scatter plots comparing variables at different observation levels, but also environment details, germplasm attributes and more.
+
+These two components of the BrAVISE app share a common third component to manage groups of germplasms that can be defined in various part of the application from analysis results or manual selection of genotypes. Groups of germplasms can be merged, intersect, saved or exported as germplasm list to a BMS instance.
+
+### GxE Analysis
+
+#### Data Preparation
+
+When the application has finished loading data, and before starting any analysis, the user needs to prepare data by providing different information. Mandatory information are the fields in red : Trait, Germplasm Level, and Variable to use as Environment Name.
+
+![](figures/bravise/data_preparation.png)
+
+First you need to pick a trait as GxE analysis are conducted trait by trait. Indeed, as BrAVISE is an interactive application there is no way to launch here the same analysis on different traits in batch mode. In the Trait picker input, only MEANS variables are listed. By default those are variables that ends by `BLUEs` or `BLUPs` suffix (this can be changed by an app configuration parameter).
+
+When the selected variable ends by BLUEs or BLUPs, the `Use weights` switch is automatically activated and the corresponding seBLUEs or seBLUPs variable is selected as weight variable.
+
+Then the Germplasm level needs to be selected. It can be either GermplasmDbId or GermplasmName. Choosing one or the other may have an impact on the way genotypes will be aggregated in different environments. Indeed, you may have the same genotype that has been evaluated in different environments over locations or years with different germplasmDbIds (e.g. corresponding to different cycles of multiplication). In this case you may prefer to use GermplasmName as you want to consider different germplasms as corresponding to the same genotype in a GxE analysis perspective.
+
+Lastly, you need to indicate which variable will be used to identify Environments. The variables listed here are the environment details that are compatible with the StudyDbId variable. In case or more meaningfull variable containing environment names has been defined in your BrAPI source, it is preferable to use it over studyDbId that is in general just a simple number.
+
+When the 3 mandatory variables have been defined, a boxplot of the trait in the different environment is displayed.
+
+![](figures/bravise/data_preparation2.png)
+
+From here, different options can be adjusted to fine tune the dataset before proceeding with analysis.
+
+- Environments can be included or excluded from the Environments picker list
+- A minimum number of environments in which each germplasm must be present can be set. If the dataset is not fully balanced, increasing this value will trigger the exclusion of some genotypes that are not present in all environments. The lists of included and excluded geneotypes will be updated accordingly.
+- Optionally select environment details to be used as location, region, year, or environmental scenario. These may be used in some of the analyses especially the mixed model section.
+- Some germplasm attributes can also be selected here as variables used to color genotypes in GxE plots.
+
+#### Mixed model
+
+Reference manual on [statgenGxE](https://biometris.github.io/statgenGxE/articles/statgenGxE.html#vcomp){target="_blank"}
+
+#### Finlay Wilkinson
+
+Reference manual on [statgenGxE](https://biometris.github.io/statgenGxE/articles/statgenGxE.html#fw){target="_blank"}
+
+Click first on "Run FW Analysis"
+
+##### Plot type
+Though the most common type of plots for Finlay-Wilkinson analysis is the "line" type (the default), three other types of plots are possible:
+
+- scatter
+- trellis
+- scatterFit
+
+##### Color genotypes by
+##### Clustering of genotypes
+##### Plot interaction
+##### Create groups
+##### Report
+
+
+#### GGE
+
+Reference manual on [statgenGxE](https://biometris.github.io/statgenGxE/articles/statgenGxE.html#gge){target="_blank"}
+
+#### AMMI
+
+Reference manual on [statgenGxE](https://biometris.github.io/statgenGxE/articles/statgenGxE.html#am){target="_blank"}
+
+#### Stability
+
+### Correlate
+### Groups

@@ -1,0 +1,48 @@
+<table class="table table-curved table-condensed fbk-table-with-check">
+    <thead>
+        <tr>
+            <th style="text-align: center">
+                <div ng-show="(settings.keys() | removeHiddenAndDeletablesVariableFilter: settings.vals() ).length &gt; 0 && !hideDelete">
+                    <input type="checkbox" ng-model="options.selectAll" ng-change="doSelectAll()"/>
+                </div>
+            </th>
+            <th style="width: auto; min-width: 150px;">Name</th>
+            <th style="width: auto">Description</th>
+            <th style="width: auto; white-space: nowrap;" ng-if="variableType == 1808">Input Variables</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr ng-repeat="key in filteredKeys = ( settings.keys() | removeHiddenVariableFilter: settings.vals() ) track by key">
+            <td style="text-align: center" ng-class="{even : $even, odd : $odd}" class="fbk-delete-link">
+                <input type="checkbox" ng-model="settings.val(key).isChecked" ng-show="settings.val(key).deletable && !hideDelete"  ng-change="doSelect(traitVariables.val(key).isChecked)"/>
+            </td>
+            <td style="width: auto; min-width: 150px;" ng-class="{even : $even, odd : $odd}">
+                <a href="javascript: void(0);">
+                    <span class="var-names" show-details-modal="key"
+                          variable-type="{{variableType}}">{{settings.val(key).variable.name}}</span>
+                </a>
+            </td>
+            <td style="width: auto" ng-class="{even : $even, odd : $odd}">{{settings.val(key).variable.description}}</td>
+            <td style="width: auto" ng-if="variableType == 1808" width="50%" ng-class="{even : $even, odd : $odd}">
+                <span ng-repeat="formulaVariable in settings.val(key).variable.formula.inputs">
+                     <a  href="javascript: void(0);">
+                    <span class="var-names" show-details-modal="formulaVariable.id"
+                          variable-type="{{variableType}}">{{formulaVariable.name}}</span>
+                </a>{{$last ? '' : ', '}}
+                </span>
+            </td>
+        </tr>
+        <tr ng-hide="filteredKeys.length &gt; 0">
+            <td class="odd">&nbsp;</td>
+            <td class="odd">&nbsp;</td>
+            <td class="odd">&nbsp;</td>
+            <td class="odd" ng-if="variableType == 1808" >&nbsp;</td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="row form-group" ng-show="(settings.keys() | removeHiddenAndDeletablesVariableFilter: settings.vals() ).length &gt; 0 && !hideDelete">
+   <div class="col-md-12">
+       <a class="fbk-remove-link fbk-remove-traits-link" href="javascript: void(0);" ng-click="removeSettings()" >Remove</a>
+   </div>
+</div>

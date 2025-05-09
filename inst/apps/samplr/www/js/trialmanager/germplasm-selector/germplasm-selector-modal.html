@@ -1,0 +1,24 @@
+<div class="modal-content" id="selectGermplasmModal">
+	<div class="modal-body">
+		<div class="row form-group">
+			<div class="col-xs-11 col-md-11">
+				<label class="modal-title fbk-modal-title" id="heading-modal">Select Germplasm</label>
+			</div>
+			<div class="col-xs-1 col-md-1">
+				<button class="close pull-right glyphicon glyphicon-remove" data-dismiss="modal" ng-click="cancel()"/>
+			</div>
+		</div>
+		<div class="row">
+			<div id="page-message-modal" class="col-xs-12 col-md-12">
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-12 col-md-12">
+				<div>
+					<iframe id="germplasmSelectorModalIFrame" width="100%" height="750" frameborder="0"
+							ng-src="{{url}}"></iframe>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
