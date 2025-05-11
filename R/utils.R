@@ -279,7 +279,7 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
   if("environmentParameters.parameterName"%in%names(study_metadata)){
     env_number <- merge.data.table(
       x = study_metadata[,.(studyDbId = unique(studyDbId))],
-      y = study_metadata[environmentParameters.parameterName == "ENVIRONMENT_NUMBER",.(studyDbId, environment_number = environmentParameters.value)],
+      y = study_metadata[environmentParameters.parameterName == "ENVIRONMENT_NUMBER" | environmentParameters.parameterName == "Environment_name",.(studyDbId, environment_number = environmentParameters.value)],
       by = "studyDbId", all.x = T)
     env_number[is.na(environment_number), environment_number:=studyDbId]
   }else{
@@ -288,7 +288,7 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
   }
   study_metadata <- merge.data.table(
     x = study_metadata,
-    y = env_number,
+    y = unique(env_number),
     by = "studyDbId", all.x = T)
 
   ## set environment names
