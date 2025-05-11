@@ -430,7 +430,8 @@ mod_gxe_ui <- function(id){
             width = 350,
             div(style="display: flex;",
                 a(href="https://biometris.github.io/statgenGxE/articles/statgenGxE.html#st",icon("fas fa-question-circle"), target="_blank")),
-            
+            materialSwitch(ns("use_predict"),label = "Use BLUPs as genotype means", value = FALSE, inline = T, status = "info")|>
+              tooltip("With this option, BLUPs computed in the mixed model tab will be used as genotype means in the Stability table and in the plots", options = list(trigger="hover")),
             pickerInput(ns("STAB_plots_colorby"),"Color Genotypes by", choices = c()),
             shiny::downloadButton(ns("Stab_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
           ),
@@ -2058,7 +2059,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       
       ## Stability ####
       ### Run Stab ####
-      observeEvent(rv$TD, {
+      observeEvent(c(rv$TD,
+                     input$use_predict), {
+        req(rv$TD)
         TDStab <- tryCatch(statgenGxE::gxeStability(TD = rv$TD,
                                                         trait = input$picker_trait), error=function(e) e)
         dtsup <- as.data.table(TDStab$superiority)
@@ -2071,6 +2074,10 @@ mod_gxe_server <- function(id, rv, parent_session){
         nenv <- rbindlist(rv$TD)[,.N,.(genotype)]
         dtwri <- nenv[dtwri, on=.(genotype=Genotype)]
         dtwri[,sqrtWe := sqrt(W/N)]
+        if (input$use_predict & !is.null(rv_gxe$TDVarComp)){
+          tdvcp <- as.data.table(predict(rv_gxe$TDVarComp, predictLevel = "genotype"))
+          dtsup <- tdvcp[dtsup, on=.(genotype=Genotype)][,.(Genotype=genotype, Mean=predictedValue, Sup)]
+        }
         TDStab$dtres <- setcolorder(as.data.frame(dtsup[dtsta[,.(Genotype,S,sqrtS)], on=.(Genotype)][dtwri[,.(Genotype,W,sqrtWe)], on=.(Genotype)]), 
                                     neworder = c("Genotype","Mean","S","sqrtS","W","sqrtWe","Sup"))
         rv_gxe$TDStab <- TDStab
