@@ -31,10 +31,6 @@ mod_get_studydata_ui <- function(id){
             layout_columns(
               col_widths = c(6,3,3),
               div(
-                # div(id = "select_trialDbId_UI",style = "display:block",
-                textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://bms-uat-test.net/bmsapi", value = "https://bms-uat.ibp.services/bmsapi", width = "100%"),
-                textInput(ns("token"), "Token", placeholder = "Enter Token", value = "", width = "100%"),
-                textInput(ns("cropDb"), "CropDb", value = "maize", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
                 selectInput(ns("picker_obs_unit_level"), label = "Observation unit levels", choices = allowed_obs_unit_levels, selected = allowed_obs_unit_levels, multiple = T, width = "100%"),
                 selectizeInput(
                   ns("trials"), label = "Study", choices = NULL, multiple = FALSE, width = "100%",
@@ -116,30 +112,15 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             rv$pushOK <- rv_st$parse_GET_param$pushOK
           }
           
-          if(!is.null(rv_st$parse_GET_param$apiURL) &
-             !is.null(rv_st$parse_GET_param$token) &
-             !is.null(rv_st$parse_GET_param$cropDb) &
-             !is.null(rv_st$parse_GET_param$studyDbIds)){
+          if(!is.null(rv_st$parse_GET_param$studyDbIds)){
             
             ### set up connection
             parsed_url <- parse_api_url(rv_st$parse_GET_param$apiURL)
             
-            rv$con <- brapirv2::brapi_connect(
-              secure = TRUE,
-              protocol = parsed_url$brapi_protocol,
-              db = parsed_url$brapi_db,
-              port = parsed_url$brapi_port,
-              apipath = parsed_url$brapi_apipath,
-              multicrop = TRUE,
-              commoncropname = rv_st$parse_GET_param$cropDb,
-              token = rv_st$parse_GET_param$token,
-              granttype = "token",
-              clientid = "brapir",
-              bms = TRUE
-            )
-            
             # get study_metadata
             tryCatch({
+              print(rv$con$token)
+              print(rv$con$commoncropname)
               study_metadata <- make_study_metadata(con = rv$con, studyDbIds = rv_st$parse_GET_param$studyDbIds)
             }, error = function(e)({
               showNotification("Could not get environment metadata", type = "error", duration = notification_duration)
@@ -169,46 +150,14 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             shinyjs::runjs("$('#get_studydata_by_ui').css('display', 'block');") 
           }
         })
-  
-        ### BrAPI GET trials
-        observeEvent(c(input$apiURL, input$token, input$cropDb, input$picker_obs_unit_level),{
-          req(input$apiURL)
-          req(input$token)
-          req(input$cropDb)
-          req(input$picker_obs_unit_level)
-          
-          rv$obs_unit_level <-  input$picker_obs_unit_level
-  
-          updateSelectizeInput(
-            session = session, inputId = "trials", choices = "",
-            options = list(
-              placeholder = '',
-              onInitialize = I('function() { this.setValue(""); }')
-            )
-          )
-  
-          ## set up connection
-          parsed_url <- parse_api_url(input$apiURL)
-  
-          rv$con <- brapirv2::brapi_connect(
-            secure = TRUE,
-            protocol = parsed_url$brapi_protocol,
-            db = parsed_url$brapi_db,
-            port = parsed_url$brapi_port,
-            apipath = parsed_url$brapi_apipath,
-            multicrop = TRUE,
-            commoncropname = input$cropDb,
-            token = input$token,
-            granttype = "token",
-            clientid = "brapir",
-            bms = TRUE
-          )
-  
+        observeEvent(rv$con,{
           ## get trials
+          
           withProgress(message = "Reaching studies", value = 0, {
             incProgress(1)
             tryCatch({
               trials <- as.data.table(brapirv2::brapi_get_trials(con = rv$con))
+              rv$trial_metadata <- trials
               trial_choices <- trials[,trialDbId]
               names(trial_choices) <- trials[,trialName]
               updateSelectizeInput(
@@ -218,12 +167,18 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
                   onInitialize = I('function() { this.setValue(""); }')
                 )
               )
-              rv$trial_metadata <- trials
+              if (rv$connect_mode=="UI"){
+                showNotification("Connection successful", type = "message", duration = notification_duration)
+                shinyjs::runjs('var accordionBody = $("#connect-connectAccPanel");
+                                var accordionPanel = accordionBody.parent();
+                                accordionPanel.collapse("hide");')
+              }              
             },
             error=function(e){
               showNotification("Check url, token and/or cropDb", type = "error", duration = notification_duration)
             })
           })
+          
         })
   
         observeEvent(input$trials,{
@@ -232,6 +187,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           rv_st$trialDbId <- input$trials
         })
   
+        
         ### BrAPI GET studies and GET locations
         observeEvent(rv_st$trialDbId,{
           req(rv_st$trialDbId)

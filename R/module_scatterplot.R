@@ -193,6 +193,30 @@ mod_scatterplot_server <- function(id, rv, parent_session){
           scale_color_discrete(name = name)
         }
       }
+      
+      observeEvent(input$switch_aggregate, {
+        if(input$switch_aggregate == T){
+          shinyjs::show("aggregate_by")
+          shinyjs::show("aggreg_fun_X")
+          shinyjs::show("aggreg_fun_Y")
+          shinyjs::show("aggregate_text")
+          shinyjs::show("aggreg_fun_SHAPE")
+          shinyjs::show("aggreg_fun_COLOUR")
+          shinyjs::show("aggreg_fun_SIZE")
+          shinyjs::show("express_X_relative")
+          shinyjs::show("express_Y_relative")
+        }else{
+          shinyjs::hide("aggregate_by")
+          shinyjs::hide("aggreg_fun_X")
+          shinyjs::hide("aggreg_fun_Y")
+          shinyjs::hide("aggregate_text")
+          shinyjs::hide("aggreg_fun_SHAPE")
+          shinyjs::hide("aggreg_fun_COLOUR")
+          shinyjs::hide("aggreg_fun_SIZE")
+          shinyjs::hide("express_X_relative")
+          shinyjs::hide("express_Y_relative")
+        }
+      })
      
       ## initialize selectinputs ####
       observeEvent(rv$extradata, {
@@ -258,15 +282,6 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         var_choices_all <- column_datasource[visible == T,.(cols = list(cols)), source]
         
         if(input$switch_aggregate == T){
-          shinyjs::show("aggregate_by")
-          shinyjs::show("aggreg_fun_X")
-          shinyjs::show("aggreg_fun_Y")
-          shinyjs::show("aggregate_text")
-          shinyjs::show("aggreg_fun_SHAPE")
-          shinyjs::show("aggreg_fun_COLOUR")
-          shinyjs::show("aggreg_fun_SIZE")
-          shinyjs::show("express_X_relative")
-          shinyjs::show("express_Y_relative")
           if(input$aggregate_by == "germplasm and environment"){
             var_choices_SHAPE <- column_datasource[visible == T & type != "Numerical" & !(source %in% "Observation units attributes"),.(cols = list(cols)), source]
             var_choices_COLOUR <- column_datasource[visible == T & (type == "Numerical" | type == "Text") & !(source %in% c("Observation units attributes")),.(cols = list(cols)), source]
@@ -275,34 +290,9 @@ mod_scatterplot_server <- function(id, rv, parent_session){
             var_choices_COLOUR <- column_datasource[visible == T & (type == "Numerical" | type == "Text") & !(source %in% c("Observation Unit attributes", "Environment details")),.(cols = list(cols)), source]
           }
         }else{
-          shinyjs::hide("aggregate_by")
-          shinyjs::hide("aggreg_fun_X")
-          shinyjs::hide("aggreg_fun_Y")
-          shinyjs::hide("aggregate_text")
-          shinyjs::hide("aggreg_fun_SHAPE")
-          shinyjs::hide("aggreg_fun_COLOUR")
-          shinyjs::hide("aggreg_fun_SIZE")
-          shinyjs::hide("express_X_relative")
-          shinyjs::hide("express_Y_relative")
           var_choices_SHAPE <- non_num_var_choices
           var_choices_COLOUR <- var_choices_all
         }
-        
-        # Work around for pickerInputs with option groups that have only one option.
-        # The default behaviour is to display only the group name.
-        # Work around: naming the group by the singleton element
-        # for(k in 1:num_var_choices[,.N]){
-        #   cols <- num_var_choices[k,cols][[1]]
-        #   if(length(cols)==1){num_var_choices[k, source := cols]}
-        # }
-        # for(k in 1:var_choices_SHAPE[,.N]){
-        #   cols <- var_choices_SHAPE[k,cols][[1]]
-        #   if(length(cols)==1){var_choices_SHAPE[k, source := cols]}
-        # }
-        # for(k in 1:var_choices_COLOUR[,.N]){
-        #   cols <- var_choices_COLOUR[k,cols][[1]]
-        #   if(length(cols)==1){var_choices_COLOUR[k, source := cols]}
-        # }
         
         # default values or reset previously selected values
         if(isTruthy(input$picker_X)){

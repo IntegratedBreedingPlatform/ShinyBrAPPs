@@ -1,0 +1,132 @@
+
+//== Colors
+//
+//## Gray and brand colors for use across Bootstrap.
+
+@gray-darker:            #333333; // #222
+@gray-dark:              #818181;   // #333
+@gray:                   #CDCDCD; // #555
+@gray-light:             #E3E3E3;   // #999
+@gray-lighter:           #F6F6F6; // #eee
+
+@brand-primary:         #ff8109;
+@brand-success:         #02AC1E;
+@brand-info:            #1B95B2;
+@brand-warning:         #C99808;
+@brand-danger:          #990000;
+
+//== Scaffolding
+//
+// ## Settings for some of the most global styles.
+
+//** Background color for `<body>`.
+@body-bg:               #fff;
+//** Global text color on `<body>`.
+@text-color:            @gray-darker;
+
+//** Global textual link color.
+@link-color:            #04568F;
+//** Link hover color set via `darken()` function.
+@link-hover-color:      darken(@link-color, 15%);
+
+//'Open Sans'
+
+//== Typography
+//
+//## Font, line-height, and color for body text, headings, and more.
+
+@font-family-sans-serif:  "Open Sans","Segoe UI","Helvetica Neue",Arial,sans-serif;
+@font-family-serif:       Georgia, "Times New Roman", Times, serif;
+
+@font-size-base:          13px;
+@font-size-large:         ceil((@font-size-base * 1.25)); // ~18px
+@font-size-small:         ceil((@font-size-base * 0.85)); // ~11px
+
+@font-size-h1:            floor((@font-size-base * 2)); // ~26px
+@font-size-h2:            ceil((@font-size-base * 1.38)); // ~18px
+@font-size-h3:            ceil((@font-size-base * 1.23)); // ~16px
+@font-size-h4:            ceil((@font-size-base * 1.15)); // ~15px
+@font-size-h5:            ceil((@font-size-base * 1.15)); // ~15px
+@font-size-h5:            @font-size-base; // ~11px
+
+  //** Unit-less `line-height` for use in components like buttons.
+@line-height-base:        1.5; // 20/14
+
+//== Components
+//
+//## Define common padding and border radius sizes and more. Values based on 14px text and 1.428 line-height (~20px to start).
+/*
+@padding-base-vertical:     6px;
+@padding-base-horizontal:   12px;
+
+@padding-large-vertical:    6px;
+@padding-large-horizontal:  10px;
+
+@padding-small-vertical:    1px;
+@padding-small-horizontal:  5px;
+
+@padding-xs-vertical:       1px;
+@padding-xs-horizontal:     5px;
+
+@line-height-large:         1.5;
+@line-height-small:         2;
+
+@border-radius-base:        4px;
+@border-radius-large:       6px;
+@border-radius-small:       3px;
+  */
+
+//== Media queries breakpoints
+//
+//## Define the breakpoints at which your layout will change, adapting to different screen sizes.
+
+// Extra small screen / phone
+// Note: Deprecated @screen-xs and @screen-phone as of v3.0.1
+@screen-xs:                  320px;
+@screen-xs-min:              @screen-xs;
+@screen-phone:               @screen-xs-min;
+
+// Small screen / tablet
+// Note: Deprecated @screen-sm and @screen-tablet as of v3.0.1
+@screen-sm:                  480px;
+@screen-sm-min:              @screen-sm;
+@screen-tablet:              @screen-sm-min;
+
+// Medium screen / desktop
+// Note: Deprecated @screen-md and @screen-desktop as of v3.0.1
+@screen-md:                  700px;
+@screen-md-min:              @screen-md;
+@screen-desktop:             @screen-md-min;
+
+// Large screen / wide desktop
+// Note: Deprecated @screen-lg and @screen-lg-desktop as of v3.0.1
+@screen-lg:                  980px;
+@screen-lg-min:              @screen-lg;
+@screen-lg-desktop:          @screen-lg-min;
+
+// So media queries don't overlap when required, provide a maximum
+@screen-xs-max:              (@screen-sm-min - 1);
+@screen-sm-max:              (@screen-md-min - 1);
+@screen-md-max:              (@screen-lg-min - 1);
+
+
+//== Grid system
+//
+//## Define your custom responsive grid.
+@grid-gutter-width:         6px;
+
+@table-bg-hover:                #BED6B2;
+
+@link-color:                     @brand-primary;
+
+@btn-default-color:              #fff;
+@btn-default-bg:                 @gray-dark;
+@btn-default-border:             #7A7A7A;
+
+@input-border-focus:             @brand-primary;
+@input-color:                    @gray-darker;
+
+
+// dropdown
+@dropdown-link-active-bg:       @table-bg-hover;
+@dropdown-link-active-color:    #000;
