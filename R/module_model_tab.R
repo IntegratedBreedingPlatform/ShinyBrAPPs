@@ -553,6 +553,7 @@ mod_model_server <- function(id, rv){
         rv_mod$fit <- list()
         rv_mod$fitextr <- list()
         rv_mod$outliers <- list()
+
         a <- tryCatch({
           withProgress(message = "Fitting model", value = 0, {
             for (i in 1:length(input$select_environments)) {
@@ -574,21 +575,28 @@ mod_model_server <- function(id, rv){
               
               rv_mod$fit <- append(rv_mod$fit, fit)
               
-              fitextr <- extractSTA(fit)
-              rv_mod$fitextr <- append(rv_mod$fitextr, fitextr)
-              
-              outliers <-  outlierSTA(fit, 
-                                      what = "random",
-                                      commonFactors = "genotype")$outliers
-              if (!is.null(outliers)) {
-                outliers <- merge(
-                  as.data.table(outliers),
-                  rv$data[,.(study_name_app, observationUnitDbId, observationVariableName, observationDbId)],
-                  by.x = c("trial", "observationUnitDbId", "trait"),
-                  by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
-                )
-                rv_mod$outliers <- append(rv_mod$outliers, list(outliers))
-              }
+              tryCatch({
+                fitextr <- extractSTA(fit)
+                rv_mod$fitextr <- append(rv_mod$fitextr, fitextr)
+                
+                outliers <-  outlierSTA(fit, 
+                                        what = "random",
+                                        commonFactors = "genotype")$outliers
+                if (!is.null(outliers)) {
+                  outliers <- merge(
+                    as.data.table(outliers),
+                    rv$data[,.(study_name_app, observationUnitDbId, observationVariableName, observationDbId)],
+                    by.x = c("trial", "observationUnitDbId", "trait"),
+                    by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
+                  )
+                  rv_mod$outliers <- append(rv_mod$outliers, list(outliers))
+                }
+              },
+              error=function(e){
+                showNotification(paste0("could not fit model on ", input$select_environments[i]), type = "error", duration = notification_duration)
+                return(NULL)
+              })
+ 
             }
             
           })
@@ -596,7 +604,7 @@ mod_model_server <- function(id, rv){
         error=function(e){ e })
         mess <- a$message
         if(!is.null(mess)){
-          showNotification(mess, type = "error", duration = notification_duration)
+          showNotification(paste0("could not fit model on ", input$select_environments[i]), type = "error", duration = notification_duration)
         }
 
         rv_mod$fit <- structure(rv_mod$fit,
@@ -765,117 +773,125 @@ mod_model_server <- function(id, rv){
       
       observeEvent(c(input$select_trait_outliers, rv_mod$outliers), {
         req(rv_mod$fit)
-        req(length(rv_mod$outliers)>0)
         req(input$select_trait_outliers)
         
-        outliers_all <- rbindlist(rv_mod$outliers)
-        # outliers for the selected trait
-        outliers <- outliers_all[trait == input$select_trait_outliers]
-        
-        validate(need(outliers[,.N]>0 , "No outlier on this trait"))
-        
-        req(rv_mod$fitted_data)
-        
-        which(colnames(outliers_all) == "subBlock")
-        outliers_nb <- outliers_all[, .(`#outliers` = sum(outlier)), by = observationUnitDbId]
-        
-        variables_index <- which(colnames(outliers_all) %in% unique(rv_mod$fitted_data$observationVariableName))
-        first_var_index <- variables_index[1]
-        last_var_index <- variables_index[length(variables_index)]
-        
-        obs_nb <- unique(outliers_all[, .(observationUnitDbId,  `#observations` = rowSums(!is.na(.SD[, (first_var_index):(last_var_index)])))])
-        outliers_by_obsUnit <- merge(outliers_nb, obs_nb, by="observationUnitDbId")   
-        
-        rv$obsUnit_outliers <- outliers_by_obsUnit[`#outliers` > 0]$observationUnitDbId
-        
-        if(outliers[,.N]>0){
-          setnames(outliers, "trial", "environment")
+        if (length(rv_mod$outliers) == 0) {
+          rv_mod$outliers_table <- rv_mod$outliers
+        } else {
+          outliers_all <- rbindlist(rv_mod$outliers)
+          # outliers for the selected trait
+          outliers <- outliers_all[trait == input$select_trait_outliers]
+          
+          if (outliers[,.N] == 0) {
+            rv_mod$outliers_table <- outliers
+          } else {
+            req(rv_mod$fitted_data)
+            
+            which(colnames(outliers_all) == "subBlock")
+            outliers_nb <- outliers_all[, .(`#outliers` = sum(outlier)), by = observationUnitDbId]
+            
+            variables_index <- which(colnames(outliers_all) %in% unique(rv_mod$fitted_data$observationVariableName))
+            first_var_index <- variables_index[1]
+            last_var_index <- variables_index[length(variables_index)]
+            
+            obs_nb <- unique(outliers_all[, .(observationUnitDbId,  `#observations` = rowSums(!is.na(.SD[, (first_var_index):(last_var_index)])))])
+            outliers_by_obsUnit <- merge(outliers_nb, obs_nb, by="observationUnitDbId")   
+            
+            rv$obsUnit_outliers <- outliers_by_obsUnit[`#outliers` > 0]$observationUnitDbId
+            
+            if(outliers[,.N]>0){
+              setnames(outliers, "trial", "environment")
+            }
+            
+            outliers <- merge(outliers, outliers_by_obsUnit, by="observationUnitDbId")
+            
+            #Sort outliers on genotype, environment and repetition
+            outliers <- outliers[order(genotype, environment, repId)]
+            
+            rv_mod$outliers_table <- outliers
+          } 
+          shinyjs::enable("outliers_download")
         }
-        
-        outliers <- merge(outliers, outliers_by_obsUnit, by="observationUnitDbId")
-        
-        #Sort outliers on genotype, environment and repetition
-        outliers <- outliers[order(genotype, environment, repId)]
-        
-        rv_mod$outliers_table <- outliers
-        shinyjs::enable("outliers_download")
-        
       }, ignoreInit = F)
 
       ## output$outliers_DT ####
       output$outliers_DT <- renderDataTable({
+        
         validate(
           need(rv_mod$outliers_table, message = "No outlier for this trait")
         )
         
         outliers <- rv_mod$outliers_table
-        # change columns order (move variables columns at the end)
-        cols <- colnames(outliers)
-        first_var_index <- which(colnames(outliers) %in% unique(rv_mod$fitted_data$observationVariableName))[1]
-        outlier_index <- which(cols == "outlier")
-        if (outlier_index > first_var_index) {
-          new_cols_order <- c(cols[1:first_var_index-1], cols[outlier_index:length(cols)], cols[(first_var_index):(outlier_index-1)])
-          setcolorder(outliers, new_cols_order)
-        }
-        # only true outliers can be selected and mark as outlier
-        selectable_rows <- outliers[outlier == T, which = TRUE]
         
-        # to show outliers that were excluded (before refitting model)
-        excluded_rows <- outliers[observationDbId %in% rv$excluded_obs[,observationDbId], which = T]
-        
-        # set a color for each environment/genotype couple
-        # 2 colors depending on even or odd row
-        group_colors <- unique(outliers[ , .(environment, genotype)])
-        group_colors <- lapply(seq_len(nrow(group_colors)), function(i) {
-          if (i %% 2 == 0) {
-            color = "'#d9edf7'"  
-          } else {
-            color = "'#e3e3e3'"  
+        if (length(outliers) > 0) {
+          # change columns order (move variables columns at the end)
+          cols <- colnames(outliers)
+          first_var_index <- which(colnames(outliers) %in% unique(rv_mod$fitted_data$observationVariableName))[1]
+          outlier_index <- which(cols == "outlier")
+          if (outlier_index > first_var_index) {
+            new_cols_order <- c(cols[1:first_var_index-1], cols[outlier_index:length(cols)], cols[(first_var_index):(outlier_index-1)])
+            setcolorder(outliers, new_cols_order)
           }
-          return(paste0("'", paste0(group_colors[i, environment], "|", group_colors[i, genotype]),"':", color))
-        })
-        group_colors <- paste(group_colors, collapse = ",")
-        
-        genotype_col_index = which(colnames(outliers) == "genotype") - 1
-        env_col_index = which(colnames(outliers) == "environment") - 1
-        outlier_col_index = which(colnames(outliers) == "outlier") - 1
-        dec_cols <- names(which(apply(data.frame(outliers)[,which(!apply(outliers,2,function(a) all(is.na(as.numeric(a)))))],2,function(a) sum(abs(round(as.numeric(a),0)-as.numeric(a)),na.rm = T))>0))
-        formatRound(datatable(
-          outliers,
-          rownames = F,
-          selection = list(
-            target = 'row',
-            selectable = selectable_rows
-          ),
-          options = list(
-            paging = F,
-            scrollX = T,
-            scrollY = "400px",
-            scrollCollapse = T,
-            dom = 't',
-            rowCallback = JS(
-              sprintf(
-                "function(row, data, index) {
-                  var groups = {%s};
-                  var excludedRows = [%s];
-                  $('td', row).css('background-color', groups[data[%i].concat('|', data[%i])]);
-                  if (data[%i]) {
-                    $('td', row).css('font-weight', 'bold');
-                  }
-                  if (excludedRows.includes(index+1)) {
-                    console.log(index)
-                    $('td', row).css('color', '#ac8888'); 
-                  }
-                }",
-                group_colors,
-                paste(excluded_rows, collapse = ","),
-                env_col_index,
-                genotype_col_index,
-                outlier_col_index
+          # only true outliers can be selected and mark as outlier
+          selectable_rows <- outliers[outlier == T, which = TRUE]
+          
+          # to show outliers that were excluded (before refitting model)
+          excluded_rows <- outliers[observationDbId %in% rv$excluded_obs[,observationDbId], which = T]
+          
+          # set a color for each environment/genotype couple
+          # 2 colors depending on even or odd row
+          group_colors <- unique(outliers[ , .(environment, genotype)])
+          group_colors <- lapply(seq_len(nrow(group_colors)), function(i) {
+            if (i %% 2 == 0) {
+              color = "'#d9edf7'"  
+            } else {
+              color = "'#e3e3e3'"  
+            }
+            return(paste0("'", paste0(group_colors[i, environment], "|", group_colors[i, genotype]),"':", color))
+          })
+          group_colors <- paste(group_colors, collapse = ",")
+          
+          genotype_col_index = which(colnames(outliers) == "genotype") - 1
+          env_col_index = which(colnames(outliers) == "environment") - 1
+          outlier_col_index = which(colnames(outliers) == "outlier") - 1
+          dec_cols <- names(which(apply(data.frame(outliers)[,which(!apply(outliers,2,function(a) all(is.na(as.numeric(a)))))],2,function(a) sum(abs(round(as.numeric(a),0)-as.numeric(a)),na.rm = T))>0))
+          formatRound(datatable(
+            outliers,
+            rownames = F,
+            selection = list(
+              target = 'row',
+              selectable = selectable_rows
+            ),
+            options = list(
+              paging = F,
+              scrollX = T,
+              scrollY = "400px",
+              scrollCollapse = T,
+              dom = 't',
+              rowCallback = JS(
+                sprintf(
+                  "function(row, data, index) {
+                    var groups = {%s};
+                    var excludedRows = [%s];
+                    $('td', row).css('background-color', groups[data[%i].concat('|', data[%i])]);
+                    if (data[%i]) {
+                      $('td', row).css('font-weight', 'bold');
+                    }
+                    if (excludedRows.includes(index+1)) {
+                      console.log(index)
+                      $('td', row).css('color', '#ac8888'); 
+                    }
+                  }",
+                  group_colors,
+                  paste(excluded_rows, collapse = ","),
+                  env_col_index,
+                  genotype_col_index,
+                  outlier_col_index
+                )
               )
             )
-          )
-        ),digits = 2, columns = dec_cols)
+          ),digits = 2, columns = dec_cols)
+        }
       })
       
       ### handle select all ####
@@ -930,6 +946,10 @@ mod_model_server <- function(id, rv){
           
         }
         rv_mod$metrics_A <- metrics
+        
+        validate(
+          need(length(metrics) > 0, "No metrics to display, could not fit any model")
+        )
 
         setkey(metrics, "Environment")
         dtable <- formatRound(datatable(
@@ -957,10 +977,11 @@ mod_model_server <- function(id, rv){
         req(input$select_metrics_B)
         req(input$select_environment_metrics)
         req(rv_mod$fitextr)
-        #browser()
         #metrics_table <- as.data.table(extractSTA(STA = rv_mod$fit, what = input$select_metrics_B))
         metrics_table <- as.data.table(rv_mod$fitextr[[input$select_environment_metrics]][[input$select_metrics_B]])
-        
+        validate(
+          need(length(metrics_table) > 0, "No metrics to display, could not fit any model")
+        )
         entry_types <- unique(rv$data[,.(genotype=germplasmName, entryType)])
         setkey(metrics_table, genotype)
         setkey(entry_types, genotype)
@@ -1014,7 +1035,6 @@ mod_model_server <- function(id, rv){
       
       extract_all_BLUEs_BLUPs <- reactive({
         req(rv_mod$fitextr)
-        
         table_metrics <- list()
         for (i in 1:length(rv_mod$fitextr)) {
           table_metrics_env <- list()
