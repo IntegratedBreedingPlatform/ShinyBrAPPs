@@ -530,10 +530,10 @@ mod_gxe_server <- function(id, rv, parent_session){
       accordion_panel_close("GGE_adv_settings_acc", values="advs", session = session)
       accordion_panel_close("AMMI_adv_settings_acc", values="advs", session = session)
 
-      lastclick_stabsup <- Sys.time()
-      lastclick_stabsta <- Sys.time()
-      lastclick_stabwri <- Sys.time()
-      lastsel_stabtab <- Sys.time()
+      #lastclick_stabsup <- Sys.time()
+      #lastclick_stabsta <- Sys.time()
+      #lastclick_stabwri <- Sys.time()
+      #lastsel_stabtab <- Sys.time()
 
       ## initialize all inputs ####
       observe({
@@ -2094,24 +2094,26 @@ mod_gxe_server <- function(id, rv, parent_session){
       #### table ####
       output$STAB_sup <- renderDataTable({
         formatRound(datatable(rv_gxe$TDStab$dtres[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes),], rownames = FALSE,
+        #formatRound(datatable(rv_gxe$TDStab$dtres, rownames = FALSE,
                               options = list(pageLength = 30),
                               selection = list(mode="multiple", 
                                                selected=which(rv_gxe$TDStab$dtres$Genotype[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes)]%in%rv_gxe$STSclicked_genotypes))),
+                                               #selected=which(rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes))),
                     columns = c("Mean", "Sup", "S", "W", "sqrtS", "sqrtWe"), 
                     digits=3)
       })
 
       #### Handle DT selection ####
-      observeEvent(input$STAB_sup_rows_selected, ignoreNULL = FALSE, ignoreInit = TRUE, {
-        req(abs(lastsel_stabtab - Sys.time()) >=0.3)
-        if (!is.null(input$STAB_sup_rows_selected)){
-          tab <- rv_gxe$TDStab$dtres[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes),]
-          rv_gxe$STSclicked_genotypes <- as.character(tab[input$STAB_sup_rows_selected, "Genotype"])
-          lastsel_stabtab <<- Sys.time()
-        } else {
-          rv_gxe$STSclicked_genotypes <- NULL
-        }
-      })
+      #observeEvent(input$STAB_sup_rows_selected, ignoreNULL = FALSE, ignoreInit = TRUE, {
+      #  req(abs(lastsel_stabtab - Sys.time()) >=0.3)
+      #  if (!is.null(input$STAB_sup_rows_selected)){
+      #    tab <- rv_gxe$TDStab$dtres[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes),]
+      #    rv_gxe$STSclicked_genotypes <- as.character(tab[input$STAB_sup_rows_selected, "Genotype"])
+      #    lastsel_stabtab <<- Sys.time()
+      #  } else {
+      #    rv_gxe$STSclicked_genotypes <- NULL
+      #  }
+      #})
       
       
       ### Static ####
@@ -2131,8 +2133,9 @@ mod_gxe_server <- function(id, rv, parent_session){
             scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
             scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
         }
-        if(length(rv_gxe$STSclicked_genotypes)>0){
-          clickgeno <- gg$data[gg$data$Genotype%in%rv_gxe$STSclicked_genotypes,]
+        #if(length(rv_gxe$STSclicked_genotypes)>0){
+        if(length(input$STAB_sup_rows_selected)>0){
+          clickgeno <- gg$data[gg$data$Genotype%in%rv_gxe$TDStab$dtres[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes),][input$STAB_sup_rows_selected,"Genotype"],]
           #browser()
           #gg + ggnewscale::new_scale_color()
           gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(S)), shape = 21, size=3, color="red") + 
@@ -2146,9 +2149,10 @@ mod_gxe_server <- function(id, rv, parent_session){
       
       #### Handle click event ####
       observeEvent(input$STAB_static_plot_click,{
-        req(abs(lastclick_stabsta - Sys.time()) >=0.8)
+        #req(abs(lastclick_stabsta - Sys.time()) >=0.8)
         if(!is.null(input$STAB_static_plot_click)) {
-          clicked_genotypes <- rv_gxe$STSclicked_genotypes
+          #browser()
+          clicked_genotypes <- as.character(rv_gxe$TDStab$dtres[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes),][input$STAB_sup_rows_selected,"Genotype"])
           sta <- rv_gxe$st_sta_plotdat
           click=input$STAB_static_plot_click
           dist=sqrt((click$x-sta[,2])^2+(click$y-sqrt(sta[,3]))^2)
@@ -2158,12 +2162,12 @@ mod_gxe_server <- function(id, rv, parent_session){
           } else {
             rv_gxe$STSclicked_genotypes <- unique(c(clicked_genotypes,clickedgeno))
           }
-          lastclick_stabsta <<- Sys.time()
+          #lastclick_stabsta <<- Sys.time()
         }
       })
       #### Handle dbleclick event ####
       observeEvent(input$STAB_static_plot_dblclick,{
-        req(abs(lastclick_stabsta - Sys.time()) >=0.8)
+        #req(abs(lastclick_stabsta - Sys.time()) >=0.8)
         rv_gxe$STSclicked_genotypes <- NULL
       })
       
@@ -2188,8 +2192,8 @@ mod_gxe_server <- function(id, rv, parent_session){
             scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
             scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
         }
-        if(length(rv_gxe$STSclicked_genotypes)>0){
-          clickgeno <- gg$data[gg$data$Genotype%in%rv_gxe$STSclicked_genotypes,]
+        if(length(input$STAB_sup_rows_selected)>0){
+          clickgeno <- gg$data[gg$data$Genotype%in%rv_gxe$TDStab$dtres[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes),][input$STAB_sup_rows_selected,"Genotype"],]
           #browser()
           #gg + ggnewscale::new_scale_color()
           gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrtWe), shape = 21, size=3, color="red") +
@@ -2203,9 +2207,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       
       #### Handle click event ####
       observeEvent(input$STAB_wricke_plot_click,{
-        req(abs(lastclick_stabwri - Sys.time()) >=0.8)
+        #req(abs(lastclick_stabwri - Sys.time()) >=0.8)
         if(!is.null(input$STAB_wricke_plot_click)) {
-          clicked_genotypes <- rv_gxe$STSclicked_genotypes
+          clicked_genotypes <- as.character(rv_gxe$TDStab$dtres[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes),][input$STAB_sup_rows_selected,"Genotype"])
           stw <- rv_gxe$st_stw_plotdat
           click=input$STAB_wricke_plot_click
           dist=sqrt((click$x-stw[,2])^2+(click$y-stw[,6])^2)
@@ -2215,12 +2219,12 @@ mod_gxe_server <- function(id, rv, parent_session){
           } else {
             rv_gxe$STSclicked_genotypes <- unique(c(clicked_genotypes,clickedgeno))
           }
-          lastclick_stabwri <<- Sys.time()
+          #lastclick_stabwri <<- Sys.time()
         }
       })
       #### Handle dbleclick event ####
       observeEvent(input$STAB_wricke_plot_dblclick,{
-        req(abs(lastclick_stabwri - Sys.time()) >=0.8)
+        #req(abs(lastclick_stabwri - Sys.time()) >=0.8)
         rv_gxe$STSclicked_genotypes <- NULL
       })
       ### Superiority ####
@@ -2241,8 +2245,8 @@ mod_gxe_server <- function(id, rv, parent_session){
             scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
             scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
         }
-        if(length(rv_gxe$STSclicked_genotypes)>0){
-          clickgeno <- gg$data[gg$data$Genotype%in%rv_gxe$STSclicked_genotypes,]
+        if(length(input$STAB_sup_rows_selected)>0){
+          clickgeno <- gg$data[gg$data$Genotype%in%rv_gxe$TDStab$dtres[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes),][input$STAB_sup_rows_selected,"Genotype"],]
           #browser()
           #gg + ggnewscale::new_scale_color()
           gg <- gg + geom_point(data = clickgeno, aes(x=Mean , y = sqrt(Sup)), shape = 21, size=3, color="red") +
@@ -2254,9 +2258,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       
       #### Handle click event ####
       observeEvent(input$STAB_sup_plot_click,{
-        req(abs(lastclick_stabsup - Sys.time()) >=0.8)
+        #req(abs(lastclick_stabsup - Sys.time()) >=0.8)
         if(!is.null(input$STAB_sup_plot_click)) {
-          clicked_genotypes <- rv_gxe$STSclicked_genotypes
+          clicked_genotypes <- as.character(rv_gxe$TDStab$dtres[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes),][input$STAB_sup_rows_selected,"Genotype"])
           sts <- rv_gxe$st_sup_plotdat
           click=input$STAB_sup_plot_click
           dist=sqrt((click$x-sts[,2])^2+(click$y-sqrt(sts[,7]))^2)
@@ -2266,18 +2270,18 @@ mod_gxe_server <- function(id, rv, parent_session){
           } else {
             rv_gxe$STSclicked_genotypes <- unique(c(clicked_genotypes,clickedgeno))
           }
-          lastclick_stabsup <<- Sys.time()
+          #lastclick_stabsup <<- Sys.time()
         }
       })
       #### Handle dbleclick event ####
       observeEvent(input$STAB_sup_plot_dblclick,{
-        req(abs(lastclick_stabsup - Sys.time()) >=0.8)
+        #req(abs(lastclick_stabsup - Sys.time()) >=0.8)
         rv_gxe$STSclicked_genotypes <- NULL
       })
       
       ### Handle group creation in Stability selection ####
-      observeEvent(rv$STSclicked_genotypes, {
-        if(length(rv$STSclicked_genotypes)<1){
+      observeEvent(input$STAB_sup_rows_selected, {
+        if(length(input$STAB_sup_rows_selected)<1){
           shinyjs::disable("create_groups_from_STABsel")
         } else {
           shinyjs::enable("create_groups_from_STABsel")
@@ -2285,9 +2289,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       })
       
       observeEvent(input$create_groups_from_STABsel,{
-        if(length(rv_gxe$STSclicked_genotypes)>0){
+        if(length(input$STAB_sup_rows_selected)>0){
           rv$selection <- unique(merge.data.table(x=data.table(group_id=ifelse(is.null(rv$groups$group_id) || length(rv$groups$group_id) == 0, 1, max(rv$groups$group_id) + 1),
-                                                               data.table(Genotype=rv_gxe$STSclicked_genotypes)),
+                                                               data.table(Genotype=rv_gxe$TDStab$dtres[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes),][input$STAB_sup_rows_selected,"Genotype"])),
                                                   y=unique(rbindlist(rv$TD)),
                                                   by.x = "Genotype",
                                                   by.y ="genotype", all.x = TRUE, all.y = FALSE)[,.(group_id, germplasmDbId, germplasmName, plot_param="None", Genotype)])[, .(.N, germplasmDbIds=list(germplasmDbId), germplasmNames=list(germplasmName),plot_params=list(plot_param), germplasmNames_label=paste(Genotype, collapse=", ")), group_id]
