@@ -536,7 +536,7 @@ mod_dataquality_server <- function(id, rv) {
       }
       
       ## extract legend
-      # rv_dq$layout_legend <- get_legend(g2)
+      rv_dq$layout_legend <- get_legend(g2)
       g2 <- g2 + theme(legend.position = "none")
       
       ggplotly(
@@ -569,7 +569,7 @@ mod_dataquality_server <- function(id, rv) {
       req(input$studies)
       req(input$trait)
       req(rv_dq$layout_legend)
-      as_ggplot(rv_dq$layout_legend)
+      ggpubr::as_ggplot(rv_dq$layout_legend)
     })
     
     ## observe plotly_click ####
