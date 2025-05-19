@@ -1,0 +1,75 @@
+<div class="modal-body">
+	<div class="row form-group">
+		<div class="col-xs-11 col-md-11">
+			<label class="modal-title fbk-modal-title" id="heading-modal">Create genotyping samples</label>
+		</div>
+		<div class="col-xs-1 col-md-1">
+			<button id="closeAdvanceTrialModal" type="button" class="close  pull-right glyphicon glyphicon-remove"
+					ng-click="cancel()"/>
+		</div>
+	</div>
+
+	<div class="row form-group">
+		<div id="page-advance-modal-message"></div>
+	</div>
+	<div class="separator"></div>
+	<p></p>
+	<div class="row form-group">
+		<div class="col-xs-12 col-md-12">
+			<br></br>
+			<strong class="sub-content-heading ng-binding"> SAMPLES</strong>
+			<div>
+				<label class=""><em>* Indicates mandatory
+					fields</em></label>
+			</div>
+		</div>
+	</div>
+	<div class="row form-group">
+		<div class="col-xs-6 col-md-6">
+			<label class="control-label add_top_padding label-bold" th:utext="#{study.select.variate.sample.list}">Choose
+				variate that defines the number of samples per plot *</label>
+
+		</div>
+		<div class="report-type-section col-xs-6 col-md-5">
+			<select id="sampleSelectVariable" name="selectVariableManageSample"
+					ng-options="variable.name for variable in variables" ng-model="variableSelected" required="">
+				<option value="">Please Choose</option>
+			</select>
+		</div>
+	</div>
+	<div class="row form-group">
+		<div class="col-xs-6 col-md-6">
+			<label class="control-label add_top_padding label-bold">Taken
+				by</label>
+		</div>
+		<div class="report-type-section col-xs-6 col-md-5">
+			<select id="sampleSelectUser" ng-options="user.id as user.username for user in users"
+					ng-model="selectedUser">
+				<option value="">Please Choose</option>
+			</select>
+		</div>
+		<br></br>
+	</div>
+	<div class="row form-group">
+		<div class="col-xs-6 col-md-6">
+			<label class="control-label add_top_padding label-bold">Sampling
+				date</label>
+		</div>
+		<div class="col-xs-4 col-md-4">
+			<p class="input-group">
+				<input id="sampleSelectSamplingDate" class="form-control" placeholder="yyyy-mm-dd" style="width: 100px"
+					   type="text" ng-model="dateSampling" jq-datepicker="" set-current-date-as-default="true"
+					   data-date-format="yyyy-mm-dd" with-image="true" image-src="/Fieldbook/static/img/calendar.png"/>
+			</p>
+		</div>
+	</div>
+</div> <!-- Modal Body -->
+<div class="modal-footer">
+	<button type="button" class="btn btn-default" data-dismiss="modal" ng-click="backToCreateSample()">
+		Back
+	</button>
+	<button type="button" class="btn btn-primary" ng-disabled="variableSelected === undefined || saveSampleListButton"
+			ng-click="continue()">
+		Save
+	</button>
+</div>

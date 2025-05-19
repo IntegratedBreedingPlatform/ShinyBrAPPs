@@ -11,7 +11,7 @@ server <- function(input, output, session){
     visu_as_group = NULL,
     new_group_created = F
   )
-  
+  mod_connect_server("connect",rv)  
   mod_get_studydata_server("get_studydata", rv)
   mod_get_extradata_server("get_extradata", rv)
   print("appname")
@@ -35,8 +35,8 @@ server <- function(input, output, session){
 
     ## update selectors (shape, colour)
     data_plot <- copy(rv$extradata) # to avoid issues related to assignment by reference
-    data_plot[germplasmDbId %in% rv$selection[,unlist(germplasmDbIds)], eval(input$modal_create_group_text_input_label) := paste0('In "', input$modal_create_group_text_input_label,'"')]
-    data_plot[!(germplasmDbId %in% rv$selection[,unlist(germplasmDbIds)]), eval(input$modal_create_group_text_input_label) := paste0('Not in "', input$modal_create_group_text_input_label,'"')]
+    data_plot[germplasmDbId %in% rv$selection[,unlist(germplasmDbIds)], eval(input$modal_create_group_text_input_label) := paste0('In')]
+    data_plot[!(germplasmDbId %in% rv$selection[,unlist(germplasmDbIds)]), eval(input$modal_create_group_text_input_label) := paste0('Out')]
     rv$column_datasource <- rbindlist(
       list(
         rv$column_datasource,

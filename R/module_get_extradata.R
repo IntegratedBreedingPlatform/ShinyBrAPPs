@@ -18,7 +18,6 @@ mod_get_extradata_server <- function(id, rv){
 
         isolate({
           data_tmp <- rv$data[,!c("observationTimeStamp")]
-
           ### make data source register
           # - Germplasm
           # - Cross Environment Means (GxE)
@@ -60,7 +59,7 @@ mod_get_extradata_server <- function(id, rv){
             formula = formul,
             value.var = "observationValue"
           )
-          
+          #browser()
           ### Data source "environment"
           ## extract environment parameters from rv$study_metadata
           if(length(grep("environmentParameters", names(rv$study_metadata)))){
@@ -74,6 +73,17 @@ mod_get_extradata_server <- function(id, rv){
             environmentParameters <- unique(rv$study_metadata[,studyDbId])
             showNotification("No environment parameters in study metadata", type = "warning", duration = notification_duration)
           }
+          if(length(grep("coordinates", names(rv$study_metadata)))){
+            geo <- rv$study_metadata[,c("studyDbId",grep("coordinates", names(rv$study_metadata),value = T)), with = F]
+            geo <- geo[!is.na(coordinates.type)]
+            latlon <- unique(geo[,.(studyDbId,geo.lat=unlist(lapply(coordinates.geometry.coordinates,function(a) a[1])),geo.lon=unlist(lapply(coordinates.geometry.coordinates,function(a) a[2])))])
+            latlon[,studyDbId:=as.numeric(studyDbId)]
+            environmentParameters <- latlon[environmentParameters,on=.(studyDbId)]
+            env_cols <- rbind(env_cols, data.table(cols=c("geo.lat","geo.lon"), type = NA, source = "environment", visible = T))
+            extradata <- merge(extradata, latlon, by = "studyDbId", all.x=TRUE)
+          }
+            
+          
           
           column_datasource <- rbindlist(list(column_datasource, env_cols), use.names = T)
           

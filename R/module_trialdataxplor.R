@@ -113,68 +113,72 @@ mod_trialdataxplor_server <- function(id, rv){
       ## observe rv$data ####
       observeEvent(c(rv$data), {
         req(rv$data)
-        if(rv$data[observationLevel!="PLOT", .N]>0){
-          showNotification(
-            paste0("Taking away the level(s) of observation: ",
-                   rv$data[observationLevel!="PLOT", paste(unique(observationLevel), collapse = ", ")],
-                   "\n(",rv$data[observationLevel!="PLOT", .N], " values)",
-                   "\n\n(Only the PLOT observation level is considered for STA)"
-            ), type = "default", duration = notification_duration)
+        if (nrow(rv$data)==0){
+          showModal(modalDialog(paste0("No data in the selected studies"), fade = FALSE))
+        } else {
+          if(rv$data[observationLevel!="PLOT", .N]>0){
+            showNotification(
+              paste0("Taking away the level(s) of observation: ",
+                     rv$data[observationLevel!="PLOT", paste(unique(observationLevel), collapse = ", ")],
+                     "\n(",rv$data[observationLevel!="PLOT", .N], " values)",
+                     "\n\n(Only the PLOT observation level is considered for STA)"
+              ), type = "default", duration = notification_duration)
+          }
+          
+          data_dq <- rv$data
+          req("observationVariableName"%in%names(data_dq))        
+          if(!("observationVariableName"%in%names(data_dq))){
+            showNotification("No trait data", type = "error", duration = notification_duration)
+          }
+          
+          env_choices <- rv$study_metadata[loaded==T,unique(studyDbId)]
+          names(env_choices) <- rv$study_metadata[loaded==T,unique(study_name_app)]
+          data_dq <- data_dq[!is.na(observationVariableDbId)]
+          scrid <- brapi_post_search_variables(rv$con, observationVariableDbIds = as.character(unique(data_dq$observationVariableDbId)))
+          variables <- brapi_get_search_variables_searchResultsDbId(rv$con, searchResultsDbId = scrid$searchResultsDbId)
+          setDT(variables)
+          variables[,observationVariableDbId:=as.numeric(observationVariableDbId)]
+          rv_tdx$variables <- variables
+          
+          locs <- rbindlist(lapply(unique(rv$study_metadata$locationDbId), function(l){
+             as.data.table(brapi_get_locations(rv$con, locationDbId = l))
+           }), use.names = T, fill = T)
+          st <- locs[,.(locationDbId,countryName)][rv$study_metadata, on=.(locationDbId)]
+          st <- unique(st[,.(studyDbId,locationDbId,countryName,studyName,locationName)])
+          st[, studyDbId:=as.numeric(studyDbId)]
+          st[, study_label:=paste0(locationName," (",countryName,")")]
+          data_dq <- st[,.(studyDbId,countryName )][data_dq, on=.(studyDbId)]
+          data_dq <- variables[,.(observationVariableDbId, trait.name, method.methodName, scale.scaleName)][data_dq, on=.(observationVariableDbId=observationVariableDbId)]
+          data_dq[, study_label:=paste0(locationName," (",countryName,")")]
+          data_dq[, observationValue:=as.numeric(observationValue)]
+          data_dq[, replicate:=as.factor(replicate)]
+          #browser()
+          if (any(!st$studyDbId%in%data_dq$studyDbId)){
+            missingst <- st[!studyDbId%in%data_dq$studyDbId]
+            missingmsg <- paste(paste0(missingst$study_label,"(",missingst$studyDbId,")"),collapse=", ")
+            showModal(modalDialog(paste0("The following studies had no observation data: ", missingmsg), fade = FALSE))
+            rv_tdx$study_no_dat <- missingst
+            output$study_no_dat <- renderTable(missingst,digits=0)
+          }
+  
+          output$spinning_boxplot <- renderUI({
+            shinycssloaders::withSpinner(
+              plotOutput(ns("boxplots"), height=500), type = 1,color.background = "white"
+            )
+          })
+          
+          #rv_tdx$st <- data_dq[,.N,studyDbId][st, on=.(studyDbId)]
+          rv_tdx$data_dq <- data_dq
+          rv_tdx$locs <- locs
+  
+          updateSelectInput(session, inputId = "obs_trait",choices = unique(data_dq$observationVariableName))
+          
+          ct <- dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(study=paste0(studyDbId,"-",locationName),Variable=observationVariableName)],
+                      Variable~study, fill = 0)
+          rv_tdx$counts <- ct
+          vnd <- melt(ct, variable.name = "StudyLocation")[value==0,.(StudyLocation, Variable)]
+          rv_tdx$var_no_dat <- vnd
         }
-        
-        data_dq <- rv$data
-        req("observationVariableName"%in%names(data_dq))        
-        if(!("observationVariableName"%in%names(data_dq))){
-          showNotification("No trait data", type = "error", duration = notification_duration)
-        }
-        
-        env_choices <- rv$study_metadata[loaded==T,unique(studyDbId)]
-        names(env_choices) <- rv$study_metadata[loaded==T,unique(study_name_app)]
-        data_dq <- data_dq[!is.na(observationVariableDbId)]
-        scrid <- brapi_post_search_variables(rv$con, observationVariableDbIds = as.character(unique(data_dq$observationVariableDbId)))
-        variables <- brapi_get_search_variables_searchResultsDbId(rv$con, searchResultsDbId = scrid$searchResultsDbId)
-        setDT(variables)
-        variables[,observationVariableDbId:=as.numeric(observationVariableDbId)]
-        rv_tdx$variables <- variables
-        
-        locs <- rbindlist(lapply(unique(rv$study_metadata$locationDbId), function(l){
-           as.data.table(brapi_get_locations(rv$con, locationDbId = l))
-         }))
-        st <- locs[,.(locationDbId,countryName)][rv$study_metadata, on=.(locationDbId)]
-        st <- unique(st[,.(studyDbId,locationDbId,countryName,studyName,locationName)])
-        st[, studyDbId:=as.numeric(studyDbId)]
-        st[, study_label:=paste0(locationName," (",countryName,")")]
-        data_dq <- st[,.(studyDbId,countryName )][data_dq, on=.(studyDbId)]
-        data_dq <- variables[,.(observationVariableDbId, trait.name, method.methodName, scale.scaleName)][data_dq, on=.(observationVariableDbId=observationVariableDbId)]
-        data_dq[, study_label:=paste0(locationName," (",countryName,")")]
-        data_dq[, observationValue:=as.numeric(observationValue)]
-        data_dq[, replicate:=as.factor(replicate)]
-        #browser()
-        if (any(!st$studyDbId%in%data_dq$studyDbId)){
-          missingst <- st[!studyDbId%in%data_dq$studyDbId]
-          missingmsg <- paste(paste0(missingst$study_label,"(",missingst$studyDbId,")"),collapse=", ")
-          showModal(modalDialog(paste0("The following studies had no observation data: ", missingmsg), fade = FALSE))
-          rv_tdx$study_no_dat <- missingst
-          output$study_no_dat <- renderTable(missingst,digits=0)
-        }
-
-        output$spinning_boxplot <- renderUI({
-          shinycssloaders::withSpinner(
-            plotOutput(ns("boxplots"), height=500), type = 1,color.background = "white"
-          )
-        })
-        
-        #rv_tdx$st <- data_dq[,.N,studyDbId][st, on=.(studyDbId)]
-        rv_tdx$data_dq <- data_dq
-        rv_tdx$locs <- locs
-
-        updateSelectInput(session, inputId = "obs_trait",choices = unique(data_dq$observationVariableName))
-        
-        ct <- dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(study=paste0(studyDbId,"-",locationName),Variable=observationVariableName)],
-                    Variable~study, fill = 0)
-        rv_tdx$counts <- ct
-        vnd <- melt(ct, variable.name = "StudyLocation")[value==0,.(StudyLocation, Variable)]
-        rv_tdx$var_no_dat <- vnd
       })
       observeEvent(input$outslid,{
         req(rv_tdx$data_dq, input$outslid)
@@ -224,8 +228,8 @@ mod_trialdataxplor_server <- function(id, rv){
       observeEvent(rv_tdx$locs, {
         locs <- rv_tdx$locs
         if ("coordinates.geometry.coordinates"%in%colnames(locs)){
-          locs[,lat:=unlist(lapply(coordinates.geometry.coordinates, function(a) a[2]))]
-          locs[,lon:=unlist(lapply(coordinates.geometry.coordinates, function(a) a[1]))]
+          locs[coordinates.geometry.type=="Point",lat:=unlist(lapply(coordinates.geometry.coordinates, function(a) a[2]))]
+          locs[coordinates.geometry.type=="Point",lon:=unlist(lapply(coordinates.geometry.coordinates, function(a) a[1]))]
           output$locationmap <- renderLeaflet(leaflet(data = locs) %>%  
                                               addCircleMarkers(popup = ~as.character(locationName),
                                                                 label=~as.character(locationName),

@@ -28,6 +28,7 @@ ui <- bslib::page_fluid(theme = bslib::bs_theme(preset = "bootstrap"),
   
   div(class = "container-fluid",
       mod_banner_ui("banner"),
+      mod_connect_ui("connect"),
       mod_get_studydata_ui("get_studydata"),
       mod_trialdataxplor_ui("xplor")
       )

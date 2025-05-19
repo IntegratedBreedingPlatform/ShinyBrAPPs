@@ -58,6 +58,7 @@ get_env_data <- function(con = NULL,
     commoncropname = con$commoncropname,
     token = con$token)
 
+  print(paste0("retrieving data from study ", studyDbId))
   try({
     if (is.null(obs_unit_level)) {
       res <- brapir::phenotyping_observationunits_post_search(
@@ -65,10 +66,7 @@ get_env_data <- function(con = NULL,
         studyDbIds = studyDbId,
         includeObservations = T
       )
-      res0 <- brapirv2::brapi_post_search_observationunits(
-        con = con,
-        studyDbIds = studyDbId,
-        includeObservations = T)
+      print(res$status_code)
     } else {
       obs_levels <- data.frame(levelName = obs_unit_level)
       res <- brapir::phenotyping_observationunits_post_search(
@@ -77,15 +75,12 @@ get_env_data <- function(con = NULL,
         observationLevels = obs_levels,
         includeObservations = T
       )
-      res0 <- brapirv2::brapi_post_search_observationunits(
-        con = con, 
-        studyDbIds = studyDbId,
-        observationLevels = obs_levels,
-        includeObservations = T)
+      print(res$status_code)
     }
     if (res$status_code == 200 | res$status_code == 202) {
       searchResultDbId <- as.character(res$data$searchResultsDbId)
       res <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con, searchResultsDbId = searchResultDbId)
+      print(res$status_code)
       if (res$status_code == 200) {
         if (nrow(res$data) > 0) {
           observations <- tidyr::unnest(res$data, cols = "observationUnitPosition.observationLevelRelationships", names_sep = ".", keep_empty = T)
@@ -106,7 +101,6 @@ get_env_data <- function(con = NULL,
         return(NULL)
       }
     }
-    
     if (!"observations.observationDbId" %in% colnames(study_obs)) {
       study_obs <- NULL
       return(study_obs)
@@ -160,7 +154,7 @@ get_env_data <- function(con = NULL,
                              by = grouping_cols]
       
       variables <- as.data.table(brapirv2::brapi_get_variables(con = con, studyDbId = studyDbId))
-      variables <- variables[, .(observationVariableDbId, scale.dataType)] 
+      variables <- variables[trait.traitClass != "Breedingprocess", .(observationVariableDbId, scale.dataType)] 
       if (any(colnames(study_obs)=="observationVariableDbId")){
         study_obs <- merge(study_obs, variables, 
                        by.x = "observationVariableDbId", 
@@ -285,7 +279,7 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
   if("environmentParameters.parameterName"%in%names(study_metadata)){
     env_number <- merge.data.table(
       x = study_metadata[,.(studyDbId = unique(studyDbId))],
-      y = study_metadata[environmentParameters.parameterName == "ENVIRONMENT_NUMBER",.(studyDbId, environment_number = environmentParameters.value)],
+      y = study_metadata[environmentParameters.parameterName == "ENVIRONMENT_NUMBER" | environmentParameters.parameterName == "Environment_name",.(studyDbId, environment_number = environmentParameters.value)],
       by = "studyDbId", all.x = T)
     env_number[is.na(environment_number), environment_number:=studyDbId]
   }else{
@@ -294,7 +288,7 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
   }
   study_metadata <- merge.data.table(
     x = study_metadata,
-    y = env_number,
+    y = unique(env_number),
     by = "studyDbId", all.x = T)
 
   ## set environment names
@@ -359,4 +353,135 @@ whoami_bmsapi <- function(con){
   cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
   uname <- strsplit(con$token,split = ":")[[1]][1]
   return(data.table(jsonlite::fromJSON(cont))[username==uname])
+}
+
+
+#' @title bmsapi_post_germplasm_search
+#' @description post a germplasm search. As compared to BrAPI implementation this call allows for incomplete search on names (starts with, ends with and contains)
+#' @param con a brapriv2 connection object
+#' @param gids a vector of gids
+#' @param nameFilter see details
+#' @param page
+#' @param pageSize
+#'
+#' @details nameFilter is a list with two character components:
+#'    \describe{
+#'      \item{type}{one of the following values : STARTSWITH, ENDSWITH, EXACTMATCH, CONTAINS.}
+#'      \item{value}{the text string to search for}
+#'    }
+
+
+#' @return
+#' @export
+#' @import httr
+#' @import jsonlite
+#' @examples
+bmsapi_post_germplasm_search <- function(con = NULL,
+                                         gids='',
+                                         nameFilter=NULL,
+                                         page = 0,
+                                         pageSize = 1000){
+  mf <- match.call()
+  mf <- mf[-1]
+  mf <- mf[!names(mf)%in%c("con","page","pageSize")]
+  args <- lapply(names(mf), function(a) get(a))
+  names(args) <- names(mf)
+  if (length(args)==0) args<-NULL
+  url1 <- bmscon_geturl(con)
+  cropdb <- con$commoncropname
+  url <- paste0(url1, "/crops/",cropdb,"/germplasm/search")
+  url <- httr::modify_url(url, query=list( page=page, pageSize=pageSize))
+  resp <- httr::POST(url,
+                     accept_json(),
+                     content_type_json(),
+                     body = jsonlite::toJSON(args, auto_unbox = T),
+                     httr::add_headers(Authorization=paste("Bearer", con$token)),
+                     encode = "json")
+  return(fromJSON(rawToChar(resp$content)))
+}
+
+
+#' bmsapi_get_germplasm_search_searchResultsDbId
+#'
+#' @param con
+#' @param searchRequestId
+#'
+#' @return
+#' @export
+#' @import httr
+#' @import jsonlite
+#' @examples
+bmsapi_get_germplasm_search_searchResultsDbId <- function(con = NULL,  searchRequestId=''){
+  url1 <- bmscon_geturl(con)
+  cropdb <- con$commoncropname
+  url <- paste0(url1, "/crops/",cropdb,"/germplasm/search?searchRequestId=",searchRequestId)
+  resp <- httr::GET(url,
+                    accept_json(),
+                    httr::add_headers(Authorization=paste("Bearer", con$token)))
+  respc <- rawToChar(resp$content)
+  if (respc=="[]"){
+    return(data.frame())
+  } else {
+    return(fromJSON(respc))
+  }
+}
+
+#' Title
+#'
+#' @param con
+#'
+#' @return
+#' @export
+#' @import httr
+#' @examples
+bmscon_geturl <- function(con){
+  if (is.null(con))
+    return(NULL)
+  if (!is.null(con$apipath)) {
+    con$apipath <- paste0("/", con$apipath)
+  }
+  if (con$secure) {
+    con$protocol <- "https://"
+  }
+  port <- ifelse(con$port == 80, "", paste0(":", con$port))
+  url <- paste0(con$protocol, con$db, port, con$apipath)
+  return(url)
+}
+
+
+rename_envs <- function(TD, old, new){
+  names(TD) <- new[match(names(TD),old)]
+  TD <- lapply(TD, function(a) {
+    a$trial <- new[match(a$trial,old)]
+    return(a)
+  })
+  return(TD)
+}
+
+#' @export
+generate_ui_with_grid <- function(num_rows, num_cols, choices, ns=ns, control_label_stem="Field") {
+  # Créer une liste pour stocker les lignes
+  rows_list <- list()
+  num <- 0
+  for (i in 1:num_rows) {
+    # Créer une liste pour stocker les colonnes de la ligne actuelle
+    columns_list <- list()
+    
+    for (j in 1:num_cols) {
+      num <- num + 1
+      # Ajouter une colonne à la liste avec un selectInput
+      columns_list[[j]] <- column(
+        width = 12 / num_cols,
+        selectInput(ns(paste0("select_", num)), paste(control_label_stem, num),
+                    choices = choices,
+                    selected = choices[num])
+      )
+    }
+    
+    # Ajouter la ligne à la liste des lignes
+    rows_list[[i]] <- fluidRow(columns_list)
+  }
+  
+  # Retourner un div contenant toutes les lignes
+  return(div(rows_list))
 }
