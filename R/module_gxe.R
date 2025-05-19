@@ -2078,7 +2078,9 @@ mod_gxe_server <- function(id, rv, parent_session){
           tdvcp <- as.data.table(predict(rv_gxe$TDVarComp, predictLevel = "genotype"))
           dtsup <- tdvcp[dtsup, on=.(genotype=Genotype)][,.(Genotype=genotype, Mean=predictedValue, Sup)]
         }
-        TDStab$dtres <- setcolorder(as.data.frame(dtsup[dtsta[,.(Genotype,S,sqrtS)], on=.(Genotype)][dtwri[,.(Genotype,W,sqrtWe)], on=.(Genotype)]), 
+        dtsupsta <- dtsup[dtsta[,.(Genotype,S,sqrtS)], on=.(Genotype)]
+        dtsupstawri <- dtsupsta[dtwri[,.(genotype,W,sqrtWe)], on=.(Genotype=genotype)]
+        TDStab$dtres <- setcolorder(as.data.frame(dtsupstawri), 
                                     neworder = c("Genotype","Mean","S","sqrtS","W","sqrtWe","Sup"))
         rv_gxe$TDStab <- TDStab
 
