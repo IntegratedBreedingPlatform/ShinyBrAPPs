@@ -1,0 +1,23 @@
+.shinysky-busy-indicator {
+	z-index: 9999
+}
+
+#tabsetPanel_main li {
+ 	font-size: large;
+}
+
+.space-left {
+	margin-left: 25px;
+}
+
+.space-bottom {
+	margin-bottom: 25px;
+}
+
+.space-right  {
+	margin-right: 25px;
+}
+
+.accordion-button {
+  font-size: 1.3rem;
+}

@@ -1,0 +1,194 @@
+<div class="row" ng-cloak="">
+	<div class="col-xs-12 col-md-12">
+		<label class="control-label">
+			<span class="bms-exp-design fbk-trial-summary-icons"></span>
+			<strong class="sub-content-heading">Inventory</strong>
+		</label>
+	</div>
+	<div class="col-xs-12">
+		<div class="form-group" >
+			<label style="padding-right: 10px;">Select Environment: </label>
+			<ui-select ng-model="nested.selectedEnvironment"
+					   class="input-sm form-control inline-select"
+					   ng-change="changeEnvironment()" search-enabled="false" theme="select2">
+				<ui-select-match class="ui-select-match">
+					{{(nested.selectedEnvironment.instanceNumber ? nested.selectedEnvironment.instanceNumber + ' - ' : '') + (nested.selectedEnvironment.locationName || nested.selectedEnvironment.locationAbbreviation || nested.selectedEnvironment.instanceNumber)}}
+				</ui-select-match>
+				<ui-select-choices repeat="env in (environments | filter: { locationName: $select.search})">
+					{{(env.instanceNumber ? env.instanceNumber + ' - ' : '') + (env.locationName || env.locationAbbreviation || env.instanceNumber)}}
+				</ui-select-choices>
+			</ui-select>
+		</div>
+	</div>
+	<div class="col-xs-12 col-md-12">
+		<form class="form-inline">
+			<div class="form-group">
+				<label>Selected:</label>
+				<span class="control-label-bold">{{isAllPagesSelected ? getRecordsFiltered() : size(selectedItems)}}</span>
+			</div>
+			<div class="form-group  checkbox-inline">
+				<label style="margin-left: 15px">
+					<input type="checkbox" ng-checked="isAllPagesSelected" ng-click="onSelectAllPages()" id="check-select-all">
+					Select all pages</input>
+				</label>
+			</div>
+		</form>
+	</div>
+	<div class="pull-right" ng-show="hasAnyAuthority(PERMISSIONS.MS_CANCEL_PENDING_TRANSACTIONS)">
+		<div class="btn-group">
+			<button type="button" class="btn btn-info dropdown-toggle fbk-action-btn" data-toggle="dropdown">
+				<span>Inventory Actions</span>
+			</button>
+			<ul class="dropdown-menu fbk-right-button-drop-down" role="menu">
+				<li>
+					<a ng-click="validateTransactionsForCancellation()">Cancel pending transactions</a>
+				</li>
+			</ul>
+		</div>
+	</div>
+	<div class="col-xs-12 col-md-12">
+		<table datatable="" class="table table-curved table-condensed table-no-wrap table-sorted"
+			   dt-instance="nested.dtInstance"
+			   dt-options="dtOptions"
+			   dt-columns="dtColumns"
+			   dt-column-defs="dtColumnDefs">
+			<thead>
+			<tr>
+				<th><input type="checkbox" title="select current page" ng-checked="isPageSelected()" ng-click="onSelectPage()"/></th>
+				<th>TRIAL_INSTANCE
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterList.html"
+											  filter="columns.instanceNo.filter"
+											  column-name="instanceNo"
+											  filter-helper="filterHelper"/>
+				</th>
+				<th class="info-modal-column">TRN_ID
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterList.html"
+											  filter="columns.transactionId.filter"
+											  column-name="transactionId"
+											  filter-helper="filterHelper"/>
+				</th>
+				<th>ENTRY_TYPE
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterText.html"
+											  filter="columns.entryType.filter"
+											  column-name="entryType"
+											  filter-helper="filterHelper"/>
+				</th>
+				<th class="germplasm-link-column">GID
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterList.html"
+											  filter="columns.lotGid.filter"
+											  column-name="lotGid"
+											  filter-helper="filterHelper"/>
+				</th>
+				<th class="germplasm-link-column">DESIGNATION
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterText.html"
+											  filter="columns.lotDesignation.filter"
+											  column-name="lotDesignation"
+											  filter-helper="filterHelper"/>
+				</th>
+				<th>ENTRY_NO
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterList.html"
+											  filter="columns.entryNo.filter"
+											  column-name="entryNo"
+											  filter-helper="filterHelper"/>
+				</th>
+				<th>PLOT_NO
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterList.html"
+											  filter="columns.plotNo.filter"
+											  column-name="plotNo"
+											  filter-helper="filterHelper"/>
+				</th>
+				<th>STORAGE LOCATION ABBR
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterText.html"
+											  filter="columns.lotLocationAbbr.filter"
+											  column-name="lotLocationAbbr"
+											  filter-helper="filterHelper"/>
+				</th>
+				<th>STOCK_ID
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterText.html"
+											  filter="columns.lotStockId.filter"
+											  column-name="lotStockId"
+											  filter-helper="filterHelper"/>
+				</th>
+				<th>CREATED
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterDate.html"
+											  filter="columns.createdDate.filter"
+											  column-name="createdDate"
+											  filter-helper="filterHelper"/>
+				</th>
+				<th>USERNAME
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterText.html"
+											  filter="columns.createdByUsername.filter"
+											  column-name="createdByUsername"
+											  filter-helper="filterHelper"/>
+				</th>
+				<th>TYPE
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterChecklist.html"
+											  filter="columns.transactionType.filter"
+											  column-name="transactionType"
+											  filter-helper="filterHelper"/>
+				</th>
+				<th>STATUS
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterChecklist.html"
+											  filter="columns.transactionStatus.filter"
+											  column-name="transactionStatus"
+											  filter-helper="filterHelper"/>
+				</th>
+				<th>UNITS
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterChecklist.html"
+											  filter="columns.lotUnitName.filter"
+											  column-name="lotUnitName"
+											  filter-helper="filterHelper"/>
+				</th>
+				<th>AMOUNT
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterNumber.html"
+											  filter="columns.amount.filter"
+											  column-name="amount"
+											  filter-helper="filterHelper"/>
+				</th>
+				<th>NOTES
+					<study-column-filter-icon study-column-filter-popover-template="studyColumnFilterText.html"
+											  filter="columns.notes.filter"
+											  column-name="notes"
+											  filter-helper="filterHelper"/>
+				</th>
+			</tr>
+			</thead>
+		</table>
+	</div>
+</div>
+<script type="text/ng-template" id="inventory-tab-info-modal.html">
+	<div class="modal-body">
+		<div class="row form-group">
+			<div class="col-xs-10 col-md-11">
+				<h3 class="modal-title fbk-modal-title" id="heading-modal">TRN_ID: {{transactionId}} - STOCK_ID: {{stockId}}</h3>
+			</div>
+			<div class="col-xs-1 col-md-1">
+				<button type="button" class="close pull-right glyphicon glyphicon-remove" data-dismiss="modal" ng-click="cancel()"/>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-xs-12 col-md-12">
+				<table datatable="ng" dt-options="dtOptions" class="table table-curved table-condensed table-no-wrap" style="width: 100%">
+					<thead>
+					<tr>
+						<th>TRIAL_INSTANCE</th>
+						<th>PLOT_NO</th>
+						<th>REP_NO</th>
+						<th>BLOCK_NO</th>
+						<th>PLOT_UUID</th>
+					</tr>
+					</thead>
+					<tbody>
+					<tr ng-repeat="obsUnit in observationUnits">
+						<td>{{::obsUnit.instanceNo}}</td>
+						<td>{{::obsUnit.plotNo}}</td>
+						<td>{{::obsUnit.repNo}}</td>
+						<td>{{::obsUnit.blockNo}}</td>
+						<td>{{::obsUnit.obsUnitId}}</td>
+					</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</script>

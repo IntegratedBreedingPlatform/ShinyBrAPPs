@@ -30,6 +30,7 @@ ui <- fluidPage(
   div(class = "container-fluid",
       tags$section(
         mod_banner_ui("banner"),
+        mod_connect_ui("connect"),
         mod_get_studydata_ui("get_studydata"),
         mod_get_extradata_ui("get_extradata"),
         div(style="position: relative; z-index: 10;",
@@ -67,7 +68,7 @@ ui <- fluidPage(
             h2(a("github",href="https://github.com/IntegratedBreedingPlatform/ShinyBrAPPs", target="_blank", icon("github")), align="right"),
             hr(),hr(),
             h2("Funded by"),
-            p("BrAVISE development was funded by the ", a("ABEE project", href="https://capacity4dev.europa.eu/projects/desira/info/abee_en"), ", under the DESIRA initiative of the European Union"),
+            p("BrAVISE development was funded by the ", a("ABEE project", href="https://capacity4dev.europa.eu/projects/desira/info/abee_en", target="_blank"), ", under the DESIRA initiative of the European Union"),
             img(src='img/ABEE_logo_trspbckgd.png', height="57px", width="84px",  align = "right"),
             hr(),hr(),
             img(src='img/desira.png', height="56px", width="252px",  align = "right"),

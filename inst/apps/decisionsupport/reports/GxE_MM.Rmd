@@ -12,22 +12,29 @@ params:
 knitr::opts_chunk$set(echo = FALSE)
 library(statgenGxE)
 ```
+```{r, echo=FALSE}
+htmltools::img(src = "sticker.png", 
+               alt = 'logo',
+               width = '150px',
+               style = 'position:absolute; top:0; left:0; padding:10px;')
+```
 
 ## Studies:
 ```{r}
-knitr::kable(unique(data.table(rbindlist(params$data))[,.(trial,loc,studyDbId,studyName)]))
+TD <- unique(rbindlist(rv$TD)[,.(studyDbId, `Environment Name`=trial)])
+knitr::kable(TD[unique(rv_gxe$data[,.(trialName, locationName, studyDbId, studyName)])[studyDbId%in%input$picker_env], on=.(studyDbId)])
 ```
 
 ## Trait: `r params$trait`
 ## Model output
 ```{r, echo=FALSE}
 TDVarComp <- switch(params$env_struct,
-               `1`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait), error=function(e) e)},
-               `2`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, locationYear = TRUE), error=function(e) e)},
-               `3`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, nestingFactor = "year"), error=function(e) e)},
-               `4`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, nestingFactor = "loc"), error=function(e) e)},
-               `5`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, regionLocationYear = TRUE), error=function(e) e)},
-               `6`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, nestingFactor = "scenario"), error=function(e) e)})
+               `1`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, useWt = input$use_weights), error=function(e) e)},
+               `2`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, useWt = input$use_weights, locationYear = TRUE), error=function(e) e)},
+               `3`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, useWt = input$use_weights, nestingFactor = "year"), error=function(e) e)},
+               `4`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, useWt = input$use_weights, nestingFactor = "loc"), error=function(e) e)},
+               `5`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, useWt = input$use_weights, regionLocationYear = TRUE), error=function(e) e)},
+               `6`={tryCatch(gxeVarComp(TD = params$data, trait = params$trait, useWt = input$use_weights, nestingFactor = "scenario"), error=function(e) e)})
 summary(TDVarComp)
 ```
 

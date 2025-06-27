@@ -104,7 +104,7 @@ mod_dataquality_ui <- function(id) {
                 multiple = F,
                 width = "100%",
                 options = list(
-                  title = 'Load Environments First',
+                  title = 'Select a variable to filter observations',
                   `live-search` = TRUE,
                   onInitialize = I('function() { this.setValue(""); }')
                 )
@@ -116,7 +116,7 @@ mod_dataquality_ui <- function(id) {
                 multiple = T,
                 width = "100%",
                 options = list(
-                  title = 'Load Environments First',
+                  title = 'Pick a value',
                   `live-search` = TRUE,
                   onInitialize = I('function() { this.setValue(""); }')
                 )
@@ -136,8 +136,8 @@ mod_dataquality_ui <- function(id) {
       ),
       ## Summary Statistics panel ####
       nav_panel(
-        title = "Summary Statistics", 
-        h2("Summary Statistics"), 
+        title = "Summary Statistics",
+        shinyjs::disabled(downloadButton(ns("summary_stats_export"), "CSV export", class = "btn btn-primary", style = "margin: 15px;")),
         dataTableOutput(ns("sumstats_table"))
       )
     )
@@ -305,6 +305,7 @@ mod_dataquality_server <- function(id, rv) {
       req(rv_dq$data_viz)
       sel_observationDbIds <- rv_dq$data_viz[eval(as.name(input$select_variable)) %in% input$select_variable_value, observationDbId]
       rv_dq$sel_observationDbIds <- sel_observationDbIds
+      bslib::toggle_sidebar(id = "sel_obs_sidebar", open = T)
     })
     
     ## output distribution plot ####
@@ -535,7 +536,7 @@ mod_dataquality_server <- function(id, rv) {
       }
       
       ## extract legend
-      # rv_dq$layout_legend <- get_legend(g2)
+      rv_dq$layout_legend <- get_legend(g2)
       g2 <- g2 + theme(legend.position = "none")
       
       ggplotly(
@@ -568,7 +569,7 @@ mod_dataquality_server <- function(id, rv) {
       req(input$studies)
       req(input$trait)
       req(rv_dq$layout_legend)
-      as_ggplot(rv_dq$layout_legend)
+      ggpubr::as_ggplot(rv_dq$layout_legend)
     })
     
     ## observe plotly_click ####
@@ -680,9 +681,7 @@ mod_dataquality_server <- function(id, rv) {
       ggplotly(p[[input$trait]], source = "B")
     })
     
-    ## output summary stats table ####
-    output$sumstats_table <- renderDataTable({
-      req(rv_dq$data_viz)
+    observeEvent(rv_dq$data_viz, {
       data_dq <- rv_dq$data_viz
       data_dq_notexcl <- rv_dq$data_viz[!(observationDbId %in% rv$excluded_obs$observationDbId)]
       
@@ -692,6 +691,7 @@ mod_dataquality_server <- function(id, rv) {
       
       if (dataType == "Date") {
         sumtable_notexcl <- data_dq_notexcl[, .(
+          "Environment" = study_name_app,
           "No. of observations" = .N,
           "Mean" = mean(observationValue, na.rm = T),
           "Minimum" = min(observationValue, na.rm = T),
@@ -714,6 +714,7 @@ mod_dataquality_server <- function(id, rv) {
         ), study_name_app]
         
         columns <- c(
+          "Environment",
           "No. of values",
           "No. of observations",
           "No. of excluded values",
@@ -726,6 +727,7 @@ mod_dataquality_server <- function(id, rv) {
         )
       } else {
         sumtable_notexcl <- data_dq_notexcl[, .(
+          "Environment" = study_name_app,
           "No. of observations" = .N,
           "Mean" = mean(observationValue, na.rm = T),
           "Minimum" = min(observationValue, na.rm = T),
@@ -780,6 +782,7 @@ mod_dataquality_server <- function(id, rv) {
         sumtable_notexcl[, "Range" := Maximum - Minimum]
         
         columns <- c(
+          "Environment",
           "No. of values",
           "No. of observations",
           "No. of excluded values",
@@ -809,22 +812,52 @@ mod_dataquality_server <- function(id, rv) {
       setkey(sumtable_notexcl, study_name_app)
       sumtable <- sumtable_all[sumtable_notexcl]
       sumtable[, "No. of excluded values" := `No. of values` - `No. of observations`]
+      rv_dq$sumtable <- sumtable[, columns, with = F]
       
-      rownames_sumtable <- sumtable[, study_name_app]
+      shinyjs::enable(id = "summary_stats_export")
+    })
+    
+    ## output summary stats table ####
+    output$sumstats_table <- renderDataTable({
+      req(rv_dq$sumtable)
       
-      sumtable <- sumtable[, columns, with = F]
-      rownames(sumtable) <- rownames_sumtable
-      datatable(
-        sumtable,
+      decimals_cols <- colnames(rv_dq$sumtable)[sapply(rv_dq$sumtable,
+        function(c) {
+          is.numeric(c) && any(c != as.integer(c))
+        }
+      )]
+      
+      dt <- datatable(
+        rv_dq$sumtable,
+        rownames = FALSE,
+        extensions = "FixedColumns",
         options = list(
           paging = F,
           scrollX = T,
           scrollY = "600px",
           scrollCollapse = T,
-          dom = 't'
+          dom = 't',
+          #autoWidth = FALSE,
+          fixedColumns = list(leftColumns = 1)
         )
       )
+      formatRound(
+        dt,
+        columns = decimals_cols,
+        digits = 3, 
+        mark = ""
+      )
     })
+    
+    ### handle download summary stats ####
+    output$summary_stats_export <- downloadHandler(
+      filename = function() {
+        paste0(input$trait,"_summary_statistics.csv")
+      },
+      content = function(file) {
+        write.csv(rv_dq$sumtable, file, row.names = F)
+      }
+    )
     
     ## output selected_obs ####
     output$selected_obs_table <- renderDT({

@@ -1,29 +1,32 @@
 Type: Package
 Package: shinybrapps
 Title: ShinyBrAPPs
-Version: 27.8
+Version: 29.0
 Authors@R: c(
-    person("Jean-François", "Rami", email = "rami@cirad.fr", role = c("aut", "ctb", "cre")),
-    person("Alice", "Boizet", email = "alice.boizet@cirad.fr", role = c("aut", "ctb")),
-    person("Mariano", "Crimi", email = "mcrimi@cgiar.org", role = c("aut", "ctb")),
-    person("Léo", "Valette", email = "leovalette@posteo.net", role = c("aut"))
+    person("Jean-François", "Rami", email = "rami@cirad.fr", role = c("cre")),
+    person("Alice", "Boizet", email = "alice.boizet@cirad.fr", role = c("aut")),
+    person("Léo", "Valette", email = "leovalette@posteo.net", role = c("aut")),
+    person("Mariano", "Crimi", email = "mcrimi@cgiar.org", role = c("aut"))
   )
-Maintainer: Leo Valette <leovalette@posteo.net>
-Description: ShinyBrAPPs Shiny apps integrated to the Breeding Management
+Maintainer: Jean-François Rami <rami@cirad.fr>
+Description: ShinyBrAPPs: Shiny apps integrated to the Breeding Management
     System.
 License: GPL (>= 3)
 Depends:
     R (>= 2.10),
     data.table
 Imports: 
+    baRcodeR,
     brapir,
     brapirv2,
     bslib,
+    cowplot,
     DT,
     e1071,
     ggnewscale,
     ggplot2,
     ggpubr,
+    grid,
     gridExtra,
     gtools,
     htmltools,
@@ -31,8 +34,11 @@ Imports:
     jsonlite,
     leaflet,
     metan,
+    officer,
     openxlsx,
     plotly,
+    qrencoder,
+    raster,
     rclipboard,
     rmarkdown,
     scales,
@@ -43,6 +49,7 @@ Imports:
     statgenGxE,
     statgenSTA,
     stringmagic,
+    tableHTML,
     tidyr,
     varhandle
 Encoding: UTF-8

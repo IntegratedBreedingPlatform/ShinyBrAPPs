@@ -5,6 +5,14 @@ ui <- fluidPage(
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "css/app.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/custom_styles.css"),
+    tags$script(
+      "Shiny.addCustomMessageHandler('scrollToBottom', function(message) {
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: 'smooth'
+        });
+      });"
+    ),
     tags$style(HTML("
     
       /* Ensure that the 'Deselect All' button stays on top */
@@ -57,12 +65,13 @@ ui <- fluidPage(
                     background-color: #225691;
                     margin-bottom: 5px;
                     border-color: #357ebd;"),
-  #shinyjs::useShinyjs(),
+  shinyjs::useShinyjs(),
   #shinysky::busyIndicator(wait = 200, text = NULL, img = "img/loading-animation.gif"),
   shinybusy::add_busy_spinner(spin = "fading-circle", position = "top-left", margins = c(110, 10), color = "#225691", height = 25, width =25, timeout = 200), 
   
   div(class = "container-fluid",
       mod_banner_ui("banner"),
+      mod_connect_ui("connect"),
       mod_get_studydata_ui("get_studydata"),
       div(style="position: relative; z-index: 10;",
       bslib::page_navbar(
@@ -90,7 +99,7 @@ ui <- fluidPage(
           h2(a("github",href="https://github.com/IntegratedBreedingPlatform/ShinyBrAPPs", target="_blank", icon("github")), align="right"),
           hr(),hr(),
           h2("Funded by"),
-          p("STABrAPP development was funded by the ", a("ABEE project", href="https://capacity4dev.europa.eu/projects/desira/info/abee_en"), ", under the DESIRA initiative of the European Union"),
+          p("STABrAPP development was funded by the ", a("ABEE project", href="https://capacity4dev.europa.eu/projects/desira/info/abee_en", target="_blank"), ", under the DESIRA initiative of the European Union"),
           img(src='img/ABEE_logo_trspbckgd.png', height="57px", width="84px",  align = "right"),
           hr(),hr(),
           img(src='img/desira.png', height="56px", width="252px",  align = "right"),
