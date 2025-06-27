@@ -304,7 +304,7 @@ mod_gxe_ui <- function(id){
                         selected = 1),
             pickerInput(ns("GGE_picker_env_select"), label="Plot type 5 - Select an environment", multiple = F, choices = c()),
             pickerInput(ns("GGE_picker_gen_select"), label="Plot type 7&9 - Select a genotype", multiple = F, choices = c()),
-            pickerInput(ns("GGE_picker_gen2_select"), label="Plot type 9 - Select a second genotypes", multiple = F, choices = c()),
+            pickerInput(ns("GGE_picker_gen2_select"), label="Plot type 9 - Select a second genotype", multiple = F, choices = c()),
             pickerInput(ns("GGE_colorGenoBy"), label="Color genotypes by", choices = "Nothing", selected = "Nothing"),
             pickerInput(ns("GGE_colorEnvBy"), label="Color Environments by", choices = "Nothing", selected = "Nothing"),
             shiny::downloadButton(ns("GGE_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
@@ -447,6 +447,8 @@ mod_gxe_ui <- function(id){
                   card_footer(
                     div(style="display: flex;gap: 10px;",
                         uiOutput(ns("copy_STABsup_table")),
+                        actionButton(ns("STAB_select_all"), label = "Select all", class = "btn"),
+                        shinyjs::disabled(actionButton(ns("STAB_unselect"), "Deselect all", class = "btn")),
                         shiny::actionButton(ns("create_groups_from_STABsel"), "Create group from selection", icon = icon(NULL), class = "btn btn-info")
                     )
                   )
@@ -526,6 +528,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       
       dtproxy <<- dataTableProxy('FW_sens_clusters_DT')
       predictDTproxy <<- dataTableProxy('MM_predictions')
+      STAB_supproxy <<- dataTableProxy('STAB_sup')
       
       accordion_panel_close("GGE_adv_settings_acc", values="advs", session = session)
       accordion_panel_close("AMMI_adv_settings_acc", values="advs", session = session)
@@ -2104,6 +2107,28 @@ mod_gxe_server <- function(id, rv, parent_session){
                     columns = c("Mean", "Sup", "S", "W", "sqrtS", "sqrtWe"), 
                     digits=3)
       })
+      
+      ### Enable/disable group creation button ####
+      observeEvent(input$STAB_sup_rows_selected, {
+        if (!is.null(input$STAB_sup_rows_selected)) {
+          shinyjs::enable("STAB_unselect")
+        } else {
+          shinyjs::disable("STAB_unselect")
+        }
+      }, ignoreNULL = F)
+      
+      ### handle select all ####
+      observeEvent(input$STAB_select_all, {
+        filtered_rows <- input$STAB_sup_rows_all
+        DT::selectRows(STAB_supproxy, selected=filtered_rows)
+      })
+      
+      ### handle unselect ####
+      observeEvent(input$STAB_unselect, {
+        DT::selectRows(STAB_supproxy, selected=NULL)
+        rv_gxe$STSclicked_genotypes <- NULL
+      })
+      
 
       #### Handle DT selection ####
       #observeEvent(input$STAB_sup_rows_selected, ignoreNULL = FALSE, ignoreInit = TRUE, {
