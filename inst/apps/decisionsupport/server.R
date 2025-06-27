@@ -55,6 +55,14 @@ server <- function(input, output, session){
 
     removeModal()
   })
+  
+  ## Action when clicking on button rename group in modal
+  observeEvent(input$modal_rename_group_go, {
+    req(length(rv$selected_group_id) == 1)
+    rv$groups[group_id == rv$selected_group_id, group_name := input$modal_rename_group_text_input_label]
+    rv$groups[group_id == rv$selected_group_id, group_desc := input$modal_rename_group_text_input_descr]
+    removeModal()
+  })
 
   # open or close the groups sidebar
   observeEvent(rv$groups$group_id,{
