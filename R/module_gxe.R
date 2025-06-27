@@ -2067,6 +2067,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         req(rv$TD)
         TDStab <- tryCatch(statgenGxE::gxeStability(TD = rv$TD,
                                                         trait = input$picker_trait), error=function(e) e)
+        req(TDStab$superiority)
         dtsup <- as.data.table(TDStab$superiority)
         setnames(dtsup, old = "Superiority", new = "Sup")
         dtsta <- as.data.table(TDStab$static)
