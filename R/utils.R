@@ -337,6 +337,34 @@ groupModal <- function(rv, parent_session, modal_title, group_description, group
   )
 }
 
+# Modal to rename a group
+# can be called from scatterplot or groups_sidebar modules
+# parent_session enables to get the app server namespace and get modal elements from the 2 modules
+#' @export
+renameGroupModal <- function(rv, parent_session) {
+  req(!is.null(rv$selected_group_id))
+  selected_group <- rv$groups[group_id  == rv$selected_group_id,]
+  ns <- parent_session$ns
+  modalDialog(
+    title = "Rename group",
+    fade = F,
+    tagList(
+      textInput(ns("modal_rename_group_text_input_label"), label = "Group Name", value = selected_group$group_name, placeholder = "Group Label"),
+      textAreaInput(
+        ns("modal_rename_group_text_input_descr"), 
+        label = "Group Description", 
+        placeholder = "Group Description", 
+        resize = "vertical",
+        value = selected_group$group_desc
+      )
+    ),
+    footer = tagList(
+      modalButton("Cancel"),
+      actionButton(ns("modal_rename_group_go"), label = "Rename", class = "btn btn-info")
+    )
+  )
+}
+
 
 whoami_bmsapi <- function(con){
   progs <- brapi_get_programs(con)

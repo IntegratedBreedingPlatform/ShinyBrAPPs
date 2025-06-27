@@ -14,13 +14,11 @@ mod_groups_sidebar_ui <- function(id){
                  h4('Actions ', icon('screwdriver-wrench'))
                ),
                card_body(
-                 #title = span('Options ', icon('screwdriver-wrench')),
-                 #width = 12,
-                 #h4('Actions ', icon('screwdriver-wrench')),
-                 actionButton(ns("action_groups_plot_creation_params"),label = "Visualize like at group creation", block = T, class = paste("btn btn-info", ns("one_group_selected"))),
+                 #actionButton(ns("action_groups_plot_creation_params"),label = "Visualize like at group creation", block = T, class = paste("btn btn-info", ns("one_group_selected"))),
                  actionButton(ns("action_groups_union"),label = "Union", block = T, class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
                  actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
                  actionButton(ns("action_groups_complement"),label = "Complement", block = T, class = paste("btn btn-info", ns("at_least_one_group_selected"))),
+                 actionButton(ns("action_groups_rename"),label = "Rename", block = T, class =paste("btn btn-info", ns("one_group_selected"))),
                  actionButton(ns("action_groups_delete"),label = "Delete", block = T, class =paste("btn btn-info", ns("at_least_one_group_selected")))
                )
              ),
@@ -57,12 +55,27 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
       })
       
       ## Displaying buttons ####
-      observe({
+      observeEvent(input$group_sel_input, {
+        print(input$group_sel_input)
+        #selected_groups <- rv$groups[group_id %in% input$group_sel_input,]
         shinyjs::toggle(selector = paste0(".",ns("at_least_one_group_selected")), condition = length(input$group_sel_input)>0)
         shinyjs::toggle(selector = paste0(".",ns("create_new_groups_from_groups")), condition = length(input$group_sel_input)>1)
         shinyjs::toggle(selector = paste0(".",ns("one_group_selected")), condition = length(input$group_sel_input)==1)
         shinyjs::toggle(id = "export_box", condition = length(input$group_sel_input)==1)
-      })
+        
+        req(input$group_sel_input)
+        req(rv$groups)
+        sel_groups <- rv$groups[group_id %in% input$group_sel_input,]
+        clusterings <- sel_groups[, clustering_id]
+        shinyjs::enable("action_groups_delete")
+        for (id in clusterings) {
+          if (nrow(sel_groups[clustering_id == id, ]) < nrow(rv$groups[clustering_id == id, ])) {
+            # can't delete clustering group if not all selected
+            shinyjs::disable("action_groups_delete")
+            break
+          }
+        }
+      }, ignoreNULL = F)
       
       ## Union ####
       observeEvent(input$action_groups_union,{
@@ -168,6 +181,15 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
         ## delete groups
         rv$groups <- rv$groups[!(group_id %in% input$group_sel_input)]
       })      
+      
+      ## Rename a group ####
+      observeEvent(input$action_groups_rename,{
+        req(length(input$group_sel_input) == 1)
+        rv$selected_group_id <- input$group_sel_input
+        showModal(
+          renameGroupModal(rv, parent_session)
+        )
+      })
       
       ## Export as list ####
       observeEvent(input$action_groups_export_as_list,{
