@@ -8,11 +8,12 @@
 <title>ShinyBrAPPs • shinybrapps</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.4.2/css/all.min.css" rel="stylesheet">
-<link href="deps/font-awesome-6.4.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="ShinyBrAPPs">
-<meta name="description" content="ShinyBrAPPs Shiny apps integrated to the Breeding Management System.">
-<meta property="og:description" content="ShinyBrAPPs Shiny apps integrated to the Breeding Management System.">
+<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.2.1/css/all.min.css" rel="stylesheet">
+<link href="deps/font-awesome-6.2.1/css/v4-shims.min.css" rel="stylesheet">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
+<meta property="og:title" content="ShinyBrAPPs">
+<meta name="description" content="ShinyBrAPPs: Shiny apps integrated to the Breeding Management System.">
+<meta property="og:description" content="ShinyBrAPPs: Shiny apps integrated to the Breeding Management System.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -22,7 +23,7 @@
 
     <a class="navbar-brand me-2" href="index.html">shinybrapps</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">27.8</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">29.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,12 +32,19 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
+<li class="active nav-item"><a class="nav-link" href="index.html"><span class="fa fa-home"></span></a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-how-to" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">How to</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-how-to">
+<li><a class="dropdown-item" href="articles/load_data.html">Load data</a></li>
+    <li><a class="dropdown-item" href="articles/STABrAPP.html">Use STABrAPP</a></li>
+    <li><a class="dropdown-item" href="articles/BrAVISE.html">Use BrAVISE</a></li>
+  </ul>
+</li>
       </ul>
 <ul class="navbar-nav">
-<li class="nav-item"><form class="form-inline" role="search">
- <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
-</form></li>
+<li class="nav-item"><a class="nav-link" href="news/index.html"><span class="fa fa-newspaper-o"></span> news</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/IntegratedBreedingPlatform/ShinyBrAPPs/"><span class="fa fa-github fa-lg fab"></span> github</a></li>
       </ul>
 </div>
 
@@ -45,9 +53,9 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="shinybrapps">ShinyBrAPPs<a class="anchor" aria-label="anchor" href="#shinybrapps"></a>
+<div class="page-header"><h1 id="shinybrapps-">ShinyBrAPPs <img src="reference/figures/shinybrapps.png" align="right"><a class="anchor" aria-label="anchor" href="#shinybrapps-"></a>
 </h1></div>
-<p>The ShinyBrAPPs package contains shiny applications designed for plant breeders. An international collaboration of developers from CIRAD and the IBP have been working together as part of the <a href="https://www.iavao.org/" class="external-link">IAVAO</a> breeders community to develop these ShinyBrAPPs, in support of national breeding programs in western Africa.</p>
+<p>The ShinyBrAPPs package contains shiny applications designed for plant breeders. An international collaboration of developers from CIRAD and the IBP have been working together as part of the <a href="https://www.iavao.org/" class="external-link">IAVAO</a> breeders community to develop these ShinyBrAPPs, in support of national breeding programs in Western Africa.</p>
 <p>These applications can be connected to datasources that implement BrAPI compliant web services. BrAPI, for Breeding API is a standardized application programming interface (API) specification for breeding and related agricultural data. BrAPI compliance offers these systems the opportunity to add functionalities in a modular way through the development of external plugin applications that can quickly fulfill specific needs for this group of breeders and scientists.</p>
 <p>Currently, ShinyBraPPs applications are connected to the Breeding Management System (<a href="https://bmspro.io/" class="external-link">BMS</a>) and/or <a href="https://www.southgreen.fr/content/gigwa" class="external-link">Gigwa</a>. They are accessible directly from those systems interface.</p>
 <div class="section level2">
@@ -64,30 +72,100 @@
 <code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"IntegratedBreedingPlatform/ShinyBrAPPs@dev"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="bms-trial-data-explorer">BMS trial data explorer<a class="anchor" aria-label="anchor" href="#bms-trial-data-explorer"></a>
+<h2 id="applications">Applications<a class="anchor" aria-label="anchor" href="#applications"></a>
 </h2>
-<p>The “BMS trial data explorer” retrieves data from a single multi-location trial and displays data counts and summary box-plots for all variables measured in different studies. It also provides an interactive distribution plot to easily select observations that require curation and a report of candidate issues that needs to be addressed by the breeder.</p>
+<div class="section level3">
+<h3 id="tdxplor">TDxPLOR<a class="anchor" aria-label="anchor" href="#tdxplor"></a>
+</h3>
+<p>TDxPLOR, the trial data explorer, retrieves data from multi-location trials and displays data counts and summary box-plots for all variables measured in different studies. It also provides an interactive distribution plot to easily select observations that require curation and a report of candidate issues that needs to be addressed by the breeder.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">shinybrapps</span><span class="fu">::</span><span class="fu">run_trialdataxplor</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level2">
-<h2 id="stabrapp">STABrAPP<a class="anchor" aria-label="anchor" href="#stabrapp"></a>
-</h2>
-<p>The “STABrAPP” tool is an application for single trial mixed model analysis. It basically provides a GUI to the StatGen-STA R package.</p>
+<div class="section level3">
+<h3 id="stabrapp">STABrAPP<a class="anchor" aria-label="anchor" href="#stabrapp"></a>
+</h3>
+<p>STABrAPP is an application for single trial mixed model analysis. It basically provides a GUI to the StatgenSTA R package.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">shinybrapps</span><span class="fu">::</span><span class="fu">run_stabrapp</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div class="section level2">
-<h2 id="bravise">BrAVISE<a class="anchor" aria-label="anchor" href="#bravise"></a>
-</h2>
-<p>BrAVISE is a decision support tool helping breeders to select germplasm according to their various characteristics and save this germplasm list into BMS. BrAVISE is an application for Genotype by Environment (GxE) analysis. It provides a GUI to the statgenGxE R package</p>
+<div class="section level3">
+<h3 id="bravise">BrAVISE<a class="anchor" aria-label="anchor" href="#bravise"></a>
+</h3>
+<p>The BrAVISE application is a decision support tool helping breeders to run GxE analysis, select germplasm according to their various characteristics and save lists of selected germplasm to the BMS</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">shinybrapps</span><span class="fu">::</span><span class="fu">run_decision</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 </div>
+<div class="section level3">
+<h3 id="sampler">SampleR<a class="anchor" aria-label="anchor" href="#sampler"></a>
+</h3>
+<p>The SampleR application allows to search samples from different entry points (study, germplasm, DbId) and to print labels.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">shinybrapps</span><span class="fu">::</span><span class="fu">run_samplr</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="snpclust">snpclust<a class="anchor" aria-label="anchor" href="#snpclust"></a>
+</h3>
+<p>snpclust enables a user to check and manually correct the clustering of fluorescence based SNP genotyping data. snpclust is not included to this package yet. It is accessible here : <a href="https://github.com/jframi/snpclust" class="external-link uri">https://github.com/jframi/snpclust</a></p>
+</div>
+</div>
 <div class="section level2">
-<h2 id="snpclust">snpclust<a class="anchor" aria-label="anchor" href="#snpclust"></a>
+<h2 id="deployment-and-integration-with-brapi-compliant-system">Deployment and Integration with BrAPI compliant system<a class="anchor" aria-label="anchor" href="#deployment-and-integration-with-brapi-compliant-system"></a>
 </h2>
-<p>“snpclust” tool enables a user to check and manually correct the clustering of fluorescence based SNP genotyping data. snpclust is not included to this package yet. It is accessible here : <a href="https://github.com/jframi/snpclust" class="external-link uri">https://github.com/jframi/snpclust</a></p>
+<p>ShinyBrAPPs can be deployed using docker.</p>
+<p>Once deployed, the BrAPPs can be launched using the following URL parameters</p>
+<table class="table">
+<colgroup>
+<col width="9%">
+<col width="47%">
+<col width="11%">
+<col width="31%">
+</colgroup>
+<thead><tr class="header">
+<th>Parameter</th>
+<th>Description</th>
+<th>Used in</th>
+<th>Example</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td>apiURL</td>
+<td>base URL for the BrAPI server that the BrAPP needs to connect to</td>
+<td>All</td>
+<td>?apiURL=<a href="https://test-server.brapi.org/brapi/v2/" class="external-link uri">https://test-server.brapi.org/brapi/v2/</a>
+</td>
+</tr>
+<tr class="even">
+<td>cropDb</td>
+<td>crop database name</td>
+<td>All</td>
+<td>?cropDb=Maize</td>
+</tr>
+<tr class="odd">
+<td>token</td>
+<td>a valid token</td>
+<td>All</td>
+<td>?token=user:avalidtoken</td>
+</tr>
+<tr class="even">
+<td>studyDbIds</td>
+<td>a comma separated list of studyDbIds that the BrAPP needs to retrieve data from</td>
+<td>STABrAPP, BrAVISE</td>
+<td>?studyDbIds=121,122,123</td>
+</tr>
+<tr class="odd">
+<td>obs_unit_level</td>
+<td>a comma separated list of observation unit levels to filter on</td>
+<td>STABrAPP, BrAVISE</td>
+<td>?obs_unit_level=PLOT,MEANS</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section level2">
+<h2 id="funding">Funding<a class="anchor" aria-label="anchor" href="#funding"></a>
+</h2>
+<p>ShinyBrAPPs development was funded by the <a href="https://capacity4dev.europa.eu/projects/desira/info/abee_en" class="external-link">ABEE project</a> under the DESIRA initiative of the European Union.</p>
+<p><img src="reference/figures/ABEE_logo_trspbckgd.png" align="center" height="57" width="84"><img src="reference/figures/desira.png" align="center" height="56" width="252"></p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="license">
@@ -97,7 +175,6 @@
 <li><small>GPL (&gt;= 3)</small></li>
 </ul>
 </div>
-
 
 <div class="citation">
 <h2 data-toc-skip>Citation</h2>
@@ -109,25 +186,30 @@
 <div class="developers">
 <h2 data-toc-skip>Developers</h2>
 <ul class="list-unstyled">
-<li>Jean-François Rami <br><small class="roles"> Author, contributor, maintainer </small>  </li>
-<li>Alice Boizet <br><small class="roles"> Author, contributor </small>  </li>
-<li>Mariano Crimi <br><small class="roles"> Author, contributor </small>  </li>
-<li>Léo Valette <br><small class="roles"> Author </small>  </li>
+<li>Jean-François Rami <br><small class="roles"> Maintainer </small>   </li>
+<li>Alice Boizet <br><small class="roles"> Author </small>   </li>
+<li>Léo Valette <br><small class="roles"> Author </small>   </li>
+<li>Mariano Crimi <br><small class="roles"> Author </small>   </li>
 </ul>
 </div>
 
-
+<div class="partners-and-funding">
+<h2 data-toc-skip>Partners and funding</h2>
+<ul class="list-unstyled">
+<li><p><img src="reference/figures/ibpcirad.png" align="center" height="61px" width="231px"><br><br>ShinyBrAPPs development was funded by the <a href="https://capacity4dev.europa.eu/projects/desira/info/abee_en" class="external-link">ABEE project</a> under the DESIRA initiative of the European Union.<br><br><img src="reference/figures/ABEE_logo_trspbckgd.png" align="center" height="60" width="88"><br><br><img src="reference/figures/desira.png" align="center" height="50" width="223"></p></li>
+</ul>
+</div>
 
   </aside>
 </div>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by Jean-François Rami, Alice Boizet, Mariano Crimi, Léo Valette.</p>
+  <p>Developed by Jean-François Rami, Alice Boizet, Léo Valette, Mariano Crimi.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer>

@@ -1,13 +1,19 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
-<url><loc>/404.html</loc></url>
-<url><loc>/LICENSE.html</loc></url>
-<url><loc>/authors.html</loc></url>
-<url><loc>/index.html</loc></url>
-<url><loc>/reference/bmsapi_get_germplasm_search_searchResultsDbId.html</loc></url>
-<url><loc>/reference/bmsapi_post_germplasm_search.html</loc></url>
-<url><loc>/reference/bmscon_geturl.html</loc></url>
-<url><loc>/reference/group_selector.html</loc></url>
-<url><loc>/reference/index.html</loc></url>
-<url><loc>/reference/stareport.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/404.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/LICENSE.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/articles/BrAVISE.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/articles/STABrAPP.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/articles/index.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/articles/load_data.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/authors.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/index.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/reference/bmsapi_get_germplasm_search_searchResultsDbId.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/reference/bmsapi_post_germplasm_search.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/reference/bmscon_geturl.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/reference/group_selector.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/reference/index.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/reference/make_single_label.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/reference/print_labels.html</loc></url>
+<url><loc>https://integratedbreedingplatform.github.io/ShinyBrAPPs/reference/stareport.html</loc></url>
 </urlset>
 
