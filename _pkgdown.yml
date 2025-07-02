@@ -1,7 +1,13 @@
-url: https://integratedbreedingplatform.github.io/ShinyBrAPPs/
 template:
   bootstrap: 5
 
+assets:
+  - img/sticker_bravise.png
+  - img/sticker_samplr.png
+  - img/sticker_stabrapp.png
+  - img/sticker_tdxplor.png
+
+url: https://integratedbreedingplatform.github.io/ShinyBrAPPs/
 
 navbar:
   title: "STABrAPP"
@@ -14,6 +20,8 @@ navbar:
           href: articles/load_data.html
         - text: "Use STABrAPP"
           href: articles/STABrAPP.html
+        - text: "Use BrAVISE"
+          href: articles/BrAVISE.html
   right:
   - icon: fa-newspaper-o
     text: "news"
@@ -21,4 +29,12 @@ navbar:
   - icon: fa-github fa-lg fab
     text: "github"
     href: https://github.com/IntegratedBreedingPlatform/ShinyBrAPPs/
+
+home:
+    sidebar:
+      structure: [license, citation, authors, custom]
+      components:
+        custom:
+          title: Partners and funding
+          text: <img src="man/figures/ibpcirad.png" align="center"  height="61px" width="231px"/><br><br>ShinyBrAPPs development was funded by the [ABEE project](https://capacity4dev.europa.eu/projects/desira/info/abee_en) under the DESIRA initiative of the European Union.<br><br><img src="man/figures/ABEE_logo_trspbckgd.png" align="center" height="60" width="88"/><br><br><img src="man/figures/desira.png" align="center" height="50" width="223"/>
 
