@@ -1,12 +1,6 @@
 template:
   bootstrap: 5
 
-assets:
-  - img/sticker_bravise.png
-  - img/sticker_samplr.png
-  - img/sticker_stabrapp.png
-  - img/sticker_tdxplor.png
-
 url: https://integratedbreedingplatform.github.io/ShinyBrAPPs/
 
 navbar:
