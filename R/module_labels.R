@@ -81,7 +81,6 @@ mod_samplr_ui <- function(id){
   
 }
 
-#' @import brapirv2
 #' @export
 mod_samplr_server <- function(id, rv){
   
@@ -110,8 +109,7 @@ mod_samplr_server <- function(id, rv){
         content = function(file) {
           write.csv(rv_samp$stdatadt_byg, file, row.names = F)
         }
-      )
-      
+      )      
       
     })
 }

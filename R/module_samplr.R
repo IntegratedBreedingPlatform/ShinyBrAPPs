@@ -159,7 +159,6 @@ mod_samplr_ui <- function(id){
   
 }
 
-#' @import brapirv2
 #' @export
 mod_samplr_server <- function(id, rv){
   
@@ -180,7 +179,7 @@ mod_samplr_server <- function(id, rv){
           incProgress(1)
           tryCatch({
             
-          pr <- brapi_get_programs(rv$con)
+          pr <- brapir::core_programs_get(rv$con)$data
           updateSelectizeInput(session,
                                inputId = "program",
                                selected = NULL,
@@ -208,7 +207,7 @@ mod_samplr_server <- function(id, rv){
       
           observeEvent(input$program,{
             if (input$program!=""){
-              tr <-brapi_get_trials(rv$con, programDbId = input$program)
+              tr <-brapir::core_trials_get(rv$con, programDbId = input$program)$data
               setDT(tr)
               updateSelectInput(session = session, inputId = "trial", choices = tr$trialName, selected = NULL)
               rv_samp$tr <- tr
@@ -218,13 +217,13 @@ mod_samplr_server <- function(id, rv){
           observeEvent(input$trial,{
             if (input$trial!=""){
               selectedtr <- as.character(rv_samp$tr[trialName==input$trial, trialDbId])
-              st <- brapi_get_studies(rv$con, trialDbId = selectedtr)
+              st <- brapir::core_studies_get(rv$con, trialDbId = selectedtr)$data
               setDT(st)
               st <- unique(st[,.(studyDbId,studyName, locationDbId, locationName)])
               #locs <- brapi_get_search_locations_searchResultsDbId(rv$con,
               #                                                     searchResultsDbId = brapi_post_search_locations(rv$con, locationDbIds = unique(st$locationDbId))$searchResultsDbId)
               locs <- do.call(gtools::smartbind, lapply(unique(st$locationDbId), function(l){
-                brapi_get_locations(rv$con, locationDbId = l)
+                brapir::core_locations_get(rv$con, locationDbId = l)$data
               }))
               setDT(locs)
               if (!any(colnames(locs)=="countryName")) locs[,countryName:=NA]
@@ -251,19 +250,21 @@ mod_samplr_server <- function(id, rv){
             }
             
             stdata <- lapply(selectedst, function(s){
-              samp_srDbId <- brapi_post_search_samples(rv$con, studyDbIds = s)
-              samples <- setDT(brapi_get_search_samples_searchResultsDbId(rv$con, searchResultsDbId = samp_srDbId$searchResultsDbId))
-              samples.pag <- attr(samples, which = "pagination")
+              samp_srDbId <- brapir::genotyping_samples_post_search(rv$con, studyDbIds = s)$data$searchResultsDbId
+              resp <- brapir::genotyping_samples_get_search_searchResultsDbId(rv$con, searchResultsDbId = samp_srDbId)
+              samples <- setDT(resp$data)
+              samples.pag <- resp$metadata$pagination
               if (samples.pag$pageSize < samples.pag$totalCount){
                 for (p in (1:(samples.pag$totalPages-1))){
-                  nextp <- setDT(brapi_get_search_samples_searchResultsDbId(rv$con, searchResultsDbId = samp_srDbId$searchResultsDbId, page = p))
+                  nextp <- setDT(brapir::genotyping_samples_get_search_searchResultsDbId(rv$con, searchResultsDbId = samp_srDbId, page = p))
                   samples <- rbind(samples, nextp, fill=T)
                 }
               }
               if (nrow(samples>0)){
-                os <- setDT(brapi_get_search_observationunits_searchResultsDbId(rv$con, searchResultsDbId = brapi_post_search_observationunits(rv$con, observationUnitDbIds = samples$observationUnitDbId)$searchResultsDbId))
+                os <- setDT(brapir::phenotyping_observationunits_get_search_searchResultsDbId(rv$con, searchResultsDbId = brapir::phenotyping_observationunits_post_search(rv$con, observationUnitDbIds = samples$observationUnitDbId)$data$searchResultsDbId)$data)
+                os <- setDT(tidyr::unnest(os, cols = "observationUnitPosition.observationLevelRelationships", names_sep = ".", keep_empty = T))
                 os <- os[,.(observationUnitDbId,trialName,studyName,locationName,germplasmName,observationUnitPosition.observationLevelRelationships.levelName,observationUnitPosition.observationLevelRelationships.levelCode)]
-                gp <- setDT(brapi_get_search_germplasm_searchResultsDbId(rv$con, searchResultsDbId = brapi_post_search_germplasm(rv$con, germplasmDbIds = samples$germplasmDbId)$searchResultsDbId))
+                gp <- setDT(brapir::germplasm_germplasm_get_search_searchResultsDbId(rv$con, searchResultsDbId = brapir::germplasm_germplasm_post_search(rv$con, germplasmDbIds = samples$germplasmDbId)$data$searchResultsDbId)$data)
                 gp <- gp[,.(germplasmDbId, germplasmName, pedigree)]
                 bc1 <- os[observationUnitPosition.observationLevelRelationships.levelName=="REP",.(observationUnitDbId,REP=observationUnitPosition.observationLevelRelationships.levelCode)][samples, on=.(observationUnitDbId)]
                 bc2 <- os[observationUnitPosition.observationLevelRelationships.levelName=="PLOT",.(observationUnitDbId,PLOT=observationUnitPosition.observationLevelRelationships.levelCode, trialName)][bc1, on=.(observationUnitDbId)]
@@ -305,25 +306,25 @@ mod_samplr_server <- function(id, rv){
           })
           observeEvent(input$sample_UID,{
             req(input$sample_UID)
-            samp_srDbId <- brapi_post_search_samples(rv$con, sampleDbIds = input$sample_UID)
-            samples <- setDT(brapi_get_search_samples_searchResultsDbId(rv$con, searchResultsDbId = samp_srDbId$searchResultsDbId))
+            samp_srDbId <- brapir::genotyping_samples_post_search(rv$con, sampleDbIds = input$sample_UID)$data$searchResultsDbId
+            samples <- setDT(brapir::genotyping_samples_get_search_searchResultsDbId(rv$con, searchResultsDbId = samp_srDbId)$data)
             if (nrow(samples>0)){
-              
-              os <- setDT(brapi_get_search_observationunits_searchResultsDbId(rv$con, searchResultsDbId = brapi_post_search_observationunits(rv$con, observationUnitDbIds = samples$observationUnitDbId)$searchResultsDbId))
+              os <- setDT(brapir::phenotyping_observationunits_get_search_searchResultsDbId(rv$con, searchResultsDbId = brapir::phenotyping_observationunits_post_search(rv$con, observationUnitDbIds = samples$observationUnitDbId)$data$searchResultsDbId)$data)
+              os <- setDT(tidyr::unnest(os, cols = "observationUnitPosition.observationLevelRelationships", names_sep = ".", keep_empty = T))
               os <- os[,.(observationUnitDbId,studyName,locationName,germplasmName,observationUnitPosition.observationLevelRelationships.levelName,observationUnitPosition.observationLevelRelationships.levelCode)]
-              gp <- setDT(brapi_get_search_germplasm_searchResultsDbId(rv$con, searchResultsDbId = brapi_post_search_germplasm(rv$con, germplasmDbIds = unique(samples$germplasmDbId))$searchResultsDbId))
+              gp <- setDT(brapir::germplasm_germplasm_get_search_searchResultsDbId(rv$con, searchResultsDbId = brapir::germplasm_germplasm_post_search(rv$con, germplasmDbIds = unique(samples$germplasmDbId))$data$searchResultsDbId)$data)
               gp <- unique(gp[,.(germplasmDbId, germplasmName, pedigree)])
               bc1 <- os[observationUnitPosition.observationLevelRelationships.levelName=="REP",.(observationUnitDbId,REP=observationUnitPosition.observationLevelRelationships.levelCode)][samples, on=.(observationUnitDbId)]
               bc2 <- os[observationUnitPosition.observationLevelRelationships.levelName=="PLOT",.(observationUnitDbId,PLOT=observationUnitPosition.observationLevelRelationships.levelCode)][bc1, on=.(observationUnitDbId)]
               bc3 <- gp[bc2, on=.(germplasmDbId)]
               #bc4 <- gs[,.(germplasmUUID,names)][bc3, on=.(germplasmUUID=germplasmDbId)]
               
-              st <- as.data.table(do.call(gtools::smartbind,lapply(unique(bc3$studyDbId), function(s) brapi_get_studies(rv$con, studyDbId = s))))
+              st <- as.data.table(do.call(gtools::smartbind,lapply(unique(bc3$studyDbId), function(s) brapir::core_studies_get(rv$con, studyDbId = s)$data)))
               st <- unique(st[,.(studyDbId,studyName, locationDbId, locationName)])
               #locs <- brapi_get_search_locations_searchResultsDbId(rv$con,
               #                                                     searchResultsDbId = brapi_post_search_locations(rv$con, locationDbIds = unique(st$locationDbId))$searchResultsDbId)
               locs <- do.call(gtools::smartbind, lapply(unique(st$locationDbId), function(l){
-                brapi_get_locations(rv$con, locationDbId = l)
+                brapir::core_locations_get(rv$con, locationDbId = l)$data
               }))
               setDT(locs)
               if (!any(colnames(locs)=="countryName")) locs[,countryName:=NA]
@@ -365,37 +366,39 @@ mod_samplr_server <- function(id, rv){
                            `Ends with`="ENDSWITH",
                            `Exact Match`="EXACTMATCH",
                            `Contains`="CONTAINS")
-              gs_srdbid <- bmsapi_post_germplasm_search(rv$con, nameFilter = list(type=nf,value=input$germp_search))
+              gs_srdbid <- bmsapi_post_germplasm_search(rv$con, nameFilter = list(type=nf,value=input$germp_search))$searchResultDbId
               gs <- bmsapi_get_germplasm_search_searchResultsDbId(rv$con, gs_srdbid)
               if (nrow(gs)>0){
                 gs <- gs[,-which(names(gs)%in%c("attributeTypesValueMap","nameTypesValueMap"))]
                 setDT(gs)
                 guids <- gs$germplasmUUID
-                samp_srDbId <- brapi_post_search_samples(rv$con, germplasmDbIds = guids)
-                samples <- setDT(brapi_get_search_samples_searchResultsDbId(rv$con, searchResultsDbId = samp_srDbId$searchResultsDbId))
-                samples.pag <- attr(samples, which = "pagination")
+                samp_srDbId <- brapir::genotyping_samples_post_search(rv$con, germplasmDbIds = guids)$data$searchResultsDbId
+                resp <- brapir::genotyping_samples_get_search_searchResultsDbId(rv$con, searchResultsDbId = samp_srDbId)
+                samples <- setDT(resp$data)
+                samples.pag <- resp$metadata$pagination
                 if (samples.pag$pageSize < samples.pag$totalCount){
                   for (p in (1:(samples.pag$totalPages-1))){
-                    nextp <- setDT(brapi_get_search_samples_searchResultsDbId(rv$con, searchResultsDbId = samp_srDbId$searchResultsDbId, page = p))
+                    nextp <- setDT(brapir::genotyping_samples_get_search_searchResultsDbId(rv$con, searchResultsDbId = samp_srDbId, page = p))
                     samples <- rbind(samples, nextp, fill=T)
                   }
                 }
                 if (nrow(samples>0)){
-                  os <- setDT(brapi_get_search_observationunits_searchResultsDbId(rv$con, searchResultsDbId = brapi_post_search_observationunits(rv$con, observationUnitDbIds = samples$observationUnitDbId)$searchResultsDbId))
+                  os <- setDT(brapir::phenotyping_observationunits_get_search_searchResultsDbId(rv$con, searchResultsDbId = brapir::phenotyping_observationunits_post_search(rv$con, observationUnitDbIds = samples$observationUnitDbId)$data$searchResultsDbId)$data)
+                  os <- setDT(tidyr::unnest(os, cols = "observationUnitPosition.observationLevelRelationships", names_sep = ".", keep_empty = T))
                   os <- os[,.(observationUnitDbId,studyName,locationName,germplasmName,observationUnitPosition.observationLevelRelationships.levelName,observationUnitPosition.observationLevelRelationships.levelCode)]
-                  gp <- setDT(brapi_get_search_germplasm_searchResultsDbId(rv$con, searchResultsDbId = brapi_post_search_germplasm(rv$con, germplasmDbIds = unique(samples$germplasmDbId))$searchResultsDbId))
+                  gp <- setDT(brapir::germplasm_germplasm_get_search_searchResultsDbId(rv$con, searchResultsDbId = brapir::germplasm_germplasm_post_search(rv$con, germplasmDbIds = unique(samples$germplasmDbId))$data$searchResultsDbId)$data)
                   gp <- unique(gp[,.(germplasmDbId, germplasmName, pedigree)])
                   bc1 <- os[observationUnitPosition.observationLevelRelationships.levelName=="REP",.(observationUnitDbId,REP=observationUnitPosition.observationLevelRelationships.levelCode)][samples, on=.(observationUnitDbId)]
                   bc2 <- os[observationUnitPosition.observationLevelRelationships.levelName=="PLOT",.(observationUnitDbId,PLOT=observationUnitPosition.observationLevelRelationships.levelCode)][bc1, on=.(observationUnitDbId)]
                   bc3 <- gp[bc2, on=.(germplasmDbId)]
                   bc4 <- gs[,.(germplasmUUID,names)][bc3, on=.(germplasmUUID=germplasmDbId)]
                   
-                  st <- as.data.table(do.call(gtools::smartbind,lapply(unique(bc3$studyDbId), function(s) brapi_get_studies(rv$con, studyDbId = s))))
+                  st <- as.data.table(do.call(gtools::smartbind,lapply(unique(bc3$studyDbId), function(s) brapir::core_studies_get(rv$con, studyDbId = s)$data)))
                   st <- unique(st[,.(studyDbId,studyName, locationDbId, locationName)])
                   #locs <- brapi_get_search_locations_searchResultsDbId(rv$con,
                   #                                                     searchResultsDbId = brapi_post_search_locations(rv$con, locationDbIds = unique(st$locationDbId))$searchResultsDbId)
                   locs <- do.call(gtools::smartbind, lapply(unique(st$locationDbId), function(l){
-                    brapi_get_locations(rv$con, locationDbId = l)
+                    brapir::core_locations_get(rv$con, locationDbId = l)$data
                   }))
                   setDT(locs)
                   if (!any(colnames(locs)=="countryName")) locs[,countryName:=NA]

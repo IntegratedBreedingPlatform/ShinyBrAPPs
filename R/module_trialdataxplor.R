@@ -82,7 +82,6 @@ mod_trialdataxplor_ui <- function(id){
   
 }
 
-#' @import brapirv2
 #' @import leaflet
 #' @export
 mod_trialdataxplor_server <- function(id, rv){
@@ -134,14 +133,14 @@ mod_trialdataxplor_server <- function(id, rv){
           env_choices <- rv$study_metadata[loaded==T,unique(studyDbId)]
           names(env_choices) <- rv$study_metadata[loaded==T,unique(study_name_app)]
           data_dq <- data_dq[!is.na(observationVariableDbId)]
-          scrid <- brapi_post_search_variables(rv$con, observationVariableDbIds = as.character(unique(data_dq$observationVariableDbId)))
-          variables <- brapi_get_search_variables_searchResultsDbId(rv$con, searchResultsDbId = scrid$searchResultsDbId)
+          scrid <- brapir::phenotyping_variables_post_search(rv$con, observationVariableDbIds = as.character(unique(data_dq$observationVariableDbId)))$data$searchResultsDbId
+          variables <- brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, searchResultsDbId = scrid)$data
           setDT(variables)
           variables[,observationVariableDbId:=as.numeric(observationVariableDbId)]
           rv_tdx$variables <- variables
           
           locs <- rbindlist(lapply(unique(rv$study_metadata$locationDbId), function(l){
-             as.data.table(brapi_get_locations(rv$con, locationDbId = l))
+             as.data.table(brapir::core_locations_get(rv$con, locationDbId = l)$data)
            }), use.names = T, fill = T)
           st <- locs[,.(locationDbId,countryName)][rv$study_metadata, on=.(locationDbId)]
           st <- unique(st[,.(studyDbId,locationDbId,countryName,studyName,locationName)])

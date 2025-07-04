@@ -49,20 +49,20 @@ get_env_data <- function(con = NULL,
                          stu_name_abbrev_app = NULL, 
                          obs_unit_level = NULL){
   
-  brapir_con <- brapir::brapi_connect(
-    secure = con$secure, 
-    db = con$db, 
-    port = con$port, 
-    apipath = con$apipath, 
-    multicrop = con$multicrop, 
-    commoncropname = con$commoncropname,
-    token = con$token)
+  # brapir_con <- brapir::brapi_connect(
+  #   secure = con$secure, 
+  #   db = con$db, 
+  #   port = con$port, 
+  #   apipath = con$apipath, 
+  #   multicrop = con$multicrop, 
+  #   commoncropname = con$commoncropname,
+  #   token = con$token)
 
   print(paste0("retrieving data from study ", studyDbId))
   try({
     if (is.null(obs_unit_level)) {
       res <- brapir::phenotyping_observationunits_post_search(
-        con = brapir_con, 
+        con = con, 
         studyDbIds = studyDbId,
         includeObservations = T
       )
@@ -70,7 +70,7 @@ get_env_data <- function(con = NULL,
     } else {
       obs_levels <- data.frame(levelName = obs_unit_level)
       res <- brapir::phenotyping_observationunits_post_search(
-        con = brapir_con, 
+        con = con, 
         studyDbIds = studyDbId,
         observationLevels = obs_levels,
         includeObservations = T
@@ -153,7 +153,7 @@ get_env_data <- function(con = NULL,
                                  blockNumber = levelCode[levelName == "BLOCK"]),
                              by = grouping_cols]
       
-      variables <- as.data.table(brapirv2::brapi_get_variables(con = con, studyDbId = studyDbId))
+      variables <- as.data.table(brapir::phenotyping_variables_get(con = con, studyDbId = studyDbId)$data)
       variables <- variables[trait.traitClass != "Breedingprocess", .(observationVariableDbId, scale.dataType)] 
       if (any(colnames(study_obs)=="observationVariableDbId")){
         study_obs <- merge(study_obs, variables, 
@@ -211,7 +211,7 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
   if(!is.null(trialDbId)){
     ## get environment metadata by trialDbId
     tryCatch({
-      study_metadata <- as.data.table(brapirv2::brapi_get_studies(con = con, trialDbId = trialDbId))
+      study_metadata <- as.data.table(brapir::core_studies_get(con = con, trialDbId = trialDbId)$data)
     },
     error=function(e){
       print(e)
@@ -222,7 +222,7 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
     ids <- unlist(strsplit(studyDbIds, ","))
     study_metadata <- rbindlist(lapply(ids,function(id){
       tryCatch({
-        as.data.table(brapirv2::brapi_get_studies(con = con, studyDbId = id))
+        as.data.table(brapir::core_studies_get_studyDbId(con = con, studyDbId = id)$data)
       },
       error=function(e){
         showNotification(paste0("Environment metadata not found for studyDbId ",id), type = "error", duration = notification_duration)
@@ -249,7 +249,7 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
   #    })
   #  }), fill = T, use.names = T)
   #})
-  loc_names <- brapirv2::brapi_get_search_locations_searchResultsDbId(con, searchResultsDbId = brapirv2::brapi_post_search_locations(con, locationDbIds = location_ids)$searchResultsDbId)
+  loc_names <- brapir::core_locations_get_search_searchResultsDbId(con, searchResultsDbId = brapir::core_locations_post_search(con, locationDbIds = location_ids)$data$searchResultsDbId)$data
   setDT(loc_names)
   req(loc_names)
   maxchar <- 9
@@ -367,9 +367,14 @@ renameGroupModal <- function(rv, parent_session) {
 
 
 whoami_bmsapi <- function(con){
-  progs <- brapi_get_programs(con)
+  progs <- brapir::core_programs_get(con)$data
   aprogr <- progs$programDbId[1]
-  server_url <- paste0(con$protocol, con$db, ":", con$port, "/", con$apipath)
+  if (con$secure) {
+    protocol <- "https://"
+  } else {
+    protocol <- "http://" 
+  }
+  server_url <- paste0(protocol, con$db, ":", con$port, "/", con$apipath)
   callurl <- paste0(server_url, "/users/filter?cropName=",con$commoncropname,"&programUUID=",aprogr)
   resp <-   httr::GET(url = callurl,
                       httr::timeout(25),
@@ -512,4 +517,50 @@ generate_ui_with_grid <- function(num_rows, num_cols, choices, ns=ns, control_la
   
   # Retourner un div contenant toutes les lignes
   return(div(rows_list))
+}
+
+# Function to get variable methods
+get_BLUES_methodsDbIds <- function(con, programDbId) {
+  methodNames = list(
+    "BLUEs" = "STABrAPP BLUES", 
+    "BLUPs" = "STABrAPP BLUPS", 
+    "seBLUEs" = "STABrAPP SEBLUES", 
+    "seBLUPs" = "STABrAPP SEBLUPS"
+  )
+  if (con$secure) {
+    protocol = "https://"
+  } else {
+    protocol = "http://"
+  }
+  callurl <- paste0(protocol, con$db, ":", con$port, "/", con$apipath, "/crops/", con$commoncropname, "/methods?programUUID=", programDbId)
+  resp <- httr::GET(url = callurl,
+                    httr::timeout(25),
+                    httr::add_headers(
+                      "Authorization" = paste("Bearer", con$token),
+                      "Content-Type"= "application/json",
+                      "accept"= "*/*"
+                    )
+  )
+  
+  cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
+  res <- jsonlite::fromJSON(cont)
+
+  methodIds <- list()
+  if (nrow(res[res$name == methodNames$BLUEs, ]) > 0) { methodIds["BLUEs"] =  res[res$name == methodNames$BLUEs, "id"]}
+  if (nrow(res[res$name == methodNames$BLUPs, ]) > 0) { methodIds["BLUPs"] =  res[res$name == methodNames$BLUPs, "id"]}
+  if (nrow(res[res$name == methodNames$seBLUEs, ]) > 0) { methodIds["seBLUEs"] =  res[res$name == methodNames$seBLUEs, "id"]}
+  if (nrow(res[res$name == methodNames$seBLUPs, ]) > 0) { methodIds["seBLUPs"] =  res[res$name == methodNames$seBLUPs, "id"]}
+  
+  if (length(methodIds) < 4) {
+    #missing at least one method
+    missing_methods = c()
+    if (is.null(methodIds$BLUEs)) {missing_methods = append(missing_methods, methodNames$BLUEs)}
+    if (is.null(methodIds$BLUPs)) {missing_methods = append(missing_methods, methodNames$BLUPs)}
+    if (is.null(methodIds$seBLUEs)) {missing_methods = append(missing_methods, methodNames$seBLUEs)}
+    if (is.null(methodIds$seBLUPs)) {missing_methods = append(missing_methods, methodNames$seBLUPs)}
+    message = paste("Missing variable methods in BMS:",paste0(missing_methods, collapse = ", "))
+    stop(message)
+  }
+  
+  return(methodIds)
 }

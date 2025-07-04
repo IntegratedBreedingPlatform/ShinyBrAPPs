@@ -156,7 +156,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           withProgress(message = "Reaching studies", value = 0, {
             incProgress(1)
             tryCatch({
-              trials <- as.data.table(brapirv2::brapi_get_trials(con = rv$con))
+              trials <- as.data.table(brapir::core_trials_get(con = rv$con)$data)
               rv$trial_metadata <- trials
               trial_choices <- trials[,trialDbId]
               names(trial_choices) <- trials[,trialName]

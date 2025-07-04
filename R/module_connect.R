@@ -73,19 +73,30 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_de
             ### set up connection
             parsed_url <- parse_api_url(rv_st$parse_GET_param$apiURL)
             
-            rv$con <- brapirv2::brapi_connect(
-              secure = TRUE,
-              protocol = parsed_url$brapi_protocol,
+            # rv$con <- brapirv2::brapi_connect(
+            #   secure = TRUE,
+            #   protocol = parsed_url$brapi_protocol,
+            #   db = parsed_url$brapi_db,
+            #   port = parsed_url$brapi_port,
+            #   apipath = parsed_url$brapi_apipath,
+            #   multicrop = TRUE,
+            #   commoncropname = rv_st$parse_GET_param$cropDb,
+            #   token = rv_st$parse_GET_param$token,
+            #   granttype = "token",
+            #   clientid = "brapir",
+            #   bms = TRUE
+            # )
+            
+            rv$con <- brapir::brapi_connect(
+              secure = (parsed_url$brapi_protocol == "https://"), 
               db = parsed_url$brapi_db,
               port = parsed_url$brapi_port,
               apipath = parsed_url$brapi_apipath,
-              multicrop = TRUE,
+              multicrop = TRUE, 
               commoncropname = rv_st$parse_GET_param$cropDb,
-              token = rv_st$parse_GET_param$token,
-              granttype = "token",
-              clientid = "brapir",
-              bms = TRUE
+              token = rv_st$parse_GET_param$token
             )
+            
             rv$connect_mode <- "url"
           } else {
               #### UI MODE
@@ -112,18 +123,28 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_de
           ## set up connection
           parsed_url <- parse_api_url(input$apiURL)
           
-          rv$con <- brapirv2::brapi_connect(
-            secure = TRUE,
-            protocol = parsed_url$brapi_protocol,
+          # rv$con <- brapirv2::brapi_connect(
+          #   secure = TRUE,
+          #   protocol = parsed_url$brapi_protocol,
+          #   db = parsed_url$brapi_db,
+          #   port = parsed_url$brapi_port,
+          #   apipath = parsed_url$brapi_apipath,
+          #   multicrop = TRUE,
+          #   commoncropname = input$cropDb,
+          #   token = input$token,
+          #   granttype = "token",
+          #   clientid = "brapir",
+          #   bms = TRUE
+          # )
+          # 
+          rv$con <- brapir::brapi_connect(
+            secure = (parsed_url$brapi_db == "https"), 
             db = parsed_url$brapi_db,
             port = parsed_url$brapi_port,
             apipath = parsed_url$brapi_apipath,
-            multicrop = TRUE,
+            multicrop = TRUE, 
             commoncropname = input$cropDb,
-            token = input$token,
-            granttype = "token",
-            clientid = "brapir",
-            bms = TRUE
+            token = input$token
           )
 
         })
