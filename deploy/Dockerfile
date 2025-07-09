@@ -1,4 +1,4 @@
-FROM shinybrapps_base
+FROM ghcr.io/integratedbreedingplatform/shinybrapps_base:dev
 
 ## Make the app and the container run on 3838
 RUN echo "\noptions(shiny.port=3838, shiny.host='0.0.0.0')" >> /usr/local/lib/R/etc/Rprofile.site
