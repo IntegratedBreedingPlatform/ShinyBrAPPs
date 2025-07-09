@@ -14,7 +14,13 @@ Install remotes package if not already done
 ``` r
 install.packages(remotes)
 ```
-Install snpclust package
+
+Install required brapir package that is not available on cran
+``` r
+remotes::install_gitlab('alice.boizet/brapir', host = 'https://gitlab.cirad.fr')
+```
+
+Install shinybrapps package
 
 ``` r
 remotes::install_github("IntegratedBreedingPlatform/ShinyBrAPPs")
@@ -22,6 +28,12 @@ remotes::install_github("IntegratedBreedingPlatform/ShinyBrAPPs")
 or for latest development version: 
 ``` r
 remotes::install_github("IntegratedBreedingPlatform/ShinyBrAPPs@dev")
+```
+
+### Build docker image
+```
+docker build -f deploy/Dockerfile_base --progress=plain -t shinybrapps_base .
+docker build -f deploy/Dockerfile --progress=plain -t shinybrapps .
 ```
 
 ## Applications
