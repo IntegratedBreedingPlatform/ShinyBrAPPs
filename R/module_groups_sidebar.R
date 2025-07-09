@@ -234,20 +234,37 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
         req(length(input$group_sel_input)==1)
         tryCatch({
           userinfo <- whoami_bmsapi(rv$con)
-          brapirv2::brapi_post_lists(
+          # brapirv2::brapi_post_lists(
+          #   con = rv$con,
+          #   data = rv$groups[group_id == input$group_sel_input, germplasmDbIds][[1]],
+          #   listSize = rv$groups[group_id == input$group_sel_input, N],
+          #   dateCreated = as.character(Sys.Date()), # XXX
+          #   dateModified = as.character(Sys.Date()), # XXX
+          #   listName = input$listName,
+          #   listDescription= input$listDescription,
+          #   listOwnerName = paste(userinfo$firstName,userinfo$username), # XXX
+          #   listOwnerPersonDbId = as.character(userinfo$id), # XXX
+          #   listSource = "test", # XXX
+          #   listType = "germplasm"
+          # )
+          resp <- brapir::core_lists_post(
             con = rv$con,
             data = rv$groups[group_id == input$group_sel_input, germplasmDbIds][[1]],
-            listSize = rv$groups[group_id == input$group_sel_input, N],
-            dateCreated = as.character(Sys.Date()), # XXX
-            dateModified = as.character(Sys.Date()), # XXX
+            dateCreated = as.character(Sys.Date()),
+            dateModified = as.character(Sys.Date()),
+            listDescription = input$listDescription,
             listName = input$listName,
-            listDescription= input$listDescription,
-            listOwnerName = paste(userinfo$firstName,userinfo$username), # XXX
-            listOwnerPersonDbId = as.character(userinfo$id), # XXX
-            listSource = "test", # XXX
+            listOwnerName = paste(userinfo$firstName,userinfo$username),
+            listOwnerPersonDbId = as.character(userinfo$id),
+            listSize = rv$groups[group_id == input$group_sel_input, N],
+            listSource = "test",
             listType = "germplasm"
           )
-          showNotification("List posted", type = "message", duration = notification_duration)
+          if (resp$status_code == 200) {
+            showNotification("List posted", type = "message", duration = notification_duration)
+          } else {
+            showNotification(resp$status_code, type = "error", duration = notification_duration)
+          }
         }, error = function(e)({
           showNotification("Could not post list", type = "error", duration = notification_duration)
         }))
@@ -258,16 +275,20 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
       # Then, get variables with traitName = selection_trait_name (config param)
       getSelectionVariables <- function(studyDbIds) {
         withProgress(message = "Looking for variables of selection type", min=1, max=1, {
-          res <- brapirv2::brapi_post_search_variables(
+          res <- brapir::phenotyping_variables_post_search(
             con = rv$con, 
             studyDbId = as.character(studyDbIds),
             traitClasses = selection_traitClass
           )
-          var <- data.table(brapirv2::brapi_get_search_variables_searchResultsDbId(rv$con, res$searchResultsDbId))
-          if (nrow(var) > 0) {
-            var <- var[trait.traitName == selection_traitName, .(observationVariableDbId, observationVariableName)]
+          if (res$status_code == 200) {
+            resp <- brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, res$data$searchResultsDbId)$data
+            var <- data.table(brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, res$data$searchResultsDbId)$data)
+            if (nrow(var) > 0) {
+              var <- var[trait.traitName == selection_traitName, .(observationVariableDbId, observationVariableName)]
+            }
+            return(var)
           }
-          return(var)
+          
         })
       }
       
@@ -277,7 +298,6 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
         envs <- unique(rv$extradata[,.(studyDbId, study_name_app)])
         env_choices <- envs[,studyDbId]
         names(env_choices) <- envs[,study_name_app]
-        
         #propose only variables that are selection type
         variables <- getSelectionVariables(env_choices)
        

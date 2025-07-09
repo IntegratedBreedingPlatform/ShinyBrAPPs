@@ -208,7 +208,6 @@ mod_model_server <- function(id, rv){
       # store blues before confirmation modal
       bluesToPush <- NULL
       methodIds <- NULL
-      brapir_con <- NULL
       
       outliersDTproxy <<- dataTableProxy('outliers_DT')
 
@@ -252,16 +251,6 @@ mod_model_server <- function(id, rv){
         shinyjs::hide("fit_outliers_output")
         rv_mod$selected_env <- NULL
         rv_mod$selected_traits <- NULL
-        
-        brapir_con <<- brapir::brapi_connect(
-          secure = rv$con$secure, 
-          db = rv$con$db, 
-          port = rv$con$port, 
-          apipath = rv$con$apipath, 
-          multicrop = rv$con$multicrop, 
-          commoncropname = rv$con$commoncropname,
-          token = rv$con$token
-        )
         
         # Get methodDbIds 
         #TODO use /search/methodDbIds
@@ -1202,19 +1191,19 @@ mod_model_server <- function(id, rv){
             bluesToPush <<- merge(needed_observation_units, bluesToPush, by=c("germplasmName", "environment", "studyDbId", "entryNumber"))
             
             env <- unique(bluesToPush[, .(environment, studyDbId)])
-            resp_post_search_obsunit <- brapir::phenotyping_observationunits_post_search(con = brapir_con, 
+            resp_post_search_obsunit <- brapir::phenotyping_observationunits_post_search(con = rv$con, 
                                                                                          observationLevels = data.frame(levelName = c("MEANS")),
                                                                                          studyDbIds = env$studyDbId)
             print(resp_post_search_obsunit$status_code)
             if (resp_post_search_obsunit$status_code == 200 | resp_post_search_obsunit$status_code == 202) {
-              resp_get_search_obsunit <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = brapir_con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId)
+              resp_get_search_obsunit <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId)
               if (resp_post_search_obsunit$status_code == 200) {
                 existing_obs_units <- resp_get_search_obsunit$data
                 pagination <- resp_get_search_obsunit$metadata$pagination
                 page = 0
                 while (pagination$totalCount > (pagination$currentPage + 1)*pagination$pageSize) {
                   page = page + 1
-                  resp_get_search_obsunit <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = brapir_con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId, page = page)
+                  resp_get_search_obsunit <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId, page = page)
                   pagination <- resp_get_search_obsunit$metadata$pagination
                   existing_obs_units <- rbindlist(list(existing_obs_units, resp_get_search_obsunit$data))
                 }
@@ -1262,7 +1251,7 @@ mod_model_server <- function(id, rv){
                 )
               })
               
-              resp <- brapir::phenotyping_observationunits_post_batch(con = brapir_con, body)
+              resp <- brapir::phenotyping_observationunits_post_batch(con = rv$con, body)
               print(resp$status_code)
               
               new_observation_units <- resp$data
@@ -1307,7 +1296,7 @@ mod_model_server <- function(id, rv){
               
               ## push missing variables ####
               # Get variable scale and trait
-              resp_variable <- brapir::phenotyping_variables_get(con = brapir_con, observationVariableDbId = variableDbId)
+              resp_variable <- brapir::phenotyping_variables_get(con = rv$con, observationVariableDbId = variableDbId)
               
               if (resp_variable$status_code != 200) {
                 showNotification(paste0("An error occured"), type = "error", duration = notification_duration)
@@ -1321,14 +1310,14 @@ mod_model_server <- function(id, rv){
                 #variableDbId <- origin_variables$originVariableDbId[i]
                 
                 resp_search_variables <- brapir::phenotyping_variables_post_search(
-                  con = brapir_con,
+                  con = rv$con,
                   methodDbIds = c(methodIds$BLUEs, methodIds$BLUPs, methodIds$seBLUEs, methodIds$seBLUPs),
                   scaleDbIds = scaleDbId,
                   traitDbIds = traitDbId
                 )
                 if (resp_search_variables$status_code == 200 | resp_search_variables$status_code == 202) {
                   resp_get_search_variables <- brapir::phenotyping_variables_get_search_searchResultsDbId(
-                    con = brapir_con,
+                    con = rv$con,
                     searchResultsDbId = resp_search_variables$data$searchResultsDbId
                   )
                   if (resp_get_search_variables$status_code == 200) {
@@ -1371,7 +1360,7 @@ mod_model_server <- function(id, rv){
                           )
                         })
                         
-                        resp_post_variables <- brapir::phenotyping_variables_post_batch(con = brapir_con, data = body)
+                        resp_post_variables <- brapir::phenotyping_variables_post_batch(con = rv$con, data = body)
                         
                         if (resp_post_variables$status_code == 200) {
                           created_variables_dt <- data.table(resp_post_variables$data)[
@@ -1419,7 +1408,7 @@ mod_model_server <- function(id, rv){
                         )
                       })
                       
-                      resp <- brapir::phenotyping_observations_post_batch(con = brapir_con, data = body)
+                      resp <- brapir::phenotyping_observations_post_batch(con = rv$con, data = body)
                       if (resp$status_code == 200) {
                         created_observations_df <- resp$data
                         showNotification(paste0(var_name, " BLUES/BLUPS were pushed to ", env_names[j], " (",nrow(created_observations_df), " data)"), type = "message", duration = notification_duration)
@@ -1486,7 +1475,7 @@ mod_model_server <- function(id, rv){
           if (resp$status_code == 200 | resp$status_code == 202) {
             if ("searchResultsDbId" %in% names(resp$data)) {
               searchResultsDbId = resp$data$searchResultsDbId
-              resp2 <- brapir::phenotyping_variables_get_search_searchResultsDbId(con = brapir_con, searchResultsDbId = searchResultsDbId)
+              resp2 <- brapir::phenotyping_variables_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = searchResultsDbId)
               origin_variables = data.table(resp2$data)
             } else {
               origin_variables = data.table(resp$data)
@@ -1522,14 +1511,14 @@ mod_model_server <- function(id, rv){
             #variableDbId <- origin_variables$originVariableDbId[i]
             
             resp_search_variables <- brapir::phenotyping_variables_post_search(
-              con = brapir_con,
+              con = rv$con,
               methodDbIds = c(methodIds$BLUEs, methodIds$BLUPs, methodIds$seBLUEs, methodIds$seBLUPs),
               scaleDbIds = scaleDbId,
               traitDbIds = traitDbId
             )
             if (resp_search_variables$status_code == 200 | resp_search_variables$status_code == 202) {
               resp_get_search_variables <- brapir::phenotyping_variables_get_search_searchResultsDbId(
-                con = brapir_con,
+                con = rv$con,
                 searchResultsDbId = resp_search_variables$data$searchResultsDbId
               )
               if (resp_get_search_variables$status_code == 200) {
@@ -1583,7 +1572,7 @@ mod_model_server <- function(id, rv){
               )
             })
             
-            resp_post_variables <- brapir::phenotyping_variables_post_batch(con = brapir_con, data = body)
+            resp_post_variables <- brapir::phenotyping_variables_post_batch(con = rv$con, data = body)
             
             if (resp_post_variables$status_code == 200) {
               created_variables_dt <- data.table(resp_post_variables$data)[
@@ -1611,14 +1600,14 @@ mod_model_server <- function(id, rv){
           withProgress(message = "check if BLUEs/BLUPs are already stored in the database", min=1, max=1, {
             print("Look for existing BLUEs/BLUPs")
             resp <- brapir::phenotyping_observations_post_search(
-              con = brapir_con, 
+              con = rv$con, 
               studyDbIds = as.character(unique(bluesToPush$studyDbId)), 
               observationVariableDbIds = existing_variables$observationVariableDbId,
               pageSize = 1)
             if (resp$status_code == 200) {
               if ("searchResultsDbId" %in% names(resp$data)) {
                 searchResultsDbId = resp$data$searchResultsDbId
-                resp2 <- brapir::phenotyping_observations_get_search_searchResultsDbId(con = brapir_con, searchResultsDbId = searchResultsDbId)
+                resp2 <- brapir::phenotyping_observations_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = searchResultsDbId)
                 existing_obs_count = resp2$metadata$pagination$totalCount
               } else {
                 existing_obs_count = resp$metadata$pagination$totalCount
