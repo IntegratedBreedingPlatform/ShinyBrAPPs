@@ -640,14 +640,13 @@
     },
     "brapir": {
       "Package": "brapir",
-      "Version": "0.1.0",
+      "Version": "2.1.0",
       "Source": "GitLab",
       "Type": "Package",
-      "Title": "What the Package Does (Title Case)",
-      "Author": "Who wrote it",
-      "Maintainer": "The package maintainer <yourself@somewhere.net>",
-      "Description": "More about what it does (maybe more than one line) Use four spaces when indenting paragraphs within the Description.",
-      "License": "What license is it under?",
+      "Title": "R client for BrAPI compliant server",
+      "Authors@R": "person(\"Alice\", \"Boizet\", email = \"alice.boizet@cirad.fr\", role = c(\"aut\", \"cre\"))",
+      "Description": "An R package to use the Breeding API (BrAPI) for accessing BrAPI compliant servers.",
+      "License": "GPL (>= 3)",
       "Encoding": "UTF-8",
       "LazyData": "true",
       "RoxygenNote": "7.3.2",
@@ -657,13 +656,15 @@
         "httr2",
         "jsonlite"
       ],
+      "Author": "Alice Boizet [aut, cre]",
+      "Maintainer": "Alice Boizet <alice.boizet@cirad.fr>",
       "RemoteType": "gitlab",
       "RemoteHost": "https://gitlab.cirad.fr",
       "RemoteUsername": "alice.boizet",
       "RemoteRepo": "brapir",
       "RemoteSubdir": "",
       "RemoteRef": "master",
-      "RemoteSha": "d6babe9a73dc383773468b88175441c725bf190f"
+      "RemoteSha": "6c5f07791e6cc436372f93cc4e340d44bcd8cc6a"
     },
     "broom": {
       "Package": "broom",
@@ -5359,17 +5360,18 @@
     },
     "statgenGxE": {
       "Package": "statgenGxE",
-      "Version": "1.0.10",
-      "Source": "Repository",
+      "Version": "1.0.10.9000",
+      "Source": "GitHub",
       "Type": "Package",
       "Title": "Genotype by Environment (GxE) Analysis",
-      "Date": "2025-06-24",
+      "Date": "2025-06-25",
       "Authors@R": "c(person(given = \"Bart-Jan\",  family = \"van Rossum\",  email = \"bart-jan.vanrossum@wur.nl\",  role = c(\"aut\", \"cre\")), person(given = \"Fred\",  family = \"van Eeuwijk\", role = \"ctb\", comment = c(ORCID = \"0000-0003-3672-2921\")), person(given = \"Martin\",  family = \"Boer\", role = \"ctb\"), person(given = \"Marcos\", family = \"Malosetti\", role = \"ctb\", comment = c(ORCID = \"0000-0002-8150-1397\")), person(given = \"Daniela\",  family = \"Bustos-Korts\", role = \"ctb\", comment = c(ORCID = \"0000-0003-3827-6726\")), person(given = \"Emilie J\",  family = \"Millet\", role = \"ctb\", comment = c(ORCID = \"0000-0002-2913-4892\")), person(given = \"Joao\",  family = \"Paulo\", role = \"ctb\", comment = c(ORCID = \"0000-0002-4180-0763\")), person(given = \"Maikel\",  family = \"Verouden\", role = \"ctb\", comment = c(ORCID = \"0000-0002-4893-3323\")), person(given = \"Willem\",  family = \"Kruijer\", role = \"ctb\", comment = c(ORCID = \"0000-0001-7179-1733\")), person(given = \"Ron\",  family = \"Wehrens\", role = \"ctb\", comment = c(ORCID = \"0000-0002-8798-5599\")), person(given = \"Choazhi\",  family = \"Zheng\", role = \"ctb\", comment = c(ORCID = \"0000-0001-6030-3933\")) )",
       "Description": "Analysis of multi environment data of plant breeding experiments following the analyses described in Malosetti, Ribaut,  and van Eeuwijk (2013), <doi:10.3389/fphys.2013.00044>. One of a series of statistical genetic packages for streamlining the analysis of  typical plant breeding experiments developed by Biometris. Some functions have been created to be used in conjunction with the R  package 'asreml' for the 'ASReml' software, which can be obtained upon  purchase from 'VSN' international (<https://vsni.co.uk/software/asreml-r/>).",
       "License": "GPL",
       "Encoding": "UTF-8",
       "LazyData": "true",
       "RoxygenNote": "7.3.2",
+      "Roxygen": "list(markdown = TRUE)",
       "Depends": [
         "R (>= 3.3)"
       ],
@@ -5393,10 +5395,14 @@
       "VignetteBuilder": "knitr",
       "URL": "https://biometris.github.io/statgenGxE/index.html, https://github.com/Biometris/statgenGxE/",
       "BugReports": "https://github.com/Biometris/statgenGxE/issues",
-      "NeedsCompilation": "no",
       "Author": "Bart-Jan van Rossum [aut, cre], Fred van Eeuwijk [ctb] (ORCID: <https://orcid.org/0000-0003-3672-2921>), Martin Boer [ctb], Marcos Malosetti [ctb] (ORCID: <https://orcid.org/0000-0002-8150-1397>), Daniela Bustos-Korts [ctb] (ORCID: <https://orcid.org/0000-0003-3827-6726>), Emilie J Millet [ctb] (ORCID: <https://orcid.org/0000-0002-2913-4892>), Joao Paulo [ctb] (ORCID: <https://orcid.org/0000-0002-4180-0763>), Maikel Verouden [ctb] (ORCID: <https://orcid.org/0000-0002-4893-3323>), Willem Kruijer [ctb] (ORCID: <https://orcid.org/0000-0001-7179-1733>), Ron Wehrens [ctb] (ORCID: <https://orcid.org/0000-0002-8798-5599>), Choazhi Zheng [ctb] (ORCID: <https://orcid.org/0000-0001-6030-3933>)",
       "Maintainer": "Bart-Jan van Rossum <bart-jan.vanrossum@wur.nl>",
-      "Repository": "CRAN"
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "Biometris",
+      "RemoteRepo": "statgenGxE",
+      "RemoteRef": "develop",
+      "RemoteSha": "06a2fbdff45a9e4f19ea14996256f5ac4ed90d38"
     },
     "statgenSTA": {
       "Package": "statgenSTA",
