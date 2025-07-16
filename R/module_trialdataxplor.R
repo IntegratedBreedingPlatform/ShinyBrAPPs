@@ -26,17 +26,14 @@ mod_trialdataxplor_ui <- function(id){
                                       div(style="display: inline-block;vertical-align:middle;",selectizeInput(ns("obs_study"), label="Single study", choices=NULL, multiple=FALSE)),
                                       div(style="display: inline-block;vertical-align:middle; width: 50px;",HTML("<br>")),
                                       div(style="display: inline-block;vertical-align:middle;",uiOutput(ns("copy_obs_table")))),
-                                          
                                       fluidRow(
                                         #column(
                                         #  5,
                                         shinycssloaders::withSpinner(
                                           #plotlyOutput("observ_boxplot", height=500, width = "50%"), type = 1,color.background = "white"
                                           plotOutput(ns("observ_boxplot"), height=200, width = "100%", brush = ns("observ_boxplot_brush")), type = 1,color.background = "white",
-                                        ),#,hide.ui = FALSE),
-                                        #column(
-                                        #4,
-                                        #checkboxInput("obs_display_all_germ", "Display all germplasms"),
+                                        ),
+                                        materialSwitch(inputId = ns("observ_boxplot_splitreps"), label = "By replications", value = FALSE, status = "info"),
                                         div(DT::dataTableOutput(ns("selected_obs")), style = "font-size: 75%;"))
                                       #)
                              ),
@@ -295,53 +292,47 @@ mod_trialdataxplor_server <- function(id, rv){
         data_dq <- rv_tdx$observations
         #data_dq[, is.selected:=F]
         #data_dq[observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
-        
-        g1 <- ggplot(data_dq, aes(
-          y = observationValue,
-          x = study_label
-        )) +
-          #geom_violin(alpha = 0.2) +
-          geom_boxplot(
-            fill = grey(0.8), coef = input$outslid, outlier.colour = "red",  outlier.size = 5
-          ) +
-          # geom_point(
-          geom_jitter(
-            width = 0.05,
-            height = 0,
-            shape = 21,
-            alpha = 0.5,
-            fill = grey(0.9),
-            #aes(
-            #  # fill = observationValue,
-            #  plotNumber = plotNumber,
-            #  blockNumber = blockNumber,
-            #  replicate = replicate,
-            #  positionCoordinateX = positionCoordinateX,
-            #  positionCoordinateY = positionCoordinateY,
-            #  entryType = entryType,
-            #  germplasmName = germplasmName,
-            #  #stroke = ifelse(is.selected,1,0.1),
-            #  #color = is.selected,
-            #  key = observationDbId
-            #),
-            size = 3
-          ) +
-          #scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black"), guide = "none") +
-          scale_alpha(guide = "none") + coord_flip() +
-          theme_minimal() +
-          xlab(label = element_blank()) #+
-        #theme(
-        #  legend.position = "none",
-        #  axis.text.y = if(all(data_dq[,.(is.na(positionCoordinateX) | is.na(positionCoordinateY))])) element_text(angle = 90) else element_blank(),
-        #  axis.title.y = element_blank()
-        #)
-        #ggplotly(#height=length(input$studies)*400,
-        #         g1,
-        #         dynamicTicks = "TRUE", source = "A", originalData = T,
-        #         tooltip = c("germplasmName", "observationValue", "key", "plotNumber", "blockNumber", "replicate", "entryType")
-        #         ) %>%
-        #  style(hoverlabel = list(bgcolor = "white")) %>%
-        #  layout(dragmode = "lasso")
+        if (!input$observ_boxplot_splitreps){
+          g1 <- ggplot(data_dq, aes(
+            y = observationValue,
+            x = study_label
+          )) +
+            geom_boxplot(
+              fill =  grey(0.8), coef = input$outslid, outlier.colour = "red",  outlier.size = 5
+            ) +
+            geom_jitter(
+              width = 0.05,
+              height = 0,
+              shape = 21,
+              alpha = 0.5,
+              fill = grey(0.9),
+              size = 3
+            ) +
+            scale_alpha(guide = "none") + coord_flip() +
+            theme_minimal() +
+            xlab(label = element_blank())
+        } else {
+          g1 <- ggplot(data_dq, aes(
+            y = observationValue,
+            x = replicate
+          )) +
+            geom_boxplot(
+              aes(fill=as.factor(replicate)), coef = input$outslid, outlier.colour = "red",  outlier.size = 5
+            ) +
+            geom_jitter(
+              width = 0.05,
+              height = 0,
+              shape = 21,
+              alpha = 0.5,
+              fill = grey(0.9),
+              size = 3
+            ) +
+            scale_alpha(guide = "none") + coord_flip() +
+            theme_minimal() +
+            theme(legend.position = "none") +
+            xlab(label = element_text("Replicate"))
+        }
+
         g1
       })
       
