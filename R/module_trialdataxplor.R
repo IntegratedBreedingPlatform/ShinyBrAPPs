@@ -211,7 +211,7 @@ mod_trialdataxplor_server <- function(id, rv){
         obs_study_data <- rv_tdx$data_dq[observationVariableName==input$obs_trait,.N,.(studyDbId, locationName, studyName,countryName)]
         updateSelectizeInput(session,
                               inputId = "obs_study",
-                              selected = NULL,
+                              selected = input$obs_study,
                               server=TRUE,
                               choices = obs_study_data,
                               options = list(valueField='studyDbId',
