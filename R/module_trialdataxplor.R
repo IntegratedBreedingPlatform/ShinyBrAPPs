@@ -221,6 +221,7 @@ mod_trialdataxplor_server <- function(id, rv){
                                                     return '<div><strong>'+ escape(item.studyDbId) +'-'+ escape(item.locationName) + '</strong> (' + escape(item.countryName) + ') ('+ escape(item.N)+ ')</div>';
                                           }}"))
         )
+        rv_tdx$obs_btable <- data.table()[0L]
       }, ignoreInit = T)
      
       observeEvent(rv_tdx$locs, {
@@ -300,6 +301,8 @@ mod_trialdataxplor_server <- function(id, rv){
       observeEvent(input$obs_study,{
         req(rv_tdx$data_dq$studyDbId)
         rv_tdx$observations <- rv_tdx$data_dq[studyDbId==input$obs_study & observationVariableName==input$obs_trait]
+        rv_tdx$obs_btable <- data.table()[0L]
+        
       })
       
       output$observ_boxplot <- renderPlot({
@@ -386,7 +389,7 @@ mod_trialdataxplor_server <- function(id, rv){
       })
       
       output$selected_obs <- DT::renderDataTable({
-        req(rv_tdx$obs_btable)
+        req(nrow(rv_tdx$obs_btable)>0)
         if (input$selected_obs_otherreps){
           obstable <- rv_tdx$data_dq[germplasmName%in%rv_tdx$obs_btable$germplasmName & studyDbId==input$obs_study & observationVariableName==input$obs_trait,.(trait.name,
                                                                                                  VariableName=observationVariableName,
