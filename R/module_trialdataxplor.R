@@ -13,7 +13,9 @@ mod_trialdataxplor_ui <- function(id){
           ".nav .nav-item .nav-link { font-size: 20px; }",
         )
       ),
-      bslib::page_navbar(title = "", id = ns("tabsetId"), 
+      
+   
+      bslib::navset_tab( 
                              #tabsetPanel(#title = "", id = "tabsetId",
                          bslib::nav_panel("Data counts",value="counts",
                                       div(tableOutput(ns("counts_table")), style = "font-size: 75%;")),
