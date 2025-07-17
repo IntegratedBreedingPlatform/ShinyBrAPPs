@@ -22,12 +22,12 @@ mod_trialdataxplor_ui <- function(id){
                          bslib::nav_panel("Distributions",value="distrib",
                                       uiOutput(ns("spinning_boxplot"))),
                          bslib::nav_panel("Observations",value="observ",
-                                          div(style="display: flex;",
+                                          #div(style="display: flex;",
                                       div(style="display: inline-block;vertical-align:middle;",selectInput(ns("obs_trait"), label="Variable", choices=NULL)),
                                       #div(style="display: inline-block;vertical-align:middle; width: 10px;",HTML("<br>")),
                                       div(style="display: inline-block;vertical-align:middle;",selectizeInput(ns("obs_study"), label="Single study", choices=NULL, multiple=FALSE)),
-                                      div(style="display: inline-block;vertical-align:middle; width: 50px;",HTML("<br>")),
-                                      div(style="display: inline-block;vertical-align:middle;",uiOutput(ns("copy_obs_table")))),
+                                      #div(style="display: inline-block;vertical-align:middle; width: 50px;",HTML("<br>")),
+                                      div(style="display: inline-block;vertical-align:middle;",uiOutput(ns("copy_obs_table"))),
                                       fluidRow(
                                         #column(
                                         #  5,
