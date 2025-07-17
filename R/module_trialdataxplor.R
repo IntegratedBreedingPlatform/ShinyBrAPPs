@@ -20,7 +20,20 @@ mod_trialdataxplor_ui <- function(id){
                          bslib::nav_panel("Data counts",value="counts",
                                       div(tableOutput(ns("counts_table")), style = "font-size: 75%;")),
                          bslib::nav_panel("Distributions",value="distrib",
-                                      uiOutput(ns("spinning_boxplot"))),
+                                          div(style="display: inline-block;vertical-align:middle;",pickerInput(ns("dis_trait"), label="Variables",
+                                                                                                               multiple = TRUE, 
+                                                                                                               choices = NULL, 
+                                                                                                               options = list(`actions-box` = TRUE))),
+                                          div(style="display: inline-block;vertical-align:middle;",pickerInput(ns("dis_study"), label="Studies",
+                                                                                                               multiple = TRUE, 
+                                                                                                               choices = NULL, 
+                                                                                                               options = list(`actions-box` = TRUE))),
+                                          div(style="display: inline-block;vertical-align:middle;",actionButton(ns("refresh_dist"),label = "Plot distributions")),
+                                          shinycssloaders::withSpinner(
+                                              plotOutput(ns("boxplots"), height=500), type = 1,color.background = "white"
+                                            )
+                         ),
+                                          #uiOutput(ns("spinning_boxplot"))),
                          bslib::nav_panel("Observations",value="observ",
                                           #div(style="display: flex;",
                                       div(style="display: inline-block;vertical-align:middle;",selectInput(ns("obs_trait"), label="Variable", choices=NULL)),
@@ -152,6 +165,8 @@ mod_trialdataxplor_server <- function(id, rv){
           data_dq[, study_label:=paste0(locationName," (",countryName,")")]
           data_dq[, observationValue:=as.numeric(observationValue)]
           data_dq[, replicate:=as.factor(replicate)]
+          data_dq[, facetcols := paste0(studyDbId, "-", locationName,"\n",countryName)]
+          
           #browser()
           if (any(!st$studyDbId%in%data_dq$studyDbId)){
             missingst <- st[!studyDbId%in%data_dq$studyDbId]
@@ -161,17 +176,14 @@ mod_trialdataxplor_server <- function(id, rv){
             output$study_no_dat <- renderTable(missingst,digits=0)
           }
   
-          output$spinning_boxplot <- renderUI({
-            shinycssloaders::withSpinner(
-              plotOutput(ns("boxplots"), height=500), type = 1,color.background = "white"
-            )
-          })
           
           #rv_tdx$st <- data_dq[,.N,studyDbId][st, on=.(studyDbId)]
           rv_tdx$data_dq <- data_dq
           rv_tdx$locs <- locs
   
           updateSelectInput(session, inputId = "obs_trait",choices = sort(unique(data_dq$observationVariableName)))
+          updatePickerInput(session, inputId = "dis_trait",choices = sort(unique(data_dq$observationVariableName)), selected = sort(unique(data_dq$observationVariableName)))
+          updatePickerInput(session, inputId = "dis_study",choices = sort(unique(data_dq$facetcols)), selected = sort(unique(data_dq$facetcols)))
           
           ct <- dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(study=paste0(studyDbId,"-",locationName),Variable=observationVariableName)],
                       Variable~study, fill = 0)
@@ -248,57 +260,59 @@ mod_trialdataxplor_server <- function(id, rv){
       
       dynamicHeight <- reactive({
         req(nrow(rv_tdx$variables)>0)
-        return(nrow(rv_tdx$variables) * 150)
+        return(50+nrow(rv_tdx$variables[observationVariableName%in%input$dis_trait]) * 150)
       })
       
-      output$boxplots<-renderPlot({
-        req(rv_tdx$data_dq)
-        req(rv_tdx$data_dq[,.N]>0)
-        data_dq <- rv_tdx$data_dq
-        data_dq[, facetrows := paste0("V: ",observationVariableName,"\n",
+      output$boxplots<-bindEvent(renderPlot({
+            req(rv_tdx$data_dq)
+            req(rv_tdx$data_dq[observationVariableName%in%input$dis_trait & facetcols%in%input$dis_study,.N]>0)
+            data_dq <- rv_tdx$data_dq[observationVariableName%in%input$dis_trait & facetcols%in%input$dis_study]
+            data_dq[, facetrows := paste0("V: ",observationVariableName,"\n",
                                           "T: ",trait.name, "\n",
                                           "M: ",method.methodName,"\n",
                                           "S: ",scale.scaleName)]
-        data_dq[, facetcols := paste0(studyDbId, "-", locationName,"\n",countryName)]
-        data_dq[,is_out:=FALSE]
-        data_dq[observationDbId%in%rv_tdx$cdout$observationDbId,is_out:=TRUE]
-        loclabels <- unique(data_dq[,.(facetcols,locationName)])
-        g<-ggplot(data_dq, aes(y=observationValue, x=replicate)) +
-          geom_boxplot(aes(fill=as.factor(replicate)), outlier.shape = NA) +#, coef = input$outslid) +
-          facet_grid(rows=vars(facetrows), cols=vars(facetcols), scales = "free") +
-          ggnewscale::new_scale_fill() +
-          geom_jitter(aes(fill=is_out, size=is_out),
-                      width = 0,
-                      height = 0,
-                      shape = 21,
-                      alpha = 0.5,
-                      #fill = grey(0.9),
-                      #size = 3
-          ) +
-          scale_fill_manual(values=c(`TRUE`="red",`FALSE`="#FFFFFF01")) +
-          scale_size_manual(values=c(`TRUE`=3,`FALSE`=0)) +
-          ggtitle(input$trial) +
-          theme(strip.text.y.right = element_text(angle = 0, vjust = 1, hjust=0, size = 10),
-                strip.text.x = element_text(size = 10),
-                strip.background.y = element_rect(fill = "white", colour = "black"),
-                legend.position = "none") #+ coord_flip()
-        g <- g + geom_text(
-          data    = loclabels,
-          size=3,
-          mapping = aes(x = 0.25, y = 0, label = locationName),
-          hjust   = 0,
-          vjust   = 1, angle=90
-        )
-        g
-        # g<-ggplot(toplot, aes(y=observationValue, fill=replicate, x=locationName)) +
-        #   geom_boxplot() +
-        #   facet_wrap(~paste0(observationVariableName,"\n",trait.name) , ncol= 1, scales = "free", strip.position="top") +
-        #   ggtitle(t) +
-        #   theme(strip.text.y.right = element_text(angle = 0), axis.text.x =  element_text(angle = 90)) #+ coord_flip()
-        #browser()
-      }, height = function() {
-        dynamicHeight()
-      })
+            data_dq[,is_out:=FALSE]
+            data_dq[observationDbId%in%rv_tdx$cdout$observationDbId,is_out:=TRUE]
+            loclabels <- unique(data_dq[,.(facetcols,locationName)])
+            g<-ggplot(data_dq, aes(y=observationValue, x=replicate)) +
+              geom_boxplot(aes(fill=as.factor(replicate)), outlier.shape = NA) +#, coef = input$outslid) +
+              facet_grid(rows=vars(facetrows), cols=vars(facetcols), scales = "free") +
+              ggnewscale::new_scale_fill() +
+              geom_jitter(aes(fill=is_out, size=is_out),
+                          width = 0,
+                          height = 0,
+                          shape = 21,
+                          alpha = 0.5,
+                          #fill = grey(0.9),
+                          #size = 3
+              ) +
+              scale_fill_manual(values=c(`TRUE`="red",`FALSE`="#FFFFFF01")) +
+              scale_size_manual(values=c(`TRUE`=3,`FALSE`=0)) +
+              ggtitle(input$trial) +
+              theme(strip.text.y.right = element_text(angle = 0, vjust = 1, hjust=0, size = 10),
+                    strip.text.x = element_text(size = 10),
+                    strip.background.y = element_rect(fill = "white", colour = "black"),
+                    legend.position = "none") #+ coord_flip()
+            g <- g + geom_text(
+              data    = loclabels,
+              size=3,
+              mapping = aes(x = 0.25, y = 0, label = locationName),
+              hjust   = 0,
+              vjust   = 1, angle=90
+            )
+            g
+            # g<-ggplot(toplot, aes(y=observationValue, fill=replicate, x=locationName)) +
+            #   geom_boxplot() +
+            #   facet_wrap(~paste0(observationVariableName,"\n",trait.name) , ncol= 1, scales = "free", strip.position="top") +
+            #   ggtitle(t) +
+            #   theme(strip.text.y.right = element_text(angle = 0), axis.text.x =  element_text(angle = 90)) #+ coord_flip()
+            #browser()
+          }, height = function() {
+            dynamicHeight()
+        }), input$refresh_dist)          
+
+
+
       
       observeEvent(input$obs_study,{
         req(rv_tdx$data_dq$studyDbId)
