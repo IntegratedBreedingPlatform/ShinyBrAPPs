@@ -171,7 +171,7 @@ mod_trialdataxplor_server <- function(id, rv){
           rv_tdx$data_dq <- data_dq
           rv_tdx$locs <- locs
   
-          updateSelectInput(session, inputId = "obs_trait",choices = unique(data_dq$observationVariableName))
+          updateSelectInput(session, inputId = "obs_trait",choices = sort(unique(data_dq$observationVariableName)))
           
           ct <- dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(study=paste0(studyDbId,"-",locationName),Variable=observationVariableName)],
                       Variable~study, fill = 0)
