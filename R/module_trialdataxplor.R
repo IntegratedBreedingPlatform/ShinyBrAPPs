@@ -1,6 +1,7 @@
 #' @export
 mod_trialdataxplor_ui <- function(id){
   ns <- NS(id)
+
   div(class = "container-fluid",
       # Application title
       #titlePanel(title=div(img(src="ibp.png", width="34px", border.radius="6px"),"BMS trial data explorer"),windowTitle="BMS trial data explorer"),
@@ -15,7 +16,7 @@ mod_trialdataxplor_ui <- function(id){
       ),
       
    
-      bslib::navset_tab( 
+      bslib::navset_tab( id = ns("tabset"),
                              #tabsetPanel(#title = "", id = "tabsetId",
                          bslib::nav_panel("Data counts",value="counts",
                                       div(tableOutput(ns("counts_table")), style = "font-size: 75%;")),
@@ -40,18 +41,18 @@ mod_trialdataxplor_ui <- function(id){
                                       #div(style="display: inline-block;vertical-align:middle; width: 10px;",HTML("<br>")),
                                       div(style="display: inline-block;vertical-align:middle;",selectizeInput(ns("obs_study"), label="Single study", choices=NULL, multiple=FALSE)),
                                       #div(style="display: inline-block;vertical-align:middle; width: 50px;",HTML("<br>")),
-                                      div(style="display: inline-block;vertical-align:middle;",uiOutput(ns("copy_obs_table"))),
-                                      fluidRow(
+                                      #fluidRow(
                                         #column(
                                         #  5,
                                         shinycssloaders::withSpinner(
                                           #plotlyOutput("observ_boxplot", height=500, width = "50%"), type = 1,color.background = "white"
                                           plotOutput(ns("observ_boxplot"), height=200, width = "100%", brush = ns("observ_boxplot_brush")), type = 1,color.background = "white",
                                         ),
-                                        div(style="display: flex;",
+                                        #div(style="display: flex;",
                                         div(style="display: inline-block;vertical-align:middle;",materialSwitch(inputId = ns("observ_boxplot_splitreps"), label = "One boxplot per rep", value = FALSE, status = "info")),
-                                        div(style="display: inline-block;vertical-align:middle;",materialSwitch(inputId = ns("selected_obs_otherreps"), label = "Display all reps in observations table", value = FALSE, status = "info"))),
-                                        div(DT::dataTableOutput(ns("selected_obs")), style = "font-size: 75%;"))
+                                        div(style="display: inline-block;vertical-align:middle;",materialSwitch(inputId = ns("selected_obs_otherreps"), label = "Display all reps in observations table", value = FALSE, status = "info")),
+                                        div(style="display: inline-block;vertical-align:middle;",uiOutput(ns("copy_obs_table"))),
+                                        div(DT::dataTableOutput(ns("selected_obs")), style = "font-size: 75%;")
                                       #)
                              ),
                          bslib::nav_panel("Data check report",value="check",
@@ -106,6 +107,15 @@ mod_trialdataxplor_server <- function(id, rv){
     function(input, output, session){
       
       ns <- session$ns
+      
+      js <- JS(
+        "table.on('dblclick', 'td', function() {",
+        "  var row = table.cell(this).index().row;",
+        "  var col = table.cell(this).index().column;",
+        "  Shiny.setInputValue('xplor-dt_dblclick', {row: row + 1, col: col + 1}, {priority: 'event'});",
+        "});"
+      )
+      
       
       rv_tdx <- reactiveValues(
         #tr = NULL,
@@ -180,7 +190,7 @@ mod_trialdataxplor_server <- function(id, rv){
           #rv_tdx$st <- data_dq[,.N,studyDbId][st, on=.(studyDbId)]
           rv_tdx$data_dq <- data_dq
           rv_tdx$locs <- locs
-  
+
           updateSelectInput(session, inputId = "obs_trait",choices = sort(unique(data_dq$observationVariableName)))
           updatePickerInput(session, inputId = "dis_trait",choices = sort(unique(data_dq$observationVariableName)), selected = sort(unique(data_dq$observationVariableName)))
           updatePickerInput(session, inputId = "dis_study",choices = sort(unique(data_dq$facetcols)), selected = sort(unique(data_dq$facetcols)))
@@ -215,10 +225,20 @@ mod_trialdataxplor_server <- function(id, rv){
       
       output$candidat_out <- DT::renderDataTable({
         req(rv_tdx$cdout)
-        datatable(rv_tdx$cdout, options = list(paging = FALSE,searching = FALSE), selection = "none") |>
+        datatable(rv_tdx$cdout, options = list(paging = FALSE,searching = FALSE), selection = "single", callback = js) |>
           formatRound(columns = "observationValue", digits = 2)
       })
-      #output$candidat_out <-renderTable(cdout, digits=0)
+      observeEvent(input$dt_dblclick, {
+        dt_row <- input$dt_dblclick$row             # 1-based Position on current display
+        all_rows <- input$candidat_out_rows_all     # Current mapping to original data.frame rows (1-based)
+        if(!is.null(dt_row) && !is.null(all_rows)) {
+          df_row <- all_rows[dt_row] 
+        updateSelectInput(session, inputId = "obs_study",selected = rv_tdx$cdout[df_row,studyDbId])
+        updateSelectizeInput(session, inputId = "obs_trait",selected = rv_tdx$cdout[df_row,observationVariableName])
+        nav_select(id = "tabset", selected = "observ", session = session)
+        }
+      })
+      
       
       observeEvent(input$obs_trait, {
         req(rv_tdx$data_dq)
@@ -398,6 +418,7 @@ mod_trialdataxplor_server <- function(id, rv){
                                           input$observ_boxplot_brush)
 
         output$copy_obs_table <- renderUI({
+          req(nrow(rv_tdx$obs_btable)>0)
           rclipboard::rclipButton("clipbtnobs_table", "Copy observations table", paste(paste(colnames(rv_tdx$obs_btable),collapse="\t"),
                                                                                       paste(apply(rv_tdx$obs_btable,1,paste,collapse="\t"),collapse = "\n"),
                                                                                       sep="\n"))#, shiny::icon("clipboard"))
@@ -440,7 +461,7 @@ mod_trialdataxplor_server <- function(id, rv){
             valueColumns = "is_bold"
           )
       })
-
+      
       output$download_check <- downloadHandler(
         filename = function() {
           # Use the selected dataset as the suggested file name
