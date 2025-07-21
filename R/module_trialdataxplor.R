@@ -427,33 +427,41 @@ mod_trialdataxplor_server <- function(id, rv){
       })
       
       output$selected_obs <- DT::renderDataTable({
+        visibcols <- c("trait.name",
+                       "observationVariableName",
+                       "observationValue",
+                       "plotNumber",
+                       "germplasmName",
+                       "entryNumber",
+                       "blockNumber",
+                       "replicate",
+                       "positionCoordinateX",
+                       "positionCoordinateY",
+                       "observationTimeStamp",
+                       "study_label",
+                       "observationUnitDbId",
+                       "germplasmDbId")
         req(nrow(rv_tdx$obs_btable)>0)
         if (input$selected_obs_otherreps){
-          obstable <- rv_tdx$data_dq[germplasmName%in%rv_tdx$obs_btable$germplasmName & studyDbId==input$obs_study & observationVariableName==input$obs_trait,.(trait.name,
-                                                                                                 VariableName=observationVariableName,
-                                                                                                 observationValue,
-                                                                                                 plotNumber,
-                                                                                                 germplasmName,
-                                                                                                 entryNumber,
-                                                                                                 blockNumber,
-                                                                                                 replicate,
-                                                                                                 positionCoordinateX,
-                                                                                                 positionCoordinateY,
-                                                                                                 TimeStamp=observationTimeStamp,
-                                                                                                 study_label,
-                                                                                                 observationUnitDbId,
-                                                                                                 germplasmDbId)][order(germplasmName)]
+          obstable <- rv_tdx$data_dq[germplasmName%in%rv_tdx$obs_btable$germplasmName & studyDbId==input$obs_study & observationVariableName==input$obs_trait,][order(germplasmName)]
           obstable[, is_bold:="normal"]
           obstable[observationUnitDbId %in% rv_tdx$obs_btable$observationUnitDbId, is_bold:="bold"]
         } else {
           obstable <- copy(rv_tdx$obs_btable)
           obstable[, is_bold:="normal"]
         }
-        datatable(obstable, options = list(paging = FALSE,
-                                           searching = FALSE,
-                                           columnDefs = list(
-                                             list(visible = FALSE, targets = which(colnames(obstable) == "is_bold"))
-                                           )), selection = "none") |>
+        #browser()
+        datatable(obstable,
+                  extensions = 'Buttons',
+                  options = list(paging = FALSE,
+                                 dom = 'Bt',
+                                 buttons = c('colvis'),
+                                 searching = FALSE,
+                                 columnDefs = list(list(visible = FALSE, 
+                                                        targets = which(!names(obstable)%in%visibcols))
+                                                   )
+                                 ),
+                  selection = "none") |>
           formatRound(columns = "observationValue", digits = 2) |>
           formatStyle(
             columns = names(obstable)[-ncol(obstable)],
