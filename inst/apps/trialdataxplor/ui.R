@@ -14,6 +14,10 @@ ui <- bslib::page_fluid(theme = bslib::bs_theme(preset = "bootstrap"),
       .dropdown-menu .bs-actionsbox {
         z-index: 1000;
       }
+      .dropdown-menu.show {
+        overflow: scroll !important;
+      }
+      
       /* Adjust the behavior of individual items (dropdown-item) */
       .dropdown-menu .dropdown-item {
         z-index: 10;  /* keep elements below the action box */

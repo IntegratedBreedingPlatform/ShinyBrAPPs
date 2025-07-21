@@ -24,11 +24,15 @@ mod_trialdataxplor_ui <- function(id){
                                           div(style="display: inline-block;vertical-align:middle;",pickerInput(ns("dis_trait"), label="Variables",
                                                                                                                multiple = TRUE, 
                                                                                                                choices = NULL, 
-                                                                                                               options = list(`actions-box` = TRUE))),
+                                                                                                               options = list(`actions-box` = TRUE,
+                                                                                                                              size = 15,
+                                                                                                                              `live-search` = TRUE))),
                                           div(style="display: inline-block;vertical-align:middle;",pickerInput(ns("dis_study"), label="Studies",
                                                                                                                multiple = TRUE, 
                                                                                                                choices = NULL, 
-                                                                                                               options = list(`actions-box` = TRUE))),
+                                                                                                               options = list(`actions-box` = TRUE,
+                                                                                                                              size = 15,
+                                                                                                                              `live-search` = TRUE))),
                                           div(style="display: inline-block;vertical-align:middle;",actionButton(ns("refresh_dist"),label = "Plot distributions")),
                                           shinycssloaders::withSpinner(
                                               plotOutput(ns("boxplots"), height=500), type = 1,color.background = "white"
@@ -192,8 +196,18 @@ mod_trialdataxplor_server <- function(id, rv){
           rv_tdx$locs <- locs
 
           updateSelectInput(session, inputId = "obs_trait",choices = sort(unique(data_dq$observationVariableName)))
-          updatePickerInput(session, inputId = "dis_trait",choices = sort(unique(data_dq$observationVariableName)), selected = sort(unique(data_dq$observationVariableName)))
-          updatePickerInput(session, inputId = "dis_study",choices = sort(unique(data_dq$facetcols)), selected = sort(unique(data_dq$facetcols)))
+          updatePickerInput(session, inputId = "dis_trait",
+                            choices = sort(unique(data_dq$observationVariableName)),
+                            selected = sort(unique(data_dq$observationVariableName)),
+                            options = list(`actions-box` = TRUE,
+                                            size = 15,
+                                           `live-search` = TRUE))
+          updatePickerInput(session, inputId = "dis_study",
+                            choices = sort(unique(data_dq$facetcols)),
+                            selected = sort(unique(data_dq$facetcols)),
+                            options = list(`actions-box` = TRUE,
+                                           size = 15,
+                                           `live-search` = TRUE))
           
           ct <- dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(study=paste0(studyDbId,"-",locationName),Variable=observationVariableName)],
                       Variable~study, fill = 0)
@@ -401,20 +415,7 @@ mod_trialdataxplor_server <- function(id, rv){
       
       observeEvent(input$observ_boxplot_brush, {
         req(rv_tdx$data_dq[,.N]>0)
-        rv_tdx$obs_btable <- brushedPoints(rv_tdx$data_dq[studyDbId==input$obs_study & observationVariableName==input$obs_trait,.(trait.name,
-                                                                                                                          VariableName=observationVariableName,
-                                                                                                                          observationValue,
-                                                                                                                          plotNumber,
-                                                                                                                          germplasmName,
-                                                                                                                          entryNumber,
-                                                                                                                          blockNumber,
-                                                                                                                          replicate,
-                                                                                                                          positionCoordinateX,
-                                                                                                                          positionCoordinateY,
-                                                                                                                          TimeStamp=observationTimeStamp,
-                                                                                                                          study_label,
-                                                                                                                          observationUnitDbId,
-                                                                                                                          germplasmDbId)],
+        rv_tdx$obs_btable <- brushedPoints(rv_tdx$data_dq[studyDbId==input$obs_study & observationVariableName==input$obs_trait],
                                           input$observ_boxplot_brush)
 
         output$copy_obs_table <- renderUI({
