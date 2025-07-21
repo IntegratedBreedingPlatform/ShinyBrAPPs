@@ -89,6 +89,7 @@ get_env_data <- function(con = NULL,
         } else {
           return(NULL)
         }
+        
         page = 0
         while (res$metadata$pagination$totalCount > (res$metadata$pagination$currentPage + 1) * res$metadata$pagination$pageSize) {
           page <- page + 1
@@ -148,11 +149,22 @@ get_env_data <- function(con = NULL,
       
       grouping_cols <- setdiff(names(study_obs), c("levelCode", "levelName"))
       
-      study_obs <- study_obs[, .(plotNumber = levelCode[levelName == "PLOT"],
-                                 replicate = levelCode[levelName == "REP"],
-                                 blockNumber = levelCode[levelName == "BLOCK"]),
-                             by = grouping_cols]
-      
+      #study_obs <- study_obs[, .(plotNumber = levelCode[levelName == "PLOT"],
+      #                           replicate = levelCode[levelName == "REP"],
+      #                           blockNumber = levelCode[levelName == "BLOCK"]),
+      #                       by = grouping_cols]
+      study_obs<-dcast(unique(study_obs[,.(observationUnitDbId, levelCode, levelName)]),observationUnitDbId~levelName, value.var = "levelCode")[unique(study_obs[,.SD, .SDcols=grouping_cols]),on=.(observationUnitDbId)]
+     #browser()
+      for (f in c("PLOT","REP","BLOCK")[!c("PLOT","REP","BLOCK")%in%names(study_obs)]){
+        study_obs[[f]] <- NA
+      }
+        setnames(study_obs,
+               old=c("PLOT",
+                     "REP",
+                     "BLOCK"),
+               new=c("plotNumber",
+                      "replicate",
+                      "blockNumber"))
       variables <- as.data.table(brapir::phenotyping_variables_get(con = con, studyDbId = studyDbId)$data)
       variables <- variables[trait.traitClass != "Breedingprocess", .(observationVariableDbId, scale.dataType)] 
       if (any(colnames(study_obs)=="observationVariableDbId")){
