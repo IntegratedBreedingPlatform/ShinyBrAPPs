@@ -1543,6 +1543,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         group_ids <- group_id_start:(group_id_start+clusters[,.N] -1)
         clusters[, group_id := group_ids]
         clusters[, clustering_id := clustering_id]
+        clusters[, clustering_name := paste0("cl",clustering_id,"_FW@",input$picker_trait)]
         rv$groups <- rbindlist(list(
           rv$groups,
           clusters

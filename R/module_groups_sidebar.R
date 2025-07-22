@@ -176,11 +176,11 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
         for(k in input$group_sel_input){
           rv$extradata[,eval(rv$groups[group_id == k, group_name]) := NULL]
         }
-        rv$column_datasource <- rv$column_datasource[!(cols %in% rv$groups[group_id %in% input$group_sel_input, group_name])]
+        rv$column_datasource <- rv$column_datasource[!(cols %in% c(rv$groups[group_id %in% input$group_sel_input & is.na(clustering_name), group_name], unique(rv$groups[group_id %in% input$group_sel_input & !is.na(clustering_name), clustering_name])))]
         
         ## delete groups
         rv$groups <- rv$groups[!(group_id %in% input$group_sel_input)]
-      })      
+      })
       
       ## Rename a group ####
       observeEvent(input$action_groups_rename,{
