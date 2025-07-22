@@ -155,7 +155,7 @@ get_env_data <- function(con = NULL,
       #                       by = grouping_cols]
       study_obs<-dcast(unique(study_obs[,.(observationUnitDbId, levelCode, levelName)]),observationUnitDbId~levelName, value.var = "levelCode")[unique(study_obs[,.SD, .SDcols=grouping_cols]),on=.(observationUnitDbId)]
      #browser()
-      for (f in c("PLOT","REP","BLOCK")[!c("PLOT","REP","BLOCK")%in%names(study_obs)]){
+      for (f in setdiff(c("PLOT", "REP", "BLOCK"), names(study_obs))){
         study_obs[[f]] <- NA
       }
         setnames(study_obs,
