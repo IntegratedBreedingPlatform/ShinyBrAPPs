@@ -232,21 +232,27 @@ mod_gxe_ui <- function(id){
 
                              bslib::accordion_panel(title = "FW plot",
                                                     bslib::layout_columns(col_widths = c(9,3),
-                                                                          bslib::card(full_screen = T, height = "800",
-                                                                                      bslib::card_body(
-                                                                                        #uiOutput(ns("FW_trellis_genot_select_ui")),
-                                                                                        plotOutput(ns("FW_plot"), hover = hoverOpts(id =ns("FWplot_hover"),delay = 50), click = clickOpts(id=ns("FWplot_click")), dblclick = dblclickOpts(id=ns("FWplot_dblclick"))),
-                                                                                        #htmlOutput(ns("FWhover_info")),
-                                                                                        uiOutput(ns("FW_sens_clust_select"))
-                                                                                      ),
-                                                                                      #div(style=".bslib-card .card-footer.font-size: 1.2rem;",
-                                                                                          card_footer(
-                                                                                            div(style = "display: flex; margin-top: 1rem;",
-                                                                                                materialSwitch(ns("FW_coord_equal"), "Equal axes on line plot", value = TRUE, status = "info"),
-                                                                                                materialSwitch(ns("FW_display_raw_data"), "Plot also non fitted values on selected genotypes", value = FALSE, status = "info")
-                                                                                            )
-                                                                                          )#)
-                                                                                      ),
+                                                                          bslib::layout_sidebar(
+                                                                            bslib::card(full_screen = T, height = "800",
+                                                                                        bslib::card_body(
+                                                                                          #uiOutput(ns("FW_trellis_genot_select_ui")),
+                                                                                          plotOutput(ns("FW_plot"), hover = hoverOpts(id =ns("FWplot_hover"),delay = 50), click = clickOpts(id=ns("FWplot_click")), dblclick = dblclickOpts(id=ns("FWplot_dblclick"))),
+                                                                                          #htmlOutput(ns("FWhover_info")),
+                                                                                          uiOutput(ns("FW_sens_clust_select"))
+                                                                                        ),
+                                                                                        #div(style=".bslib-card .card-footer.font-size: 1.2rem;",
+                                                                                            card_footer(
+                                                                                              div(style = "display: flex; margin-top: 1rem;",
+                                                                                                  materialSwitch(ns("FW_coord_equal"), "Equal axes on line plot", value = TRUE, status = "info"),
+                                                                                                  materialSwitch(ns("FW_display_raw_data"), "Plot also non fitted values on selected genotypes", value = FALSE, status = "info")
+                                                                                              )
+                                                                                            )#)
+                                                                                        ),
+                                                                            sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,
+                                                                                                 bslib::card(full_screen = F,height = "735",max_height = "735",
+                                                                                                             sliderInput(ns("FW_axis.text.x.size"), label = "X-axis labels size", min = 8, max = 20, value = 10, step = 1),
+                                                                                                             sliderInput(ns("FW_axis.text.y.size"), label = "Y-axis labels size", min = 8, max = 20, value = 10, step = 1)
+                                                                                                 ))),
                                                                           value_box(title = "",
                                                                                     max_height = 100,
                                                                                     style = 'background-color: #EEEEEE!important;',
@@ -1318,7 +1324,10 @@ mod_gxe_server <- function(id, rv, parent_session){
         
         # Rotate legend title so that it doesnt't take too much space
         # in case of long group name
-        p <- p + theme(legend.title = element_text(angle = 90))
+        
+        p <- p + theme(legend.title = element_text(angle = 90),
+                       axis.text.x = element_text(size=input$FW_axis.text.x.size),
+                       axis.text.y = element_text(size=input$FW_axis.text.y.size))
         if (input$FW_picker_plot_type=="line" & !input$FW_coord_equal){
           p + coord_cartesian()
         } else {
