@@ -142,7 +142,9 @@ mod_get_extradata_server <- function(id, rv){
           
           if(exists("germplasm_data") && nrow(germplasm_data)>0){
             req("attributeName" %in% names(germplasm_data))
-            germplasm_data_2 <- dcast(germplasm_data, "germplasmDbId ~ attributeName", value.var = "value")
+            # In the unexpected case there are duplicated attributes for the same germplasm, take the first one
+            # to avoid dcast returning counts instead of values
+            germplasm_data_2 <- dcast(germplasm_data[,.(value=value[1]),.(germplasmDbId,attributeName)], "germplasmDbId ~ attributeName", value.var = "value")
             if(!any(duplicated(germplasm_data_2))){
               extradata <- merge.data.table(
                 extradata,
