@@ -1167,71 +1167,49 @@ mod_gxe_server <- function(id, rv, parent_session){
           TDFWplot$envEffs$Trial <- ts$newtrial[match(TDFWplot$envEffs$Trial, ts$trial)]
           TDFWplot$TD <- rename_envs(TDFWplot$TD, ts$trial, ts$newtrial)
         }
-
+        if (input$FW_picker_plot_type=="trellis"){
+          if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
+            rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
+            p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv_gxe$selected_genotypes) 
+          } else {
+            p <- ggplot() + geom_text(aes(x=1,y=1,label="Please select germplasms to display in the Germplasm list and clusters table below"), size=5) + 
+              theme(axis.line=element_blank(),axis.text.x=element_blank(),
+                    axis.text.y=element_blank(),axis.ticks=element_blank(),
+                    axis.title.x=element_blank(),
+                    axis.title.y=element_blank(),legend.position="none",
+                    panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+                    panel.grid.minor=element_blank(),plot.background=element_blank())
+          }
+        } else {
           if (input$FW_picker_color_by=="sensitivity clusters"){
             shinyjs::show(id="FW_sens_clust_select_buttons")
-            #browser()
             p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
             req(input$FW_sens_clust_select_buttons)
+            
             if (input$FW_sens_clust_select_buttons!="none" & input$FW_picker_plot_type=="line"){
-              #browser()
               stacolors <- getOption("statgen.genoColors")
               names(stacolors)<-1:length(stacolors)
               p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                 ggnewscale::new_scale_color() + 
                 ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$sensclust[sensitivity_cluster==input$FW_sens_clust_select_buttons, Genotype],], aes(y = fitted, color=sensitivity_cluster), size=1) + scale_color_manual(values = stacolors)
-              
             }
             
             if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
               rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
-              #browser()
               p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                   ggnewscale::new_scale_color() + 
                   ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                   geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3)
-                  if (input$FW_display_raw_data){
-                    p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
-                  }
-            }
-            if (input$FW_picker_plot_type=="trellis"){
-              if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
-                rv$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
-                p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv_gxe$selected_genotypes) 
-              } else {
-                #p <- plot(TDFWplot, plotType = input$FW_picker_plot_type) 
-                p <- ggplot() + geom_text(aes(x=1,y=1,label="Please select germplasms to display in the Germplasm list and clusters below"), size=5) + 
-                  theme(axis.line=element_blank(),axis.text.x=element_blank(),
-                        axis.text.y=element_blank(),axis.ticks=element_blank(),
-                        axis.title.x=element_blank(),
-                        axis.title.y=element_blank(),legend.position="none",
-                        panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
-                        panel.grid.minor=element_blank(),plot.background=element_blank())
+              if (input$FW_display_raw_data){
+                p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
               }
             }
-
           } else {
             shinyjs::hide(id="FW_sens_clust_select_buttons")
             
             if (input$FW_picker_color_by=="Nothing"){
-              if (input$FW_picker_plot_type=="trellis"){
-                if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
-                  rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
-                  p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv_gxe$selected_genotypes) 
-                } else {
-                  #p <- plot(TDFWplot, plotType = input$FW_picker_plot_type) 
-                  p <- ggplot() + geom_text(aes(x=1,y=1,label="Please select germplasms to display in the Germplasm list and clusters table below"), size=5) + 
-                    theme(axis.line=element_blank(),axis.text.x=element_blank(),
-                          axis.text.y=element_blank(),axis.ticks=element_blank(),
-                          axis.title.x=element_blank(),
-                          axis.title.y=element_blank(),legend.position="none",
-                          panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
-                          panel.grid.minor=element_blank(),plot.background=element_blank())
-                }
-              } else {
-                
-                p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
-              }
+               p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+              
               if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
                 #browser()
                 rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
@@ -1239,9 +1217,9 @@ mod_gxe_server <- function(id, rv, parent_session){
                     ggnewscale::new_scale_color() + 
                     ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                     geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3) + theme(legend.position = "right")
-                    if (input$FW_display_raw_data){
-                      p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
-                    }
+                if (input$FW_display_raw_data){
+                  p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                }
               }
               
             } else {
@@ -1252,21 +1230,6 @@ mod_gxe_server <- function(id, rv, parent_session){
               colgenobys <- unique(rbindlist(TDFWplot$TD)[[input$FW_picker_color_by]])
               colGeno <- colgeno(colgenobys, missing = replace_na_germplasm_attr_by)
               
-              if (input$FW_picker_plot_type=="trellis"){
-                if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
-                  rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
-                  p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv_gxe$selected_genotypes)
-                } else {
-                  #p <- plot(TDFWplot, plotType = input$FW_picker_plot_type) 
-                  p <- ggplot() + geom_text(aes(x=1,y=1,label="Please select germplasms to display in the Germplasm list and clusters below"), size=5) + 
-                    theme(axis.line=element_blank(),axis.text.x=element_blank(),
-                          axis.text.y=element_blank(),axis.ticks=element_blank(),
-                          axis.title.x=element_blank(),
-                          axis.title.y=element_blank(),legend.position="none",
-                          panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
-                          panel.grid.minor=element_blank(),plot.background=element_blank())
-                }
-              } else {
               p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, 
                         colorGenoBy=input$FW_picker_color_by, 
                         colGeno=colGeno)
@@ -1293,14 +1256,13 @@ mod_gxe_server <- function(id, rv, parent_session){
                     ggnewscale::new_scale_color() + 
                     ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                     geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3)
-                    if (input$FW_display_raw_data){
-                      p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
-                    }
-                
+                if (input$FW_display_raw_data){
+                  p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                }
               }
-             }
             }
           }
+        }
         
         #Following is required because statgenGxE:::plot.FW return a list of
         #three ggplots in case of plotType="scatter"
@@ -1338,7 +1300,6 @@ mod_gxe_server <- function(id, rv, parent_session){
         
         # Rotate legend title so that it doesnt't take too much space
         # in case of long group name
-        
         p <- p + theme(legend.title = element_text(angle = 90),
                        axis.text.x = element_text(size=input$FW_axis.text.x.size),
                        axis.text.y = element_text(size=input$FW_axis.text.y.size))
@@ -1347,7 +1308,6 @@ mod_gxe_server <- function(id, rv, parent_session){
         } else {
           p
         }
-        #}
       })
       
       #### Handle hover event ####
