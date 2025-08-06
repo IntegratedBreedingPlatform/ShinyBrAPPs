@@ -576,3 +576,28 @@ get_BLUES_methodsDbIds <- function(con, programDbId) {
   
   return(methodIds)
 }
+
+
+# Function to construct colgeno vector of named colors from a factor of genotypes descriptors
+# and using two possible palettes one for a few levels, and the other for many levels
+colgeno <- function(genofac, shortpal=getOption("statgen.genoColors"), longpal=topo.colors, missing="Unknown", missing.col="grey"){
+  if (!is.null(genofac)){
+    if (length(shortpal) >= length(genofac)) {
+      if (any(genofac==missing)){
+        colGeno <- setNames(c(shortpal[1:(length(genofac)-1)],missing.col), c(setdiff(genofac,missing),missing))
+      } else {
+        colGeno <- setNames(shortpal[1:length(genofac)],genofac)
+      }
+    }
+    else {
+      if (any(genofac==missing)){
+        colGeno <- setNames(c(longpal(length(genofac)-1),missing.col), c(setdiff(genofac,missing),missing))
+      } else {
+        colGeno <- setNames(longpal(length(genofac)),genofac)
+      }
+    }
+  } else {
+    colGeno <- NULL
+  }
+  return(colGeno)
+}
