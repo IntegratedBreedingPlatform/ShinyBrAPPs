@@ -1156,7 +1156,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         #browser()
         req(rv_gxe$TDFWplot)
         validate(
-          need({!(input$FW_picker_color_by=="sensitivity clusters" & !("sensitivity_cluster"%in%colnames(rbindlist(rv_gxe$TDFWplot$TD))))}, "You must make clusters first"),
+          need({!(input$FW_picker_color_by=="sensitivity clusters" & !("sensitivity_cluster"%in%colnames(rbindlist(rv_gxe$TDFWplot$TD))))}, "You must make clusters first")
         )
         
         TDFWplot <- rv_gxe$TDFWplot
@@ -1167,9 +1167,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           TDFWplot$envEffs$Trial <- ts$newtrial[match(TDFWplot$envEffs$Trial, ts$trial)]
           TDFWplot$TD <- rename_envs(TDFWplot$TD, ts$trial, ts$newtrial)
         }
-        if (is.null(input$FW_picker_color_by)){
-            p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
-        } else {
+
           if (input$FW_picker_color_by=="sensitivity clusters"){
             shinyjs::show(id="FW_sens_clust_select_buttons")
             #browser()
@@ -1222,7 +1220,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                   p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv_gxe$selected_genotypes) 
                 } else {
                   #p <- plot(TDFWplot, plotType = input$FW_picker_plot_type) 
-                  p <- ggplot() + geom_text(aes(x=1,y=1,label="Please select germplasms to display in the Germplasm list and clusters below"), size=5) + 
+                  p <- ggplot() + geom_text(aes(x=1,y=1,label="Please select germplasms to display in the Germplasm list and clusters table below"), size=5) + 
                     theme(axis.line=element_blank(),axis.text.x=element_blank(),
                           axis.text.y=element_blank(),axis.ticks=element_blank(),
                           axis.title.x=element_blank(),
@@ -1254,6 +1252,21 @@ mod_gxe_server <- function(id, rv, parent_session){
               colgenobys <- unique(rbindlist(TDFWplot$TD)[[input$FW_picker_color_by]])
               colGeno <- colgeno(colgenobys, missing = replace_na_germplasm_attr_by)
               
+              if (input$FW_picker_plot_type=="trellis"){
+                if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
+                  rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
+                  p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv_gxe$selected_genotypes)
+                } else {
+                  #p <- plot(TDFWplot, plotType = input$FW_picker_plot_type) 
+                  p <- ggplot() + geom_text(aes(x=1,y=1,label="Please select germplasms to display in the Germplasm list and clusters below"), size=5) + 
+                    theme(axis.line=element_blank(),axis.text.x=element_blank(),
+                          axis.text.y=element_blank(),axis.ticks=element_blank(),
+                          axis.title.x=element_blank(),
+                          axis.title.y=element_blank(),legend.position="none",
+                          panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+                          panel.grid.minor=element_blank(),plot.background=element_blank())
+                }
+              } else {
               p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, 
                         colorGenoBy=input$FW_picker_color_by, 
                         colGeno=colGeno)
@@ -1285,9 +1298,10 @@ mod_gxe_server <- function(id, rv, parent_session){
                     }
                 
               }
+             }
             }
           }
-        }
+        
         #Following is required because statgenGxE:::plot.FW return a list of
         #three ggplots in case of plotType="scatter"
         #need to restore legend on first plot and capture it
