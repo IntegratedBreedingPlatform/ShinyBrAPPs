@@ -893,8 +893,12 @@ mod_gxe_server <- function(id, rv, parent_session){
               data2TD[,wt:=.SD, .SDcols=input$weight_var]
             }
           }
-        }        
-
+        }
+        if (any(colnames(data2TD)%in%input$picker_germplasm_attr)){
+          for (ga in input$picker_germplasm_attr){
+            data2TD[[ga]][is.na(data2TD[[ga]])] <- replace_na_germplasm_attr_by
+          }
+        }
         rv$TD <- statgenSTA::createTD(data = data2TD[studyDbId%in%input$picker_env],
                                       genotype = "genotype",
                                       trial = input$picker_env_variable)
