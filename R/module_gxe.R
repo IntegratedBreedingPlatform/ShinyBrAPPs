@@ -1182,6 +1182,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           }
         } else {
           if (input$FW_picker_color_by=="sensitivity clusters"){
+            if ("sensitivity_cluster"%in%colnames(rbindlist(TDFWplot$TD))){
             shinyjs::show(id="FW_sens_clust_select_buttons")
             p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
             req(input$FW_sens_clust_select_buttons)
@@ -1204,6 +1205,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                 p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
               }
             }
+          }
           } else {
             shinyjs::hide(id="FW_sens_clust_select_buttons")
             
@@ -1223,13 +1225,11 @@ mod_gxe_server <- function(id, rv, parent_session){
               }
               
             } else {
-              if (!input$FW_picker_color_by%in%colnames(TDFWplot$TD)){
+              if (!input$FW_picker_color_by%in%colnames(rbindlist(TDFWplot$TD))){
                 TDFWplot$TD <- lapply(seq_along(TDFWplot$TD),function(a) data.table(TDFWplot$TD[[a]])[data.table(rv$TD[[a]])[,.SD, .SDcols=c("genotype",input$FW_picker_color_by)], on=.(genotype)])
               }
-              
               colgenobys <- unique(rbindlist(TDFWplot$TD)[[input$FW_picker_color_by]])
               colGeno <- colgeno(colgenobys, missing = replace_na_germplasm_attr_by)
-              
               p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, 
                         colorGenoBy=input$FW_picker_color_by, 
                         colGeno=colGeno)
@@ -1768,7 +1768,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
 
           if (input$GGE_colorGenoBy!="Nothing"){
-            colgenobys <- unique(geompdat$colorby)
+            colgenobys <- unique(geompdat[type=="genotype",colorby])
             colGeno <- colgeno(colgenobys, missing = replace_na_germplasm_attr_by)
             
             gg <- gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
