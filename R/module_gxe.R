@@ -2009,7 +2009,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         #}
         # This reactive is useful to handle click event
         rv_gxe$AMMIplotdat <- p$data
-        p + guides(color = guide_legend(override.aes = aes(label = "")))
+        p + guides(color = guide_legend(override.aes = aes(label = ""))) + theme(legend.title = element_text(angle = 90))
       })
       
       #### Handle click event ####
@@ -2187,7 +2187,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                       position = position_nudge(y=max(sqrt(gg$data[,"S"]))/50))
           
         }
-        gg
+        gg + theme(legend.title = element_text(angle = 90))
         
       })
       
@@ -2247,7 +2247,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                       position = position_nudge(y=max(gg$data[,"sqrtWe"])/50))
           
         }
-        gg
+        gg+ theme(legend.title = element_text(angle = 90))
         
       })
       
@@ -2301,7 +2301,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Sup), label=Genotype), size=3, color="red",
                       position = position_nudge(y=max(sqrt(gg$data[,"Sup"]))/50))
         }
-        gg
+        gg+ theme(legend.title = element_text(angle = 90))
       })
       
       #### Handle click event ####
