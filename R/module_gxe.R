@@ -1171,6 +1171,31 @@ mod_gxe_server <- function(id, rv, parent_session){
           if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
             rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
             p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv_gxe$selected_genotypes) 
+            if (input$FW_picker_color_by!="Nothing" & input$FW_picker_color_by!="sensitivity clusters"){
+              colgenobys <- unique(rbindlist(TDFWplot$TD)[[input$FW_picker_color_by]])
+              colGeno <- colgeno(colgenobys, missing = replace_na_germplasm_attr_by)
+              
+              p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv_gxe$selected_genotypes, colorGenoBy=input$FW_picker_color_by, colGeno=colGeno) 
+              p$layers[[1]] <- NULL
+              p$layers[[2]] <- NULL
+              p <- p + geom_line(aes(x=.data[["EnvMean"]], y=.data[["fitted"]], color=.data[[input$FW_picker_color_by]])) +
+                geom_point(aes(x=.data[["EnvMean"]], y=.data[["genoMean"]], color=.data[[input$FW_picker_color_by]])) +
+                scale_color_manual(values = colGeno) +
+                theme(legend.position = "right")
+            }
+            if (input$FW_picker_color_by=="sensitivity clusters"){
+              if ("sensitivity_cluster"%in%colnames(rbindlist(TDFWplot$TD))){
+
+                p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv_gxe$selected_genotypes, colorGenoBy="sensitivity_cluster") 
+                p$layers[[1]] <- NULL
+                p$layers[[2]] <- NULL
+                p <- p + geom_line(aes(x=.data[["EnvMean"]], y=.data[["fitted"]], color=.data[["sensitivity_cluster"]])) +
+                  geom_point(aes(x=.data[["EnvMean"]], y=.data[["genoMean"]], color=.data[["sensitivity_cluster"]])) +
+                  #scale_color_manual(values = colGeno) +
+                  theme(legend.position = "right")
+              }
+            }
+            
           } else {
             p <- ggplot() + geom_text(aes(x=1,y=1,label="Please select germplasms to display in the Germplasm list and clusters table below"), size=5) + 
               theme(axis.line=element_blank(),axis.text.x=element_blank(),
