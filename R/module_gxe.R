@@ -1570,7 +1570,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         
         # Add a column to 
         data_plot <- copy(rv$extradata) # to avoid reactivity issues related to assignment by reference
-        data_plot <- data_plot[clusters[,.(germplasmDbId=unlist(germplasmDbIds)),sensitivity_cluster],on=.(germplasmDbId)]
+        data_plot <- merge.data.table(data_plot, clusters[,.(germplasmDbId=unlist(germplasmDbIds)),sensitivity_cluster], by = "germplasmDbId", all = T)
         setnames(data_plot,old = "sensitivity_cluster",new = paste0("cl",clustering_id,"_FW@",input$picker_trait))
         rv$column_datasource <- rbindlist(
           list(
