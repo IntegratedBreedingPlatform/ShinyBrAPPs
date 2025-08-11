@@ -109,16 +109,27 @@ get_env_data <- function(con = NULL,
       
       #to manage the case when we get MEANS and PLOTS
       if ("observationUnitPosition.observationLevelRelationships.levelCode" %in% names(study_obs)) {
-        study_obs[, levelCode := `observationUnitPosition.observationLevelRelationships.levelCode`]
+        study_obs[, oLR.levelCode := `observationUnitPosition.observationLevelRelationships.levelCode`]
       } else {
-        study_obs[, levelCode := NA]
+        study_obs[, oLR.levelCode := NA]
       }
       if ("observationUnitPosition.observationLevelRelationships.levelName" %in% names(study_obs)) {
-        study_obs[, levelName := `observationUnitPosition.observationLevelRelationships.levelName`]
+        study_obs[, oLR.levelName := `observationUnitPosition.observationLevelRelationships.levelName`]
       } else {
-        study_obs[, levelName := NA]
+        study_obs[, oLR.levelName := NA]
       }
       
+      if ("observationUnitPosition.observationLevel.levelName" %in% names(study_obs)) {
+        study_obs[, observationLevel := `observationUnitPosition.observationLevel.levelName`]
+      } else {
+        study_obs[, observationLevel := NA]
+      }
+      if ("observationUnitPosition.observationLevel.levelCode" %in% names(study_obs)) {
+        study_obs[, observationLevelCode := `observationUnitPosition.observationLevel.levelCode`]
+      } else {
+        study_obs[, observationLevelCode := NA]
+      }
+
       study_obs <- study_obs[, .(
         observationUnitDbId,
         observationUnitName,
@@ -133,12 +144,12 @@ get_env_data <- function(con = NULL,
         trialDbId, 
         trialName,
         observationDbId = `observations.observationDbId`,
-        observationLevel = `observationUnitPosition.observationLevel.levelName`, 
-        observationLevelCode = `observationUnitPosition.observationLevel.levelCode`, 
+        observationLevel, 
+        observationLevelCode, 
         entryType = `observationUnitPosition.entryType`,
         entryNumber = `additionalInfo.ENTRY_NO`,
-        levelCode,
-        levelName,
+        oLR.levelCode,
+        oLR.levelName,
         positionCoordinateX = `observationUnitPosition.positionCoordinateX`,
         positionCoordinateY = `observationUnitPosition.positionCoordinateY`,
         observationTimeStamp = `observations.observationTimeStamp`, 
@@ -147,24 +158,26 @@ get_env_data <- function(con = NULL,
         observationValue = `observations.value`
       )]
       
-      grouping_cols <- setdiff(names(study_obs), c("levelCode", "levelName"))
-      
       #study_obs <- study_obs[, .(plotNumber = levelCode[levelName == "PLOT"],
       #                           replicate = levelCode[levelName == "REP"],
       #                           blockNumber = levelCode[levelName == "BLOCK"]),
       #                       by = grouping_cols]
-      study_obs<-dcast(unique(study_obs[,.(observationUnitDbId, levelCode, levelName)]),observationUnitDbId~levelName, value.var = "levelCode")[unique(study_obs[,.SD, .SDcols=grouping_cols]),on=.(observationUnitDbId)]
-     #browser()
-      for (f in setdiff(c("PLOT", "REP", "BLOCK"), names(study_obs))){
-        study_obs[[f]] <- NA
-      }
+      if (any(study_obs$observationLevel=="PLOT")){
+        grouping_cols <- setdiff(names(study_obs), c("oLR.levelCode", "oLR.levelName"))
+        study_obs<-dcast(unique(study_obs[observationLevel=="PLOT",.(observationUnitDbId, oLR.levelCode, oLR.levelName)]),observationUnitDbId~oLR.levelName, value.var = "oLR.levelCode")[unique(study_obs[,.SD, .SDcols=grouping_cols]),on=.(observationUnitDbId)]
+        #browser()
+        for (f in setdiff(c("PLOT", "REP", "BLOCK"), names(study_obs))){
+          study_obs[[f]] <- NA
+        }
         setnames(study_obs,
-               old=c("PLOT",
-                     "REP",
-                     "BLOCK"),
-               new=c("plotNumber",
-                      "replicate",
-                      "blockNumber"))
+                 old=c("PLOT",
+                       "REP",
+                       "BLOCK"),
+                 new=c("plotNumber",
+                       "replicate",
+                       "blockNumber"))        
+      }
+
       variables <- as.data.table(brapir::phenotyping_variables_get(con = con, studyDbId = studyDbId)$data)
       variables <- variables[trait.traitClass != "Breedingprocess", .(observationVariableDbId, scale.dataType)] 
       if (any(colnames(study_obs)=="observationVariableDbId")){

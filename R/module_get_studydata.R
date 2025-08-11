@@ -230,7 +230,9 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           study_metadata <- rv$study_metadata
           withProgress(message = "Loading", value = 0, {
             n_studies <- length(rv_st$env_to_load)
-            rv$obs_unit_level <- input$picker_obs_unit_level
+            if (is.null(rv_st$parse_GET_param$obs_unit_level)){
+              rv$obs_unit_level <- input$picker_obs_unit_level
+            }
   
             studies <- rbindlist(lapply(1:n_studies, function(k){
               id <- rv_st$env_to_load[k]
