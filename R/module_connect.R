@@ -138,7 +138,7 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_de
           # )
           # 
           rv$con <- brapir::brapi_connect(
-            secure = (parsed_url$brapi_db == "https"), 
+            secure = (parsed_url$brapi_protocol == "https://"), 
             db = parsed_url$brapi_db,
             port = parsed_url$brapi_port,
             apipath = parsed_url$brapi_apipath,

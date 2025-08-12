@@ -237,6 +237,8 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
     ## get environment metadata by trialDbId
     tryCatch({
       study_metadata <- as.data.table(brapir::core_studies_get(con = con, trialDbId = trialDbId)$data)
+      study_metadata <- tidyr::unnest(study_metadata, cols = "environmentParameters", names_sep = ".", keep_empty = T)
+      study_metadata <- as.data.table(study_metadata)
     },
     error=function(e){
       print(e)
