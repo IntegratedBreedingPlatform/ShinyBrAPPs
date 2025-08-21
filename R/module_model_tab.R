@@ -671,24 +671,12 @@ mod_model_server <- function(id, rv){
         #   trials = input$select_environment_fit
         # )
         envs <- rv_mod$result_envs
-        #browser()
         s <- lapply(envs, function(env){
-          if (is.null(rv_mod$fit[[env]]$mFix)){
-            list(
-              `Mixed model`=summary(
-                rv_mod$fit,
-                trait = input$select_trait_fit,
-                trials = env
-              ))
-          } else {
-            list(
-              `Mixed model`=summary(
-                rv_mod$fit,
-                trait = input$select_trait_fit,
-                trials = env
-              ),`Fully fixed model`=anova(rv_mod$fit[[env]]$mFix[[input$select_trait_fit]])
-            )
-          }
+          summary(
+            rv_mod$fit,
+            trait = input$select_trait_fit,
+            trials = env
+          )
         })
         names(s) <- envs
         # s["all environments"] <- s_all
