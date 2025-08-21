@@ -1172,6 +1172,10 @@ mod_gxe_server <- function(id, rv, parent_session){
             rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
             p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv_gxe$selected_genotypes) 
             if (input$FW_picker_color_by!="Nothing" & input$FW_picker_color_by!="sensitivity clusters"){
+              if (!input$FW_picker_color_by%in%colnames(rbindlist(TDFWplot$TD))){
+                TDFWplot$TD <- lapply(seq_along(TDFWplot$TD),function(a) data.table(TDFWplot$TD[[a]])[data.table(rv$TD[[a]])[,.SD, .SDcols=c("genotype",input$FW_picker_color_by)], on=.(genotype)])
+              }
+              
               colgenobys <- unique(rbindlist(TDFWplot$TD)[[input$FW_picker_color_by]])
               colGeno <- colgeno(colgenobys, missing = replace_na_germplasm_attr_by)
               
