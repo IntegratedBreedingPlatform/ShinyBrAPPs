@@ -23,10 +23,10 @@ mod_get_studydata_ui <- function(id){
         id = "get_studydata_by_ui",
         style = "display: none",
         accordion(
-          id = "dataImportAcc",
+          id = ns("dataImportAcc"),
           open = T,
           accordion_panel(
-            id = "dataImportAccPanel",
+            id = ns("dataImportAccPanel"), value = "diap",
             title = "Data import",
             layout_columns(
               col_widths = c(6,3,3),
@@ -228,6 +228,8 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         observeEvent(rv_st$env_to_load,{
           req(rv$study_metadata)
           study_metadata <- rv$study_metadata
+          accordion_panel_close(id = "dataImportAcc", values = "diap", session = session)
+          
           withProgress(message = "Loading", value = 0, {
             n_studies <- length(rv_st$env_to_load)
             if (is.null(rv_st$parse_GET_param$obs_unit_level)){
