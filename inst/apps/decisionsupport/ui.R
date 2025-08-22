@@ -35,7 +35,7 @@ ui <- fluidPage(
         mod_get_extradata_ui("get_extradata"),
         div(style="position: relative; z-index: 10;",
         bslib::page_navbar(
-          sidebar = bslib::sidebar(
+          sidebar = bslib::sidebar(title = "Germplasm Groups",
             id = "groups_sidebar",
             position = "right",
             open = F,

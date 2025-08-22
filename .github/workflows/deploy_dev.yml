@@ -1,6 +1,6 @@
 # This is a basic workflow that is manually triggered
 
-name: Deploy ShinyBrAPPs
+name: Deploy on dev
 
 # Controls when the action will run. Workflow runs when manually triggered using the UI
 # or API.
@@ -36,7 +36,7 @@ jobs:
       run: |
         ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
           cd ShinyBrAPPs
-          git checkout dev
           git pull origin dev
-          docker build --progress=plain -t shinybrapps-dev .
+          echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+          docker build -f deploy/Dockerfile --progress=plain -t shinybrapps-dev .
         EOF

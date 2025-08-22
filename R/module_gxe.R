@@ -232,21 +232,27 @@ mod_gxe_ui <- function(id){
 
                              bslib::accordion_panel(title = "FW plot",
                                                     bslib::layout_columns(col_widths = c(9,3),
-                                                                          bslib::card(full_screen = T, height = "800",
-                                                                                      bslib::card_body(
-                                                                                        #uiOutput(ns("FW_trellis_genot_select_ui")),
-                                                                                        plotOutput(ns("FW_plot"), hover = hoverOpts(id =ns("FWplot_hover"),delay = 50), click = clickOpts(id=ns("FWplot_click")), dblclick = dblclickOpts(id=ns("FWplot_dblclick"))),
-                                                                                        #htmlOutput(ns("FWhover_info")),
-                                                                                        uiOutput(ns("FW_sens_clust_select"))
-                                                                                      ),
-                                                                                      #div(style=".bslib-card .card-footer.font-size: 1.2rem;",
-                                                                                          card_footer(
-                                                                                            div(style = "display: flex; margin-top: 1rem;",
-                                                                                                materialSwitch(ns("FW_coord_equal"), "Equal axes on line plot", value = TRUE, status = "info"),
-                                                                                                materialSwitch(ns("FW_display_raw_data"), "Plot also non fitted values on selected genotypes", value = FALSE, status = "info")
-                                                                                            )
-                                                                                          )#)
-                                                                                      ),
+                                                                          bslib::layout_sidebar(
+                                                                            bslib::card(full_screen = T, height = "800",
+                                                                                        bslib::card_body(
+                                                                                          #uiOutput(ns("FW_trellis_genot_select_ui")),
+                                                                                          plotOutput(ns("FW_plot"), hover = hoverOpts(id =ns("FWplot_hover"),delay = 50), click = clickOpts(id=ns("FWplot_click")), dblclick = dblclickOpts(id=ns("FWplot_dblclick"))),
+                                                                                          #htmlOutput(ns("FWhover_info")),
+                                                                                          uiOutput(ns("FW_sens_clust_select"))
+                                                                                        ),
+                                                                                        #div(style=".bslib-card .card-footer.font-size: 1.2rem;",
+                                                                                            card_footer(
+                                                                                              div(style = "display: flex; margin-top: 1rem;",
+                                                                                                  materialSwitch(ns("FW_coord_equal"), "Equal axes on line plot", value = TRUE, status = "info"),
+                                                                                                  materialSwitch(ns("FW_display_raw_data"), "Plot also non fitted values on selected genotypes", value = FALSE, status = "info")
+                                                                                              )
+                                                                                            )#)
+                                                                                        ),
+                                                                            sidebar=bslib::sidebar(position = "right", title = "Advanced plot settings", open = FALSE,
+                                                                                                 bslib::card(full_screen = F,height = "735",max_height = "735",
+                                                                                                             sliderInput(ns("FW_axis.text.x.size"), label = "X-axis labels size", min = 8, max = 20, value = 10, step = 1),
+                                                                                                             sliderInput(ns("FW_axis.text.y.size"), label = "Y-axis labels size", min = 8, max = 20, value = 10, step = 1)
+                                                                                                 ))),
                                                                           value_box(title = "",
                                                                                     max_height = 100,
                                                                                     style = 'background-color: #EEEEEE!important;',
@@ -304,7 +310,7 @@ mod_gxe_ui <- function(id){
                         selected = 1),
             pickerInput(ns("GGE_picker_env_select"), label="Plot type 5 - Select an environment", multiple = F, choices = c()),
             pickerInput(ns("GGE_picker_gen_select"), label="Plot type 7&9 - Select a genotype", multiple = F, choices = c()),
-            pickerInput(ns("GGE_picker_gen2_select"), label="Plot type 9 - Select a second genotypes", multiple = F, choices = c()),
+            pickerInput(ns("GGE_picker_gen2_select"), label="Plot type 9 - Select a second genotype", multiple = F, choices = c()),
             pickerInput(ns("GGE_colorGenoBy"), label="Color genotypes by", choices = "Nothing", selected = "Nothing"),
             pickerInput(ns("GGE_colorEnvBy"), label="Color Environments by", choices = "Nothing", selected = "Nothing"),
             shiny::downloadButton(ns("GGE_report"), "Download report", icon = icon(NULL), class = "btn-block btn-primary")
@@ -331,7 +337,7 @@ mod_gxe_ui <- function(id){
                                                                                          sliderInput(ns("GGE_plot_max_overlaps"), label="Labels max overlaps", value = 20, min=5, max=50, step=1),
                                                                                          sliderInput(ns("GGE_plot_size.shape"), label="Points size", value = 2.2, min=1, max=10, step=0.1),
                                                                                          sliderInput(ns("GGE_plot_size.shape.win"), label="Winner points size", value = 3.2, min=1, max=10, step=0.1),
-                                                                                         sliderInput(ns("GGE_plot_size.stroke"), label="Points stroke width", value = 0.3, min=1, max=5, step=0.1),
+                                                                                         sliderInput(ns("GGE_plot_size.stroke"), label="Points stroke width", value = 0.3, min=0, max=5, step=0.1),
                                                                                          sliderInput(ns("GGE_plot_size.line"), label="Line width", value = 0.5, min=0, max=5, step=0.1),
                                                                                          sliderInput(ns("GGE_plot_axis_expand"), label="Plot expansion", value = 1.2, min=0, max=2, step=0.1),
                                                                                          sliderInput(ns("GGE_plot_col.alpha"), label="Transparency", value = 1, min=0, max=1, step=0.1),
@@ -375,7 +381,7 @@ mod_gxe_ui <- function(id){
                 a(href="https://biometris.github.io/statgenGxE/articles/statgenGxE.html#am",icon("fas fa-question-circle"), target="_blank")),
             #materialSwitch(ns("AMMI_byYear"), "Run by year", value = FALSE, status = "info"),
             #hr(style = "border-top: 1px solid #000000;"),
-            pickerInput(ns("AMMI_plotType"), label="Plot type", choices = c("AMMI1", "AMMI2"), selected = "AMMI2"),
+            #pickerInput(ns("AMMI_plotType"), label="Plot type", choices = c("AMMI1", "AMMI2"), selected = "AMMI2"),
             pickerInput(ns("AMMI_primAxis"), label="Primary axis", choices = c()),
             pickerInput(ns("AMMI_secAxis"), label="Second axis", choices = c()),
             #materialSwitch(ns("AMMI_plotGeno"), "Plot genotypes", value = TRUE, status = "info"),
@@ -447,6 +453,8 @@ mod_gxe_ui <- function(id){
                   card_footer(
                     div(style="display: flex;gap: 10px;",
                         uiOutput(ns("copy_STABsup_table")),
+                        actionButton(ns("STAB_select_all"), label = "Select all", class = "btn"),
+                        shinyjs::disabled(actionButton(ns("STAB_unselect"), "Deselect all", class = "btn")),
                         shiny::actionButton(ns("create_groups_from_STABsel"), "Create group from selection", icon = icon(NULL), class = "btn btn-info")
                     )
                   )
@@ -526,6 +534,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       
       dtproxy <<- dataTableProxy('FW_sens_clusters_DT')
       predictDTproxy <<- dataTableProxy('MM_predictions')
+      STAB_supproxy <<- dataTableProxy('STAB_sup')
       
       accordion_panel_close("GGE_adv_settings_acc", values="advs", session = session)
       accordion_panel_close("AMMI_adv_settings_acc", values="advs", session = session)
@@ -890,8 +899,12 @@ mod_gxe_server <- function(id, rv, parent_session){
               data2TD[,wt:=.SD, .SDcols=input$weight_var]
             }
           }
-        }        
-
+        }
+        if (any(colnames(data2TD)%in%input$picker_germplasm_attr)){
+          for (ga in input$picker_germplasm_attr){
+            data2TD[[ga]][is.na(data2TD[[ga]])] <- replace_na_germplasm_attr_by
+          }
+        }
         rv$TD <- statgenSTA::createTD(data = data2TD[studyDbId%in%input$picker_env],
                                       genotype = "genotype",
                                       trial = input$picker_env_variable)
@@ -1143,7 +1156,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         #browser()
         req(rv_gxe$TDFWplot)
         validate(
-          need({!(input$FW_picker_color_by=="sensitivity clusters" & !("sensitivity_cluster"%in%colnames(rbindlist(rv_gxe$TDFWplot$TD))))}, "You must make clusters first"),
+          need({!(input$FW_picker_color_by=="sensitivity clusters" & !("sensitivity_cluster"%in%colnames(rbindlist(rv_gxe$TDFWplot$TD))))}, "You must make clusters first")
         )
         
         TDFWplot <- rv_gxe$TDFWplot
@@ -1154,73 +1167,80 @@ mod_gxe_server <- function(id, rv, parent_session){
           TDFWplot$envEffs$Trial <- ts$newtrial[match(TDFWplot$envEffs$Trial, ts$trial)]
           TDFWplot$TD <- rename_envs(TDFWplot$TD, ts$trial, ts$newtrial)
         }
-        if (is.null(input$FW_picker_color_by)){
-            p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+        if (input$FW_picker_plot_type=="trellis"){
+          if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
+            rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
+            p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv_gxe$selected_genotypes) 
+            if (input$FW_picker_color_by!="Nothing" & input$FW_picker_color_by!="sensitivity clusters"){
+              if (!input$FW_picker_color_by%in%colnames(rbindlist(TDFWplot$TD))){
+                TDFWplot$TD <- lapply(seq_along(TDFWplot$TD),function(a) data.table(TDFWplot$TD[[a]])[data.table(rv$TD[[a]])[,.SD, .SDcols=c("genotype",input$FW_picker_color_by)], on=.(genotype)])
+              }
+              
+              colgenobys <- unique(rbindlist(TDFWplot$TD)[[input$FW_picker_color_by]])
+              colGeno <- colgeno(colgenobys, missing = replace_na_germplasm_attr_by)
+              
+              p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv_gxe$selected_genotypes, colorGenoBy=input$FW_picker_color_by, colGeno=colGeno) 
+              p$layers[[1]] <- NULL
+              p$layers[[2]] <- NULL
+              p <- p + geom_line(aes(x=.data[["EnvMean"]], y=.data[["fitted"]], color=.data[[input$FW_picker_color_by]])) +
+                geom_point(aes(x=.data[["EnvMean"]], y=.data[["genoMean"]], color=.data[[input$FW_picker_color_by]])) +
+                scale_color_manual(values = colGeno) +
+                theme(legend.position = "right")
+            }
+            if (input$FW_picker_color_by=="sensitivity clusters"){
+              if ("sensitivity_cluster"%in%colnames(rbindlist(TDFWplot$TD))){
+
+                p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv_gxe$selected_genotypes, colorGenoBy="sensitivity_cluster") 
+                p$layers[[1]] <- NULL
+                p$layers[[2]] <- NULL
+                p <- p + geom_line(aes(x=.data[["EnvMean"]], y=.data[["fitted"]], color=.data[["sensitivity_cluster"]])) +
+                  geom_point(aes(x=.data[["EnvMean"]], y=.data[["genoMean"]], color=.data[["sensitivity_cluster"]])) +
+                  #scale_color_manual(values = colGeno) +
+                  theme(legend.position = "right")
+              }
+            }
+            
+          } else {
+            p <- ggplot() + geom_text(aes(x=1,y=1,label="Please select germplasms to display in the Germplasm list and clusters table below"), size=5) + 
+              theme(axis.line=element_blank(),axis.text.x=element_blank(),
+                    axis.text.y=element_blank(),axis.ticks=element_blank(),
+                    axis.title.x=element_blank(),
+                    axis.title.y=element_blank(),legend.position="none",
+                    panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+                    panel.grid.minor=element_blank(),plot.background=element_blank())
+          }
         } else {
           if (input$FW_picker_color_by=="sensitivity clusters"){
+            if ("sensitivity_cluster"%in%colnames(rbindlist(TDFWplot$TD))){
             shinyjs::show(id="FW_sens_clust_select_buttons")
-            #browser()
             p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy="sensitivity_cluster")
             req(input$FW_sens_clust_select_buttons)
+            
             if (input$FW_sens_clust_select_buttons!="none" & input$FW_picker_plot_type=="line"){
-              #browser()
               stacolors <- getOption("statgen.genoColors")
               names(stacolors)<-1:length(stacolors)
               p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                 ggnewscale::new_scale_color() + 
                 ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$sensclust[sensitivity_cluster==input$FW_sens_clust_select_buttons, Genotype],], aes(y = fitted, color=sensitivity_cluster), size=1) + scale_color_manual(values = stacolors)
-              
             }
             
             if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
               rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
-              #browser()
               p <- p + scale_color_grey(start = 0.8, end = 0.8, guide = "none") +
                   ggnewscale::new_scale_color() + 
                   ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                   geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3)
-                  if (input$FW_display_raw_data){
-                    p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
-                  }
-            }
-            if (input$FW_picker_plot_type=="trellis"){
-              if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
-                rv$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
-                p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv_gxe$selected_genotypes) 
-              } else {
-                #p <- plot(TDFWplot, plotType = input$FW_picker_plot_type) 
-                p <- ggplot() + geom_text(aes(x=1,y=1,label="Please select germplasms to display in the Germplasm list and clusters below"), size=5) + 
-                  theme(axis.line=element_blank(),axis.text.x=element_blank(),
-                        axis.text.y=element_blank(),axis.ticks=element_blank(),
-                        axis.title.x=element_blank(),
-                        axis.title.y=element_blank(),legend.position="none",
-                        panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
-                        panel.grid.minor=element_blank(),plot.background=element_blank())
+              if (input$FW_display_raw_data){
+                p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
               }
             }
-
+          }
           } else {
             shinyjs::hide(id="FW_sens_clust_select_buttons")
             
             if (input$FW_picker_color_by=="Nothing"){
-              if (input$FW_picker_plot_type=="trellis"){
-                if (!is.null(input$FW_sens_clusters_DT_rows_selected)){
-                  rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
-                  p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, genotypes=rv_gxe$selected_genotypes) 
-                } else {
-                  #p <- plot(TDFWplot, plotType = input$FW_picker_plot_type) 
-                  p <- ggplot() + geom_text(aes(x=1,y=1,label="Please select germplasms to display in the Germplasm list and clusters below"), size=5) + 
-                    theme(axis.line=element_blank(),axis.text.x=element_blank(),
-                          axis.text.y=element_blank(),axis.ticks=element_blank(),
-                          axis.title.x=element_blank(),
-                          axis.title.y=element_blank(),legend.position="none",
-                          panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
-                          panel.grid.minor=element_blank(),plot.background=element_blank())
-                }
-              } else {
-                
-                p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
-              }
+               p <- plot(TDFWplot, plotType = input$FW_picker_plot_type)
+              
               if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
                 #browser()
                 rv_gxe$selected_genotypes <- rv_gxe$sensclust[input$FW_sens_clusters_DT_rows_selected,]$Genotype
@@ -1228,16 +1248,21 @@ mod_gxe_server <- function(id, rv, parent_session){
                     ggnewscale::new_scale_color() + 
                     ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                     geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3) + theme(legend.position = "right")
-                    if (input$FW_display_raw_data){
-                      p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
-                    }
+                if (input$FW_display_raw_data){
+                  p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                }
               }
               
             } else {
-              if (!input$FW_picker_color_by%in%colnames(TDFWplot$TD)){
+              if (!input$FW_picker_color_by%in%colnames(rbindlist(TDFWplot$TD))){
                 TDFWplot$TD <- lapply(seq_along(TDFWplot$TD),function(a) data.table(TDFWplot$TD[[a]])[data.table(rv$TD[[a]])[,.SD, .SDcols=c("genotype",input$FW_picker_color_by)], on=.(genotype)])
               }
-              p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, colorGenoBy=input$FW_picker_color_by)
+              colgenobys <- unique(rbindlist(TDFWplot$TD)[[input$FW_picker_color_by]])
+              colGeno <- colgeno(colgenobys, missing = replace_na_germplasm_attr_by)
+              p <- plot(TDFWplot, plotType = input$FW_picker_plot_type, 
+                        colorGenoBy=input$FW_picker_color_by, 
+                        colGeno=colGeno)
+              
               # In case there is only two classes in color geno by
               # rebuild the line plot so that the smallest class is on top
               if (length(unique(p$data[[input$FW_picker_color_by]]))==2){
@@ -1260,14 +1285,14 @@ mod_gxe_server <- function(id, rv, parent_session){
                     ggnewscale::new_scale_color() + 
                     ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                     geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3)
-                    if (input$FW_display_raw_data){
-                      p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
-                    }
-                
+                if (input$FW_display_raw_data){
+                  p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                }
               }
             }
           }
         }
+        
         #Following is required because statgenGxE:::plot.FW return a list of
         #three ggplots in case of plotType="scatter"
         #need to restore legend on first plot and capture it
@@ -1304,13 +1329,14 @@ mod_gxe_server <- function(id, rv, parent_session){
         
         # Rotate legend title so that it doesnt't take too much space
         # in case of long group name
-        p <- p + theme(legend.title = element_text(angle = 90))
+        p <- p + theme(legend.title = element_text(angle = 90),
+                       axis.text.x = element_text(size=input$FW_axis.text.x.size),
+                       axis.text.y = element_text(size=input$FW_axis.text.y.size))
         if (input$FW_picker_plot_type=="line" & !input$FW_coord_equal){
           p + coord_cartesian()
         } else {
           p
         }
-        #}
       })
       
       #### Handle hover event ####
@@ -1540,6 +1566,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         group_ids <- group_id_start:(group_id_start+clusters[,.N] -1)
         clusters[, group_id := group_ids]
         clusters[, clustering_id := clustering_id]
+        clusters[, clustering_name := paste0("cl",clustering_id,"_FW@",input$picker_trait)]
         rv$groups <- rbindlist(list(
           rv$groups,
           clusters
@@ -1547,7 +1574,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         
         # Add a column to 
         data_plot <- copy(rv$extradata) # to avoid reactivity issues related to assignment by reference
-        data_plot <- data_plot[clusters[,.(germplasmDbId=unlist(germplasmDbIds)),sensitivity_cluster],on=.(germplasmDbId)]
+        data_plot <- merge.data.table(data_plot, clusters[,.(germplasmDbId=unlist(germplasmDbIds)),sensitivity_cluster], by = "germplasmDbId", all = T)
         setnames(data_plot,old = "sensitivity_cluster",new = paste0("cl",clustering_id,"_FW@",input$picker_trait))
         rv$column_datasource <- rbindlist(
           list(
@@ -1770,16 +1797,20 @@ mod_gxe_server <- function(id, rv, parent_session){
           gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
 
           if (input$GGE_colorGenoBy!="Nothing"){
+            colgenobys <- unique(geompdat[type=="genotype",colorby])
+            colGeno <- colgeno(colgenobys, missing = replace_na_germplasm_attr_by)
+            
             gg <- gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
             gg <- gg + geom_point(data=geompdat[type=="genotype"], 
-                                  aes(d1, d2, color=as.factor(.data[["colorby"]]), 
-                                      fill = as.factor(.data[["colorby"]])), 
+                                  aes(d1, d2, #color=as.factor(.data[["colorby"]]), 
+                                      fill = as.factor(.data[["colorby"]])),
+                                  color= input$GGE_plot_col.stroke, 
                                   shape = 21, 
                                   size = input$GGE_plot_size.shape, 
                                   stroke = input$GGE_plot_size.stroke, 
                                   alpha = input$GGE_plot_col.alpha) + 
-            scale_fill_manual(values=getOption("statgen.genoColors")) + 
-            scale_color_manual(values=getOption("statgen.genoColors"), guide="none") 
+            scale_fill_manual(values=colGeno, guide= guide_legend(override.aes = list(shape=21, stroke = 0, size = 5))) #+ 
+            #scale_color_manual(values=colGeno, guide= "none") 
           } else {
             gg <- gg + geom_point(data=geompdat[type=="genotype"], 
                                   aes(d1, d2, color=as.factor(.data[["colorby"]])), 
@@ -1792,13 +1823,14 @@ mod_gxe_server <- function(id, rv, parent_session){
           if (input$GGE_colorEnvBy!="Nothing"){
             gg <- gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
             gg <- gg + geom_point(data=geompdat[type=="environment"], 
-                                  aes(d1, d2, color=as.factor(.data[["colorby"]]), 
-                                      fill = as.factor(.data[["colorby"]])), 
+                                  aes(d1, d2, #color=as.factor(.data[["colorby"]]), 
+                                      fill = as.factor(.data[["colorby"]])),
+                                  color= input$GGE_plot_col.stroke,
                                   shape = 23, size = input$GGE_plot_size.text.env, 
                                   stroke = input$GGE_plot_size.stroke, 
                                   alpha = input$GGE_plot_col.alpha) + 
-            scale_fill_manual(values=getOption("statgen.trialColors")) + 
-            scale_color_manual(values=getOption("statgen.trialColors"), guide="none")
+            scale_fill_manual(values=getOption("statgen.trialColors"), guide = guide_legend(override.aes = list(shape=23, stroke = 0, size = 5))) #+ 
+            #scale_color_manual(values=getOption("statgen.trialColors"), guide= "none")
           } else {
             gg <- gg + geom_point(data=geompdat[type=="environment"], 
                                   aes(d1, d2, color=as.factor(.data[["colorby"]])), 
@@ -1808,16 +1840,6 @@ mod_gxe_server <- function(id, rv, parent_session){
                                   stroke = input$GGE_plot_size.stroke, 
                                   alpha = input$GGE_plot_col.alpha) 
           }
-          
-          if (input$GGE_colorGenoBy!="Nothing" & input$GGE_colorEnvBy!="Nothing") {
-            gg <- gg + guides(fill = guide_legend(override.aes = list(shape=21))) + guides(fill = guide_legend(override.aes = list(shape=23)))
-          } else if (input$GGE_colorGenoBy!="Nothing") {
-            gg <- gg + guides(fill = guide_legend(override.aes = list(shape=21)), shape = "none")
-          } else if (input$GGE_colorEnvBy!="Nothing"){
-            gg <- gg + guides(fill = guide_legend(override.aes = list(shape=23)), size = "none")
-          } else {
-            gg <- gg + guides(fill = "none")
-          }
         }
         #browser()
         rv_gxe$GGEplotdat <- gg$data
@@ -1826,7 +1848,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           gg + ggnewscale::new_scale_fill()
           gg <- gg + geom_point(data = clickgeno, aes(x=d1, y = d2), shape = 21, size=input$GGE_plot_size.shape+2, stroke=input$GGE_plot_size.stroke, color="red") 
         }
-        gg + theme(legend.position.inside=NULL, legend.position = "right")
+        gg + theme(legend.position.inside=NULL, legend.position = "right") 
 
         
       })      
@@ -1957,60 +1979,83 @@ mod_gxe_server <- function(id, rv, parent_session){
         # this occurs for example at group creation, a column with group memberships
         # is added to the TD object and available in the colorGenoBy picker input
         rv_gxe$TDAMMI$dat <- rbindlist(rv$TD)
+        colgenobys <- unique(rv_gxe$TDAMMI$dat[[input$AMMI_colorGenoBy]])
+        colGeno <- colgeno(colgenobys, missing = replace_na_germplasm_attr_by)
+
         p <- statgenGxE:::plot.AMMI(rv_gxe$TDAMMI,
-                                    plotType = input$AMMI_plotType,
+                                    plotType = "AMMI2", #input$AMMI_plotType,
                                     scale = input$AMMI_scale,
                                     plotGeno = TRUE,
                                     colorGenoBy = switch((input$AMMI_colorGenoBy=="Nothing")+1,  input$AMMI_colorGenoBy, NULL),
+                                    colGeno = colGeno,
                                     plotConvHull = input$AMMI_plotConvHull,
                                     colorEnvBy = switch((input$AMMI_colorEnvBy=="Nothing")+1,  input$AMMI_colorEnvBy, NULL),
                                     rotatePC = input$AMMI_rotatePC,
                                     primAxis = input$AMMI_primAxis,
                                     secAxis = input$AMMI_secAxis,
                                     envFactor = input$AMMI_plot_envFactor,
-                                    sizeGeno = input$AMMI_plot_sizeGeno,
-                                    sizeEnv = input$AMMI_plot_sizeEnv,
+                                    sizeGeno = input$AMMI_plot_sizeGeno + 1,
+                                    sizeEnv = input$AMMI_plot_sizeEnv + 1,
                                     title = switch((input$AMMI_plot_title=="")+1,  input$AMMI_plot_title, NULL))
         # Following is to handle vizualization of clicked genotypes
         # data structure is different for AMMI1 and AMMI2 plots
         # hence the distinction between both cases
-        if (input$AMMI_plotType=="AMMI2"){
+        #if (input$AMMI_plotType=="AMMI2"){
           p$layers[[1]] <- NULL
-          p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]]), size=input$AMMI_plot_sizePoint) +
-            geom_text(data=p$data[p$data$type=="env",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="env",]))) +
-            geom_text(data =p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="geno",]), size=input$AMMI_plot_sizeGeno), position = position_nudge(y=input$AMMI_plot_envFactor*max(p$data[p$data$type=="geno",input$AMMI_secAxis])/8))
+          if (input$AMMI_colorGenoBy!="Nothing"){
+            p <- p + ggnewscale::new_scale_color()
+            p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], color = .data[[".group"]]), size=input$AMMI_plot_sizePoint) +
+              scale_color_manual(values=colGeno, name=input$AMMI_colorGenoBy) + 
+              geom_text(data=p$data[p$data$type=="env",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="env",])), size=input$AMMI_plot_sizeEnv + 1)
+            if (input$AMMI_plot_sizeGeno>0){
+              p <- p + geom_text(data =p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="geno",]), color = .data[[".group"]]), size=input$AMMI_plot_sizeGeno + 1, position = position_nudge(y=input$AMMI_plot_envFactor*max(p$data[p$data$type=="geno",input$AMMI_secAxis])/8))
+            }
+          } else {
+            p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]]), size=input$AMMI_plot_sizePoint) +
+              geom_text(data=p$data[p$data$type=="env",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="env",])), size=input$AMMI_plot_sizeEnv + 1)
+              if (input$AMMI_plot_sizeGeno>0){
+                p <- p + geom_text(data =p$data[p$data$type=="geno",], aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]], label=rownames(p$data[p$data$type=="geno",])), size=input$AMMI_plot_sizeGeno + 1, position = position_nudge(y=input$AMMI_plot_envFactor*max(p$data[p$data$type=="geno",input$AMMI_secAxis])/8))
+              }
+          }
           
           if (!is.null(rv_gxe$AMMIclicked_genotypes)){
             clickgeno <- p$data[p$data$type=="geno" & row.names(p$data)%in%rv_gxe$AMMIclicked_genotypes,]
             p <- p + geom_point(data = clickgeno, aes(x=.data[[input$AMMI_primAxis]], y = .data[[input$AMMI_secAxis]]), shape = 21, color="red", size=input$AMMI_plot_sizePoint+1)
           }
-        } else {
-          p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=x, y = y), size=input$AMMI_plot_sizePoint) #+ 
-          if (!is.null(rv_gxe$AMMIclicked_genotypes)){
-            clickgeno <- p$data[p$data$type=="geno" & row.names(p$data)%in%rv_gxe$AMMIclicked_genotypes,]
-            p <- p + ggnewscale::new_scale_color()
-            p <- p + geom_point(data = clickgeno, aes(x=x, y = y), shape = 21, color="red", size=input$AMMI_plot_sizePoint+1)
-          }
-        }
+        #} else {
+        #  if (input$AMMI_colorGenoBy!="Nothing"){
+        #    p <- p + ggnewscale::new_scale_color()
+        #    p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=x, y = y, color = .data[[".group"]]), size=input$AMMI_plot_sizePoint) +
+        #      scale_color_manual(values=colGeno, name=input$AMMI_colorGenoBy)
+        #  } else {
+        #    p <- p + geom_point(data = p$data[p$data$type=="geno",], aes(x=x, y = y), size=input$AMMI_plot_sizePoint) #+ 
+        #  }
+        #  if (!is.null(rv_gxe$AMMIclicked_genotypes)){
+        #    clickgeno <- p$data[p$data$type=="geno" & row.names(p$data)%in%rv_gxe$AMMIclicked_genotypes,]
+        #    p <- p + ggnewscale::new_scale_color()
+        #    p <- p + geom_point(data = clickgeno, aes(x=x, y = y), shape = 21, color="red", size=input$AMMI_plot_sizePoint+1)
+        #  }
+        #}
         # This reactive is useful to handle click event
         rv_gxe$AMMIplotdat <- p$data
-        p
+        p + guides(color = guide_legend(override.aes = aes(label = ""))) + theme(legend.title = element_text(angle = 90))
       })
       
       #### Handle click event ####
       
       observeEvent(input$AMMIplot_click,{
         if(!is.null(input$AMMIplot_click)) {
-          if (input$AMMI_plotType=="AMMI2"){
+          #if (input$AMMI_plotType=="AMMI2"){
             AG <- rv_gxe$AMMIplotdat[,c(input$AMMI_primAxis,input$AMMI_secAxis)]
             click=input$AMMIplot_click
             dist=sqrt((click$x-AG[,1])^2+(click$y-AG[,2])^2)
             clickedgeno <- as.character(row.names(AG))[which.min(dist)]
-          } else {
-            AG <- rv_gxe$AMMIplotdat
-            dist=sqrt((click$x-AG$x)^2+(click$y-AG$y)^2)
-            clickedgeno <- as.character(row.names(AG))[which.min(dist)]
-          }
+          #} else {
+          #  AG <- rv_gxe$AMMIplotdat
+          #  click=input$AMMIplot_click
+          #  dist=sqrt((click$x-AG$x)^2+(click$y-AG$y)^2)
+          #  clickedgeno <- as.character(row.names(AG))[which.min(dist)]
+          #}
           if (clickedgeno%in%rv_gxe$AMMIclicked_genotypes){
             rv_gxe$AMMIclicked_genotypes <- rv_gxe$AMMIclicked_genotypes[-which(rv_gxe$AMMIclicked_genotypes==clickedgeno)]
           } else {
@@ -2064,6 +2109,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         req(rv$TD)
         TDStab <- tryCatch(statgenGxE::gxeStability(TD = rv$TD,
                                                         trait = input$picker_trait), error=function(e) e)
+        req(TDStab$superiority)
         dtsup <- as.data.table(TDStab$superiority)
         setnames(dtsup, old = "Superiority", new = "Sup")
         dtsta <- as.data.table(TDStab$static)
@@ -2104,6 +2150,28 @@ mod_gxe_server <- function(id, rv, parent_session){
                     columns = c("Mean", "Sup", "S", "W", "sqrtS", "sqrtWe"), 
                     digits=3)
       })
+      
+      ### Enable/disable group creation button ####
+      observeEvent(input$STAB_sup_rows_selected, {
+        if (!is.null(input$STAB_sup_rows_selected)) {
+          shinyjs::enable("STAB_unselect")
+        } else {
+          shinyjs::disable("STAB_unselect")
+        }
+      }, ignoreNULL = F)
+      
+      ### handle select all ####
+      observeEvent(input$STAB_select_all, {
+        filtered_rows <- input$STAB_sup_rows_all
+        DT::selectRows(STAB_supproxy, selected=filtered_rows)
+      })
+      
+      ### handle unselect ####
+      observeEvent(input$STAB_unselect, {
+        DT::selectRows(STAB_supproxy, selected=NULL)
+        rv_gxe$STSclicked_genotypes <- NULL
+      })
+      
 
       #### Handle DT selection ####
       #observeEvent(input$STAB_sup_rows_selected, ignoreNULL = FALSE, ignoreInit = TRUE, {
@@ -2128,12 +2196,15 @@ mod_gxe_server <- function(id, rv, parent_session){
           #browser() 
           geompdat <- as.data.table(gg$data)
           geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$STAB_plots_colorby)]), by.x = "Genotype", by.y = "genotype", all = TRUE)
+          colgenobys <- unique(geompdat[[input$STAB_plots_colorby]])
+          colGeno <- colgeno(colgenobys, missing = replace_na_germplasm_attr_by)
+          
           gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
           
           gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
           gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrtS, color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
-            scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
-            scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
+            scale_fill_manual(values=colGeno, name = input$STAB_plots_colorby) +#getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
+            scale_color_manual(values=colGeno, name = input$STAB_plots_colorby)#getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
         }
         #if(length(rv_gxe$STSclicked_genotypes)>0){
         if(length(input$STAB_sup_rows_selected)>0){
@@ -2145,7 +2216,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                       position = position_nudge(y=max(sqrt(gg$data[,"S"]))/50))
           
         }
-        gg
+        gg + theme(legend.title = element_text(angle = 90))
         
       })
       
@@ -2186,13 +2257,15 @@ mod_gxe_server <- function(id, rv, parent_session){
           #browser() 
           geompdat <- as.data.table(gg$data)
           geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$STAB_plots_colorby)]), by.x = "Genotype", by.y = "genotype", all = TRUE)
+          colgenobys <- unique(geompdat[[input$STAB_plots_colorby]])
+          colGeno <- colgeno(colgenobys, missing = replace_na_germplasm_attr_by)
           gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
 
           
           gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
           gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrtWe, color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
-            scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
-            scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
+            scale_fill_manual(values=colGeno, name = input$STAB_plots_colorby) +#getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
+            scale_color_manual(values=colGeno, name = input$STAB_plots_colorby)#getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
         }
         if(length(input$STAB_sup_rows_selected)>0){
           clickgeno <- gg$data[gg$data$Genotype%in%rv_gxe$TDStab$dtres[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes),][input$STAB_sup_rows_selected,"Genotype"],]
@@ -2203,7 +2276,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                       position = position_nudge(y=max(gg$data[,"sqrtWe"])/50))
           
         }
-        gg
+        gg+ theme(legend.title = element_text(angle = 90))
         
       })
       
@@ -2240,12 +2313,14 @@ mod_gxe_server <- function(id, rv, parent_session){
           #browser() 
           geompdat <- as.data.table(gg$data)
           geompdat <- merge.data.table(x=geompdat, y=unique(rbindlist(rv$TD)[,.SD,.SDcols=c("genotype",input$STAB_plots_colorby)]), by.x = "Genotype", by.y = "genotype", all = TRUE)
+          colgenobys <- unique(geompdat[[input$STAB_plots_colorby]])
+          colGeno <- colgeno(colgenobys, missing = replace_na_germplasm_attr_by)
           gg$layers[[which(unlist(lapply(gg$layers, function(a) class(a$geom)[1]))=="GeomPoint")[1]]] <- NULL
           
           gg + ggnewscale::new_scale_fill() + ggnewscale::new_scale_color()
           gg <- gg + geom_point(data=geompdat, aes(x=Mean, y= sqrt(Sup), color=as.factor(.data[[input$STAB_plots_colorby]]), fill = as.factor(.data[[input$STAB_plots_colorby]]))) + 
-            scale_fill_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
-            scale_color_manual(values=getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
+            scale_fill_manual(values=colGeno, name = input$STAB_plots_colorby) +#getOption("statgen.genoColors"), na.value = "forestgreen", guide="none") + 
+            scale_color_manual(values=colGeno, name = input$STAB_plots_colorby)#getOption("statgen.genoColors"), na.value = "forestgreen", guide="none")
         }
         if(length(input$STAB_sup_rows_selected)>0){
           clickgeno <- gg$data[gg$data$Genotype%in%rv_gxe$TDStab$dtres[order(!rv_gxe$TDStab$dtres$Genotype%in%rv_gxe$STSclicked_genotypes),][input$STAB_sup_rows_selected,"Genotype"],]
@@ -2255,7 +2330,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             geom_text(data = clickgeno, aes(x=Mean , y = sqrt(Sup), label=Genotype), size=3, color="red",
                       position = position_nudge(y=max(sqrt(gg$data[,"Sup"]))/50))
         }
-        gg
+        gg+ theme(legend.title = element_text(angle = 90))
       })
       
       #### Handle click event ####

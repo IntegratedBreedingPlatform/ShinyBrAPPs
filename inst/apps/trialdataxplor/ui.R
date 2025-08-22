@@ -4,7 +4,46 @@ source("config.R")
 ui <- bslib::page_fluid(theme = bslib::bs_theme(preset = "bootstrap"),
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "css/app.css"),
-    tags$link(rel = "stylesheet", type = "text/css", href = "css/custom_styles.css")
+    tags$link(rel = "stylesheet", type = "text/css", href = "css/custom_styles.css"),
+    tags$style(HTML("
+    
+      /* Ensure that the 'Deselect All' button stays on top */
+      .inner.show {
+        overflow: visible !important;
+      }
+      .dropdown-menu .bs-actionsbox {
+        z-index: 1000;
+      }
+      .dropdown-menu.show {
+        overflow: scroll !important;
+      }
+      
+      /* Adjust the behavior of individual items (dropdown-item) */
+      .dropdown-menu .dropdown-item {
+        z-index: 10;  /* keep elements below the action box */
+        position: relative;  /* Ensure that the checkmark is well positioned */
+      }
+      /* Modify the position of the checkmark so it doesn't overlap other elements */
+      .dropdown-menu .check-mark {
+        position: relative;
+        margin-left: 5px;  /* Adjust the margin for better alignment */
+        z-index: 5;
+      }
+      /* Ensure that the 'Deselect All' button is not covered */
+      .dropdown-menu .bs-actionsbox button {
+        z-index: 999;
+        position: relative;
+      }
+      
+      .shiny-options-group .checkbox-inline {
+        padding-left: 0;
+        margin-right: 5px;
+      }
+      .shiny-options-group .checkbox-inline input {
+        margin-right: 5px;
+      }
+      .nav .nav-item .nav-link { font-size: 20px; }
+    "))
   ),
   # Static App banner
   tags$div(div(img(src="img/sticker.png",

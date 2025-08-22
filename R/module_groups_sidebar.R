@@ -14,13 +14,11 @@ mod_groups_sidebar_ui <- function(id){
                  h4('Actions ', icon('screwdriver-wrench'))
                ),
                card_body(
-                 #title = span('Options ', icon('screwdriver-wrench')),
-                 #width = 12,
-                 #h4('Actions ', icon('screwdriver-wrench')),
-                 actionButton(ns("action_groups_plot_creation_params"),label = "Visualize like at group creation", block = T, class = paste("btn btn-info", ns("one_group_selected"))),
+                 #actionButton(ns("action_groups_plot_creation_params"),label = "Visualize like at group creation", block = T, class = paste("btn btn-info", ns("one_group_selected"))),
                  actionButton(ns("action_groups_union"),label = "Union", block = T, class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
                  actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
                  actionButton(ns("action_groups_complement"),label = "Complement", block = T, class = paste("btn btn-info", ns("at_least_one_group_selected"))),
+                 actionButton(ns("action_groups_rename"),label = "Rename", block = T, class =paste("btn btn-info", ns("one_group_selected"))),
                  actionButton(ns("action_groups_delete"),label = "Delete", block = T, class =paste("btn btn-info", ns("at_least_one_group_selected")))
                )
              ),
@@ -57,12 +55,27 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
       })
       
       ## Displaying buttons ####
-      observe({
+      observeEvent(input$group_sel_input, {
+        print(input$group_sel_input)
+        #selected_groups <- rv$groups[group_id %in% input$group_sel_input,]
         shinyjs::toggle(selector = paste0(".",ns("at_least_one_group_selected")), condition = length(input$group_sel_input)>0)
         shinyjs::toggle(selector = paste0(".",ns("create_new_groups_from_groups")), condition = length(input$group_sel_input)>1)
         shinyjs::toggle(selector = paste0(".",ns("one_group_selected")), condition = length(input$group_sel_input)==1)
         shinyjs::toggle(id = "export_box", condition = length(input$group_sel_input)==1)
-      })
+        
+        req(input$group_sel_input)
+        req(rv$groups)
+        sel_groups <- rv$groups[group_id %in% input$group_sel_input,]
+        clusterings <- sel_groups[, clustering_id]
+        shinyjs::enable("action_groups_delete")
+        for (id in clusterings) {
+          if (nrow(sel_groups[clustering_id == id, ]) < nrow(rv$groups[clustering_id == id, ])) {
+            # can't delete clustering group if not all selected
+            shinyjs::disable("action_groups_delete")
+            break
+          }
+        }
+      }, ignoreNULL = F)
       
       ## Union ####
       observeEvent(input$action_groups_union,{
@@ -163,11 +176,20 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
         for(k in input$group_sel_input){
           rv$extradata[,eval(rv$groups[group_id == k, group_name]) := NULL]
         }
-        rv$column_datasource <- rv$column_datasource[!(cols %in% rv$groups[group_id %in% input$group_sel_input, group_name])]
+        rv$column_datasource <- rv$column_datasource[!(cols %in% c(rv$groups[group_id %in% input$group_sel_input & is.na(clustering_name), group_name], unique(rv$groups[group_id %in% input$group_sel_input & !is.na(clustering_name), clustering_name])))]
         
         ## delete groups
         rv$groups <- rv$groups[!(group_id %in% input$group_sel_input)]
-      })      
+      })
+      
+      ## Rename a group ####
+      observeEvent(input$action_groups_rename,{
+        req(length(input$group_sel_input) == 1)
+        rv$selected_group_id <- input$group_sel_input
+        showModal(
+          renameGroupModal(rv, parent_session)
+        )
+      })
       
       ## Export as list ####
       observeEvent(input$action_groups_export_as_list,{
@@ -212,20 +234,37 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
         req(length(input$group_sel_input)==1)
         tryCatch({
           userinfo <- whoami_bmsapi(rv$con)
-          brapirv2::brapi_post_lists(
+          # brapirv2::brapi_post_lists(
+          #   con = rv$con,
+          #   data = rv$groups[group_id == input$group_sel_input, germplasmDbIds][[1]],
+          #   listSize = rv$groups[group_id == input$group_sel_input, N],
+          #   dateCreated = as.character(Sys.Date()), # XXX
+          #   dateModified = as.character(Sys.Date()), # XXX
+          #   listName = input$listName,
+          #   listDescription= input$listDescription,
+          #   listOwnerName = paste(userinfo$firstName,userinfo$username), # XXX
+          #   listOwnerPersonDbId = as.character(userinfo$id), # XXX
+          #   listSource = "test", # XXX
+          #   listType = "germplasm"
+          # )
+          resp <- brapir::core_lists_post(
             con = rv$con,
             data = rv$groups[group_id == input$group_sel_input, germplasmDbIds][[1]],
-            listSize = rv$groups[group_id == input$group_sel_input, N],
-            dateCreated = as.character(Sys.Date()), # XXX
-            dateModified = as.character(Sys.Date()), # XXX
+            dateCreated = as.character(Sys.Date()),
+            dateModified = as.character(Sys.Date()),
+            listDescription = input$listDescription,
             listName = input$listName,
-            listDescription= input$listDescription,
-            listOwnerName = paste(userinfo$firstName,userinfo$username), # XXX
-            listOwnerPersonDbId = as.character(userinfo$id), # XXX
-            listSource = "test", # XXX
+            listOwnerName = paste(userinfo$firstName,userinfo$username),
+            listOwnerPersonDbId = as.character(userinfo$id),
+            listSize = rv$groups[group_id == input$group_sel_input, N],
+            listSource = "test",
             listType = "germplasm"
           )
-          showNotification("List posted", type = "message", duration = notification_duration)
+          if (resp$status_code == 200) {
+            showNotification("List posted", type = "message", duration = notification_duration)
+          } else {
+            showNotification(resp$status_code, type = "error", duration = notification_duration)
+          }
         }, error = function(e)({
           showNotification("Could not post list", type = "error", duration = notification_duration)
         }))
@@ -236,16 +275,20 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
       # Then, get variables with traitName = selection_trait_name (config param)
       getSelectionVariables <- function(studyDbIds) {
         withProgress(message = "Looking for variables of selection type", min=1, max=1, {
-          res <- brapirv2::brapi_post_search_variables(
+          res <- brapir::phenotyping_variables_post_search(
             con = rv$con, 
             studyDbId = as.character(studyDbIds),
             traitClasses = selection_traitClass
           )
-          var <- data.table(brapirv2::brapi_get_search_variables_searchResultsDbId(rv$con, res$searchResultsDbId))
-          if (nrow(var) > 0) {
-            var <- var[trait.traitName == selection_traitName, .(observationVariableDbId, observationVariableName)]
+          if (res$status_code == 200) {
+            resp <- brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, res$data$searchResultsDbId)$data
+            var <- data.table(brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, res$data$searchResultsDbId)$data)
+            if (nrow(var) > 0) {
+              var <- var[trait.traitName == selection_traitName, .(observationVariableDbId, observationVariableName)]
+            }
+            return(var)
           }
-          return(var)
+          
         })
       }
       
@@ -255,7 +298,6 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
         envs <- unique(rv$extradata[,.(studyDbId, study_name_app)])
         env_choices <- envs[,studyDbId]
         names(env_choices) <- envs[,study_name_app]
-        
         #propose only variables that are selection type
         variables <- getSelectionVariables(env_choices)
        

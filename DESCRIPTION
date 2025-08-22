@@ -18,7 +18,6 @@ Depends:
 Imports: 
     baRcodeR,
     brapir,
-    brapirv2,
     bslib,
     cowplot,
     DT,
@@ -43,6 +42,7 @@ Imports:
     rmarkdown,
     scales,
     shiny,
+    shinybusy,
     shinycssloaders,
     shinyjs,
     shinyWidgets,

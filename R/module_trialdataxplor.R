@@ -1,6 +1,7 @@
 #' @export
 mod_trialdataxplor_ui <- function(id){
   ns <- NS(id)
+
   div(class = "container-fluid",
       # Application title
       #titlePanel(title=div(img(src="ibp.png", width="34px", border.radius="6px"),"BMS trial data explorer"),windowTitle="BMS trial data explorer"),
@@ -13,31 +14,49 @@ mod_trialdataxplor_ui <- function(id){
           ".nav .nav-item .nav-link { font-size: 20px; }",
         )
       ),
-      bslib::page_navbar(title = "", id = ns("tabsetId"), 
+      
+   
+      bslib::navset_tab( id = ns("tabset"),
                              #tabsetPanel(#title = "", id = "tabsetId",
                          bslib::nav_panel("Data counts",value="counts",
                                       div(tableOutput(ns("counts_table")), style = "font-size: 75%;")),
                          bslib::nav_panel("Distributions",value="distrib",
-                                      uiOutput(ns("spinning_boxplot"))),
+                                          div(style="display: inline-block;vertical-align:middle;",pickerInput(ns("dis_trait"), label="Variables",
+                                                                                                               multiple = TRUE, 
+                                                                                                               choices = NULL, 
+                                                                                                               options = list(`actions-box` = TRUE,
+                                                                                                                              size = 15,
+                                                                                                                              `live-search` = TRUE))),
+                                          div(style="display: inline-block;vertical-align:middle;",pickerInput(ns("dis_study"), label="Studies",
+                                                                                                               multiple = TRUE, 
+                                                                                                               choices = NULL, 
+                                                                                                               options = list(`actions-box` = TRUE,
+                                                                                                                              size = 15,
+                                                                                                                              `live-search` = TRUE))),
+                                          div(style="display: inline-block;vertical-align:middle;",actionButton(ns("refresh_dist"),label = "Plot distributions")),
+                                          shinycssloaders::withSpinner(
+                                              plotOutput(ns("boxplots"), height=500), type = 1,color.background = "white"
+                                            )
+                         ),
+                                          #uiOutput(ns("spinning_boxplot"))),
                          bslib::nav_panel("Observations",value="observ",
-                                          div(style="display: flex;",
+                                          #div(style="display: flex;",
                                       div(style="display: inline-block;vertical-align:middle;",selectInput(ns("obs_trait"), label="Variable", choices=NULL)),
                                       #div(style="display: inline-block;vertical-align:middle; width: 10px;",HTML("<br>")),
                                       div(style="display: inline-block;vertical-align:middle;",selectizeInput(ns("obs_study"), label="Single study", choices=NULL, multiple=FALSE)),
-                                      div(style="display: inline-block;vertical-align:middle; width: 50px;",HTML("<br>")),
-                                      div(style="display: inline-block;vertical-align:middle;",uiOutput(ns("copy_obs_table")))),
-                                          
-                                      fluidRow(
+                                      #div(style="display: inline-block;vertical-align:middle; width: 50px;",HTML("<br>")),
+                                      #fluidRow(
                                         #column(
                                         #  5,
                                         shinycssloaders::withSpinner(
                                           #plotlyOutput("observ_boxplot", height=500, width = "50%"), type = 1,color.background = "white"
                                           plotOutput(ns("observ_boxplot"), height=200, width = "100%", brush = ns("observ_boxplot_brush")), type = 1,color.background = "white",
-                                        ),#,hide.ui = FALSE),
-                                        #column(
-                                        #4,
-                                        #checkboxInput("obs_display_all_germ", "Display all germplasms"),
-                                        div(DT::dataTableOutput(ns("selected_obs")), style = "font-size: 75%;"))
+                                        ),
+                                        #div(style="display: flex;",
+                                        div(style="display: inline-block;vertical-align:middle;",materialSwitch(inputId = ns("observ_boxplot_splitreps"), label = "One boxplot per rep", value = FALSE, status = "info")),
+                                        div(style="display: inline-block;vertical-align:middle;",materialSwitch(inputId = ns("selected_obs_otherreps"), label = "Display all reps in observations table", value = FALSE, status = "info")),
+                                        div(style="display: inline-block;vertical-align:middle;",uiOutput(ns("copy_obs_table"))),
+                                        div(DT::dataTableOutput(ns("selected_obs")), style = "font-size: 75%;")
                                       #)
                              ),
                          bslib::nav_panel("Data check report",value="check",
@@ -82,7 +101,6 @@ mod_trialdataxplor_ui <- function(id){
   
 }
 
-#' @import brapirv2
 #' @import leaflet
 #' @export
 mod_trialdataxplor_server <- function(id, rv){
@@ -93,6 +111,15 @@ mod_trialdataxplor_server <- function(id, rv){
     function(input, output, session){
       
       ns <- session$ns
+      
+      js <- JS(
+        "table.on('dblclick', 'td', function() {",
+        "  var row = table.cell(this).index().row;",
+        "  var col = table.cell(this).index().column;",
+        "  Shiny.setInputValue('xplor-dt_dblclick', {row: row + 1, col: col + 1}, {priority: 'event'});",
+        "});"
+      )
+      
       
       rv_tdx <- reactiveValues(
         #tr = NULL,
@@ -134,14 +161,14 @@ mod_trialdataxplor_server <- function(id, rv){
           env_choices <- rv$study_metadata[loaded==T,unique(studyDbId)]
           names(env_choices) <- rv$study_metadata[loaded==T,unique(study_name_app)]
           data_dq <- data_dq[!is.na(observationVariableDbId)]
-          scrid <- brapi_post_search_variables(rv$con, observationVariableDbIds = as.character(unique(data_dq$observationVariableDbId)))
-          variables <- brapi_get_search_variables_searchResultsDbId(rv$con, searchResultsDbId = scrid$searchResultsDbId)
+          scrid <- brapir::phenotyping_variables_post_search(rv$con, observationVariableDbIds = as.character(unique(data_dq$observationVariableDbId)))$data$searchResultsDbId
+          variables <- brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, searchResultsDbId = scrid)$data
           setDT(variables)
           variables[,observationVariableDbId:=as.numeric(observationVariableDbId)]
           rv_tdx$variables <- variables
           
           locs <- rbindlist(lapply(unique(rv$study_metadata$locationDbId), function(l){
-             as.data.table(brapi_get_locations(rv$con, locationDbId = l))
+             as.data.table(brapir::core_locations_get(rv$con, locationDbId = l)$data)
            }), use.names = T, fill = T)
           st <- locs[,.(locationDbId,countryName)][rv$study_metadata, on=.(locationDbId)]
           st <- unique(st[,.(studyDbId,locationDbId,countryName,studyName,locationName)])
@@ -152,6 +179,8 @@ mod_trialdataxplor_server <- function(id, rv){
           data_dq[, study_label:=paste0(locationName," (",countryName,")")]
           data_dq[, observationValue:=as.numeric(observationValue)]
           data_dq[, replicate:=as.factor(replicate)]
+          data_dq[, facetcols := paste0(studyDbId, "-", locationName,"\n",countryName)]
+          
           #browser()
           if (any(!st$studyDbId%in%data_dq$studyDbId)){
             missingst <- st[!studyDbId%in%data_dq$studyDbId]
@@ -161,17 +190,24 @@ mod_trialdataxplor_server <- function(id, rv){
             output$study_no_dat <- renderTable(missingst,digits=0)
           }
   
-          output$spinning_boxplot <- renderUI({
-            shinycssloaders::withSpinner(
-              plotOutput(ns("boxplots"), height=500), type = 1,color.background = "white"
-            )
-          })
           
           #rv_tdx$st <- data_dq[,.N,studyDbId][st, on=.(studyDbId)]
           rv_tdx$data_dq <- data_dq
           rv_tdx$locs <- locs
-  
-          updateSelectInput(session, inputId = "obs_trait",choices = unique(data_dq$observationVariableName))
+
+          updateSelectInput(session, inputId = "obs_trait",choices = sort(unique(data_dq$observationVariableName)))
+          updatePickerInput(session, inputId = "dis_trait",
+                            choices = sort(unique(data_dq$observationVariableName)),
+                            selected = sort(unique(data_dq$observationVariableName)),
+                            options = list(`actions-box` = TRUE,
+                                            size = 15,
+                                           `live-search` = TRUE))
+          updatePickerInput(session, inputId = "dis_study",
+                            choices = sort(unique(data_dq$facetcols)),
+                            selected = sort(unique(data_dq$facetcols)),
+                            options = list(`actions-box` = TRUE,
+                                           size = 15,
+                                           `live-search` = TRUE))
           
           ct <- dcast(isolate(data_dq)[observationLevel=="PLOT", .N, .(study=paste0(studyDbId,"-",locationName),Variable=observationVariableName)],
                       Variable~study, fill = 0)
@@ -183,10 +219,10 @@ mod_trialdataxplor_server <- function(id, rv){
       observeEvent(input$outslid,{
         req(rv_tdx$data_dq, input$outslid)
         data_dq <- rv_tdx$data_dq
-        cdout0 <- data_dq[observationValue==0, .(reason="value=0",studyDbId, study_label, observationVariableDbId, observationVariableName, observationValue, germplasmName, replicate, blockNumber, plotNumber, entryNumber)]
+        cdout0 <- data_dq[observationValue==0, .(reason="value=0",studyDbId, study_label, observationVariableDbId, observationVariableName, observationValue, germplasmName, observationDbId, replicate, blockNumber, plotNumber, entryNumber)]
         #norm_var <- data_dq[scale.dataType=="Numerical" & observationValue!=0][data_dq[!is.na(observationValue),.(sd=sd(observationValue)),.(studyDbId,observationVariableDbId)][sd!=0],on=.(studyDbId,observationVariableDbId)][!is.na(observationValue)][,.(shapiro.test(observationValue)$`p.value`),.(studyDbId,observationVariableDbId, observationVariableName)][V1>=0.05]
         #cdoutbp <-data_dq[data_dq[norm_var, on=.(studyDbId,observationVariableDbId)][,.(observationValue=boxplot.stats(observationValue, coef = input$outslid)$out),.(studyDbId,observationVariableDbId)],on=.(studyDbId,observationVariableDbId, observationValue)][, .(reason="boxplot-outliers",studyDbId, study_label, observationVariableDbId,observationVariableName, observationValue, germplasmName, replicate, blockNumber, plotNumber, entryNumber)]
-        cdoutbp <- data_dq[data_dq[,find_outlier(observationValue,input$outslid),.(studyDbId,observationVariableDbId)]$V1==TRUE][, .(reason="boxplot-outliers",studyDbId, study_label, observationVariableDbId,observationVariableName, observationValue, germplasmName, replicate, blockNumber, plotNumber, entryNumber)]
+        cdoutbp <- data_dq[data_dq[,find_outlier(observationValue,input$outslid),.(studyDbId,observationVariableDbId)]$V1==TRUE][, .(reason="boxplot-outliers",studyDbId, study_label, observationVariableDbId,observationVariableName, observationValue, germplasmName, observationDbId, replicate, blockNumber, plotNumber, entryNumber)]
         cdout <- rbind(cdout0,cdoutbp)
         rv_tdx$cdout <- cdout
       })
@@ -203,17 +239,27 @@ mod_trialdataxplor_server <- function(id, rv){
       
       output$candidat_out <- DT::renderDataTable({
         req(rv_tdx$cdout)
-        datatable(rv_tdx$cdout, options = list(paging = FALSE,searching = FALSE), selection = "none") |>
+        datatable(rv_tdx$cdout, options = list(paging = FALSE,searching = FALSE), selection = "single", callback = js) |>
           formatRound(columns = "observationValue", digits = 2)
       })
-      #output$candidat_out <-renderTable(cdout, digits=0)
+      observeEvent(input$dt_dblclick, {
+        dt_row <- input$dt_dblclick$row             # 1-based Position on current display
+        all_rows <- input$candidat_out_rows_all     # Current mapping to original data.frame rows (1-based)
+        if(!is.null(dt_row) && !is.null(all_rows)) {
+          df_row <- all_rows[dt_row] 
+        updateSelectInput(session, inputId = "obs_study",selected = rv_tdx$cdout[df_row,studyDbId])
+        updateSelectizeInput(session, inputId = "obs_trait",selected = rv_tdx$cdout[df_row,observationVariableName])
+        nav_select(id = "tabset", selected = "observ", session = session)
+        }
+      })
+      
       
       observeEvent(input$obs_trait, {
         req(rv_tdx$data_dq)
         obs_study_data <- rv_tdx$data_dq[observationVariableName==input$obs_trait,.N,.(studyDbId, locationName, studyName,countryName)]
         updateSelectizeInput(session,
                               inputId = "obs_study",
-                              selected = NULL,
+                              selected = input$obs_study,
                               server=TRUE,
                               choices = obs_study_data,
                               options = list(valueField='studyDbId',
@@ -223,6 +269,7 @@ mod_trialdataxplor_server <- function(id, rv){
                                                     return '<div><strong>'+ escape(item.studyDbId) +'-'+ escape(item.locationName) + '</strong> (' + escape(item.countryName) + ') ('+ escape(item.N)+ ')</div>';
                                           }}"))
         )
+        rv_tdx$obs_btable <- data.table()[0L]
       }, ignoreInit = T)
      
       observeEvent(rv_tdx$locs, {
@@ -247,48 +294,65 @@ mod_trialdataxplor_server <- function(id, rv){
       
       dynamicHeight <- reactive({
         req(nrow(rv_tdx$variables)>0)
-        return(nrow(rv_tdx$variables) * 150)
+        return(50+nrow(rv_tdx$variables[observationVariableName%in%input$dis_trait]) * 150)
       })
       
-      output$boxplots<-renderPlot({
-        req(rv_tdx$data_dq)
-        req(rv_tdx$data_dq[,.N]>0)
-        data_dq <- rv_tdx$data_dq
-        data_dq[, facetrows := paste0("V: ",observationVariableName,"\n",
+      output$boxplots<-bindEvent(renderPlot({
+            req(rv_tdx$data_dq)
+            req(rv_tdx$data_dq[observationVariableName%in%input$dis_trait & facetcols%in%input$dis_study,.N]>0)
+            data_dq <- rv_tdx$data_dq[observationVariableName%in%input$dis_trait & facetcols%in%input$dis_study]
+            data_dq[, facetrows := paste0("V: ",observationVariableName,"\n",
                                           "T: ",trait.name, "\n",
                                           "M: ",method.methodName,"\n",
                                           "S: ",scale.scaleName)]
-        data_dq[, facetcols := paste0(studyDbId, "-", locationName,"\n",countryName)]
-        loclabels <- unique(data_dq[,.(facetcols,locationName)])
-        g<-ggplot(data_dq, aes(y=observationValue, x=replicate)) +
-          geom_boxplot(aes(fill=as.factor(replicate)), coef = input$outslid) +
-          facet_grid(rows=vars(facetrows), cols=vars(facetcols), scales = "free") +
-          ggtitle(input$trial) +
-          theme(strip.text.y.right = element_text(angle = 0, vjust = 1, hjust=0, size = 10),
-                strip.text.x = element_text(size = 10),
-                strip.background.y = element_rect(fill = "white", colour = "black"),
-                legend.position = "none") #+ coord_flip()
-        g <- g + geom_text(
-          data    = loclabels,
-          size=3,
-          mapping = aes(x = 0.25, y = 0, label = locationName),
-          hjust   = 0,
-          vjust   = 1, angle=90
-        )
-        g
-        # g<-ggplot(toplot, aes(y=observationValue, fill=replicate, x=locationName)) +
-        #   geom_boxplot() +
-        #   facet_wrap(~paste0(observationVariableName,"\n",trait.name) , ncol= 1, scales = "free", strip.position="top") +
-        #   ggtitle(t) +
-        #   theme(strip.text.y.right = element_text(angle = 0), axis.text.x =  element_text(angle = 90)) #+ coord_flip()
-        #browser()
-      }, height = function() {
-        dynamicHeight()
-      })
+            data_dq[,is_out:=FALSE]
+            data_dq[observationDbId%in%rv_tdx$cdout$observationDbId,is_out:=TRUE]
+            loclabels <- unique(data_dq[,.(facetcols,locationName)])
+            g<-ggplot(data_dq, aes(y=observationValue, x=replicate)) +
+              geom_boxplot(aes(fill=as.factor(replicate)), outlier.shape = NA) +#, coef = input$outslid) +
+              facet_grid(rows=vars(facetrows), cols=vars(facetcols), scales = "free") +
+              ggnewscale::new_scale_fill() +
+              geom_jitter(aes(fill=is_out, size=is_out),
+                          width = 0,
+                          height = 0,
+                          shape = 21,
+                          alpha = 0.5,
+                          #fill = grey(0.9),
+                          #size = 3
+              ) +
+              scale_fill_manual(values=c(`TRUE`="red",`FALSE`="#FFFFFF01")) +
+              scale_size_manual(values=c(`TRUE`=3,`FALSE`=0)) +
+              ggtitle(input$trial) +
+              theme(strip.text.y.right = element_text(angle = 0, vjust = 1, hjust=0, size = 10),
+                    strip.text.x = element_text(size = 10),
+                    strip.background.y = element_rect(fill = "white", colour = "black"),
+                    legend.position = "none") #+ coord_flip()
+            g <- g + geom_text(
+              data    = loclabels,
+              size=3,
+              mapping = aes(x = 0.25, y = 0, label = locationName),
+              hjust   = 0,
+              vjust   = 1, angle=90
+            )
+            g
+            # g<-ggplot(toplot, aes(y=observationValue, fill=replicate, x=locationName)) +
+            #   geom_boxplot() +
+            #   facet_wrap(~paste0(observationVariableName,"\n",trait.name) , ncol= 1, scales = "free", strip.position="top") +
+            #   ggtitle(t) +
+            #   theme(strip.text.y.right = element_text(angle = 0), axis.text.x =  element_text(angle = 90)) #+ coord_flip()
+            #browser()
+          }, height = function() {
+            dynamicHeight()
+        }), input$refresh_dist)          
+
+
+
       
       observeEvent(input$obs_study,{
         req(rv_tdx$data_dq$studyDbId)
         rv_tdx$observations <- rv_tdx$data_dq[studyDbId==input$obs_study & observationVariableName==input$obs_trait]
+        rv_tdx$obs_btable <- data.table()[0L]
+        
       })
       
       output$observ_boxplot <- renderPlot({
@@ -296,74 +360,66 @@ mod_trialdataxplor_server <- function(id, rv){
         data_dq <- rv_tdx$observations
         #data_dq[, is.selected:=F]
         #data_dq[observationDbId %in% rv$sel_observationDbIds, is.selected:=T]
-        
-        g1 <- ggplot(data_dq, aes(
-          y = observationValue,
-          x = study_label
-        )) +
-          #geom_violin(alpha = 0.2) +
-          geom_boxplot(
-            fill = grey(0.8), coef = input$outslid, outlier.colour = "red",  outlier.size = 5
-          ) +
-          # geom_point(
-          geom_jitter(
-            width = 0.05,
-            height = 0,
-            shape = 21,
-            alpha = 0.5,
-            fill = grey(0.9),
-            #aes(
-            #  # fill = observationValue,
-            #  plotNumber = plotNumber,
-            #  blockNumber = blockNumber,
-            #  replicate = replicate,
-            #  positionCoordinateX = positionCoordinateX,
-            #  positionCoordinateY = positionCoordinateY,
-            #  entryType = entryType,
-            #  germplasmName = germplasmName,
-            #  #stroke = ifelse(is.selected,1,0.1),
-            #  #color = is.selected,
-            #  key = observationDbId
-            #),
-            size = 3
-          ) +
-          #scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black"), guide = "none") +
-          scale_alpha(guide = "none") + coord_flip() +
-          theme_minimal() +
-          xlab(label = element_blank()) #+
-        #theme(
-        #  legend.position = "none",
-        #  axis.text.y = if(all(data_dq[,.(is.na(positionCoordinateX) | is.na(positionCoordinateY))])) element_text(angle = 90) else element_blank(),
-        #  axis.title.y = element_blank()
-        #)
-        #ggplotly(#height=length(input$studies)*400,
-        #         g1,
-        #         dynamicTicks = "TRUE", source = "A", originalData = T,
-        #         tooltip = c("germplasmName", "observationValue", "key", "plotNumber", "blockNumber", "replicate", "entryType")
-        #         ) %>%
-        #  style(hoverlabel = list(bgcolor = "white")) %>%
-        #  layout(dragmode = "lasso")
+        #browser()
+        data_dq[,is_out:=FALSE]
+        data_dq[observationDbId%in%rv_tdx$cdout$observationDbId,is_out:=TRUE]
+        if (!input$observ_boxplot_splitreps){
+          g1 <- ggplot(data_dq, aes(
+            y = observationValue,
+            x = study_label
+          )) +
+            geom_boxplot(
+              fill =  grey(0.8), outlier.shape = NA #coef = input$outslid, outlier.colour = "red",  outlier.size = 5
+            ) +
+            geom_jitter(aes(fill=is_out, size=is_out),
+              width = 0.05,
+              height = 0,
+              shape = 21,
+              alpha = 0.5,
+              #fill = grey(0.9),
+              #size = 3
+            ) + 
+            scale_fill_manual(values=c(`TRUE`="red",`FALSE`=grey(0.9))) +
+            scale_size_manual(values=c(`TRUE`=5,`FALSE`=3)) +
+            scale_alpha(guide = "none") + coord_flip() +
+            theme_minimal() +
+            theme(legend.position = "none") +
+            xlab(label = element_blank())
+        } else {
+          g1 <- ggplot(data_dq, aes(
+            y = observationValue,
+            x = replicate
+          )) +
+            geom_boxplot(
+              aes(fill=as.factor(replicate)), outlier.shape = NA #coef = input$outslid, outlier.colour = "red",  outlier.size = 5
+            ) +
+            ggnewscale::new_scale_fill() +
+            geom_jitter(aes(fill=is_out, size=is_out),
+                        width = 0.05,
+                        height = 0,
+                        shape = 21,
+                        alpha = 0.5,
+                        #fill = grey(0.9),
+                        #size = 3
+            ) +
+            scale_fill_manual(values=c(`TRUE`="red",`FALSE`=grey(0.9))) +
+            scale_size_manual(values=c(`TRUE`=5,`FALSE`=3)) +
+            scale_alpha(guide = "none") + coord_flip() +
+            theme_minimal() +
+            theme(legend.position = "none") +
+            xlab(label = element_text("Replicate"))
+        }
+
         g1
       })
       
       observeEvent(input$observ_boxplot_brush, {
         req(rv_tdx$data_dq[,.N]>0)
-        rv_tdx$obs_btable <- brushedPoints(rv_tdx$data_dq[studyDbId==input$obs_study & observationVariableName==input$obs_trait,.(trait.name,
-                                                                                                                          VariableName=observationVariableName,
-                                                                                                                          observationValue,
-                                                                                                                          plotNumber,
-                                                                                                                          germplasmName,
-                                                                                                                          entryNumber,
-                                                                                                                          blockNumber,
-                                                                                                                          replicate,
-                                                                                                                          #observationUnitDbId,
-                                                                                                                          positionCoordinateX,
-                                                                                                                          positionCoordinateY,
-                                                                                                                          TimeStamp=observationTimeStamp,
-                                                                                                                          study_label,
-                                                                                                                          germplasmDbId)],
+        rv_tdx$obs_btable <- brushedPoints(rv_tdx$data_dq[studyDbId==input$obs_study & observationVariableName==input$obs_trait],
                                           input$observ_boxplot_brush)
+
         output$copy_obs_table <- renderUI({
+          req(nrow(rv_tdx$obs_btable)>0)
           rclipboard::rclipButton("clipbtnobs_table", "Copy observations table", paste(paste(colnames(rv_tdx$obs_btable),collapse="\t"),
                                                                                       paste(apply(rv_tdx$obs_btable,1,paste,collapse="\t"),collapse = "\n"),
                                                                                       sep="\n"))#, shiny::icon("clipboard"))
@@ -371,11 +427,50 @@ mod_trialdataxplor_server <- function(id, rv){
       })
       
       output$selected_obs <- DT::renderDataTable({
-        req(rv_tdx$obs_btable)
-        datatable(rv_tdx$obs_btable, options = list(paging = FALSE,searching = FALSE), selection = "none") |>
-          formatRound(columns = "observationValue", digits = 2)
+        visibcols <- c("trait.name",
+                       "observationVariableName",
+                       "observationValue",
+                       "plotNumber",
+                       "germplasmName",
+                       "entryNumber",
+                       "blockNumber",
+                       "replicate",
+                       "positionCoordinateX",
+                       "positionCoordinateY",
+                       "observationTimeStamp",
+                       "study_label",
+                       "observationUnitDbId",
+                       "germplasmDbId")
+        req(nrow(rv_tdx$obs_btable)>0)
+        if (input$selected_obs_otherreps){
+          obstable <- rv_tdx$data_dq[germplasmName%in%rv_tdx$obs_btable$germplasmName & studyDbId==input$obs_study & observationVariableName==input$obs_trait,][order(germplasmName)]
+          obstable[, is_bold:="normal"]
+          obstable[observationUnitDbId %in% rv_tdx$obs_btable$observationUnitDbId, is_bold:="bold"]
+        } else {
+          obstable <- copy(rv_tdx$obs_btable)
+          obstable[, is_bold:="normal"]
+        }
+        #browser()
+        datatable(obstable,
+                  extensions = 'Buttons',
+                  options = list(paging = FALSE,
+                                 dom = 'Bt',
+                                 buttons = c('colvis'),
+                                 searching = FALSE,
+                                 columnDefs = list(list(visible = FALSE, 
+                                                        targets = which(!names(obstable)%in%visibcols))
+                                                   )
+                                 ),
+                  selection = "none") |>
+          formatRound(columns = "observationValue", digits = 2) |>
+          formatStyle(
+            columns = names(obstable)[-ncol(obstable)],
+            fontWeight = styleEqual("bold", "bold"),
+            target = "row",
+            valueColumns = "is_bold"
+          )
       })
-
+      
       output$download_check <- downloadHandler(
         filename = function() {
           # Use the selected dataset as the suggested file name

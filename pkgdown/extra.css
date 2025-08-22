@@ -1,0 +1,26 @@
+
+/* Pour la vignette "BrAVISE" */
+aside.BrAVISE\.Rmd::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 120px;
+  margin-bottom: 1em;
+  background-image: url('sticker_bravise.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* Pour la vignette "STABrAPP" */
+aside.STABrAPP\.Rmd::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 120px;
+  margin-bottom: 1em;
+  background-image: url('sticker_stabrapp.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}

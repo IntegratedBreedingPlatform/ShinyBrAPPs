@@ -82,8 +82,6 @@ mod_get_extradata_server <- function(id, rv){
             env_cols <- rbind(env_cols, data.table(cols=c("geo.lat","geo.lon"), type = NA, source = "environment", visible = T))
             extradata <- merge(extradata, latlon, by = "studyDbId", all.x=TRUE)
           }
-            
-          
           
           column_datasource <- rbindlist(list(column_datasource, env_cols), use.names = T)
           
@@ -101,15 +99,16 @@ mod_get_extradata_server <- function(id, rv){
                 1/2,
                 detail = paste("POST brapi/v2/search/attributevalues/ of", length(germplasms), "genotypes")
               )
-              searchResultsDbId <- brapirv2::brapi_post_search_attributevalues(con = rv$con, germplasmDbIds = germplasms)
+              searchResultsDbId <- brapir::germplasm_attributevalues_post_search(con = rv$con, germplasmDbIds = germplasms)$data$searchResultsDbId
               incProgress(
                 2/2,
                 detail = paste0("GET brapi/v2/search/attributevalues/", searchResultsDbId)
               )
-              germplasm_data <- brapirv2::brapi_get_search_attributevalues_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId))
-              if (attr(germplasm_data, "pagination")$totalPages >1){
-                germplasm_data <- rbind(germplasm_data,rbindlist(lapply(2:attr(germplasm_data, "pagination")$totalPages, function(p){
-                  brapirv2::brapi_get_search_attributevalues_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId), page = p-1)
+              germ_resp <- brapir::germplasm_attributevalues_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId))
+              germplasm_data <- germ_resp$data
+               if (germ_resp$metadata$pagination$totalPages >1){
+                germplasm_data <- rbind(germplasm_data,rbindlist(lapply(2:germ_resp$metadata$pagination$totalPages, function(p){
+                  brapir::germplasm_attributevalues_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId), page = p-1)$data
                 })))
               } 
               germplasm_data <- as.data.table(germplasm_data)
@@ -120,25 +119,16 @@ mod_get_extradata_server <- function(id, rv){
                   1/2,
                   detail = paste("POST brapi/v2/search/attributes/")
                 )
-                searchResultsDbId <- brapirv2::brapi_post_search_attributes(con = rv$con, attributeDbIds = unique(germplasm_data$attributeDbId))
+                searchResultsDbId <- brapir::germplasm_attributes_post_search(con = rv$con, attributeDbIds = unique(germplasm_data$attributeDbId))$data$searchResultsDbId
                 incProgress(
                   2/2,
                   detail = paste0("GET brapi/v2/search/attributes/", searchResultsDbId)
                 )
                 server_url <- paste0(rv$con$protocol, rv$con$db, ":", rv$con$port, "/", rv$con$apipath, "/", rv$con$commoncropname, "/brapi/v2")
                 callurl <- paste0(server_url, "/search/attribute/", as.character(searchResultsDbId))
-                resp <-   httr::GET(url = callurl,
-                                    httr::timeout(25),
-                                    httr::add_headers(
-                                      "Authorization" = paste("Bearer", rv$con$token),
-                                      "Content-Type"= "application/json",
-                                      "accept"= "*/*"
-                                    )
-                )
-                cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
+                resp <- brapir::germplasm_attributes_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId))
                 if (resp$status_code == 200) {
-                  res <- jsonlite::fromJSON(cont, flatten = T)$result$data
-                  germplasm_cols <- as.data.table(res)[,.(cols = attributeName, type = scale.dataType)
+                  germplasm_cols <- as.data.table(resp$data)[,.(cols = attributeName, type = scale.dataType)
                                                     ][, source := "germplasm"
                                                       ][, visible := T]
                 } else {
@@ -150,9 +140,11 @@ mod_get_extradata_server <- function(id, rv){
             }))
           })
           
-          if(exists("germplasm_data") && nrow(germplasm_data>0)){
+          if(exists("germplasm_data") && nrow(germplasm_data)>0){
             req("attributeName" %in% names(germplasm_data))
-            germplasm_data_2 <- dcast(germplasm_data, "germplasmDbId ~ attributeName", value.var = "value")
+            # In the unexpected case there are duplicated attributes for the same germplasm, take the first one
+            # to avoid dcast returning counts instead of values
+            germplasm_data_2 <- dcast(germplasm_data[,.(value=value[1]),.(germplasmDbId,attributeName)], "germplasmDbId ~ attributeName", value.var = "value")
             if(!any(duplicated(germplasm_data_2))){
               extradata <- merge.data.table(
                 extradata,

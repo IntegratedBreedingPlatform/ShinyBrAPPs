@@ -1,4 +1,4 @@
-# ShinyBrAPPs <img src="vignettes/articles/figures/shinybrapps.png" align="right" height="200"/>
+# ShinyBrAPPs <img src="man/figures/shinybrapps.png" align="right" />
 
 The ShinyBrAPPs package contains shiny applications designed for plant breeders. An international collaboration of developers from CIRAD and the IBP have been working together as part of the [IAVAO](https://www.iavao.org/) breeders community to develop these ShinyBrAPPs, in support of national breeding programs in Western Africa. 
 
@@ -14,7 +14,13 @@ Install remotes package if not already done
 ``` r
 install.packages(remotes)
 ```
-Install snpclust package
+
+Install required brapir package that is not available on cran
+``` r
+remotes::install_gitlab('alice.boizet/brapir', host = 'https://gitlab.cirad.fr')
+```
+
+Install shinybrapps package
 
 ``` r
 remotes::install_github("IntegratedBreedingPlatform/ShinyBrAPPs")
@@ -22,6 +28,12 @@ remotes::install_github("IntegratedBreedingPlatform/ShinyBrAPPs")
 or for latest development version: 
 ``` r
 remotes::install_github("IntegratedBreedingPlatform/ShinyBrAPPs@dev")
+```
+
+### Build docker image
+```
+docker build -f deploy/Dockerfile_base --progress=plain -t shinybrapps_base .
+docker build -f deploy/Dockerfile --progress=plain -t shinybrapps .
 ```
 
 ## Applications
@@ -73,5 +85,5 @@ Once deployed, the BrAPPs can be launched using the following URL parameters
 ShinyBrAPPs development was funded by the [ABEE project](https://capacity4dev.europa.eu/projects/desira/info/abee_en) under the DESIRA initiative of the European Union.
 
 
-<img src="inst/apps/decisionsupport/www/img/ABEE_logo_trspbckgd.png" align="center" height="57" width="84"/>
-<img src="inst/apps/decisionsupport/www/img/desira.png" align="center" height="56" width="252"/>
+<img src="man/figures/ABEE_logo_trspbckgd.png" align="center" height="57" width="84"/>
+<img src="man/figures/desira.png" align="center" height="56" width="252"/>
