@@ -11,4 +11,9 @@ server <- function(input, output, session){
   mod_connect_server("connect", rv)
   mod_get_studydata_server("get_studydata", rv)
   mod_trialdataxplor_server("xplor", rv)
+  
+  ## user session hash ####
+  observeEvent(input$hash, {
+    rv$hash <- input$hash
+  }, priority = 1) #to be triggered before other observeEvents
 }

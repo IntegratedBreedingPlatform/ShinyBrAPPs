@@ -7,6 +7,7 @@ server <- function(input, output, session){
     data = NULL,                # trial data as a data.table object
     excluded_obs = data.table(observationDbId = character(), reason = character()), # data.table of excluded observations
     pushOK = FALSE,             # to avoid pushing BLUES/BLUPS to easily
+    hash = NULL                 # to track user query in browser sessionStorage
   )
   
   mod_banner_server("banner", rv, appname)
@@ -16,6 +17,11 @@ server <- function(input, output, session){
   mod_model_server("model", rv)
 
   output$Rsi <- renderPrint(sessionInfo())
+  
+  ## user session hash ####
+  observeEvent(input$hash, {
+    rv$hash <- input$hash
+  }, priority = 1) #to be triggered before other observeEvents
   
   ## output excluded_obs_table ####
   output$excluded_obs_table <- DT::renderDT({
