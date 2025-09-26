@@ -33,8 +33,6 @@ group_selector <- function(input_id, group_table, column_datasource, data_plot, 
     id = input_id,
     class = "genotypes_groups",
     tagList(
-      tags$h3("Groups of Genotypes"),
-      
       # Global checkbox
       tags$div(
         class = "form-check mb-3 ms-2",

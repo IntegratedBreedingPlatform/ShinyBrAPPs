@@ -22,6 +22,12 @@ ui <- fluidPage(
                     background-color: #225691;
                     margin-bottom: 5px;
                     border-color: #357ebd;"),
+  tags$style(HTML("
+    /* sidebar */
+    .sidebar-title {
+      font-size: 16px !important;
+    }
+  ")),
 
   shinyjs::useShinyjs(),
   #shinysky::busyIndicator(wait = 200, text = NULL, img = "img/loading-animation.gif"),
@@ -35,7 +41,7 @@ ui <- fluidPage(
         mod_get_extradata_ui("get_extradata"),
         div(style="position: relative; z-index: 10;",
         bslib::page_navbar(
-          sidebar = bslib::sidebar(title = "Germplasm Groups",
+          sidebar = bslib::sidebar(title = "Groups of Germplasm",
             id = "groups_sidebar",
             position = "right",
             open = F,

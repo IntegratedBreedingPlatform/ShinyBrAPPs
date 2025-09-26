@@ -56,7 +56,6 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
       
       ## Displaying buttons ####
       observeEvent(input$group_sel_input, {
-        print(input$group_sel_input)
         #selected_groups <- rv$groups[group_id %in% input$group_sel_input,]
         shinyjs::toggle(selector = paste0(".",ns("at_least_one_group_selected")), condition = length(input$group_sel_input)>0)
         shinyjs::toggle(selector = paste0(".",ns("create_new_groups_from_groups")), condition = length(input$group_sel_input)>1)
@@ -176,8 +175,11 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
         for(k in input$group_sel_input){
           rv$extradata[,eval(rv$groups[group_id == k, group_name]) := NULL]
         }
-        rv$column_datasource <- rv$column_datasource[!(cols %in% c(rv$groups[group_id %in% input$group_sel_input & is.na(clustering_name), group_name], unique(rv$groups[group_id %in% input$group_sel_input & !is.na(clustering_name), clustering_name])))]
-        
+        if ("clustering_name" %in% colnames(rv$groups)) {
+          rv$column_datasource <- rv$column_datasource[!(cols %in% c(rv$groups[group_id %in% input$group_sel_input & is.na(clustering_name), group_name], unique(rv$groups[group_id %in% input$group_sel_input & !is.na(clustering_name), clustering_name])))]
+        } else {
+          rv$column_datasource <- rv$column_datasource[!(cols %in% rv$groups[group_id %in% input$group_sel_input, group_name])]
+        }
         ## delete groups
         rv$groups <- rv$groups[!(group_id %in% input$group_sel_input)]
       })

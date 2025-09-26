@@ -616,3 +616,31 @@ colgeno <- function(genofac, shortpal=getOption("statgen.genoColors"), longpal=t
   }
   return(colGeno)
 }
+
+#' Save rv in .rds file
+#' @param rv 
+#'
+#' @importFrom later later
+save_user_data <- function(rv) {
+  if (!is.null(rv$hash)) {
+    filename <- paste0(rv$hash, ".rds")
+    snapshot <- list(
+      con = rv$con,
+      connect_mode = rv$connect_mode,
+      data = rv$data,
+      excluded_obs = rv$excluded_obs,
+      obs_unit_level = rv$obs_unit_level,
+      study_metadata = rv$study_metadata,
+      trial_metadata = rv$trial_metadata,
+      extradata = rv$extradata,
+      groups = rv$groups,
+      selection = rv$selection,
+      column_datasource <- rv$column_datasource,
+      environmentParameters = rv$environmentParameters
+    )
+    later(function() {
+      saveRDS(snapshot, filename)
+      print("rv saved !")
+    }, 0)
+  }
+}

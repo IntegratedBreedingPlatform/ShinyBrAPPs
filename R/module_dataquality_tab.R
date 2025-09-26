@@ -169,9 +169,11 @@ mod_dataquality_server <- function(id, rv) {
         )
       )
       
-      rv_dq$data <- rv$data
-      rv_dq$data[, status := "default"]
-      rv_dq$data[, status := factor(status, levels = c("default", "selected", "excluded"))]
+      newdt <- rv$data
+      newdt[, status := "default"]
+      newdt[, status := factor(status, levels = c("default", "selected", "excluded"))]
+      
+      rv_dq$data <- newdt
       
       env_choices <- rv$data[!is.na(observationValue)][, unique(studyDbId)]
       names(env_choices) <- rv$data[!is.na(observationValue)][, unique(study_name_app)]
@@ -647,6 +649,7 @@ mod_dataquality_server <- function(id, rv) {
         newdt[observationDbId %in% rv$excluded_obs$observationDbId, status := "excluded"]
       }
       rv_dq$data <- newdt
+      save_user_data(rv)
     }, ignoreNULL = F)
     
     ## output correlation plot ####

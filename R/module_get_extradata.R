@@ -10,6 +10,7 @@ mod_get_extradata_server <- function(id, rv){
 
       observeEvent(rv$data, {
         req(rv$study_metadata)
+        req(is.null(rv$extradata))
 
         if(!isTruthy("observationVariableName"%in%names(rv$data))){
           showNotification("Data set without observations", type = "warning", duration = notification_duration)
@@ -178,6 +179,8 @@ mod_get_extradata_server <- function(id, rv){
 
           rv$column_datasource <- column_datasource
           #rv$ontology_variables <- ontology_variables
+          
+          save_user_data(rv)
         })
       })
     }

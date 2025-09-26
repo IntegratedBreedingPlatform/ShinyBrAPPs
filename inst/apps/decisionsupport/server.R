@@ -9,7 +9,8 @@ server <- function(input, output, session){
     pushOK = FALSE,             # to avoid pushing BLUES/BLUPS to easily
     groups = data.table(),
     visu_as_group = NULL,
-    new_group_created = F
+    new_group_created = F,
+    hash = NULL                 # to track user query in browser sessionStorage
   )
   mod_connect_server("connect",rv)  
   mod_get_studydata_server("get_studydata", rv)
@@ -22,6 +23,11 @@ server <- function(input, output, session){
   mod_groups_sidebar_server("groups_sidebar", rv, session)
 
   output$Rsi <- renderPrint(sessionInfo())
+  
+  ## user session hash ####
+  observeEvent(input$hash, {
+    rv$hash <- input$hash
+  }, priority = 1) #to be triggered before other observeEvents
   
   ## Action when clicking on button create group in modal
   observeEvent(input$modal_create_group_go, {
@@ -49,6 +55,8 @@ server <- function(input, output, session){
     rv$extradata <- data_plot
 
     rv$selection <- data.table()
+    
+    save_user_data(rv)
 
     #TODO reset plot selection after group creation ?
     #rv_plot$plot_selection <- data.table()
@@ -62,6 +70,7 @@ server <- function(input, output, session){
     rv$groups[group_id == rv$selected_group_id, group_name := input$modal_rename_group_text_input_label]
     rv$groups[group_id == rv$selected_group_id, group_desc := input$modal_rename_group_text_input_descr]
     removeModal()
+    save_user_data(rv)
   })
 
   # open or close the groups sidebar
