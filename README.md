@@ -1,4 +1,4 @@
-# ShinyBrAPPs <img src="man/figures/shinybrapps.png" align="right" />
+# ShinyBrAPPs <img src="pkgdown/assets/shinybrapps.png" align="right" />
 
 The ShinyBrAPPs package contains shiny applications designed for plant breeders. An international collaboration of developers from CIRAD and the IBP have been working together as part of the [IAVAO](https://www.iavao.org/) breeders community to develop these ShinyBrAPPs, in support of national breeding programs in Western Africa. 
 
@@ -85,5 +85,5 @@ Once deployed, the BrAPPs can be launched using the following URL parameters
 ShinyBrAPPs development was funded by the [ABEE project](https://capacity4dev.europa.eu/projects/desira/info/abee_en) under the DESIRA initiative of the European Union.
 
 
-<img src="man/figures/ABEE_logo_trspbckgd.png" align="center" height="57" width="84"/>
-<img src="man/figures/desira.png" align="center" height="56" width="252"/>
+<img src="pkgdown/assets/ABEE_logo_trspbckgd.png" align="center" height="57" width="84"/>
+<img src="pkgdown/assets/desira.png" align="center" height="56" width="252"/>
