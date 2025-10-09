@@ -177,7 +177,7 @@ mod_model_ui <- function(id){
         layout_columns(
           col_widths = c(3, 3),
           pickerInput(
-            ns("select_environment_fit"),"Environments", multiple = T, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
+            ns("select_environment_fit"),"Environments", multiple = F, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
           ),
           pickerInput(
             ns("select_trait_fit"),"Trait", multiple = F, choices = NULL, width = "100%"
@@ -615,7 +615,7 @@ mod_model_server <- function(id, rv){
         updatePickerInput(
           session, "select_environment_fit",
           choices = input$select_environments,
-          selected = input$select_environments
+          selected = input$select_environments[1]
         )
         updatePickerInput(
           session, "select_trait_fit",
