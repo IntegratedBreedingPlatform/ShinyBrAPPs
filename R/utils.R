@@ -624,7 +624,6 @@ colgeno <- function(genofac, shortpal=getOption("statgen.genoColors"), longpal=t
 save_user_data <- function(rv) {
   if (!is.null(rv$hash)) {
     filename <- paste0(rv$hash, ".rds")
-    browser()
     snapshot <- list(
       con = rv$con,
       connect_mode = rv$connect_mode,
