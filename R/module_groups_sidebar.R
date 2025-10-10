@@ -52,6 +52,7 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
         output$ui_groups <- renderUI({
           group_selector(input_id = ns("group_sel_input"), group_table = rv$groups, column_datasource = rv$column_datasource, data_plot = rv$extradata, panel_style = "info")
         })
+        save_user_data(rv)
       })
       
       ## Displaying buttons ####
