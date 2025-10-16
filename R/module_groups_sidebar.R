@@ -3,23 +3,32 @@
 mod_groups_sidebar_ui <- function(id){
   ns <- NS(id)
   tagList(
+    tags$head(
+      tags$style(HTML("
+        label.required:after {
+          content: ' *';
+          color: red;
+        }
+      "))
+    ),
     fluidRow(
       column(12,uiOutput(ns("ui_groups")))
     ),
     fluidRow(
       column(12,
              card(
-               class = ns("at_least_one_group_selected"),
+               #class = ns("at_least_one_group_selected"),
                card_header(
                  h4('Actions ', icon('screwdriver-wrench'))
                ),
                card_body(
                  #actionButton(ns("action_groups_plot_creation_params"),label = "Visualize like at group creation", block = T, class = paste("btn btn-info", ns("one_group_selected"))),
+                 actionButton(ns("action_groups_create"),label = "Add new group", block = T, class = "btn btn-info"),
                  actionButton(ns("action_groups_union"),label = "Union", block = T, class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
                  actionButton(ns("action_groups_intersect"),label = "Intersect", block = T, class = paste("btn btn-info", ns("create_new_groups_from_groups"))),
                  actionButton(ns("action_groups_complement"),label = "Complement", block = T, class = paste("btn btn-info", ns("at_least_one_group_selected"))),
                  actionButton(ns("action_groups_rename"),label = "Rename", block = T, class =paste("btn btn-info", ns("one_group_selected"))),
-                 actionButton(ns("action_groups_delete"),label = "Delete", block = T, class =paste("btn btn-info", ns("at_least_one_group_selected")))
+                 actionButton(ns("action_groups_delete"),label = "Delete", block = T, class =paste("btn btn-info", ns("all_groups_selected")))
                )
              ),
              card(
@@ -58,10 +67,11 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
       ## Displaying buttons ####
       observeEvent(input$group_sel_input, {
         #selected_groups <- rv$groups[group_id %in% input$group_sel_input,]
-        shinyjs::toggle(selector = paste0(".",ns("at_least_one_group_selected")), condition = length(input$group_sel_input)>0)
-        shinyjs::toggle(selector = paste0(".",ns("create_new_groups_from_groups")), condition = length(input$group_sel_input)>1)
+        shinyjs::toggle(selector = paste0(".",ns("at_least_one_group_selected")), condition = length(input$group_sel_input)>0 && length(input$group_sel_input)<nrow(rv$groups))
+        shinyjs::toggle(selector = paste0(".",ns("create_new_groups_from_groups")), condition = length(input$group_sel_input)>1 && length(input$group_sel_input)<nrow(rv$groups))
         shinyjs::toggle(selector = paste0(".",ns("one_group_selected")), condition = length(input$group_sel_input)==1)
         shinyjs::toggle(id = "export_box", condition = length(input$group_sel_input)==1)
+        shinyjs::toggle(selector = paste0(".",ns("all_groups_selected")), condition = length(input$group_sel_input)>0)
         
         req(input$group_sel_input)
         req(rv$groups)
@@ -431,6 +441,126 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
           write.csv(group_detail, file, row.names = F)
         }
       )
+      
+      ## create group manually ####
+      observeEvent(input$action_groups_create, {
+        germplasm <- ""
+        if (!is.null(rv$data)) {
+          germplasm <- unique(rv$data[, .(germplasmDbId, germplasmName)])$germplasmName
+        } 
+        showModal(modalDialog(
+          title = "Create a new group",
+          fade = F,
+          tagList(
+            # tags$label(paste(rv$selection[,N]," selected germplasms")),
+            # tags$p(rv$selection[,germplasmNames_label]),
+            textInput(
+              ns("modal_create_group_text_input_label"), 
+              label = tags$label("Group Name", class = "required"), 
+              value = "", 
+            placeholder = "Group Label"),
+            textAreaInput(
+              ns("modal_create_group_text_input_desc"), 
+              label = tags$label("Group Description", class = "required"), 
+              placeholder = "Group Description", 
+              resize = "vertical",
+              value = "",
+              width = "100%"
+            ),
+            layout_columns(
+              col_widths = c(8,4),
+              pickerInput(
+                ns("germplasm_list"), 
+                label = bslib::tooltip(
+                    trigger = list(
+                      tags$label("Select germplasm", class = "required"),
+                      icon("info-circle")
+                    ),
+                    "You can upload a txt file with germplasm names in one column",
+                    options = list(container = ".modal-content") 
+                ),
+                choices = germplasm, 
+                multiple = T,
+                options = pickerOptions(
+                  liveSearch = TRUE
+                )
+              ),
+              fileInput(
+                inputId = ns("file"),
+                "Upload names"
+              )
+            ),
+            textOutput(ns("selection")),
+          ),
+          footer = tagList(
+            modalButton("Cancel"),
+            actionButton(ns("modal_create_group_manually_go"), label = "Create", class = "btn btn-info")
+          )
+        ))
+      })
+      
+      ## upload germplasm names file ####
+      observeEvent(input$file, {
+        file <- input$file_names
+        names <- NULL
+        names <- readLines(input$file$datapath)
+        updateTextAreaInput(
+          session,
+          "names",
+          value = paste(names, collapse = "\n")
+        )
+        
+        germplasm <- unique(rv$data[germplasmName %in% names, .(germplasmDbId, germplasmName)])
+        
+        if (nrow(germplasm)>0) {
+          updatePickerInput(
+            session = session, 
+            inputId = "germplasm_list",
+            selected = germplasm$germplasmName
+          )
+        }
+        
+      })
+      
+      output$selection <- renderText({
+        req(input$germplasm_list)
+        paste0(length(input$germplasm_list), " selected germplasm")
+      })
+      
+      ## Action when clicking on button create group in manual modal
+      observeEvent(input$modal_create_group_manually_go, {
+        req(rv$data)
+        germplasm <- unique(rv$data[germplasmName %in% input$germplasm_list, .(germplasmDbId, germplasmName)])
+        new_group_id <- 1
+        if (!is.null(rv$groups) && nrow(rv$groups) > 0) {
+          new_group_id <- max(rv$groups$group_id)+1
+        }
+        new_group <- data.table(
+          group_id = new_group_id, 
+          group_name = input$modal_create_group_text_input_label,
+          group_desc = input$modal_create_group_text_input_desc,
+          germplasmDbIds = list(germplasm$germplasmDbId),
+          germplasmNames = list(germplasm$germplasmName),
+          clustering_id = NA,
+          N = nrow(germplasm))
+        rv$groups <- rbindlist(list(
+          rv$groups,
+          new_group
+        ), fill = T, use.names = T)
+        
+        update_selectors_with_groups(rv, new_group)
+        
+        removeModal()
+      })
+      
+      observeEvent(c(input$germplasm_list, input$modal_create_group_text_input_label, input$modal_create_group_text_input_desc), {
+        if (!is.null(input$germplasm_list)
+            & input$modal_create_group_text_input_label != "" & input$modal_create_group_text_input_desc != "") {
+          shinyjs::enable("modal_create_group_manually_go")
+        } else {
+          shinyjs::disable("modal_create_group_manually_go")
+        }
+      }, ignoreInit = )
       
     }
   )

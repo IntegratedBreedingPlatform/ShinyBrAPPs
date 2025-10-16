@@ -348,10 +348,15 @@ groupModal <- function(rv, parent_session, modal_title, group_description, group
     tagList(
       tags$label(paste(rv$selection[,N]," selected germplasms")),
       tags$p(rv$selection[,germplasmNames_label]),
-      textInput(ns("modal_create_group_text_input_label"), label = "Group Name", value = paste(group_prefix, rv$selection[,group_id]), placeholder = "Group Label"),
+      textInput(
+        ns("modal_create_group_text_input_label"), 
+        label = tags$label("Group Name", class = "required"), 
+        value = paste(group_prefix, rv$selection[,group_id]), 
+        placeholder = "Group Label"
+      ),
       textAreaInput(
         ns("modal_create_group_text_input_descr"), 
-        label = "Group Description", 
+        label = tags$label("Group Description", class = "required"), 
         placeholder = "Group Description", 
         resize = "vertical",
         value = group_description
@@ -391,7 +396,6 @@ renameGroupModal <- function(rv, parent_session) {
     )
   )
 }
-
 
 whoami_bmsapi <- function(con){
   progs <- brapir::core_programs_get(con)$data
@@ -643,4 +647,21 @@ save_user_data <- function(rv) {
       print("rv saved !")
     }, 0)
   }
+}
+
+update_selectors_with_groups <- function(rv, new_group) {
+  ## update selectors (shape, colour)
+  data_plot <- copy(rv$extradata) # to avoid issues related to assignment by reference
+  data_plot[germplasmDbId %in% new_group[,unlist(germplasmDbIds)], eval(new_group$group_name) := paste0('In')]
+  data_plot[!(germplasmDbId %in% new_group[,unlist(germplasmDbIds)]), eval(new_group$group_desc) := paste0('Out')]
+  rv$column_datasource <- rbindlist(
+    list(
+      rv$column_datasource,
+      data.table(cols = new_group$group_name, source = "group", type = "Text", visible = T)
+    ),
+    use.names = T
+  )
+  
+  rv$new_group_created <- T #to avoid environments selection reset
+  rv$extradata <- data_plot
 }
