@@ -169,7 +169,7 @@ mod_model_ui <- function(id){
     }
   ")),
             prettySwitch(ns("allinone_export"),label = "All in one file", value = FALSE)|>
-              tooltip("By ticking this option, summary statistics from dataquality panel, model statistics, BLUEs and BLUPS will be imported in a single excel file. If 'One file per environment' is ticked a zip file will be built with as many excel files ", options = list(trigger="hover")),
+              tooltip("By selecting this option, summary statistics (from the data quality panel), model statistics, BLUEs, and BLUPs will be exported into a single Excel file. If 'One file per environment' is also selected, a zip file will be created with separate Excel files for each environment. Otherwise, all data will be combined into one Excel file.", options = list(trigger="hover")),
             checkboxInput(ns("onefileperenv"), label = "One file per environment")
             )
             ),
