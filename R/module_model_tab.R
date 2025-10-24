@@ -2,6 +2,7 @@
 #' @export
 mod_model_ui <- function(id){
   ns <- NS(id)
+
   tagList(
     layout_columns(
       col_widths = c(4, 3, 3, 2),
@@ -141,11 +142,37 @@ mod_model_ui <- function(id){
           ),
           div(
             # tags$h4("Metrics ~ Environment x Trait x Genotype"),
-            downloadButton(ns("export_metrics_B"), "CSV Export", class = "btn btn-info", style = "float:right; margin:5px"),
             #disabled(shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push to BMS", icon = icon("leaf"), class="btn btn-primary", style = "float:right; margin:5px")),
             #br(),
-            pickerInput(ns("select_metrics_B"), "BLUPs/BLUEs", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs"), width = "40%", inline = T, options = list(`style` = "margin-bottom: 0;")),
-            pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL, width = "40%", inline = T, options = list(`style` = "margin-bottom: 0;")),
+            div(
+              style="display: flex;
+                    margin:5px;
+                    align-items: flex-start;
+                    gap: 10px;",
+            pickerInput(ns("select_metrics_B"), "BLUPs/BLUEs", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs")),# width = "40%"),# inline = T, options = list(`style` = "margin-bottom: 0;")),
+            pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL), #width = "40%"), #inline = T, options = list(`style` = "margin-bottom: 0;")),
+            downloadButton(ns("export_metrics_B"), "Export results", class = "btn btn-info", style = "height: 35px;"),
+            div(
+              class = "my-checkbox-container",
+              style = "display: flex; flex-direction: column; gap: 10px;",
+              
+              # Scoped CSS targeting children of this container
+              tags$style(HTML("
+    .my-checkbox-container .form-check,
+    .my-checkbox-container .shiny-input-container .checkbox,
+    .my-checkbox-container .shiny-input-container .radio {
+      padding-left: 2.5rem !important;
+      margin-bottom: 0 !important;
+    }
+    .my-checkbox-container .form-group {
+      margin-bottom: -10px !important;
+    }
+  ")),
+            prettySwitch(ns("allinone_export"),label = "All in one file", value = FALSE)|>
+              tooltip("By ticking this option, summary statistics from dataquality panel, model statistics, BLUEs and BLUPS will be imported in a single excel file. If 'One file per environment' is ticked a zip file will be built with as many excel files ", options = list(trigger="hover")),
+            checkboxInput(ns("onefileperenv"), label = "One file per environment")
+            )
+            ),
             dataTableOutput(ns("metrics_B_table"))
           )
         )
@@ -1048,44 +1075,140 @@ mod_model_server <- function(id, rv){
       })
 
       ## output$export_metrics_B ####
+      observeEvent(input$allinone_export,{
+        if (input$allinone_export){
+          shinyjs::enable(id = "onefileperenv")
+          updateCheckboxInput(inputId = "onefileperenv", value=TRUE)
+        } else {
+          shinyjs::disable(id = "onefileperenv")
+        }
+      })
       output$export_metrics_B <- downloadHandler(
-        filename = function() {"BLUPs_and_BLUEs.csv"},
+        filename = function() {
+          username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
+          trial <- unique(rv$study_metadata$trialName)[1]
+          if (input$allinone_export) {
+            if (input$onefileperenv & length(rv_mod$fitextr)>1){
+              paste0(trial, "_", username, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.zip")
+            } else {
+              paste0(trial, "_", username, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.xlsx")
+            }
+          } else {
+            return(paste0(trial, "_", username, "_", format(Sys.time(), "%Y%m%d-%H%M%S"), "_STA_BLUES_BLUPS.csv"))
+          }
+          },
         content = function(file) {
-          withProgress(message = "Generating csv", min=1, max=1, {
+          withProgress(message = "Generating file", min=1, max=1, {
             req(rv_mod$fitextr)
-            table_metrics <- list()
-            for (i in 1:length(rv_mod$fitextr)) {
-              dt_BLUPs <- as.data.table(rv_mod$fitextr[[i]][["BLUPs"]])
-              dt_seBLUPs <- as.data.table(rv_mod$fitextr[[i]][["seBLUPs"]])
-              dt_BLUEs <- as.data.table(rv_mod$fitextr[[i]][["BLUEs"]])
-              dt_seBLUEs <- as.data.table(rv_mod$fitextr[[i]][["seBLUEs"]])
-              for (j in 2:length(colnames(dt_BLUPs))) {
-                colnames(dt_BLUPs)[j] <- paste0(colnames(dt_BLUPs)[j], "_BLUPs")
-                colnames(dt_seBLUPs)[j] <- paste0(colnames(dt_seBLUPs)[j], "_seBLUPs")
-                colnames(dt_BLUEs)[j] <- paste0(colnames(dt_BLUEs)[j], "_BLUEs")
-                colnames(dt_seBLUEs)[j] <- paste0(colnames(dt_seBLUEs)[j], "_seBLUEs")
+            if (!input$allinone_export) {
+              table_metrics <- list()
+              for (i in 1:length(rv_mod$fitextr)) {
+                dt_BLUPs <- as.data.table(rv_mod$fitextr[[i]][["BLUPs"]])
+                dt_seBLUPs <- as.data.table(rv_mod$fitextr[[i]][["seBLUPs"]])
+                dt_BLUEs <- as.data.table(rv_mod$fitextr[[i]][["BLUEs"]])
+                dt_seBLUEs <- as.data.table(rv_mod$fitextr[[i]][["seBLUEs"]])
+                for (j in 2:length(colnames(dt_BLUPs))) {
+                  colnames(dt_BLUPs)[j] <- paste0(colnames(dt_BLUPs)[j], "_BLUPs")
+                  colnames(dt_seBLUPs)[j] <- paste0(colnames(dt_seBLUPs)[j], "_seBLUPs")
+                  colnames(dt_BLUEs)[j] <- paste0(colnames(dt_BLUEs)[j], "_BLUEs")
+                  colnames(dt_seBLUEs)[j] <- paste0(colnames(dt_seBLUEs)[j], "_seBLUEs")
+                }
+                table_metrics_env <- merge(dt_BLUPs, dt_seBLUPs, by=c("genotype"))
+                table_metrics_env <- merge(table_metrics_env, dt_BLUEs, by=c("genotype"))
+                table_metrics_env <- merge(table_metrics_env, dt_seBLUEs, by=c("genotype"))
+                
+                #add environment column at first position
+                #table_metrics_env[, environment:=names(rv_mod$fitextr)[i]]
+                table_metrics_env <- data.table(environment = names(rv_mod$fitextr)[i], table_metrics_env)
+                
+                #concatenate table_metrics for each environment
+                if (!is.null(table_metrics_env)) {
+                  table_metrics <- append(table_metrics, list(table_metrics_env))
+                }
               }
               
-              table_metrics_env <- merge(dt_BLUPs, dt_seBLUPs, by=c("genotype"))
-              table_metrics_env <- merge(table_metrics_env, dt_BLUEs, by=c("genotype"))
-              table_metrics_env <- merge(table_metrics_env, dt_seBLUEs, by=c("genotype"))
+              table_metrics <- rbindlist(table_metrics, fill = T)
               
-              #add environment column at first position
-              #table_metrics_env[, environment:=names(rv_mod$fitextr)[i]]
-              table_metrics_env <- data.table(environment = names(rv_mod$fitextr)[i], table_metrics_env)
+              #change col name genotype
+              setnames(table_metrics, "genotype", "germplasm")
               
-              #concatenate table_metrics for each environment
-              if (!is.null(table_metrics_env)) {
-                table_metrics <- append(table_metrics, list(table_metrics_env))
+              write.csv(table_metrics, file, row.names = FALSE)
+            } else {
+              #browser()
+              
+              username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
+              trial <- unique(rv$study_metadata$trialName)[1]
+              
+              if (input$onefileperenv & length(rv_mod$fitextr)>1){
+                envs <- names(rv_mod$fitextr)
+                envsnosp <- gsub( "[ ,\\-]", "_", envs)
+                wbn <- NULL
+                wbd <- tempdir()
+                for (e in seq_along(envs)){
+                  sumst <- summary.stats(rv$data[!observationDbId%in%rv$excluded_obs$observationDbId & study_name_app%in%envs[e] & observationVariableName%in%input$select_traits])
+                  wbn[e] <- paste0(trial, "_", username, "_", envsnosp[e],"_",format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.xlsx")
+                  wb <- openxlsx::createWorkbook()
+                  openxlsx::addWorksheet(wb, "Summary statistics")
+                  openxlsx::addWorksheet(wb, "Model statistics")
+                  openxlsx::addWorksheet(wb, "BLUPS")
+                  openxlsx::addWorksheet(wb, "BLUES")
+                  openxlsx::writeData(wb, 1, sumst)
+                  #openxlsx::writeData(wb, 2, startRow = 2, rbind(h2=rv_mod$fitextr[[e]]$heritability,
+                  #                                               CV=rv_mod$fitextr[[e]]$CV,
+                  #                                               Wald_p.value=unlist(lapply(rv_mod$fitextr[[e]]$wald,function(a) a$p.value))),
+                  #                    rowNames = TRUE)
+                  #openxlsx::writeData(wb, 2, startRow = 1, startCol = 2, t(rep(envs[e], length(rv_mod$fitextr[[e]]$heritability))), colNames = FALSE)
+                  openxlsx::writeData(wb, 2, t(data.frame(Environment=envs[e],
+                                                        Variable=names(rv_mod$fitextr[[e]]$heritability),
+                                                        h2=rv_mod$fitextr[[e]]$heritability,
+                                                        CV=rv_mod$fitextr[[e]]$CV,
+                                                        Wald_p.value=unlist(lapply(rv_mod$fitextr[[e]]$wald,function(a) a$p.value)))),
+                                      colNames = FALSE, rowNames = TRUE)
+                  openxlsx::writeData(wb, 3, data.frame(Environment=envs[e],rv_mod$fitextr[[e]]$BLUPs))
+                  openxlsx::writeData(wb, 4, data.frame(Environment=envs[e],rv_mod$fitextr[[e]]$BLUEs))
+                  openxlsx::saveWorkbook(wb, file = paste0(wbd,"/",wbn[e]), overwrite = TRUE)
+                }
+                zip::zip(zipfile = file, files = wbn, include_directories = FALSE, root = wbd)
+              } else {
+                sumst <- summary.stats(rv$data[!observationDbId%in%rv$excluded_obs$observationDbId &  study_name_app%in%input$select_environments & observationVariableName%in%input$select_traits])
+                wb <- openxlsx::createWorkbook()
+                openxlsx::addWorksheet(wb, "Summary statistics")
+                openxlsx::addWorksheet(wb, "Model statistics")
+                openxlsx::addWorksheet(wb, "BLUPS")
+                openxlsx::addWorksheet(wb, "BLUES")
+                openxlsx::writeData(wb, 1, sumst)
+                openxlsx::writeData(wb, 2, t(rbindlist(Map(function(a,n) data.table(Environment=n,
+                                                                                    Variable=names(a$heritability),
+                                                                                    h2=a$heritability,
+                                                                                    CV=a$CV,
+                                                                                    Wald_p.value=unlist(lapply(a$wald,function(b) b$p.value))),
+                                                         rv_mod$fitextr,
+                                                         names(rv_mod$fitextr)
+                                                         ),
+                                                     use.names = TRUE,
+                                                     fill = TRUE
+                                                     )),
+                                    colNames = FALSE, rowNames = TRUE
+                                    )
+                openxlsx::writeData(wb, 3, rbindlist(Map(function(a,n) data.table(Environment=n,a$BLUPs), 
+                                                         rv_mod$fitextr, 
+                                                         names(rv_mod$fitextr)
+                                                         ),
+                                                     use.names = TRUE,
+                                                     fill = TRUE
+                                                     )
+                                    )
+                openxlsx::writeData(wb, 4, rbindlist(Map(function(a,n) data.table(Environment=n,a$BLUEs), 
+                                                         rv_mod$fitextr, 
+                                                         names(rv_mod$fitextr)
+                                                         ),
+                                                     use.names = TRUE,
+                                                     fill = TRUE
+                                                     )
+                                    )
+                openxlsx::saveWorkbook(wb, file = file, overwrite = TRUE)
               }
             }
-            
-            table_metrics <- rbindlist(table_metrics, fill = T)
-            
-            #change col name genotype
-            setnames(table_metrics, "genotype", "germplasm")
-            
-            write.csv(table_metrics, file, row.names = FALSE)
           })
         }
       )
