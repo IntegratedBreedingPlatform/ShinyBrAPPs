@@ -140,7 +140,8 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
             #Bravise
             rv$extradata <- if (!is.null(stored_rv$extradata)) stored_rv$extradata
-            rv$groups <- if (!is.null(stored_rv$extradata)) stored_rv$groups
+            rv$groups <- data.table()
+            rv$groups <- if(!is.null(stored_rv$groups)) stored_rv$groups
             rv$selection <- if (!is.null(stored_rv$selection)) stored_rv$selection
             rv$column_datasource <- if (!is.null(stored_rv$column_datasource)) stored_rv$column_datasource
             rv$environmentParameters <- if (!is.null(stored_rv$environmentParameters)) stored_rv$environmentParameters

@@ -2,6 +2,7 @@ library(shinybrapps)
 source("config.R")
 
 ui <- fluidPage(
+  #theme = bs_theme(version = 5),
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "css/app.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/custom_styles.css")
