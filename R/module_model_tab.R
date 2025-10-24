@@ -1146,24 +1146,26 @@ mod_model_server <- function(id, rv){
                 wbd <- tempdir()
                 for (e in seq_along(envs)){
                   sumst <- summary.stats(rv$data[!observationDbId%in%rv$excluded_obs$observationDbId & study_name_app%in%envs[e] & observationVariableName%in%input$select_traits])
+                  modst <- data.frame(Environment=envs[e],
+                                      Variable=names(rv_mod$fitextr[[e]]$heritability),
+                                      h2=rv_mod$fitextr[[e]]$heritability,
+                                      CV=rv_mod$fitextr[[e]]$CV,
+                                      Wald_p.value=unlist(lapply(rv_mod$fitextr[[e]]$wald,function(a) a$p.value)))
                   wbn[e] <- paste0(trial, "_", username, "_", envsnosp[e],"_",format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.xlsx")
                   wb <- openxlsx::createWorkbook()
                   openxlsx::addWorksheet(wb, "Summary statistics")
                   openxlsx::addWorksheet(wb, "Model statistics")
                   openxlsx::addWorksheet(wb, "BLUPS")
                   openxlsx::addWorksheet(wb, "BLUES")
-                  openxlsx::writeData(wb, 1, sumst)
+                  openxlsx::writeData(wb, 1, t(sumst[,-c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 3)
+                  openxlsx::writeData(wb, 1, t(sumst[,c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 1)
                   #openxlsx::writeData(wb, 2, startRow = 2, rbind(h2=rv_mod$fitextr[[e]]$heritability,
                   #                                               CV=rv_mod$fitextr[[e]]$CV,
                   #                                               Wald_p.value=unlist(lapply(rv_mod$fitextr[[e]]$wald,function(a) a$p.value))),
                   #                    rowNames = TRUE)
                   #openxlsx::writeData(wb, 2, startRow = 1, startCol = 2, t(rep(envs[e], length(rv_mod$fitextr[[e]]$heritability))), colNames = FALSE)
-                  openxlsx::writeData(wb, 2, t(data.frame(Environment=envs[e],
-                                                        Variable=names(rv_mod$fitextr[[e]]$heritability),
-                                                        h2=rv_mod$fitextr[[e]]$heritability,
-                                                        CV=rv_mod$fitextr[[e]]$CV,
-                                                        Wald_p.value=unlist(lapply(rv_mod$fitextr[[e]]$wald,function(a) a$p.value)))),
-                                      colNames = FALSE, rowNames = TRUE)
+                  openxlsx::writeData(wb, 2, t(modst[,-c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 3)
+                  openxlsx::writeData(wb, 2, t(modst[,c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 1)
                   openxlsx::writeData(wb, 3, data.frame(Environment=envs[e],rv_mod$fitextr[[e]]$BLUPs))
                   openxlsx::writeData(wb, 4, data.frame(Environment=envs[e],rv_mod$fitextr[[e]]$BLUEs))
                   openxlsx::saveWorkbook(wb, file = paste0(wbd,"/",wbn[e]), overwrite = TRUE)
@@ -1171,25 +1173,26 @@ mod_model_server <- function(id, rv){
                 zip::zip(zipfile = file, files = wbn, include_directories = FALSE, root = wbd)
               } else {
                 sumst <- summary.stats(rv$data[!observationDbId%in%rv$excluded_obs$observationDbId &  study_name_app%in%input$select_environments & observationVariableName%in%input$select_traits])
+                modst <- rbindlist(Map(function(a,n) data.table(Environment=n,
+                                                                Variable=names(a$heritability),
+                                                                h2=a$heritability,
+                                                                CV=a$CV,
+                                                                Wald_p.value=unlist(lapply(a$wald,function(b) b$p.value))),
+                                       rv_mod$fitextr,
+                                       names(rv_mod$fitextr)
+                                       ),
+                                   use.names = TRUE,
+                                   fill = TRUE
+                        )
                 wb <- openxlsx::createWorkbook()
                 openxlsx::addWorksheet(wb, "Summary statistics")
                 openxlsx::addWorksheet(wb, "Model statistics")
                 openxlsx::addWorksheet(wb, "BLUPS")
                 openxlsx::addWorksheet(wb, "BLUES")
-                openxlsx::writeData(wb, 1, sumst)
-                openxlsx::writeData(wb, 2, t(rbindlist(Map(function(a,n) data.table(Environment=n,
-                                                                                    Variable=names(a$heritability),
-                                                                                    h2=a$heritability,
-                                                                                    CV=a$CV,
-                                                                                    Wald_p.value=unlist(lapply(a$wald,function(b) b$p.value))),
-                                                         rv_mod$fitextr,
-                                                         names(rv_mod$fitextr)
-                                                         ),
-                                                     use.names = TRUE,
-                                                     fill = TRUE
-                                                     )),
-                                    colNames = FALSE, rowNames = TRUE
-                                    )
+                openxlsx::writeData(wb, 1, t(sumst[,-c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 3)
+                openxlsx::writeData(wb, 1, t(sumst[,c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 1)
+                openxlsx::writeData(wb, 2, t(modst[,-c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 3)
+                openxlsx::writeData(wb, 2, t(modst[,c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 1)
                 openxlsx::writeData(wb, 3, rbindlist(Map(function(a,n) data.table(Environment=n,a$BLUPs), 
                                                          rv_mod$fitextr, 
                                                          names(rv_mod$fitextr)
