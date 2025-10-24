@@ -644,3 +644,95 @@ save_user_data <- function(rv) {
     }, 0)
   }
 }
+
+
+#' @export
+summary.stats <- function(x){
+ 
+      sumtable_notexcl_nodat <- x[scale.dataType != "Date", .(
+        "Environment" = study_name_app,
+        "No. of observations" = .N,
+        "Mean" = mean(observationValue, na.rm = T),
+        "Minimum" = min(observationValue, na.rm = T),
+        "Quantile 0.25" = quantile(observationValue, probs = c(0.25), na.rm = TRUE),
+        "Median" = quantile(observationValue, probs = c(0.5),na.rm = TRUE),
+        "Quantile 0.75" = quantile(observationValue, probs = c(0.75),na.rm = TRUE),
+        "Maximum" = max(observationValue, na.rm = T),
+        "Standard deviation" = sd(observationValue, na.rm = T),
+        "Variance" = var(observationValue, na.rm = T),
+        "Sum of values" = sum(observationValue, na.rm = T),
+        "Sum of squares" = sum((
+          observationValue - mean(observationValue, na.rm = T)
+        ) ^ 2),
+        "Uncorrected sum of squares" = sum(observationValue ^ 2, na.rm = T),
+        "Skewness" = e1071::skewness(observationValue),
+        "Kurtosis" = e1071::kurtosis(observationValue)
+      ), .(study_name_app, observationVariableName)]
+      
+      if (any(x$scale.dataType == "Date")){
+        sumtable_notexcl_dat <- x[scale.dataType == "Date", .(
+          "Environment" = study_name_app,
+          "No. of observations" = .N,
+          "Mean" = mean(observationValue, na.rm = T),
+          "Minimum" = min(observationValue, na.rm = T),
+          "Quantile 0.25" = quantile(observationValue, type=1, probs = c(0.25), na.rm = TRUE),
+          "Median" = quantile(observationValue, type=1, probs = c(0.5),na.rm = TRUE),
+          "Quantile 0.75" = quantile(observationValue, type=1, probs = c(0.75),na.rm = TRUE),
+          "Maximum" = max(observationValue, na.rm = T),
+          "Standard deviation" = sd(observationValue, na.rm = T),
+          "Variance" = var(observationValue, na.rm = T),
+          "Sum of values" = sum(observationValue, na.rm = T),
+          "Sum of squares" = sum((
+            observationValue - mean(observationValue, na.rm = T)
+          ) ^ 2),
+          "Uncorrected sum of squares" = sum(observationValue ^ 2, na.rm = T),
+          "Skewness" = e1071::skewness(observationValue),
+          "Kurtosis" = e1071::kurtosis(observationValue)
+        ), .(study_name_app, observationVariableName)]
+        
+        sumtable_notexcl <- rbind(sumtable_notexcl_nodat,sumtable_notexcl_dat)        
+      } else {
+        sumtable_notexcl <- sumtable_notexcl_nodat
+      }
+
+      
+      sumtable_notexcl[, "Standard error of mean" := `Standard deviation` /
+                         sqrt(`No. of observations`)]
+      sumtable_notexcl[, "Standard error of variance" := `Variance` /
+                         sqrt(`No. of observations`)]
+      sumtable_notexcl[, "%cov" := `Variance` / `Mean`]
+      sumtable_notexcl[, "%Standard error of skewness" := `Skewness` /
+                         sqrt(`No. of observations`)]
+      sumtable_notexcl[, "%Standard error of kurtosis" := `Kurtosis` /
+                         sqrt(`No. of observations`)]
+      sumtable_notexcl[, "Range" := Maximum - Minimum]
+      
+      columns <- c(
+        "Environment",
+        "observationVariableName",
+        #"No. of values",
+        "No. of observations",
+        #"No. of excluded values",
+        "Mean",
+        "Minimum",
+        "Quantile 0.25",
+        "Median",
+        "Quantile 0.75",
+        "Maximum",
+        "Range",
+        "Standard deviation",
+        "Standard error of mean",
+        "Variance",
+        "Standard error of variance",
+        "%cov",
+        "Sum of values",
+        "Sum of squares",
+        "Uncorrected sum of squares",
+        "Skewness",
+        "%Standard error of skewness",
+        "Kurtosis",
+        "%Standard error of kurtosis"
+      )
+    setkey(sumtable_notexcl, study_name_app)
+    return(sumtable_notexcl[, columns, with = F])
+}
