@@ -590,31 +590,39 @@ mod_model_server <- function(id, rv){
                 spatial = ifelse(input$model_engine=="SpATS", input$spatial_opt, F),
                 control = cntrl
               )
-              
-              rv_mod$fit <- append(rv_mod$fit, fit)
-              
-              tryCatch({
-                fitextr <- extractSTA(fit)
-                rv_mod$fitextr <- append(rv_mod$fitextr, fitextr)
-                
-                outliers <-  outlierSTA(fit, 
-                                        what = "random",
-                                        commonFactors = "genotype")$outliers
-                if (!is.null(outliers)) {
-                  outliers <- merge(
-                    as.data.table(outliers),
-                    rv$data[,.(study_name_app, observationUnitDbId, observationVariableName, observationDbId)],
-                    by.x = c("trial", "observationUnitDbId", "trait"),
-                    by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
-                  )
-                  rv_mod$outliers <- append(rv_mod$outliers, list(outliers))
-                }
-              },
-              error=function(e){
-                showNotification(paste0("could not fit model on ", input$select_environments[i]), type = "error", duration = notification_duration)
-                return(NULL)
-              })
- 
+              #browser()
+              if (any(unlist(lapply(fit[[1]]$mRand, is.null)))){
+                keeptr <- !(unlist(lapply(fit[[1]]$mRand, is.null)))
+                fit[[1]]$mRand <- fit[[1]]$mRand[keeptr]
+                fit[[1]]$mFix <- fit[[1]]$mFix[keeptr]
+                fit[[1]]$traits <- fit[[1]]$traits[keeptr]
+                fit[[1]]$sumTab <- fit[[1]]$sumTab[keeptr]
+              }
+              if (length(fit[[1]]$mFix)>0){
+                rv_mod$fit <- append(rv_mod$fit, fit)
+                tryCatch({
+                  fitextr <- extractSTA(fit)
+                  rv_mod$fitextr <- append(rv_mod$fitextr, fitextr)
+                  
+                  outliers <-  outlierSTA(fit, 
+                                          what = "random",
+                                          commonFactors = "genotype")$outliers
+                  if (!is.null(outliers)) {
+                    outliers <- merge(
+                      as.data.table(outliers),
+                      rv$data[,.(study_name_app, observationUnitDbId, observationVariableName, observationDbId)],
+                      by.x = c("trial", "observationUnitDbId", "trait"),
+                      by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
+                    )
+                    rv_mod$outliers <- append(rv_mod$outliers, list(outliers))
+                  }
+                },
+                error=function(e){
+                  #browser()
+                  showNotification(paste0("could not fit model on ", input$select_environments[i]), type = "error", duration = notification_duration)
+                  return(NULL)
+                })
+              }
             }
             
           })
