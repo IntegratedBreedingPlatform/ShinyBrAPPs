@@ -467,6 +467,8 @@ mod_model_server <- function(id, rv){
         ## exclude observations
         rv$data[,observationValue:=as.numeric(observationValue)]
         data_filtered <- rv$data[!(observationDbId %in% rv$excluded_obs$observationDbId)]
+        data_keep <- data_filtered[,.(sd=sd(observationValue, na.rm=T)),.(observationVariableName,studyDbId)][!(sd==0 | is.na(sd)), .(observationVariableName, studyDbId)]
+        data_filtered <- data_filtered[data_keep, on=.(observationVariableName, studyDbId)]
         rv_mod$fitted_data <- data_filtered
         fitModel(data_filtered)
         enable("push_metrics_to_BMS_B")
