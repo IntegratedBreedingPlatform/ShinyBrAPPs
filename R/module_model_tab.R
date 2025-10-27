@@ -126,54 +126,78 @@ mod_model_ui <- function(id){
         "Results",
         layout_columns(
           col_widths = c(6,6),
-          div(
-            # tags$h4("Metrics ~ Environment x Trait"),
-            # pickerInput(ns("select_metrics_A"), "Statistics", multiple = F, choices = NULL, width = "40%", inline = T),
-            downloadButton(ns("export_metrics_A"), "CSV Export", class = "btn btn-info", style = "float:right; margin:5px"),
-            shiny::actionButton(
-              inputId = ns("push_metrics_to_BMS_B"), 
-              label = "Push BLUES/BLUPS to BMS", 
-              icon = icon("leaf"), 
-              class = "btn btn-primary", 
-              style = "float:right; margin:5px"
-            ) |>
-              tooltip("You can select the traits you want to push by selecting raws in the table below"),
-            dataTableOutput(ns("metrics_A_table"))
-          ),
-          div(
-            # tags$h4("Metrics ~ Environment x Trait x Genotype"),
-            #disabled(shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push to BMS", icon = icon("leaf"), class="btn btn-primary", style = "float:right; margin:5px")),
-            #br(),
-            div(
+          #div(
+            bslib::card(
+            bslib::card_header(
+            tags$h4("Model statistics")),
+            dataTableOutput(ns("metrics_A_table")),
+            bslib::card_footer(
               style="display: flex;
                     margin:5px;
                     align-items: flex-start;
                     gap: 10px;",
-            pickerInput(ns("select_metrics_B"), "BLUPs/BLUEs", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs")),# width = "40%"),# inline = T, options = list(`style` = "margin-bottom: 0;")),
-            pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL), #width = "40%"), #inline = T, options = list(`style` = "margin-bottom: 0;")),
-            downloadButton(ns("export_metrics_B"), "Export results", class = "btn btn-info", style = "height: 35px;"),
-            div(
-              class = "my-checkbox-container",
-              style = "display: flex; flex-direction: column; gap: 10px;",
-              
-              # Scoped CSS targeting children of this container
-              tags$style(HTML("
-    .my-checkbox-container .form-check,
-    .my-checkbox-container .shiny-input-container .checkbox,
-    .my-checkbox-container .shiny-input-container .radio {
-      padding-left: 2.5rem !important;
-      margin-bottom: 0 !important;
-    }
-    .my-checkbox-container .form-group {
-      margin-bottom: -10px !important;
-    }
-  ")),
-            prettySwitch(ns("allinone_export"),label = "All in one file", value = FALSE)|>
-              tooltip("By selecting this option, summary statistics (from the data quality panel), model statistics, BLUEs, and BLUPs will be exported into a single Excel file. If 'One file per environment' is also selected, a zip file will be created with separate Excel files for each environment. Otherwise, all data will be combined into one Excel file.", options = list(trigger="hover")),
-            checkboxInput(ns("onefileperenv"), label = "One file per environment")
+              # tags$h4("Metrics ~ Environment x Trait"),
+              # pickerInput(ns("select_metrics_A"), "Statistics", multiple = F, choices = NULL, width = "40%", inline = T),
+              downloadButton(ns("export_metrics_A"), "CSV Export", class = "btn btn-info"),
             )
-            ),
-            dataTableOutput(ns("metrics_B_table"))
+            #)
+          ),
+          #div(
+            bslib::card(
+            bslib::card_header(
+            tags$h4("BLUEs and BLUPs"),
+            # tags$h4("Metrics ~ Environment x Trait x Genotype"),
+            #disabled(shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push to BMS", icon = icon("leaf"), class="btn btn-primary", style = "float:right; margin:5px")),
+            #br(),
+              div(
+              style="display: flex;
+                    margin:5px;
+                    align-items: flex-start;
+                    gap: 10px;",
+            pickerInput(ns("select_metrics_B"), "Display:", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs")),
+            pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL), #width = "40%"), 
+            )),
+            dataTableOutput(ns("metrics_B_table")),
+            bslib::card_footer(
+              div(
+              style="display: flex;
+                    margin:5px;
+                    align-items: flex-end;
+                    gap: 10px;
+                    width:180px;",
+              downloadButton(ns("export_metrics_B"), "Export results", class = "btn btn-info", style = "height: 35px;"),
+              div(
+                class = "my-checkbox-container",
+                style = "display: flex;
+                    margin:5px;
+                    align-items: flex-start;
+                    flex-direction: column; 
+                gap: 10px;width:400px;
+                font-size: 12px !important;",
+                
+                # Scoped CSS targeting children of this container
+                tags$style(HTML(".my-checkbox-container .form-check,
+                               .my-checkbox-container .shiny-input-container .checkbox,
+                               .my-checkbox-container .shiny-input-container .radio {
+                                 padding-left: 2.5rem !important;
+                                 margin-bottom: 0 !important;
+                               }
+                               .my-checkbox-container .form-group {
+                                 margin-bottom: -10px !important;
+                               }")
+                ),
+                prettySwitch(ns("allinone_export"),label = "All in one file", value = FALSE)|>
+                  tooltip("By selecting this option, summary statistics (from the data quality panel), model statistics, BLUEs, and BLUPs will be exported into a single Excel file. If 'One file per environment' is also selected, a zip file will be created with separate Excel files for each environment. Otherwise, all data will be combined into one Excel file.", options = list(trigger="hover")),
+                checkboxInput(ns("onefileperenv"), label = "One file per environment"),
+              ),
+              shiny::actionButton(
+                inputId = ns("push_metrics_to_BMS_B"), 
+                label = "Push BLUES/BLUPS to BMS", 
+                icon = icon("cloud-upload-alt"), 
+                class = "btn btn-primary"
+              ) |>
+                tooltip("You can select the traits you want to push by selecting rows in the model statistics table")
+            ))
           )
         )
       ),
