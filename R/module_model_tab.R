@@ -1088,10 +1088,14 @@ mod_model_server <- function(id, rv){
           username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
           trial <- unique(rv$study_metadata$trialName)[1]
           if (input$allinone_export) {
-            if (input$onefileperenv & length(rv_mod$fitextr)>1){
-              paste0(trial, "_", username, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.zip")
+            if (input$onefileperenv) {
+              if (length(rv_mod$fitextr)>1){
+                return(paste0(trial, "_", username, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.zip"))
+              } else {
+                return(paste0(trial, "_", names(rv_mod$fitextr)[1], "_", username, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.xlsx"))
+              }
             } else {
-              paste0(trial, "_", username, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.xlsx")
+              return(paste0(trial, "_", username, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.xlsx"))
             }
           } else {
             return(paste0(trial, "_", username, "_", format(Sys.time(), "%Y%m%d-%H%M%S"), "_STA_BLUES_BLUPS.csv"))
@@ -1151,7 +1155,7 @@ mod_model_server <- function(id, rv){
                                       h2=rv_mod$fitextr[[e]]$heritability,
                                       CV=rv_mod$fitextr[[e]]$CV,
                                       Wald_p.value=unlist(lapply(rv_mod$fitextr[[e]]$wald,function(a) a$p.value)))
-                  wbn[e] <- paste0(trial, "_", username, "_", envsnosp[e],"_",format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.xlsx")
+                  wbn[e] <- paste0(trial, "_", envsnosp[e] ,"_", username, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.xlsx")
                   wb <- openxlsx::createWorkbook()
                   openxlsx::addWorksheet(wb, "Summary statistics")
                   openxlsx::addWorksheet(wb, "Model statistics")
