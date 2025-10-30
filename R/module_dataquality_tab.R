@@ -645,7 +645,7 @@ mod_dataquality_server <- function(id, rv) {
       newdt <- copy(rv_dq$data)
       newdt[status == "excluded", status := "default"]
       newdt[observationDbId %in% rv_dq$sel_observationDbIds, status := "selected"]
-      if (length(rv$excluded_obs) > 0) {
+      if (nrow(rv$excluded_obs) > 0) {
         newdt[observationDbId %in% rv$excluded_obs$observationDbId, status := "excluded"]
       }
       rv_dq$data <- newdt

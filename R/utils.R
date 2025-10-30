@@ -642,6 +642,8 @@ save_user_data <- function(rv) {
       column_datasource = rv$column_datasource,
       environmentParameters = rv$environmentParameters
     )
+    # remove all NULL elements to avoid error notification (nrow dimension error)
+    snapshot <- snapshot[!vapply(snapshot, is.null, logical(1))]
     later(function() {
       saveRDS(snapshot, filename)
       print("rv saved !")
