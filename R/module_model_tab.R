@@ -1149,11 +1149,16 @@ mod_model_server <- function(id, rv){
                 wbd <- tempdir()
                 for (e in seq_along(envs)){
                   sumst <- summary.stats(rv$data[!observationDbId%in%rv$excluded_obs$observationDbId & study_name_app%in%envs[e] & observationVariableName%in%input$select_traits])
-                  modst <- data.frame(Environment=envs[e],
-                                      Variable=names(rv_mod$fitextr[[e]]$heritability),
-                                      h2=rv_mod$fitextr[[e]]$heritability,
-                                      CV=rv_mod$fitextr[[e]]$CV,
-                                      Wald_p.value=unlist(lapply(rv_mod$fitextr[[e]]$wald,function(a) a$p.value)))
+                  modst <- rbindlist(Map(function(a,n) data.table(Environment=n,
+                                                                  Variable=names(a$heritability),
+                                                                  h2=a$heritability,
+                                                                  CV=a$CV,
+                                                                  Wald_p.value=unlist(lapply(a$wald,function(b) b$p.value))),
+                                         rv_mod$fitextr[e],
+                                         names(rv_mod$fitextr)[e]),
+                                      use.names = TRUE,
+                                      fill = TRUE
+                                    )
                   wbn[e] <- paste0(trial, "_", envsnosp[e] ,"_", username, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.xlsx")
                   wb <- openxlsx::createWorkbook()
                   openxlsx::addWorksheet(wb, "Summary statistics")
