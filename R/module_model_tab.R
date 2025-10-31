@@ -234,11 +234,12 @@ mod_model_ui <- function(id){
             ns("select_trait_fit"),"Trait", multiple = F, choices = NULL, width = "100%"
           )
         ),      
-        layout_columns(
-          col_widths = c(4, 4, 4),
-          verbatimTextOutput(ns("fit_summary")),
-          plotOutput(ns("fit_residuals")),
-          plotOutput(ns("fit_spatial"))
+        layout_column_wrap(
+          width = 1/3,
+          height = 500,
+          bslib::card(verbatimTextOutput(ns("fit_summary")), full_screen = TRUE),
+          bslib::card(plotOutput(ns("fit_residuals")), full_screen = TRUE),
+          bslib::card(plotOutput(ns("fit_spatial")), full_screen = TRUE)
         )
       )
     )
@@ -602,53 +603,56 @@ mod_model_server <- function(id, rv){
               incProgress(1/length(input$select_environments), detail = input$select_environments[i])
               env_traits <- comb_env_trait[trial == input$select_environments[i] & observationVariableName %in% input$select_traits, observationVariableName]
               
-              fit <- fitTD(
-                TD = rv$TD,
-                trials = input$select_environments[i],
-                design = input$model_design,
-                traits = env_traits,
-                engine = input$model_engine,
-                covariates = input$covariates,
-                what = input$what,
-                # useCheckId = FALSE,
-                spatial = ifelse(input$model_engine=="SpATS", input$spatial_opt, F),
-                control = cntrl
-              )
-              #browser()
-              if (any(unlist(lapply(fit[[1]]$mRand, is.null)))){
-                keeptr <- !(unlist(lapply(fit[[1]]$mRand, is.null)))
-                fit[[1]]$mRand <- fit[[1]]$mRand[keeptr]
-                fit[[1]]$mFix <- fit[[1]]$mFix[keeptr]
-                fit[[1]]$traits <- fit[[1]]$traits[keeptr]
-                fit[[1]]$sumTab <- fit[[1]]$sumTab[keeptr]
-              }
-              if (length(fit[[1]]$mFix)>0){
-                rv_mod$fit <- append(rv_mod$fit, fit)
-                tryCatch({
-                  fitextr <- extractSTA(fit)
-                  rv_mod$fitextr <- append(rv_mod$fitextr, fitextr)
-                  
-                  outliers <-  outlierSTA(fit, 
-                                          what = "random",
-                                          commonFactors = "genotype")$outliers
-                  if (!is.null(outliers)) {
-                    outliers <- merge(
-                      as.data.table(outliers),
-                      rv$data[,.(study_name_app, observationUnitDbId, observationVariableName, observationDbId)],
-                      by.x = c("trial", "observationUnitDbId", "trait"),
-                      by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
-                    )
-                    rv_mod$outliers <- append(rv_mod$outliers, list(outliers))
-                  }
-                },
-                error=function(e){
-                  #browser()
-                  showNotification(paste0("could not fit model on ", input$select_environments[i]), type = "error", duration = notification_duration)
-                  return(NULL)
-                })
+              if (length(env_traits) == 0) {
+                showNotification(paste0("No data to fit on ", input$select_environments[i]), type = "warning", duration = notification_duration)
+              } else {
+                fit <- fitTD(
+                  TD = rv$TD,
+                  trials = input$select_environments[i],
+                  design = input$model_design,
+                  traits = env_traits,
+                  engine = input$model_engine,
+                  covariates = input$covariates,
+                  what = input$what,
+                  # useCheckId = FALSE,
+                  spatial = ifelse(input$model_engine=="SpATS", input$spatial_opt, F),
+                  control = cntrl
+                )
+  
+                if (any(unlist(lapply(fit[[1]]$mRand, is.null)))){
+                  keeptr <- !(unlist(lapply(fit[[1]]$mRand, is.null)))
+                  fit[[1]]$mRand <- fit[[1]]$mRand[keeptr]
+                  fit[[1]]$mFix <- fit[[1]]$mFix[keeptr]
+                  fit[[1]]$traits <- fit[[1]]$traits[keeptr]
+                  fit[[1]]$sumTab <- fit[[1]]$sumTab[keeptr]
+                }
+                if (length(fit[[1]]$mFix)>0){
+                  rv_mod$fit <- append(rv_mod$fit, fit)
+                  tryCatch({
+                    fitextr <- extractSTA(fit)
+                    rv_mod$fitextr <- append(rv_mod$fitextr, fitextr)
+                    
+                    outliers <-  outlierSTA(fit, 
+                                            what = "random",
+                                            commonFactors = "genotype")$outliers
+                    if (!is.null(outliers)) {
+                      outliers <- merge(
+                        as.data.table(outliers),
+                        rv$data[,.(study_name_app, observationUnitDbId, observationVariableName, observationDbId)],
+                        by.x = c("trial", "observationUnitDbId", "trait"),
+                        by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
+                      )
+                      rv_mod$outliers <- append(rv_mod$outliers, list(outliers))
+                    }
+                  },
+                  error=function(e){
+                    #browser()
+                    showNotification(paste0("could not fit model on ", input$select_environments[i]), type = "error", duration = notification_duration)
+                    return(NULL)
+                  })
+                }
               }
             }
-            
           })
         },
         error=function(e){ e })
@@ -671,12 +675,11 @@ mod_model_server <- function(id, rv){
             showNotification(paste0(trial,':\nno modelling for what=fixed'), type = "default", duration = notification_duration)
           }
         }
-        
+        req(length(rv_mod$fit)>0)
         ## update selectors
         updatePickerInput(
           session, "select_environment_fit",
-          choices = input$select_environments,
-          selected = input$select_environments[1]
+          choices = names(rv_mod$fit)
         )
         updatePickerInput(
           session, "select_trait_fit",
@@ -706,7 +709,7 @@ mod_model_server <- function(id, rv){
         )
         updatePickerInput(
           session, "select_environment_metrics",
-          choices = input$select_environments
+          choices = names(rv_mod$fit)
         )
         
         # assign input$model_engine to a reactive variable (isolated in the "observeEvent-go fit model") to prevent the app from changing model results unless "go fit model" is clicked
@@ -715,112 +718,64 @@ mod_model_server <- function(id, rv){
       
       
       ## show fitted models per trait and environments ####
-      observeEvent(c(input$select_trait_fit, input$select_environment_fit), {
-        rv_mod$result_envs <- rv_mod$comb_env_trait[trial %in% input$select_environment_fit
-                                                    & observationVariableName == input$select_trait_fit, trial]
-      })
+      # observeEvent(c(input$select_trait_fit, input$select_environment_fit), {
+      #   rv_mod$result_envs <- rv_mod$comb_env_trait[trial %in% input$select_environment_fit
+      #                                               & observationVariableName == input$select_trait_fit, trial]
+      # })
       
+      ## fit_summary ####
       output$fit_summary <- renderPrint({
         req(rv_mod$fit)
-        req(rv_mod$result_envs)
+        validate(
+          need(length(rv_mod$fit)>0, "Could not fit any model")
+        )
+        print(input$select_environment_fit)
         req(input$select_environment_fit)
         req(input$select_trait_fit)
         
-        # s_all <- summary(
-        #   rv_mod$fit,
-        #   trait = input$select_trait_fit,
-        #   trials = input$select_environment_fit
-        # )
-        envs <- rv_mod$result_envs
-        s <- lapply(envs, function(env){
-          summary(
-            rv_mod$fit,
-            trait = input$select_trait_fit,
-            trials = env
-          )
-        })
-        names(s) <- envs
-        # s["all environments"] <- s_all
-        s
+        summary(
+          rv_mod$fit,
+          trait = input$select_trait_fit,
+          trials = input$select_environment_fit
+        )
       })
           
+      ## plot residuals ####
       output$fit_residuals <- renderPlot({
-        req(rv_mod$fit)
-        req(rv_mod$result_envs)
-        envs <- rv_mod$result_envs
-        plots_envs <- lapply(envs, function(trial){
-          plot(
-            rv_mod$fit,
-            traits = input$select_trait_fit,
-            trials = trial,
-            output = F
-            # output = F,
-            # what = c("random","fixed")[c(
-            #   !is.null(rv_mod$fit[[trial]]$mRand),
-            #   !is.null(rv_mod$fit[[trial]]$mFixed)
-            # )]
-          )
-        })
-          
-        plot_envs <- lapply(1:length(envs), function(k){
-          do.call("arrangeGrob",
-                  c(
-                    plots_envs[[k]][[envs[k]]][[input$select_trait_fit]],
-                    ncol=2,
-                    top = paste0("Trial: ", envs[k],
-                                 "\nTrait: ", input$select_trait_fit)
-                  )
-          )
-        })
-        plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
-        plot(plot_multi_env)
-      },
-      height = function(){ length(rv_mod$result_envs)*500}
-      )
-          
+        req(length(rv_mod$fit)>0)
+        req(input$select_environment_fit)
+        req(input$select_trait_fit)
+        plot(
+          rv_mod$fit,
+          traits = input$select_trait_fit,
+          trials = input$select_environment_fit
+        )
+      })
+
+      ## spatial plot ####
       output$fit_spatial <- renderPlot({
+        validate(
+          need(rv_mod$data_checks$has_coords, "No spatial data")
+        )
         isolate(req(rv_mod$data_checks$has_coords))
         req(input$select_environment_fit)
         req(input$select_trait_fit)
-        req(rv_mod$fit)
-        envs <- rv_mod$result_envs
-        plots_envs <- lapply(envs, function(trial){
-          if(rv$data[observationVariableName == input$select_trait_fit & study_name_app == trial,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
-            p <- plot(
+        req(length(rv_mod$fit)>0)
+
+        if(rv$data[observationVariableName == input$select_trait_fit & study_name_app == trial,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
+            plot(
               rv_mod$fit,
               plotType = "spatial",
               traits = input$select_trait_fit,
-              trials = trial,
-              output = F
-              # output = F,
-              # what = c("random","fixed")[c(
-              #   !is.null(rv_mod$fit[[trial]]$mRand),
-              #   !is.null(rv_mod$fit[[trial]]$mFixed)
-              # )]
-            )
-            p
-          }else{
-            a_STATgen_like_list <- list()
-            a_STATgen_like_list[[trial]][[input$select_trait_fit]][["p1"]] <- ggplot() + geom_text(aes(x = 0, y = 0), label = "no spatial data") + theme_void()
-            a_STATgen_like_list
-          }
-        })
-        plot_envs <- lapply(1:length(envs), function(k){
-          do.call("arrangeGrob",
-                  c(
-                    plots_envs[[k]][[envs[k]]][[input$select_trait_fit]],
-                    ncol=2,
-                    top = paste0("Trial: ", envs[k],
-                                 "\nTrait: ", input$select_trait_fit)
-                  )
-          )
-        })
-        plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
-        plot(plot_multi_env)
-      },
-      height = function(){ length(rv_mod$result_envs)*500}
-      )
-      
+              trials = trial
+            )            
+        }else{
+          a_STATgen_like_list <- list()
+          a_STATgen_like_list[[trial]][[input$select_trait_fit]][["p1"]] <- ggplot() + geom_text(aes(x = 0, y = 0), label = "no spatial data") + theme_void()
+          a_STATgen_like_list
+        }
+      })
+
       observeEvent(c(input$select_trait_outliers, rv_mod$outliers), {
         req(rv_mod$fit)
         req(input$select_trait_outliers)
@@ -865,10 +820,12 @@ mod_model_server <- function(id, rv){
       }, ignoreInit = F)
 
       ## output$outliers_DT ####
-      output$outliers_DT <- renderDataTable({
-        
+      output$outliers_DT <- renderDataTable({        
         validate(
-          need(rv_mod$outliers_table, message = "No outlier for this trait")
+          need(length(rv_mod$fit)>0, message = "Could not fit any model")
+        )
+        validate(
+          need(nrow(rv_mod$outliers_table) > 0, message = "No outlier for this trait")
         )
         
         outliers <- rv_mod$outliers_table
@@ -978,13 +935,14 @@ mod_model_server <- function(id, rv){
 
       ## output$metrics_A_table ####
       output$metrics_A_table <- renderDT({
-        # req(rv_mod$fit)
-        # req(rv_mod$fitextr)
-
         validate(
-          need(rv_mod$fitextr, "you must fit a model")
+          need(rv_mod$fit, "you must fit a model")
         )
-        
+        validate(
+          need(length(rv_mod$fit) > 0, "No metrics to display, could not fit any model")
+        )
+        req(rv_mod$fitextr)
+
         ## heritability
         allex <- rv_mod$fitextr
         if(rv_mod$model_engine%in%c("lme4")){
@@ -1024,6 +982,13 @@ mod_model_server <- function(id, rv){
 
       ## output$metrics_B_table ####
       output$metrics_B_table <- renderDataTable({
+        validate(
+          need(rv_mod$fit, "you must fit a model")
+        )
+        validate(
+          need(length(rv_mod$fit) > 0, "No metrics to display, could not fit any model")
+        )
+        req(rv_mod$fitextr)
         req(input$select_metrics_B)
         req(input$select_environment_metrics)
         req(rv_mod$fitextr)
