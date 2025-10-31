@@ -762,12 +762,12 @@ mod_model_server <- function(id, rv){
         req(input$select_trait_fit)
         req(length(rv_mod$fit)>0)
 
-        if(rv$data[observationVariableName == input$select_trait_fit & study_name_app == trial,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
+        if(rv$data[observationVariableName == input$select_trait_fit & study_name_app == input$select_environment_fit,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
             plot(
               rv_mod$fit,
               plotType = "spatial",
               traits = input$select_trait_fit,
-              trials = trial
+              trials = input$select_environment_fit
             )            
         }else{
           a_STATgen_like_list <- list()
