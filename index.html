@@ -64,7 +64,10 @@
 <p>Install remotes package if not already done</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="va">remotes</span><span class="op">)</span></span></code></pre></div>
-<p>Install snpclust package</p>
+<p>Install required brapir package that is not available on cran</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_gitlab.html" class="external-link">install_gitlab</a></span><span class="op">(</span><span class="st">'alice.boizet/brapir', host = 'https://gitlab.cirad.fr'</span><span class="op">)</span></span></code></pre></div>
+<p>Install shinybrapps package</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"IntegratedBreedingPlatform/ShinyBrAPPs"</span><span class="op">)</span></span></code></pre></div>
 <p>or for latest development version:</p>
