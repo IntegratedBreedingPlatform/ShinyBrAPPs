@@ -225,8 +225,9 @@ mod_model_ui <- function(id){
       ## Fitted models panel ####
       nav_panel(
         title = "Fitted models",
-        layout_columns(
-          col_widths = c(3, 3),
+        #layout_columns(
+        #  col_widths = c(3, 3),
+        div(style="display: flex; gap: 10px;  width: 50%;",
           pickerInput(
             ns("select_environment_fit"),"Environments", multiple = F, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
           ),
