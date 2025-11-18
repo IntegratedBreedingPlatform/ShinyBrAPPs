@@ -1,7 +1,7 @@
 library(shinybrapps)
 source("config.R")
 
-ui <- bslib::page_fluid(theme = bslib::bs_theme(preset = "bootstrap"),
+ui <- bslib::page_fillable(theme = bslib::bs_theme(preset = "bootstrap"),
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "css/app.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/custom_styles.css"),
@@ -43,6 +43,10 @@ ui <- bslib::page_fluid(theme = bslib::bs_theme(preset = "bootstrap"),
         margin-right: 5px;
       }
       .nav .nav-item .nav-link { font-size: 20px; }
+      
+      .bslib-page-fill {
+        padding: 0rem;
+      }
     "))
   ),
   # Static App banner
@@ -65,11 +69,11 @@ ui <- bslib::page_fluid(theme = bslib::bs_theme(preset = "bootstrap"),
   #shinysky::busyIndicator(wait = 200, text = NULL),
   rclipboard::rclipboardSetup(),
   
-  div(class = "container-fluid",
+  #div(class = "page_fillable",
       mod_banner_ui("banner"),
       mod_connect_ui("connect"),
       mod_get_studydata_ui("get_studydata"),
       mod_trialdataxplor_ui("xplor")
-      )
+      #)
 
   )
