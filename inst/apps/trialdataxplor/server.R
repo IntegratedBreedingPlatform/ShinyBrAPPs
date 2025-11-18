@@ -10,6 +10,7 @@ server <- function(input, output, session){
   mod_banner_server("banner", rv, appname)
   mod_connect_server("connect", rv)
   mod_get_studydata_server("get_studydata", rv)
+  mod_get_extradata_server("get_extradata", rv)
   mod_trialdataxplor_server("xplor", rv)
   
   ## user session hash ####
