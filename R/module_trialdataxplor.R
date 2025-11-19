@@ -179,7 +179,8 @@ mod_trialdataxplor_server <- function(id, rv){
         locs = NULL,
         study_no_dat = NULL,
         var_no_dat = NULL,
-        candidat_out = NULL
+        candidat_out = NULL,
+        obs_study_to_sel = NULL
       )
 
       find_outlier <- function(x,c=1.5) {
@@ -348,8 +349,9 @@ mod_trialdataxplor_server <- function(id, rv){
         all_rows <- input$candidat_out_rows_all     # Current mapping to original data.frame rows (1-based)
         if(!is.null(dt_row) && !is.null(all_rows)) {
           df_row <- all_rows[dt_row] 
-        updateSelectInput(session, inputId = "obs_study",selected = rv_tdx$cdout[df_row,studyDbId])
-        updateSelectizeInput(session, inputId = "obs_trait",selected = rv_tdx$cdout[df_row,observationVariableName])
+        #updateSelectizeInput(session, inputId = "obs_study",selected = rv_tdx$cdout[df_row,label_study])
+        rv_tdx$obs_study_to_sel <- rv_tdx$cdout[df_row,studyDbId]
+        updateSelectInput(session, inputId = "obs_trait",selected = rv_tdx$cdout[df_row,observationVariableName])
         nav_select(id = "tabset", selected = "observ", session = session)
         }
       })
@@ -360,7 +362,8 @@ mod_trialdataxplor_server <- function(id, rv){
         obs_study_data <- rv_tdx$data_dq[observationVariableName==input$obs_trait,.N,.(studyDbId, locationName, studyName,countryName, label_study)]
         updateSelectizeInput(session,
                               inputId = "obs_study",
-                              selected = input$obs_study,
+                              selected = rv_tdx$obs_study_to_sel,
+                              #selected = input$obs_study,
                               server=TRUE,
                               choices = obs_study_data,
                               options = list(valueField='studyDbId',
@@ -373,6 +376,7 @@ mod_trialdataxplor_server <- function(id, rv){
                                           )
         )
         rv_tdx$obs_btable <- data.table()[0L]
+        rv_tdx$obs_study_to_sel <- NULL
       }, ignoreInit = T)
      
       observeEvent(rv_tdx$locs, {
