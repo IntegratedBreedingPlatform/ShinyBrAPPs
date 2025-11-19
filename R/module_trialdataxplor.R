@@ -397,7 +397,7 @@ mod_trialdataxplor_server <- function(id, rv){
       
       dynamicHeight <- reactive({
         req(nrow(rv_tdx$variables)>0)
-        return(50+nrow(rv_tdx$variables[observationVariableName%in%input$dis_trait]) * input$boxplot_baseheight)
+        return(50+length(unique(rv_tdx$data_dq[label_study%in%input$dis_study & observationVariableName%in%input$dis_trait, observationVariableName])) * input$boxplot_baseheight)
       })
       dynamicWidth <- reactive({
         req(length(input$dis_study)>0)
