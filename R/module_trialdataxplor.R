@@ -151,6 +151,7 @@ mod_trialdataxplor_ui <- function(id){
 }
 
 #' @import leaflet
+#' @import sortable
 #' @export
 mod_trialdataxplor_server <- function(id, rv){
   

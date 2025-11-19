@@ -46,6 +46,7 @@ Imports:
     shinycssloaders,
     shinyjs,
     shinyWidgets,
+    sortable,
     statgenGxE,
     statgenSTA,
     stringmagic,
