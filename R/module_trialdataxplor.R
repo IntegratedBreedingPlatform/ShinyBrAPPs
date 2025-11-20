@@ -226,7 +226,8 @@ mod_trialdataxplor_server <- function(id, rv){
           st <- locs[,.(locationDbId,countryName)][rv$study_metadata, on=.(locationDbId)]
           st <- unique(st[,.(studyDbId,locationDbId,countryName,studyName,locationName)])
           st[, studyDbId:=as.numeric(studyDbId)]
-          st[, study_label:=paste0(locationName," (",countryName,")")]
+          st <- rv$environmentParameters[st, on=.(studyDbId)]
+          #st[, study_label:=paste0(locationName," (",countryName,")")]
           st[, label_study:=paste0(locationName,"-",studyDbId)]
           data_dq <- st[,.(studyDbId,countryName )][data_dq, on=.(studyDbId)]
           data_dq <- variables[,.(observationVariableDbId, trait.name, method.methodName, scale.scaleName)][data_dq, on=.(observationVariableDbId=observationVariableDbId)]
@@ -238,19 +239,23 @@ mod_trialdataxplor_server <- function(id, rv){
           
           #browser()
           if (any(!st$studyDbId%in%data_dq$studyDbId)){
-            missingst <- st[!studyDbId%in%data_dq$studyDbId]
+            missingst <- st[!studyDbId%in%data_dq$studyDbId, .(studyDbId,locationDbId,countryName,studyName,locationName, label_study)]
             missingmsg <- paste(paste0(missingst$label_study,"(",missingst$studyDbId,")"),collapse=", ")
             showModal(modalDialog(paste0("The following studies had no observation data: ", missingmsg), fade = FALSE))
             rv_tdx$study_no_dat <- missingst
-            output$study_no_dat <- renderTable(missingst,digits=0)
+            
           }
   
           
           #rv_tdx$st <- data_dq[,.N,studyDbId][st, on=.(studyDbId)]
           rv_tdx$data_dq <- data_dq
           rv_tdx$locs <- locs
+          rv_tdx$st <- st
         }
         })
+      
+      output$study_no_dat <- renderTable(rv_tdx$study_no_dat ,digits=0)
+      
       observeEvent(c(rv$environmentParameters),{
         #browser()
         fromlabels <- c(grep("location",colnames(rv_tdx$data_dq), value = TRUE),
@@ -310,13 +315,17 @@ mod_trialdataxplor_server <- function(id, rv){
       
       observeEvent(input$rename_envt, {
         x <- copy(rv_tdx$data_dq)
+        st <- copy(rv_tdx$st)
         if (!any(input$rank_list_2=="studyDbId")){
           envtnames <- c(input$rank_list_2,"studyDbId")
         } else {
           envtnames <- input$rank_list_2
         }
         x[, label_study:=do.call(paste, c(.SD, sep="-")), .SDcols=envtnames]
+        st[, label_study:=do.call(paste, c(.SD, sep="-")), .SDcols=envtnames]
         rv_tdx$data_dq <- x
+        rv_tdx$st <- st
+        rv_tdx$study_no_dat <- st[!studyDbId%in%x$studyDbId, .(studyDbId,locationDbId,countryName,studyName,locationName, label_study)]
       })
       
       observeEvent(c(input$outslid,rv_tdx$data_dq),{
