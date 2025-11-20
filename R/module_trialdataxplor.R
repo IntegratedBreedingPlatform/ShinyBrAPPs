@@ -351,7 +351,7 @@ mod_trialdataxplor_server <- function(id, rv){
       
       output$candidat_out <- DT::renderDataTable({
         req(rv_tdx$cdout)
-        datatable(rv_tdx$cdout, options = list(paging = FALSE,searching = FALSE), selection = "single", callback = js) |>
+        datatable(rv_tdx$cdout, filter = "top", options = list(paging = FALSE,searching = TRUE), selection = "single", callback = js) |>
           formatRound(columns = "observationValue", digits = 2)
       })
       observeEvent(input$dt_dblclick, {
@@ -551,7 +551,9 @@ mod_trialdataxplor_server <- function(id, rv){
       })
       
       output$selected_obs <- DT::renderDataTable({
-        visibcols <- c("trait.name",
+        visibcols <- c("studyName",
+                       "label_study",
+                       "trait.name",
                        "observationVariableName",
                        "observationValue",
                        "plotNumber",
@@ -562,7 +564,7 @@ mod_trialdataxplor_server <- function(id, rv){
                        "positionCoordinateX",
                        "positionCoordinateY",
                        "observationTimeStamp",
-                       "label_study",
+                       "observationDbId",
                        "observationUnitDbId",
                        "germplasmDbId")
         req(nrow(rv_tdx$obs_btable)>0)
@@ -574,6 +576,7 @@ mod_trialdataxplor_server <- function(id, rv){
           obstable <- copy(rv_tdx$obs_btable)
           obstable[, is_bold:="normal"]
         }
+        setcolorder(obstable, visibcols)
         #browser()
         datatable(obstable,
                   extensions = 'Buttons',
