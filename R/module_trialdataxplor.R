@@ -97,12 +97,20 @@ mod_trialdataxplor_ui <- function(id){
                          bslib::nav_panel("Data check report",value="check",
                                           div(style="display: flex;",
                                       downloadButton(ns("download_check"), label = "Download report", icon = icon(NULL))),
-                                      h3("Studies with no data:"),
-                                      div(tableOutput(ns("study_no_dat")), style = "font-size: 75%;"),
-                                      h3("Missing variables per study:"),
-                                      div(tableOutput(ns("var_no_dat")), style = "font-size: 75%;"),
-                                      h3("Candidate outliers:"),
-                                      div(DT::dataTableOutput(ns("candidat_out")), style = "font-size: 75%;")
+                                      accordion(open = "Studies with no data",
+                                                accordion_panel("Studies with no data", 
+                                                                h3("Studies with no data:"),
+                                                                div(tableOutput(ns("study_no_dat")), style = "font-size: 75%;")
+                                                ),
+                                                accordion_panel("Missing variables per study", 
+                                                                h3("Missing variables per study:"),
+                                                                div(tableOutput(ns("var_no_dat")), style = "font-size: 75%;")
+                                                ),
+                                                accordion_panel("Candidate outliers",
+                                                                h3("Candidate outliers:"),
+                                                                div(DT::dataTableOutput(ns("candidat_out")), style = "font-size: 75%;")
+                                                )
+                                      )
                                       
                              ),
                          bslib::nav_panel("Locations map",value="map",
