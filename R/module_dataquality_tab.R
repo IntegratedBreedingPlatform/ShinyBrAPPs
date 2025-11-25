@@ -230,7 +230,11 @@ mod_dataquality_server <- function(id, rv) {
     observeEvent(input$studies, {
       req(rv$data)
       
-      choices_traits <- unique(rv$data[studyDbId %in% input$studies]$observationVariableName)
+      #only keep variables that are numerical, date or nominal that can be converted as numeric
+      choices_traits <- rv$data[studyDbId %in% input$studies 
+                      & (scale.dataType == "Numerical" | scale.dataType == "Date" | (scale.dataType == "Nominal" & !is.na(suppressWarnings(as.numeric(observationValue))))),
+              unique(observationVariableName)]
+      #choices_traits <- unique($observationVariableName)
       if (input$trait %in% choices_traits) {
         selected_trait <- input$trait
       } else {
@@ -260,11 +264,10 @@ mod_dataquality_server <- function(id, rv) {
       
       rv_dq$data_viz[observationDbId %in% rv_dq$sel_observationDbIds &
                        !(observationDbId %in% rv$excluded_obs$observationDbId)]
-      if (length(unique(rv_dq$data_viz$scale.dataType)) &&
-          unique(rv_dq$data_viz$scale.dataType) == "Numerical") {
+      types <- unique(rv_dq$data_viz$scale.dataType)
+      if (length(types) == 1 && types %in% c("Numerical", "Nominal")) {
         rv_dq$data_viz[, observationValue := as.numeric(observationValue)]
-      } else if (length(unique(rv_dq$data_viz$scale.dataType)) &&
-                 unique(rv_dq$data_viz$scale.dataType) == "Date") {
+      } else if (length(types) == 1 && types == "Date") {
         rv_dq$data_viz[, observationValue := as.Date(observationValue)]
       }
       

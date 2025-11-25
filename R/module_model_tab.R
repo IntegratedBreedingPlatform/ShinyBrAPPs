@@ -290,7 +290,9 @@ mod_model_server <- function(id, rv){
           )
         )
 
-        choices_traits <- unique(rv$data[scale.dataType == "Numerical"]$observationVariableName)
+        #only keep variables that are numerical or nominal that can be converted as numeric
+        choices_traits <- rv$data[scale.dataType == "Numerical" | (scale.dataType == "Nominal" & !is.na(suppressWarnings(as.numeric(observationValue)))),
+                                  unique(observationVariableName)]
         updatePickerInput(
           session,"select_traits",
           choices = choices_traits,
