@@ -69,6 +69,13 @@ mod_get_extradata_server <- function(id, rv){
                                            value.var = "environmentParameters.value")
             environmentParameters[,studyDbId:=as.numeric(studyDbId)]
             env_cols <- unique(rv$study_metadata[, .(cols = environmentParameters.parameterName, type = NA, source = "environment", visible = T)])
+            comcols <- setdiff(colnames(environmentParameters)[colnames(environmentParameters)%in%colnames(extradata)],"studyDbId")
+            if (length(comcols)>0){
+              setnames(environmentParameters, old = comcols, new = paste0(comcols,".env"))
+              setnames(extradata, old = comcols, new = paste0(comcols,".obs"))
+              column_datasource[cols%in%comcols, cols:=paste0(cols,".obs")]
+              env_cols[cols%in%comcols, cols:=paste0(cols,".obs")]
+            }
             extradata <- merge(extradata, environmentParameters, by = "studyDbId")
           }else{
             environmentParameters <- unique(rv$study_metadata[,studyDbId])
