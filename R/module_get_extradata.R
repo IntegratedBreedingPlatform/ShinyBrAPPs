@@ -49,7 +49,7 @@ mod_get_extradata_server <- function(id, rv){
           ## 1 trait per column
           formul <- paste(
             paste(
-              names(data_tmp)[!names(data_tmp)%in%c("observationVariableName", "observationValue", "observationDbId", "observationVariableDbId")],
+              names(data_tmp)[!names(data_tmp)%in%c("observationVariableName", "observationValue", "observationDbId", "observationVariableDbId", "scale.dataType")],
               collapse = " + "
             ),
             " ~ observationVariableName"
@@ -166,7 +166,7 @@ mod_get_extradata_server <- function(id, rv){
 
           # for columns that are not typed (environmentParameters for example) assign type manually
           # check if the variable can be safely converted to num and then convert. Assign type "Text" otherwise
-          nothing <- lapply(column_datasource[is.na(type), cols], function(col){
+          nothing <- lapply(column_datasource[is.na(type) | type == "Nominal", cols], function(col){
             if(all(check.numeric(extradata[,eval(as.name(col))]))){
               extradata[,eval(col) := as.numeric(eval(as.name(col)))]
               column_datasource[cols == col, type := "Numerical"]
