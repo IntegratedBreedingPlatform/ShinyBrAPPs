@@ -578,27 +578,22 @@ get_BLUES_methodsDbIds <- function(con, programDbId) {
   
   cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
   res <- jsonlite::fromJSON(cont)
+
   methodIds <- list()
-  if (resp$status_code == 200) {
-    if (nrow(res[res$name == methodNames$BLUEs, ]) > 0) { methodIds["BLUEs"] =  res[res$name == methodNames$BLUEs, "id"]}
-    if (nrow(res[res$name == methodNames$BLUPs, ]) > 0) { methodIds["BLUPs"] =  res[res$name == methodNames$BLUPs, "id"]}
-    if (nrow(res[res$name == methodNames$seBLUEs, ]) > 0) { methodIds["seBLUEs"] =  res[res$name == methodNames$seBLUEs, "id"]}
-    if (nrow(res[res$name == methodNames$seBLUPs, ]) > 0) { methodIds["seBLUPs"] =  res[res$name == methodNames$seBLUPs, "id"]}
-    
-    if (length(methodIds) < 4) {
-      #missing at least one method
-      missing_methods = c()
-      if (is.null(methodIds$BLUEs)) {missing_methods = append(missing_methods, methodNames$BLUEs)}
-      if (is.null(methodIds$BLUPs)) {missing_methods = append(missing_methods, methodNames$BLUPs)}
-      if (is.null(methodIds$seBLUEs)) {missing_methods = append(missing_methods, methodNames$seBLUEs)}
-      if (is.null(methodIds$seBLUPs)) {missing_methods = append(missing_methods, methodNames$seBLUPs)}
-      message = paste("Missing variable methods in BMS:",paste0(missing_methods, collapse = ", "))
-      stop(message)
-    }
-  } else if (resp$status_code == 401) {
-    stop("Couldn't retrieve BLUES/BLUPS methods, please authenticate again in BMS")
-  } else {
-    stop("Couldn't retrieve BLUES/BLUPS methods, you won't be able to push BLUEs/BLUPs")
+  if (nrow(res[res$name == methodNames$BLUEs, ]) > 0) { methodIds["BLUEs"] =  res[res$name == methodNames$BLUEs, "id"]}
+  if (nrow(res[res$name == methodNames$BLUPs, ]) > 0) { methodIds["BLUPs"] =  res[res$name == methodNames$BLUPs, "id"]}
+  if (nrow(res[res$name == methodNames$seBLUEs, ]) > 0) { methodIds["seBLUEs"] =  res[res$name == methodNames$seBLUEs, "id"]}
+  if (nrow(res[res$name == methodNames$seBLUPs, ]) > 0) { methodIds["seBLUPs"] =  res[res$name == methodNames$seBLUPs, "id"]}
+  
+  if (length(methodIds) < 4) {
+    #missing at least one method
+    missing_methods = c()
+    if (is.null(methodIds$BLUEs)) {missing_methods = append(missing_methods, methodNames$BLUEs)}
+    if (is.null(methodIds$BLUPs)) {missing_methods = append(missing_methods, methodNames$BLUPs)}
+    if (is.null(methodIds$seBLUEs)) {missing_methods = append(missing_methods, methodNames$seBLUEs)}
+    if (is.null(methodIds$seBLUPs)) {missing_methods = append(missing_methods, methodNames$seBLUPs)}
+    message = paste("Missing variable methods in BMS:",paste0(missing_methods, collapse = ", "))
+    stop(message)
   }
   
   return(methodIds)
