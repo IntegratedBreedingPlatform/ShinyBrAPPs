@@ -1,5 +1,3 @@
-source("../../../R/utils.R")
-
 #' @import data.table
 server <- function(input, output, session){
   rv <- reactiveValues(
@@ -57,7 +55,7 @@ server <- function(input, output, session){
     rv$groups[group_id == rv$selected_group_id, group_name := input$modal_rename_group_text_input_label]
     rv$groups[group_id == rv$selected_group_id, group_desc := input$modal_rename_group_text_input_descr]
     removeModal()
-    save_user_data(rv)
+    #save_user_data(rv)
   })
 
   # open or close the groups sidebar
@@ -73,7 +71,7 @@ server <- function(input, output, session){
         open = F
       )
     }
-    save_user_data(rv)
+    #save_user_data(rv)
   }, ignoreNULL = TRUE)
   
 }
