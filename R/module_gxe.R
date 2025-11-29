@@ -820,7 +820,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         req(rv_gxe$data)
         req(rv$column_datasource)
         req(input$picker_trait)
-        req(input$picker_env)
+        #req(input$picker_env)
         req(!isTRUE(input$picker_germplasm_attr_open))
         #browser()
         data2TD <- copy(rv_gxe$data[observationLevel=="MEANS"])
@@ -836,6 +836,12 @@ mod_gxe_server <- function(id, rv, parent_session){
             data2TD[, genotype:=germplasmName]
           }
         }        
+        #browser()
+        if (!is.null(input$picker_env)){
+          data2TD <- data2TD[studyDbId%in%input$picker_env]
+        } else {
+          data2TD <- data2TD[0L]
+        }
         
         genot_to_excl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype][N<input$exclude_geno_nb_env]
         genot_to_excl <- rbind(genot_to_excl, rv_gxe$genot_manexcl)
