@@ -554,6 +554,7 @@ generate_ui_with_grid <- function(num_rows, num_cols, choices, ns=ns, control_la
 }
 
 # Function to get variable methods
+#' @export
 get_BLUES_methodsDbIds <- function(con, programDbId) {
   methodNames = list(
     "BLUEs" = "STABrAPP BLUES", 
@@ -628,6 +629,7 @@ colgeno <- function(genofac, shortpal=getOption("statgen.genoColors"), longpal=t
 #' @param rv 
 #'
 #' @importFrom later later
+#' @export
 save_user_data <- function(rv) {
   if (!is.null(rv$hash)) {
     filename <- paste0(rv$hash, ".rds")
@@ -654,7 +656,7 @@ save_user_data <- function(rv) {
   }
 }
 
-
+#' @export
 update_selectors_with_groups <- function(rv, new_group) {
   ## update selectors (shape, colour)
   data_plot <- copy(rv$extradata) # to avoid issues related to assignment by reference
