@@ -1576,7 +1576,9 @@ mod_model_server <- function(id, rv){
           print("PUSH BLUEs/BLUPs")
           colnames(table_metrics) = c("germplasmName", "environment", "result", "originVariableName", "value")
           table_metrics <- merge(table_metrics, unique(rv$data[,.(environment = study_name_app, studyDbId = as.character(studyDbId), germplasmName, entryNumber = as.character(entryNumber))]))
-          bluesToPush <<- table_metrics
+          
+          # don't push NA value
+          bluesToPush <<- table_metrics[!is.na(value),]
           
           #exit the function if missing method ids
           if (is.null(methodIds)) {
