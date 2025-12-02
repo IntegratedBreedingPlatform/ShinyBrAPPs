@@ -165,10 +165,13 @@ mod_get_extradata_server <- function(id, rv){
           }
 
           # for columns that are not typed (environmentParameters for example) assign type manually
+          # and try to convert nominal observations variables as numeric
           # check if the variable can be safely converted to num and then convert. Assign type "Text" otherwise
           nothing <- lapply(column_datasource[is.na(type) | type == "Nominal", cols], function(col){
-            if(all(check.numeric(extradata[,eval(as.name(col))]))){
-              extradata[,eval(col) := as.numeric(eval(as.name(col)))]
+            var <- extradata[, get(col)]
+            var_is_num <- all(check.numeric(var[!is.na(var) & var != "NA"]))
+            if (var_is_num) {
+              extradata[, (col) := as.numeric(get(col))]
               column_datasource[cols == col, type := "Numerical"]
             }else{
               column_datasource[cols == col, type := "Text"]
