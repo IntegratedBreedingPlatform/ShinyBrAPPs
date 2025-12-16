@@ -1419,130 +1419,31 @@ mod_model_server <- function(id, rv){
               #filter table_metrics on variable
               data_to_push_by_var <- bluesToPush[originVariableName==var_name,]
               
-              ## push missing variables ####
-              # Get variable scale and trait
-              resp_variable <- brapir::phenotyping_variables_get(con = rv$con, observationVariableDbId = variableDbId)
-              
-              if (resp_variable$status_code != 200) {
-                showNotification(paste0("An error occured"), type = "error", duration = notification_duration)
-                return(NULL)
-              } else {
-                # Checking if relative BLUES/BLUPS variables already exist
-                # which means looking for variables with the same scaleDbId, traitDbId but with BLUEs/BLUPs methodDbIds 
-                scaleDbId <- resp_variable$data$scale.scaleDbId #"6085"
-                variableName <- resp_variable$data$observationVariableName
-                traitDbId <-  resp_variable$data$trait.traitDbId #"20454"
-                #variableDbId <- origin_variables$originVariableDbId[i]
-                
-                resp_search_variables <- brapir::phenotyping_variables_post_search(
-                  con = rv$con,
-                  methodDbIds = c(methodIds$BLUEs, methodIds$BLUPs, methodIds$seBLUEs, methodIds$seBLUPs),
-                  scaleDbIds = scaleDbId,
-                  traitDbIds = traitDbId
-                )
-                if (resp_search_variables$status_code == 200 | resp_search_variables$status_code == 202) {
-                  resp_get_search_variables <- brapir::phenotyping_variables_get_search_searchResultsDbId(
-                    con = rv$con,
-                    searchResultsDbId = resp_search_variables$data$searchResultsDbId
+              env_names <- comb[originVariableName == var_name, environment]  
+              for (j in 1:length(env_names)) {
+                incProgress(1/nrow(comb), detail = paste0(var_name, " - ", env_names[j]))
+                ## push observations ####
+                print("Posting observations")
+                #filter on env
+                data_to_push <- data_to_push_by_var[environment == env_names[j],]
+                # Building body POST request
+                body <- apply(data_to_push,1,function(a){
+                  list(
+                    germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
+                    observationUnitDbId = jsonlite::unbox(as.character(a["observationUnitDbId"])),
+                    studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
+                    observationVariableDbId = jsonlite::unbox(as.character(a["observationVariableDbId"])),
+                    value = jsonlite::unbox(as.numeric(a["value"]))
                   )
-                  if (resp_get_search_variables$status_code == 200) {
-                    existing_variables <- NULL
-                    if (resp_get_search_variables$metadata$pagination$totalCount > 0) {
-                      existing_variables <- data.table(resp_get_search_variables$data)[,.(observationVariableName, observationVariableDbId, 
-                                                                                          methodDbId = method.methodDbId, scaleDbId = scale.scaleDbId,
-                                                                                          traitDbId = trait.traitDbId, originVariableDbId = variableDbId,
-                                                                                          originVariableName = variableName)]
-                      #[,result := names(methodIds)[which(unlist(methodIds) == methodDbId)]]
-                      existing_variables <- merge(existing_variables, methods, by="methodDbId")
-                      missing_methods <- unlist(methodIds)[!(unlist(methodIds) %in% existing_variables$methodDbId)]
-                    } else {
-                      missing_methods <- unlist(methodIds)
-                    }
-                    
-                    if (length(missing_methods) > 0) {
-                      #some variables are missing
-                      missing_variables_dt <- data.table(
-                        methodDbId = unname(missing_methods),
-                        methodName = names(missing_methods)
-                      )[, observationVariableName := paste0(variableName, "_", methodName)
-                      ][, contextOfUse := "MEANS"
-                      ][, scaleDbId := scaleDbId
-                      ][, traitDbId := traitDbId]
-                      
-                      # Create missing variables
-                      if (nrow(missing_variables_dt) > 0) {
-                        print("Creating missing BLUES/BLUPS variables")
-                        print(paste0("Creating ", nrow(missing_variables_dt) , " new variables"))
-                        print(missing_variables_dt$observationVariableName)
-                        
-                        body <- apply(missing_variables_dt,1,function(a){
-                          list(
-                            contextOfUse = c("MEANS"),
-                            method = list(methodDbId = jsonlite::unbox(a["methodDbId"])),
-                            observationVariableName = jsonlite::unbox(a["observationVariableName"]),
-                            scale = list(scaleDbId = jsonlite::unbox(a["scaleDbId"])),
-                            trait = list(traitDbId = jsonlite::unbox(a["traitDbId"]))
-                          )
-                        })
-                        
-                        resp_post_variables <- brapir::phenotyping_variables_post_batch(con = rv$con, data = body)
-                        
-                        if (resp_post_variables$status_code == 200) {
-                          created_variables_dt <- data.table(resp_post_variables$data)[
-                            , .(observationVariableDbId, observationVariableName,
-                                methodDbId = method.methodDbId,
-                                scaleDbId = scale.scaleDbId,
-                                traitDbId = trait.traitDbId,
-                                originVariableName = variableName,
-                                originVariableDbId = variableDbId
-                            )]
-                          created_variables_dt <- merge(created_variables_dt, methods, by="methodDbId")
-                          
-                          print("Created variables:")
-                          print(created_variables_dt)
-                          # Add new variables to the existing variables
-                          if (is.null(existing_variables)) {
-                            existing_variables <- created_variables_dt
-                          } else {
-                            existing_variables <- rbind(existing_variables, created_variables_dt)
-                          }
-                        }
-                        print("All variables:")
-                        print(existing_variables)
-                      }
-                    }
-                    
-                    # add variableDbIds to data table
-                    data_to_push_by_var <- merge(data_to_push_by_var, existing_variables, by=c("originVariableName","result"))
-                    
-                    env_names <- comb[originVariableName == var_name, environment]  
-                    for (j in 1:length(env_names)) {
-                      incProgress(1/nrow(comb), detail = paste0(var_name, " - ", env_names[j]))
-                      ## push observations ####
-                      print("Posting observations")
-                      #filter on env
-                      data_to_push <- data_to_push_by_var[environment == env_names[j],]
-                      # Building body POST request
-                      body <- apply(data_to_push,1,function(a){
-                        list(
-                          germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
-                          observationUnitDbId = jsonlite::unbox(as.character(a["observationUnitDbId"])),
-                          studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
-                          observationVariableDbId = jsonlite::unbox(as.character(a["observationVariableDbId"])),
-                          value = jsonlite::unbox(as.numeric(a["value"]))
-                        )
-                      })
-                      
-                      resp <- brapir::phenotyping_observations_post_batch(con = rv$con, data = body)
-                      if (resp$status_code == 200) {
-                        created_observations_df <- resp$data
-                        showNotification(paste0(var_name, " BLUES/BLUPS were pushed to ", env_names[j], " (",nrow(created_observations_df), " data)"), type = "message", duration = notification_duration)
-                      } else {
-                        showNotification(paste0("An error occured while creating BLUES/BLUPS observations for ", var_name), type = "error", duration = notification_duration)
-                        showNotification(paste0(resp$metadata), type = "error", duration = notification_duration)
-                      }
-                    }
-                  }
+                })
+                
+                resp <- brapir::phenotyping_observations_post_batch(con = rv$con, data = body)
+                if (resp$status_code == 200) {
+                  created_observations_df <- resp$data
+                  showNotification(paste0(var_name, " BLUES/BLUPS were pushed to ", env_names[j], " (",nrow(created_observations_df), " data)"), type = "message", duration = notification_duration)
+                } else {
+                  showNotification(paste0("An error occured while creating BLUES/BLUPS observations for ", var_name), type = "error", duration = notification_duration)
+                  showNotification(paste0(resp$metadata), type = "error", duration = notification_duration)
                 }
               }
             }
@@ -1582,7 +1483,7 @@ mod_model_server <- function(id, rv){
           
           #exit the function if missing method ids
           if (is.null(methodIds)) {
-            return(NULL)
+            stop("missing Blues/Blups methods")
           }
           
           methods <- data.table(result = names(methodIds), methodDbId = unname(unlist(methodIds)))
@@ -1624,7 +1525,7 @@ mod_model_server <- function(id, rv){
           print("Checking if BLUES/BLUPS variables already exist")
           missing_variables_df <- data.frame(matrix(nrow = 0, ncol = 5))
           metrics_variables_df <- data.frame(matrix(nrow = 0, ncol = 8))
-          # 
+
           # for each origin variable, we are looking for corresponding BLUPs/BLUEs variables
           # which means looking for variables with the same scaleDbId, traitDbId but with BLUEs/BLUPs methodDbIds 
           missing_variables_list <- list()
@@ -1633,10 +1534,9 @@ mod_model_server <- function(id, rv){
             # Checking if relative BLUES/BLUPS variables already exist
             # which means looking for variables with the same scaleDbId, traitDbId but with BLUEs/BLUPs methodDbIds 
             scaleDbId <- origin_variables$scaleDbId[i] #"6085"
-            variableName <- origin_variables$originVariableDbId[i]
+            originVariableDbId <- origin_variables$originVariableDbId[i]
             traitDbId <-  origin_variables$traitDbId[i] #"20454"
-            #variableDbId <- origin_variables$originVariableDbId[i]
-
+            originVariableName <- origin_variables$originVariableName[i]
             
             resp_search_variables <- brapir::phenotyping_variables_post_search(
               con = rv$con,
@@ -1652,13 +1552,29 @@ mod_model_server <- function(id, rv){
               if (resp_get_search_variables$status_code == 200) {
                 existing_variables <- NULL
                 if (resp_get_search_variables$metadata$pagination$totalCount > 0) {
-                  existing_variables <- data.table(resp_get_search_variables$data)[,.(observationVariableName, observationVariableDbId, 
-                                                                                      methodDbId = method.methodDbId, scaleDbId = scale.scaleDbId,
-                                                                                      traitDbId = trait.traitDbId, originVariableDbId = observationVariableDbId,
-                                                                                      originVariableName = observationVariableName)]
-                  #[,result := names(methodIds)[which(unlist(methodIds) == methodDbId)]]
-                  existing_variables <- merge(existing_variables, methods, by="methodDbId")
-                  missing_methods <- unlist(methodIds)[!(unlist(methodIds) %in% existing_variables$methodDbId)]
+                  existing_variables <- data.table(resp_get_search_variables$data)
+                  
+                  if ("additionalInfo.ParentID" %in% names(existing_variables)) {
+                    existing_variables <- existing_variables[,.(observationVariableName, observationVariableDbId, 
+                                                                methodDbId = method.methodDbId, scaleDbId = scale.scaleDbId,
+                                                                traitDbId = trait.traitDbId,
+                                                                ParentID = additionalInfo.ParentID)]
+                  
+                    #[,result := names(methodIds)[which(unlist(methodIds) == methodDbId)]]
+                    existing_variables <- existing_variables[ParentID == originVariableDbId, originVariableName:=originVariableName]
+                    existing_variables <- merge(existing_variables, methods, by="methodDbId")
+                   
+                    # check for duplicated variables (should not happen)
+                    cols_to_check <- setdiff(names(existing_variables), c("observationVariableName", "observationVariableDbId"))
+                    duplicated_var <- existing_variables[duplicated(existing_variables[, ..cols_to_check])]
+                    if (nrow(duplicated_var)>0) {
+                      stop(paste0("can't push because of duplicated analysis variables:", duplicated_var$observationVariableName))
+                    }
+                    missing_methods <- unlist(methodIds)[!(unlist(methodIds) %in% existing_variables$methodDbId)]  
+                  } else {
+                    existing_variables <- NULL
+                    missing_methods <- unlist(methodIds)
+                  }
                 } else {
                   missing_methods <- unlist(methodIds)
                 }
@@ -1671,7 +1587,9 @@ mod_model_server <- function(id, rv){
                   )[, observationVariableName := paste0(origin_variables$originVariableName[i], "_", methodName)
                   ][, contextOfUse := "MEANS"
                   ][, scaleDbId := scaleDbId
-                  ][, traitDbId := traitDbId]
+                  ][, traitDbId := traitDbId
+                  ][, originVariableName := originVariableName
+                  ][, ParentID := origin_variables$originVariableDbId[i]]
                   
                   missing_variables_list <- append(missing_variables_list, list(missing_variables_dt))
                 }
@@ -1692,6 +1610,7 @@ mod_model_server <- function(id, rv){
             
             body <- apply(missing_variables,1,function(a){
               list(
+                additionalInfo = list(ParentID = jsonlite::unbox(a["ParentID"])),
                 contextOfUse = c("MEANS"),
                 method = list(methodDbId = jsonlite::unbox(a["methodDbId"])),
                 observationVariableName = jsonlite::unbox(a["observationVariableName"]),
@@ -1708,10 +1627,10 @@ mod_model_server <- function(id, rv){
                     methodDbId = method.methodDbId,
                     scaleDbId = scale.scaleDbId,
                     traitDbId = trait.traitDbId,
-                    originVariableName = observationVariableName,
-                    originVariableDbId = observationVariableDbId
+                    ParentID = additionalInfo.ParentID
                 )]
               created_variables_dt <- merge(created_variables_dt, methods, by="methodDbId")
+              created_variables_dt <- merge(created_variables_dt, missing_variables[,.(originVariableName, ParentID)], by="ParentID")
               
               print("Created variables:")
               print(created_variables_dt)
@@ -1723,6 +1642,10 @@ mod_model_server <- function(id, rv){
           existing_variables <- rbindlist(existing_variables_list, use.names = T)
           print("All variables:")
           print(existing_variables)
+          
+          bluesToPush <<- merge(bluesToPush, 
+            existing_variables[,.(observationVariableName, observationVariableDbId, originVariableName, result)], 
+            by = c("originVariableName", "result"))
           
           ## check if existing BLUEs/BLUPs ####          
           withProgress(message = "check if BLUEs/BLUPs are already stored in the database", min=1, max=1, {
@@ -1746,8 +1669,8 @@ mod_model_server <- function(id, rv){
           
         },
         error = function(e) {
-          showNotification(paste0("An error occured: ", e), type = "error", duration = notification_duration)
-          print(e)
+          showNotification(paste0("An error occured: ", e$message), type = "error", duration = notification_duration)
+          print(e$message)
           return(NULL)
         })
       }
