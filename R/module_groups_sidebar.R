@@ -67,8 +67,8 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
       ## Displaying buttons ####
       observeEvent(input$group_sel_input, {
         #selected_groups <- rv$groups[group_id %in% input$group_sel_input,]
-        shinyjs::toggle(selector = paste0(".",ns("at_least_one_group_selected")), condition = length(input$group_sel_input)>0 && length(input$group_sel_input)<nrow(rv$groups))
-        shinyjs::toggle(selector = paste0(".",ns("create_new_groups_from_groups")), condition = length(input$group_sel_input)>1 && length(input$group_sel_input)<nrow(rv$groups))
+        shinyjs::toggle(selector = paste0(".",ns("at_least_one_group_selected")), condition = length(input$group_sel_input)>0)
+        shinyjs::toggle(selector = paste0(".",ns("create_new_groups_from_groups")), condition = length(input$group_sel_input)>1)
         shinyjs::toggle(selector = paste0(".",ns("one_group_selected")), condition = length(input$group_sel_input)==1)
         shinyjs::toggle(id = "export_box", condition = length(input$group_sel_input)==1)
         shinyjs::toggle(selector = paste0(".",ns("all_groups_selected")), condition = length(input$group_sel_input)>0)
