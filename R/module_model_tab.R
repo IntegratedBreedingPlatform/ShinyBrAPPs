@@ -1559,18 +1559,20 @@ mod_model_server <- function(id, rv){
                                                                 methodDbId = method.methodDbId, scaleDbId = scale.scaleDbId,
                                                                 traitDbId = trait.traitDbId,
                                                                 ParentID = additionalInfo.ParentID)]
-                  
                     #[,result := names(methodIds)[which(unlist(methodIds) == methodDbId)]]
-                    existing_variables <- existing_variables[ParentID == originVariableDbId, originVariableName:=originVariableName]
+                    existing_variables <- existing_variables[ParentID == originVariableDbId,][,originVariableName:=originVariableName]
                     existing_variables <- merge(existing_variables, methods, by="methodDbId")
-                   
-                    # check for duplicated variables (should not happen)
-                    cols_to_check <- setdiff(names(existing_variables), c("observationVariableName", "observationVariableDbId"))
-                    duplicated_var <- existing_variables[duplicated(existing_variables[, ..cols_to_check])]
-                    if (nrow(duplicated_var)>0) {
-                      stop(paste0("can't push because of duplicated analysis variables:", duplicated_var$observationVariableName))
+                    if (nrow(existing_variables>0)) {
+                      # check for duplicated variables (should not happen)
+                      cols_to_check <- setdiff(names(existing_variables), c("observationVariableName", "observationVariableDbId"))
+                      duplicated_var <- existing_variables[duplicated(existing_variables[, ..cols_to_check])]
+                      if (nrow(duplicated_var)>0) {
+                        stop(paste0("can't push because of duplicated analysis variables:", duplicated_var$observationVariableName))
+                      }
+                      missing_methods <- unlist(methodIds)[!(unlist(methodIds) %in% existing_variables$methodDbId)]  
+                    } else {
+                      missing_methods <- unlist(methodIds)
                     }
-                    missing_methods <- unlist(methodIds)[!(unlist(methodIds) %in% existing_variables$methodDbId)]  
                   } else {
                     existing_variables <- NULL
                     missing_methods <- unlist(methodIds)
@@ -1630,7 +1632,7 @@ mod_model_server <- function(id, rv){
                     ParentID = additionalInfo.ParentID
                 )]
               created_variables_dt <- merge(created_variables_dt, methods, by="methodDbId")
-              created_variables_dt <- merge(created_variables_dt, missing_variables[,.(originVariableName, ParentID)], by="ParentID")
+              created_variables_dt <- merge(created_variables_dt, unique(missing_variables[,.(originVariableName, ParentID)]), by="ParentID")
               
               print("Created variables:")
               print(created_variables_dt)
