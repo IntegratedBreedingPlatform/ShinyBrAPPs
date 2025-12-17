@@ -685,8 +685,8 @@ mod_gxe_server <- function(id, rv, parent_session){
                         #grep("study_*[n,N]ame",colnames(rv_gxe$data), value = TRUE),
                         colnames(rv_gxe$data)[colnames(rv_gxe$data)%in%colnames(rv$environmentParameters)])
         )
-        tolabels <- NULL
-        fromlabels <- setdiff(fromlabels, "studyDbId")
+        tolabels <- "locationName"
+        fromlabels <- setdiff(fromlabels, c("locationName","studyDbId"))
         output$sortable_ui <- renderUI({
           sortable::bucket_list(
             header = "Drag elements to the green area to compose study name",

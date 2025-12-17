@@ -191,6 +191,7 @@ mod_get_extradata_server <- function(id, rv){
           nothing <- lapply(column_datasource[type=="Numerical", cols], function(col){
             extradata[,eval(col) := as.numeric(eval(as.name(col)))]
           })
+          extradata[, label_study:=paste(locationName, studyDbId, sep="-")]
           
           rv$environmentParameters <- environmentParameters
           rv$extradata <- extradata
