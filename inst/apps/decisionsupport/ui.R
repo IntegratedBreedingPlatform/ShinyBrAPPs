@@ -24,6 +24,41 @@ ui <- fluidPage(
                     margin-bottom: 5px;
                     border-color: #357ebd;"),
   tags$style(HTML("
+/* Ensure the dropdown menu remains scrollable */
+.bootstrap-select .dropdown-menu {
+  overflow-y: auto !important;
+  max-height: 300px; /* Adjust as needed */
+}
+
+/* Position the action box above the dropdown items */
+.dropdown-menu .bs-actionsbox {
+  z-index: 1000;
+  position: sticky;
+  top: 0;
+  background: white; /* Match the background color of the dropdown */
+  padding: 5px;
+  border-bottom: 1px solid #ddd; /* Optional: Add a border for visual separation */
+}
+
+/* Ensure dropdown items are below the action box */
+.dropdown-menu .dropdown-item {
+  z-index: 10;
+  position: relative;
+}
+
+/* Adjust the checkmark positioning */
+.dropdown-menu .check-mark {
+  position: relative;
+  margin-left: 5px;
+  z-index: 5;
+}
+
+/* Ensure action box buttons are clickable and positioned correctly */
+.dropdown-menu .bs-actionsbox button {
+  z-index: 999;
+  position: relative;
+}
+
     /* sidebar */
     .sidebar-title {
       font-size: 16px !important;

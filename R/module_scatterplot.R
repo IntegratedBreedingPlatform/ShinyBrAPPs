@@ -29,7 +29,7 @@ mod_scatterplot_ui <- function(id){
            label = "Environments",
            choices = NULL,
            width = "100%",
-           options = list(container = "body"), 
+           options = pickerOptions(`actions-box` = TRUE, size=FALSE), 
            multiple = T
          ),
          #tags$h4("Aggregate observations", style = "display:inline", class = "space-right"),
@@ -233,7 +233,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         ## Set environments selector ####
         # don't change environment selection after creating a group
         if (!rv$new_group_created) {
-          envs <- unique(rv$extradata[,.(studyDbId, study_name_app)])
+          envs <- unique(rv$extradata[,.(studyDbId, study_name_app)][order(study_name_app)])
           env_choices <- envs[,studyDbId]
           names(env_choices) <- envs[,study_name_app]
           updatePickerInput(
@@ -549,16 +549,16 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         
         
         ## if many SHAPE or COLOR categorical values, make a "other" category
-        if(data_plot_aggr[,.N,VAR_SHAPE][,.N]>6){
-          other_values <- data_plot_aggr[,.N,VAR_SHAPE][order(N, decreasing = T)][6:.N, VAR_SHAPE]
-          data_plot_aggr[VAR_SHAPE%in%other_values, VAR_SHAPE := "other"]
-        }
-        if(!data_plot_aggr[,is.numeric(VAR_COLOUR)]){
-          if(data_plot_aggr[,.N,VAR_COLOUR][,.N]>12){
-            other_values <- data_plot_aggr[,.N,VAR_COLOUR][order(N, decreasing = T)][6:.N, VAR_COLOUR]
-            data_plot_aggr[VAR_COLOUR%in%other_values, VAR_COLOUR := "other"]
-          }
-        }
+        #if(data_plot_aggr[,.N,VAR_SHAPE][,.N]>6){
+        #  other_values <- data_plot_aggr[,.N,VAR_SHAPE][order(N, decreasing = T)][6:.N, VAR_SHAPE]
+        #  data_plot_aggr[VAR_SHAPE%in%other_values, VAR_SHAPE := "other"]
+        #}
+        #if(!data_plot_aggr[,is.numeric(VAR_COLOUR)]){
+        #  if(data_plot_aggr[,.N,VAR_COLOUR][,.N]>12){
+        #    other_values <- data_plot_aggr[,.N,VAR_COLOUR][order(N, decreasing = T)][6:.N, VAR_COLOUR]
+        #    data_plot_aggr[VAR_COLOUR%in%other_values, VAR_COLOUR := "other"]
+        #  }
+        #}
         
         rv_plot$data_aggr <- data_plot_aggr
       })
