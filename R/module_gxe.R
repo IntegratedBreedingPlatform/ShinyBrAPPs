@@ -44,7 +44,7 @@ mod_gxe_ui <- function(id){
                 pickerInput(ns("weight_var"), label = "Weight variable", choices = c()),
                 materialSwitch(ns("transf_weights"),label = "Weight variable is the standard error of BLUE or BLUP", value = TRUE, inline = T, status = "info"))|>
                 tooltip("When this option is selected weights will be calculated as 1/x^2, x being the selected weight variable", options = list(trigger="hover")),
-            pickerInput(ns("picker_germplasm_level"), label = tags$span(style="color: red;","Germplasm level"), choices = c("germplasmDbId","germplasmName"), selected = "GermplasmName")|>
+            pickerInput(ns("picker_germplasm_level"), label = tags$span(style="color: red;","Germplasm level"), choices = c("germplasmDbId","germplasmName"), selected = "germplasmName")|>
               tooltip("Select how genotypes will be identified (either germplasmDbId or germplasmName). In the second case, germplasm that have different DbIds in different environments but sharing a common preferred name will be considered as the same.", options = list(trigger="hover")),
             accordion(open = FALSE,
                       accordion_panel("Compose study name", 
