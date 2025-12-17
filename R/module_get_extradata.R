@@ -60,7 +60,6 @@ mod_get_extradata_server <- function(id, rv){
             formula = formul,
             value.var = "observationValue"
           )
-          #browser()
           ### Data source "environment"
           ## extract environment parameters from rv$study_metadata
           if(length(grep("environmentParameters", names(rv$study_metadata)))){
@@ -87,8 +86,17 @@ mod_get_extradata_server <- function(id, rv){
             latlon <- unique(geo[,.(studyDbId,geo.lat=unlist(lapply(coordinates.geometry.coordinates,function(a) a[1])),geo.lon=unlist(lapply(coordinates.geometry.coordinates,function(a) a[2])))])
             latlon[,studyDbId:=as.numeric(studyDbId)]
             environmentParameters <- latlon[environmentParameters,on=.(studyDbId)]
-            env_cols <- rbind(env_cols, data.table(cols=c("geo.lat","geo.lon"), type = NA, source = "environment", visible = T))
+            env_cols <- rbind(env_cols, data.table(cols=c("geo.lat","geo.lon"), type = "Numerical", source = "environment", visible = T))
             extradata <- merge(extradata, latlon, by = "studyDbId", all.x=TRUE)
+          }
+
+          locols <- c( "locationType", "locationName","abbreviation", "countryCode", "countryName", "parentLocationName")
+          if(sum(names(rv$study_metadata)%in%locols)){
+            locs <- unique(rv$study_metadata[,c("studyDbId",locols[locols%in%names(rv$study_metadata)]), with = F])
+            locs[,studyDbId:=as.numeric(studyDbId)]
+            environmentParameters <- locs[environmentParameters,on=.(studyDbId)]
+            env_cols <- rbind(env_cols, data.table(cols=locols[locols%in%names(rv$study_metadata)], type = "Text", source = "environment", visible = T))
+            extradata <- merge(extradata[,-c("locationName")], locs, by = "studyDbId", all.x=TRUE)
           }
           
           column_datasource <- rbindlist(list(column_datasource, env_cols), use.names = T)
