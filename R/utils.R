@@ -662,18 +662,24 @@ save_user_data <- function(rv) {
 }
 
 #' @export
-update_selectors_with_groups <- function(rv, new_group) {
+update_selectors_with_groups <- function(rv, new_group, initial_name = NULL) {
   ## update selectors (shape, colour)
   data_plot <- copy(rv$extradata) # to avoid issues related to assignment by reference
   data_plot[germplasmDbId %in% new_group[,unlist(germplasmDbIds)], eval(new_group$group_name) := paste0('In')]
-  data_plot[!(germplasmDbId %in% new_group[,unlist(germplasmDbIds)]), eval(new_group$group_desc) := paste0('Out')]
-  rv$column_datasource <- rbindlist(
-    list(
-      rv$column_datasource,
-      data.table(cols = new_group$group_name, source = "group", type = "Text", visible = T)
-    ),
-    use.names = T
-  )
+  data_plot[!(germplasmDbId %in% new_group[,unlist(germplasmDbIds)]), eval(new_group$group_name) := paste0('Out')]
+
+  if (!is.null(initial_name)) { # renaming a group
+    data_plot[, eval(initial_name) := NULL]
+    rv$column_datasource[cols == initial_name & source == "group", cols := new_group$group_name]
+  } else { # add a new group
+    rv$column_datasource <- rbindlist(
+      list(
+        rv$column_datasource,
+        data.table(cols = new_group$group_name, source = "group", type = "Text", visible = T)
+      ),
+      use.names = T
+    )
+  }
   
   rv$new_group_created <- T #to avoid environments selection reset
   rv$extradata <- data_plot

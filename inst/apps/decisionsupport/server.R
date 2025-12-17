@@ -52,8 +52,15 @@ server <- function(input, output, session){
   ## Action when clicking on button rename group in modal
   observeEvent(input$modal_rename_group_go, {
     req(length(rv$selected_group_id) == 1)
-    rv$groups[group_id == rv$selected_group_id, group_name := input$modal_rename_group_text_input_label]
-    rv$groups[group_id == rv$selected_group_id, group_desc := input$modal_rename_group_text_input_descr]
+    initial_name <- rv$groups[group_id == rv$selected_group_id, group_name]
+    groups <- copy(rv$groups)
+    groups[group_id == rv$selected_group_id, group_name := input$modal_rename_group_text_input_label]
+    groups[group_id == rv$selected_group_id, group_desc := input$modal_rename_group_text_input_descr]
+    rv$groups <- groups
+    # Update colorGenotypeBy pickerInputs if the name has been changed and if it is not a cluster group
+    if (initial_name != input$modal_rename_group_text_input_label & is.na(rv$groups[group_id == rv$selected_group_id, clustering_id])) {
+      update_selectors_with_groups(rv, rv$groups[group_id == rv$selected_group_id,], initial_name)
+    }
     removeModal()
     save_user_data(rv)
   })

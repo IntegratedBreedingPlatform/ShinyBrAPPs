@@ -55,7 +55,7 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
     function(input, output, session){
       ns <- session$ns
       parent_ns <- parent_session$ns
-      observeEvent(rv$groups$group_id,{
+      observeEvent(rv$groups,{
         req(rv$groups)
         req(length(rv$groups) > 0)
         output$ui_groups <- renderUI({
