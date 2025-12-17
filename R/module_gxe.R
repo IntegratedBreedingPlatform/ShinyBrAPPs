@@ -22,7 +22,15 @@ mod_gxe_ui <- function(id){
                       
       .btn:focus {
         color: black;
-      }"))
+      }"),
+                 HTML("
+      /* Style the container */
+      #my-rank-list {
+        border: 1px solid #269100;
+        background: #c4ee9a;
+        padding: 2px;
+      }
+    "))
     ),
     navset_tab(
       nav_panel(
@@ -681,16 +689,16 @@ mod_gxe_server <- function(id, rv, parent_session){
         fromlabels <- setdiff(fromlabels, "studyDbId")
         output$sortable_ui <- renderUI({
           sortable::bucket_list(
-            header = "Drag elements to compose study name",
+            header = "Drag elements to the green area to compose study name",
             group_name = "bucket_list_group",
             orientation = "vertical",
             sortable::add_rank_list(
-              text = "From here...",
+              text = "",
               labels = fromlabels,
               input_id = ns("rank_list_1")
             ),
             sortable::add_rank_list(
-              text = "to here",
+              text = "",
               labels = tolabels,
               input_id = ns("rank_list_2"),
               css_id = "my-rank-list"
