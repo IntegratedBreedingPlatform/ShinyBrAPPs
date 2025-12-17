@@ -29,7 +29,7 @@ mod_scatterplot_ui <- function(id){
            label = "Environments",
            choices = NULL,
            width = "100%",
-           options = list(container = "body"), 
+           options = pickerOptions(`actions-box` = TRUE, size=FALSE), 
            multiple = T
          ),
          #tags$h4("Aggregate observations", style = "display:inline", class = "space-right"),
@@ -233,7 +233,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         ## Set environments selector ####
         # don't change environment selection after creating a group
         if (!rv$new_group_created) {
-          envs <- unique(rv$extradata[,.(studyDbId, study_name_app)])
+          envs <- unique(rv$extradata[,.(studyDbId, study_name_app)][order(study_name_app)])
           env_choices <- envs[,studyDbId]
           names(env_choices) <- envs[,study_name_app]
           updatePickerInput(
