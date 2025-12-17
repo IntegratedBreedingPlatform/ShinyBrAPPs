@@ -46,8 +46,14 @@ mod_gxe_ui <- function(id){
                 tooltip("When this option is selected weights will be calculated as 1/x^2, x being the selected weight variable", options = list(trigger="hover")),
             pickerInput(ns("picker_germplasm_level"), label = tags$span(style="color: red;","Germplasm level"), choices = c("germplasmDbId","germplasmName"), selected = "GermplasmName")|>
               tooltip("Select how genotypes will be identified (either germplasmDbId or germplasmName). In the second case, germplasm that have different DbIds in different environments but sharing a common preferred name will be considered as the same.", options = list(trigger="hover")),
-            pickerInput(ns("picker_env_variable"), label = tags$span(style="color: red;","Variable to use as Environment Name"), choices = c())|>
-              tooltip("Select an environment detail variable that will be used to identify environments", options = list(trigger="hover")),
+            accordion(open = FALSE,
+                      accordion_panel("Compose study name", 
+                                      uiOutput(ns("sortable_ui")),
+                                      p("Study name example:"),
+                                      textOutput(ns("examp_study")),
+                                      hr(),
+                                      actionButton(ns("rename_envt"), label = "Rename studies")
+                      )),
             pickerInput(ns("picker_env"),
                         label = "Environments",
                         choices = c(),
@@ -558,22 +564,6 @@ mod_gxe_server <- function(id, rv, parent_session){
         } else {
           rv_gxe$data <- rv$extradata
         }
-        #attempt to identify variables that are redundant with studyDbId to use as choices for picker_env_variable
-        datagef <- lapply(rv_gxe$data[,.SD, .SDcols = c("studyDbId",rv$column_datasource[source=="environment", cols])], function(a) as.factor(a))
-        env_vars <- names(which(unlist(lapply(datagef, function(a) length(levels(as.factor(paste(a, datagef$studyDbId))))==length(levels(datagef$studyDbId)) & length(levels(as.factor(paste(a, datagef$studyDbId))))==length(levels(a))))==TRUE))
-        if (!is.null(input$picker_env_variable)){
-          updatePickerInput(
-            session, "picker_env_variable",
-            choices = env_vars,
-            selected = input$picker_env_variable
-          )
-        } else {
-          updatePickerInput(
-            session, "picker_env_variable",
-            choices = env_vars,
-            selected = character(0)
-          )
-        }
         
         if (!is.null(input$picker_trait)){
           updatePickerInput(
@@ -661,19 +651,71 @@ mod_gxe_server <- function(id, rv, parent_session){
       })
       
       ## update env picker when trait or env_variable is chosen ####
-      observeEvent(c(input$picker_trait, input$picker_env_variable),{
+      observeEvent(c(input$picker_trait,  rv_gxe$data),{ 
         req(input$picker_trait)
-        req(input$picker_env_variable)
         ## update environments dropdown
-        envs <- unique(rv_gxe$data[!is.na(get(input$picker_trait)),.SD,.SDcols = c("studyDbId", input$picker_env_variable)])
+        if (any(colnames(rv_gxe$data)=="label_study")){
+        envs <- unique(rv_gxe$data[!is.na(get(input$picker_trait)),.SD,.SDcols = c("studyDbId", "label_study")])
         env_choices <- envs[,studyDbId]
-        names(env_choices) <- envs[[input$picker_env_variable]]
+        names(env_choices) <- envs[["label_study"]]
+        } else {
+          env_choices <- unique(rv_gxe$data$studyDbId)
+          names(env_choices) <- env_choices
+        }
+        #browser()
         updatePickerInput(
           session, "picker_env",
           choices = env_choices,
           selected = env_choices
         )
        
+      })
+      ## Build compose study name UI ####
+      observeEvent(c(rv$environmentParameters),{
+        #browser()
+        fromlabels <- sort(c(#grep("location",colnames(rv_gxe$data), value = TRUE),
+                        #grep("study_*[n,N]ame",colnames(rv_gxe$data), value = TRUE),
+                        colnames(rv_gxe$data)[colnames(rv_gxe$data)%in%colnames(rv$environmentParameters)])
+        )
+        tolabels <- NULL
+        fromlabels <- setdiff(fromlabels, "studyDbId")
+        output$sortable_ui <- renderUI({
+          sortable::bucket_list(
+            header = "Drag elements to compose study name",
+            group_name = "bucket_list_group",
+            orientation = "vertical",
+            sortable::add_rank_list(
+              text = "From here...",
+              labels = fromlabels,
+              input_id = ns("rank_list_1")
+            ),
+            sortable::add_rank_list(
+              text = "to here",
+              labels = tolabels,
+              input_id = ns("rank_list_2"),
+              css_id = "my-rank-list"
+            )
+          )
+        })
+      })
+      ### render study name example ####
+      observeEvent(input$rank_list_2,{
+        req(rv_gxe$data)
+        cols <- c(setdiff(input$rank_list_2,"studyDbId"),"studyDbId")
+        examp <- paste(rv_gxe$data[1, cols, with=FALSE],collapse="-")
+        output$examp_study <- renderText(examp)
+      })
+      ### rename studies ####
+      observeEvent(input$rename_envt, {
+        x <- copy(rv_gxe$data)
+        if (!any(input$rank_list_2=="studyDbId")){
+          envtnames <- c(input$rank_list_2,"studyDbId")
+        } else {
+          envtnames <- input$rank_list_2
+        }
+        x[, label_study:=do.call(paste, c(.SD, sep="-")), .SDcols=envtnames]
+        #st[, label_study:=do.call(paste, c(.SD, sep="-")), .SDcols=envtnames]
+        rv_gxe$data <- x
       })
       
 
@@ -913,7 +955,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         }
         rv$TD <- statgenSTA::createTD(data = data2TD[studyDbId%in%input$picker_env],
                                       genotype = "genotype",
-                                      trial = input$picker_env_variable)
+                                      trial = if (any(colnames(data2TD)=="label_study")) "label_study" else "studyDbId")
 
         
         #Update number of AMMI PCs picker as the smallest of the number of genotypes or environments minus one
@@ -940,8 +982,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       output$TD_boxplot <- renderPlot({
         validate(
           need(input$picker_trait, "You must select a trait"),
-          need(input$picker_germplasm_level, "You must select a germplasm level"),
-          need(input$picker_env_variable, "You must select the environment name")
+          need(input$picker_germplasm_level, "You must select a germplasm level")#,
         )
         req(rv$TD)
         if (!is.null(input$picker_scenario)){
@@ -962,8 +1003,8 @@ mod_gxe_server <- function(id, rv, parent_session){
       ## MM model ####
       ### Run MM model ####
       observeEvent(input$mm_run_model,{
-        if (any(c(is.null(input$picker_trait),is.null(input$picker_env_variable), is.null(input$picker_germplasm_level)))){
-          misspicks <- c("'Trait'","'Variable to use as Environment'", "'Germplasm level'")[c(is.null(input$picker_trait),is.null(input$picker_env_variable), is.null(input$picker_germplasm_level))] 
+        if (any(c(is.null(input$picker_trait), is.null(input$picker_germplasm_level)))){
+          misspicks <- c("'Trait'","'Variable to use as Environment'", "'Germplasm level'")[c(is.null(input$picker_trait), is.null(input$picker_germplasm_level))] 
           showNotification(stringmagic::string_magic("{enum ? misspicks}  should be selected first on Data preparation Tab"), type = "error", duration = notification_duration)
         } else {
           #rv$console <- NULL
@@ -1133,8 +1174,8 @@ mod_gxe_server <- function(id, rv, parent_session){
       ## FW ####
       ### Run FW ####
       observeEvent(input$FW_run,{
-        if (any(c(is.null(input$picker_trait),is.null(input$picker_env_variable), is.null(input$picker_germplasm_level)))){
-          misspicks <- c("'Trait'","'Variable to use as Environment'", "'Germplasm level'")[c(is.null(input$picker_trait),is.null(input$picker_env_variable), is.null(input$picker_germplasm_level))] 
+        if (any(c(is.null(input$picker_trait), is.null(input$picker_germplasm_level)))){
+          misspicks <- c("'Trait'","'Variable to use as Environment'", "'Germplasm level'")[c(is.null(input$picker_trait), is.null(input$picker_germplasm_level))] 
           showNotification(stringmagic::string_magic("{enum ? misspicks}  should be selected first on Data preparation Tab"), type = "error", duration = notification_duration)
         } else {
           withCallingHandlers({
