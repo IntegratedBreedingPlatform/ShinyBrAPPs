@@ -55,12 +55,12 @@ mod_gxe_ui <- function(id){
             pickerInput(ns("picker_germplasm_level"), label = tags$span(style="color: red;","Germplasm level"), choices = c("germplasmDbId","germplasmName"), selected = "germplasmName")|>
               tooltip("Select how genotypes will be identified (either germplasmDbId or germplasmName). In the second case, germplasm that have different DbIds in different environments but sharing a common preferred name will be considered as the same.", options = list(trigger="hover")),
             accordion(open = FALSE,
-                      accordion_panel("Compose study name", 
-                                      uiOutput(ns("sortable_ui")),
-                                      p("Study name example:"),
-                                      textOutput(ns("examp_study")),
-                                      hr(),
-                                      actionButton(ns("rename_envt"), label = "Rename studies")
+                      accordion_panel(title =  "Compose study name",
+                                      uiOutput(ns("sortable_ui"))#,
+                                      #p("Study name example:"),
+                                      #textOutput(ns("examp_study")),
+                                      #hr(),
+                                      #actionButton(ns("rename_envt"), label = "Rename studies")
                       )),
             pickerInput(ns("picker_env"),
                         label = "Environments",
@@ -572,7 +572,6 @@ mod_gxe_server <- function(id, rv, parent_session){
         } else {
           rv_gxe$data <- rv$extradata
         }
-        
         if (!is.null(input$picker_trait)){
           updatePickerInput(
             session, "picker_trait",
@@ -706,15 +705,15 @@ mod_gxe_server <- function(id, rv, parent_session){
           )
         })
       })
-      ### render study name example ####
-      observeEvent(input$rank_list_2,{
-        req(rv_gxe$data)
-        cols <- c(setdiff(input$rank_list_2,"studyDbId"),"studyDbId")
-        examp <- paste(rv_gxe$data[1, cols, with=FALSE],collapse="-")
-        output$examp_study <- renderText(examp)
-      })
+      #### render study name example ####
+      #observeEvent(input$rank_list_2,{
+      #  req(rv_gxe$data)
+      #  cols <- c(setdiff(input$rank_list_2,"studyDbId"),"studyDbId")
+      #  examp <- paste(rv_gxe$data[1, cols, with=FALSE],collapse="-")
+      #  output$examp_study <- renderText(examp)
+      #})
       ### rename studies ####
-      observeEvent(input$rename_envt, {
+      observeEvent(input$rank_list_2, {
         x <- copy(rv_gxe$data)
         if (!any(input$rank_list_2=="studyDbId")){
           envtnames <- c(input$rank_list_2,"studyDbId")
