@@ -249,15 +249,15 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
     ids <- unlist(strsplit(studyDbIds, ","))
     #browser()
     srid <- brapir::core_studies_post_search(con = con, studyDbIds = ids, commonCropNames = con$commoncropname)
-    #study_metadata <- as.data.table(tidyr::unnest( brapir::core_studies_get_search_searchResultsDbId(con, searchResultsDbId = srid$data$searchResultsDbId)$data, cols = "environmentParameters", names_sep = "."))
-    study_metadata <- rbindlist(lapply(ids,function(id){
-     tryCatch({
-       as.data.table(brapir::core_studies_get_studyDbId(con = con, studyDbId = id)$data)
-     },
-     error=function(e){
-       showNotification(paste0("Environment metadata not found for studyDbId ",id), type = "error", duration = notification_duration)
-     })
-    }),use.names = T, fill = T)
+    study_metadata <- as.data.table(tidyr::unnest( brapir::core_studies_get_search_searchResultsDbId(con, searchResultsDbId = srid$data$searchResultsDbId)$data, cols = "environmentParameters", names_sep = "."))
+    #study_metadata <- rbindlist(lapply(ids,function(id){
+    # tryCatch({
+    #   as.data.table(brapir::core_studies_get_studyDbId(con = con, studyDbId = id)$data)
+    # },
+    # error=function(e){
+    #   showNotification(paste0("Environment metadata not found for studyDbId ",id), type = "error", duration = notification_duration)
+    # })
+    #}),use.names = T, fill = T)
     if(study_metadata[,.N]==0){
       showNotification("No environment data found. Check apiURL, token, cropDb and studyDbIds", type = "error", duration = notification_duration)
     }
