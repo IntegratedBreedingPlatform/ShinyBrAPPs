@@ -298,26 +298,15 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               return(study)
             }), use.names = T,fill = T
             )
-  
-            ## convert variables from text to numeric (when possible)
-            ## try as.numeric(x) on each column
-            ## if the conversion doesn't destroy any unmissing values then it's numeric
-            ## cols to exclude from conversion
-            cols_excluded <- c("germplasmName", "locationName", "studyDbId")
-            studies <- studies[, lapply(names(.SD), function(nm) {
-              x <- .SD[[nm]]
-              if (nm %in% cols_excluded) {
-                x
-              } else {
-                suppressWarnings(num <- as.numeric(x))
-                if (sum(!is.na(num)) > 0 && all(is.na(x) == is.na(num))) {
-                  num
-                } else {
-                  x
-                }
-              }
-            }) |> setNames(names(.SD))]
-            
+
+            # get studies variables
+            resp <- brapir::phenotyping_variables_post_search(rv$con, observationVariableDbIds = studies[, unique(observationVariableDbId)])
+            srId <- resp$data$searchResultsDbId
+            resp2 <- brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, searchResultsDbId = srId)
+            variables <- as.data.table(resp2$data)
+            variables <- variables[trait.traitClass != "Breedingprocess", .(observationVariableDbId, scale.dataType)] 
+            studies <- merge(studies, variables, by = "observationVariableDbId")
+
             env_choices <- rv$study_metadata[loaded==F,unique(studyDbId)]
             if(length(env_choices)==0){
               updateAwesomeCheckboxGroup(session = session,inputId = "environments", label = "", choices = vector())

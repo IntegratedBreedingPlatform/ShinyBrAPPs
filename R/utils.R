@@ -158,6 +158,9 @@ get_env_data <- function(con = NULL,
         observationValue = `observations.value`
       )]
       
+      # remove NA or "" observations
+      study_obs <- study_obs[!is.na(observationValue) & observationValue != "",]
+      
       #study_obs <- study_obs[, .(plotNumber = levelCode[levelName == "PLOT"],
       #                           replicate = levelCode[levelName == "REP"],
       #                           blockNumber = levelCode[levelName == "BLOCK"]),
@@ -176,18 +179,6 @@ get_env_data <- function(con = NULL,
                  new=c("plotNumber",
                        "replicate",
                        "blockNumber"))        
-      }
-
-      variables <- as.data.table(brapir::phenotyping_variables_get(con = con, studyDbId = studyDbId)$data)
-      variables <- variables[trait.traitClass != "Breedingprocess", .(observationVariableDbId, scale.dataType)] 
-      if (any(colnames(study_obs)=="observationVariableDbId")){
-        study_obs <- merge(study_obs, variables, 
-                       by.x = "observationVariableDbId", 
-                       by.y = "observationVariableDbId")
-      }
-      
-      if(!("observationValue"%in%names(study_obs))){
-        study_obs[,observationValue:=NA]
       }
       
       study_obs[,study_name_BMS := paste0(

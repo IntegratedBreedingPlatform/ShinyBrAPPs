@@ -66,7 +66,10 @@ mod_get_extradata_server <- function(id, rv){
             environmentParameters <- dcast(data = unique(rv$study_metadata[,grep("environmentParameters|studyDbId", names(rv$study_metadata)), with = F]),
                                            formula = "studyDbId ~ environmentParameters.parameterName",
                                            value.var = "environmentParameters.value")
+<<<<<<< HEAD
             #environmentParameters[,studyDbId:=as.numeric(studyDbId)]
+=======
+>>>>>>> a8932d18f70990a0577056f365d1152b5de2e111
             env_cols <- unique(rv$study_metadata[, .(cols = environmentParameters.parameterName, type = NA, source = "environment", visible = T)])
             comcols <- setdiff(colnames(environmentParameters)[colnames(environmentParameters)%in%colnames(extradata)],"studyDbId")
             if (length(comcols)>0){
@@ -84,7 +87,6 @@ mod_get_extradata_server <- function(id, rv){
             geo <- rv$study_metadata[,c("studyDbId",grep("coordinates", names(rv$study_metadata),value = T)), with = F]
             geo <- geo[!is.na(coordinates.type)]
             latlon <- unique(geo[,.(studyDbId,geo.lat=unlist(lapply(coordinates.geometry.coordinates,function(a) a[1])),geo.lon=unlist(lapply(coordinates.geometry.coordinates,function(a) a[2])))])
-            #latlon[,studyDbId:=as.numeric(studyDbId)]
             environmentParameters <- latlon[environmentParameters,on=.(studyDbId)]
             env_cols <- rbind(env_cols, data.table(cols=c("geo.lat","geo.lon"), type = "Numerical", source = "environment", visible = T))
             extradata <- merge(extradata, latlon, by = "studyDbId", all.x=TRUE)
@@ -93,8 +95,7 @@ mod_get_extradata_server <- function(id, rv){
           locols <- c( "locationType", "locationName","abbreviation", "countryCode", "countryName", "parentLocationName")
           if(sum(names(rv$study_metadata)%in%locols)){
             locs <- unique(rv$study_metadata[,c("studyDbId",locols[locols%in%names(rv$study_metadata)]), with = F])
-            #locs[,studyDbId:=as.numeric(studyDbId)]
-            environmentParameters <- locs[environmentParameters,on=.(studyDbId)]
+           environmentParameters <- locs[environmentParameters,on=.(studyDbId)]
             locs[,locationName:=NULL]
             locols <- names(locs)
             env_cols <- rbind(env_cols, data.table(cols=locols[locols%in%names(rv$study_metadata)], type = "Text", source = "environment", visible = T))

@@ -225,7 +225,6 @@ mod_trialdataxplor_server <- function(id, rv){
           scrid <- brapir::phenotyping_variables_post_search(rv$con, observationVariableDbIds = as.character(unique(data_dq$observationVariableDbId)))$data$searchResultsDbId
           variables <- brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, searchResultsDbId = scrid)$data
           setDT(variables)
-          variables[,observationVariableDbId:=as.numeric(observationVariableDbId)]
           rv_tdx$variables <- variables
           
           locs <- rbindlist(lapply(unique(rv$study_metadata$locationDbId), function(l){
@@ -233,7 +232,6 @@ mod_trialdataxplor_server <- function(id, rv){
            }), use.names = T, fill = T)
           st <- locs[,.(locationDbId,countryName)][rv$study_metadata, on=.(locationDbId)]
           st <- unique(st[,.(studyDbId,locationDbId,countryName,studyName,locationName)])
-          st[, studyDbId:=as.numeric(studyDbId)]
           st <- rv$environmentParameters[st, on=.(studyDbId)]
           #st[, study_label:=paste0(locationName," (",countryName,")")]
           st[, label_study:=paste0(locationName,"-",studyDbId)]
