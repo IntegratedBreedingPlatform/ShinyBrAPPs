@@ -295,7 +295,7 @@ mod_model_server <- function(id, rv){
                                   unique(observationVariableName)]
         updatePickerInput(
           session,"select_traits",
-          choices = choices_traits,
+          choices = sort(choices_traits),
           options = list(
             placeholder = 'Select 1 or more traits',
             onInitialize = I('function() { this.setValue(""); }')
