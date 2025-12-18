@@ -303,7 +303,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             ## try as.numeric(x) on each column
             ## if the conversion doesn't destroy any unmissing values then it's numeric
             ## cols to exclude from conversion
-            cols_excluded <- c("germplasmName", "locationName")
+            cols_excluded <- c("germplasmName", "locationName", "studyDbId")
             studies <- studies[, lapply(names(.SD), function(nm) {
               x <- .SD[[nm]]
               if (nm %in% cols_excluded) {
