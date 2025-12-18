@@ -66,10 +66,6 @@ mod_get_extradata_server <- function(id, rv){
             environmentParameters <- dcast(data = unique(rv$study_metadata[,grep("environmentParameters|studyDbId", names(rv$study_metadata)), with = F]),
                                            formula = "studyDbId ~ environmentParameters.parameterName",
                                            value.var = "environmentParameters.value")
-<<<<<<< HEAD
-            #environmentParameters[,studyDbId:=as.numeric(studyDbId)]
-=======
->>>>>>> a8932d18f70990a0577056f365d1152b5de2e111
             env_cols <- unique(rv$study_metadata[, .(cols = environmentParameters.parameterName, type = NA, source = "environment", visible = T)])
             comcols <- setdiff(colnames(environmentParameters)[colnames(environmentParameters)%in%colnames(extradata)],"studyDbId")
             if (length(comcols)>0){
