@@ -1698,12 +1698,12 @@ mod_model_server <- function(id, rv){
             return(NULL)
           } else {
             withProgress(message = "Building report", value = 0,max = (length(rv_mod$fit[[1]]$traits)*length(rv_mod$fit))+1, {
-            stareport(fit=rv_mod$fit,
-                      file=file,
-                      template="reports/STA_Model.docx",
-                      trialName=unique(rv$study_metadata$trialName),
-                      trialdesc = rv$trial_metadata[trialDbId==unique(rv$study_metadata$trialDbId),trialDescription],
-                      crop = rv$trial_metadata[trialDbId==unique(rv$study_metadata$trialDbId),commonCropName],
+            stareport(fit = rv_mod$fit,
+                      file = file,
+                      template = "reports/STA_Model.docx",
+                      trialName = paste(sort(unique(rv$study_metadata$trialName)), collapse=", "),
+                      trialdesc = paste(rv$trial_metadata[trialDbId%in%unique(rv$study_metadata$trialDbId),.(trialName,trialDescription)][order(trialName),trialDescription], collapse=", "),
+                      crop = paste(unique(rv$trial_metadata[trialDbId%in%unique(rv$study_metadata$trialDbId),commonCropName]), collapse=", "),
                       spatial = rv_mod$data_checks$has_coords,
                       outliers = rbindlist(rv_mod$outliers),
                       excluded = if(nrow(rv$excluded_obs)>0) rv$data[observationDbId %in% rv$excluded_obs$observationDbId] else NULL,
