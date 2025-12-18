@@ -267,9 +267,11 @@ mod_dataquality_server <- function(id, rv) {
       if (length(types) == 1 && types %in% c("Numerical", "Nominal")) {
         all_data_count = nrow(rv_dq$data_viz)
         rv_dq$data_viz[, observationValue := as.numeric(observationValue)]
-        no_na_data_count = nrow(rv_dq$data_viz[!is.na(observationValue),])
+        rv_dq$data_viz <- rv_dq$data_viz[!is.na(observationValue),]
+        no_na_data_count = nrow(rv_dq$data_viz)
+        rv_dq$data_viz <- rv_dq$data_viz[!is.na(observationValue),]
         if (all_data_count - no_na_data_count > 0) {
-          showNotification(paste0(all_data_count - no_na_data_count, " values of ", input$trait ," couldn't be converted as numeric and were set as NA"), type = "warning", duration = notification_duration)
+          showNotification(paste0(all_data_count - no_na_data_count, " values of ", input$trait ," couldn't be converted as numeric and were discarded"), type = "warning", duration = notification_duration)
         }
       } else if (length(types) == 1 && types == "Date") {
         rv_dq$data_viz[, observationValue := as.Date(observationValue)]
