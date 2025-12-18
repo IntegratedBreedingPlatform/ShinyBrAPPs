@@ -95,8 +95,10 @@ mod_get_extradata_server <- function(id, rv){
             locs <- unique(rv$study_metadata[,c("studyDbId",locols[locols%in%names(rv$study_metadata)]), with = F])
             #locs[,studyDbId:=as.numeric(studyDbId)]
             environmentParameters <- locs[environmentParameters,on=.(studyDbId)]
+            locs[,locationName:=NULL]
+            locols <- names(locs)
             env_cols <- rbind(env_cols, data.table(cols=locols[locols%in%names(rv$study_metadata)], type = "Text", source = "environment", visible = T))
-            extradata <- merge(extradata[,-c("locationName")], locs, by = "studyDbId", all.x=TRUE)
+            extradata <- merge(extradata, locs, by = "studyDbId", all.x=TRUE)
           }
           
           column_datasource <- rbindlist(list(column_datasource, env_cols), use.names = T)
