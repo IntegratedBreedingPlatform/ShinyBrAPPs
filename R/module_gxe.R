@@ -543,7 +543,8 @@ mod_gxe_server <- function(id, rv, parent_session){
         TDAMMI = NULL,
         TDStab = NULL,
         sensclust = NULL,
-        STSclicked_genotypes = NULL
+        STSclicked_genotypes = NULL,
+        use_weight = T
       )
       
       dtproxy <<- dataTableProxy('FW_sens_clusters_DT')
@@ -607,7 +608,7 @@ mod_gxe_server <- function(id, rv, parent_session){
               
               updateMaterialSwitch(
                 session, "use_weights",
-                value = TRUE
+                value = rv_gxe$use_weight
               )
               updateMaterialSwitch(
                 session, "transf_weights",
@@ -945,12 +946,26 @@ mod_gxe_server <- function(id, rv, parent_session){
           data2TD[, region:= .SD, .SDcols = input$picker_region]
           #setnames(data2TD, old=input$picker_region, new="region")
         }
-        if (input$use_weights){
+        if (input$use_weights){          
           if (!is.null(input$weight_var)){
+            seBlues_zero <- rv_gxe$data[get(input$weight_var) == 0,]
+            if (nrow(seBlues_zero) > 0) {
+              showNotification(paste0("Can't use weights because some values of ", input$weight_var, " are equal to 0 "), type = "error", duration = notification_duration)
+              rv_gxe$use_weight <- F
+              return(NULL)
+            }
             if (input$transf_weights==TRUE){
-              data2TD[,wt:=(1/.SD)^2, .SDcols=input$weight_var]
+              data2TD[,wt:=(1/.SD)^2, .SDcols=input$weight_var]             
             } else {
               data2TD[,wt:=.SD, .SDcols=input$weight_var]
+            }
+            # check if weights are out of range
+            problematic_weights <- data2TD[wt < 0.1 | wt > 10,]
+            if (nrow(problematic_weights) > 0) {
+              m <- "Some weights are out or range[0.1,10], which may cause issues in predictions."
+              #FIXME find a way to add the message to the console instead of replacing it, this leads to an infinite loop due to observe.
+              #rv_gxe$console <- paste0("Calculating weights on ", input$weight_var, " at ", Sys.time(), " : ", m)
+              showNotification("Some weights are out or range[0.1,10], which may cause issues in predictions.", type = "error", duration = notification_duration)
             }
           }
         }
