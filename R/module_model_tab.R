@@ -1168,6 +1168,8 @@ mod_model_server <- function(id, rv){
                   openxlsx::addWorksheet(wb, "Model statistics")
                   openxlsx::addWorksheet(wb, "BLUPS")
                   openxlsx::addWorksheet(wb, "BLUES")
+                  openxlsx::addWorksheet(wb, "Excluded observations")
+                  openxlsx::addWorksheet(wb, "Candidate outliers")
                   openxlsx::writeData(wb, 1, t(sumst[,-c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 3)
                   openxlsx::writeData(wb, 1, t(sumst[,c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 1)
                   #openxlsx::writeData(wb, 2, startRow = 2, rbind(h2=rv_mod$fitextr[[e]]$heritability,
@@ -1179,6 +1181,8 @@ mod_model_server <- function(id, rv){
                   openxlsx::writeData(wb, 2, t(modst[,c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 1)
                   openxlsx::writeData(wb, 3, data.frame(Environment=envs[e],rv_mod$fitextr[[e]]$BLUPs))
                   openxlsx::writeData(wb, 4, data.frame(Environment=envs[e],rv_mod$fitextr[[e]]$BLUEs))
+                  openxlsx::writeData(wb, 5, merge(rv$excluded_obs, rv$data, by = "observationDbId")[study_name_app%in%envs[e] & !observationDbId%in%rv_mod$fitted_data$observationDbId])
+                  openxlsx::writeData(wb, 6,rbindlist(rv_mod$outliers)[trial==envs[e]])
                   openxlsx::saveWorkbook(wb, file = paste0(wbd,"/",wbn[e]), overwrite = TRUE)
                 }
                 zip::zip(zipfile = file, files = wbn, include_directories = FALSE, root = wbd)
@@ -1200,6 +1204,8 @@ mod_model_server <- function(id, rv){
                 openxlsx::addWorksheet(wb, "Model statistics")
                 openxlsx::addWorksheet(wb, "BLUPS")
                 openxlsx::addWorksheet(wb, "BLUES")
+                openxlsx::addWorksheet(wb, "Excluded observations")
+                openxlsx::addWorksheet(wb, "Candidate outliers")
                 openxlsx::writeData(wb, 1, t(sumst[,-c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 3)
                 openxlsx::writeData(wb, 1, t(sumst[,c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 1)
                 openxlsx::writeData(wb, 2, t(modst[,-c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 3)
@@ -1220,6 +1226,8 @@ mod_model_server <- function(id, rv){
                                                      fill = TRUE
                                                      )
                                     )
+                openxlsx::writeData(wb, 5, merge(rv$excluded_obs, rv$data, by = "observationDbId")[!observationDbId%in%rv_mod$fitted_data$observationDbId])
+                openxlsx::writeData(wb, 6,rbindlist(rv_mod$outliers))
                 openxlsx::saveWorkbook(wb, file = file, overwrite = TRUE)
               }
             }
