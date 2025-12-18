@@ -30,12 +30,8 @@ mod_trialdataxplor_ui <- function(id){
                               sidebar = sidebar(title = "Settings",width = 300,
                                 open="closed",
                                 accordion(open = FALSE,
-                                  accordion_panel("Compose study names", 
-                                                  uiOutput(ns("sortable_ui")),
-                                                  p("Study name example:"),
-                                                  textOutput(ns("examp_study")),
-                                                  hr(),
-                                                  actionButton(ns("rename_envt"), label = "Rename studies")
+                                  accordion_panel("Compose study name", 
+                                                  uiOutput(ns("sortable_ui"))
                                                   ),
                                   accordion_panel("Parameters",
                                                   numericInput(ns("boxplot_basewidth"),label = "Distribution plot base width", value = 150),
@@ -263,25 +259,24 @@ mod_trialdataxplor_server <- function(id, rv){
       output$study_no_dat <- renderTable(rv_tdx$study_no_dat ,digits=0)
       
       observeEvent(c(rv$environmentParameters),{
-        #browser()
-        fromlabels <- c(grep("location",colnames(rv_tdx$data_dq), value = TRUE),
-                        grep("study_*[n,N]ame",colnames(rv_tdx$data_dq), value = TRUE),
+        fromlabels <- c(#grep("location",colnames(rv_tdx$data_dq), value = TRUE),
+                        #grep("study_*[n,N]ame",colnames(rv_tdx$data_dq), value = TRUE),
                         colnames(rv_tdx$data_dq)[colnames(rv_tdx$data_dq)%in%colnames(rv$environmentParameters)]
                         )
-        tolabels <- c("locationName", "studyDbId")
-        fromlabels <- setdiff(fromlabels, tolabels)
+        tolabels <- "locationName"
+        fromlabels <- setdiff(fromlabels,  c("locationName","studyDbId"))
         output$sortable_ui <- renderUI({
         sortable::bucket_list(
-          header = "Drag elements to compose study name",
+          header = "Drag elements to the green area to compose study name",
           group_name = "bucket_list_group",
           orientation = "vertical",
           sortable::add_rank_list(
-            text = "From here...",
+            text = "",
             labels = fromlabels,
             input_id = ns("rank_list_1")
           ),
           sortable::add_rank_list(
-            text = "to here",
+            text = "",
             labels = tolabels,
             input_id = ns("rank_list_2"),
             css_id = "my-rank-list"
@@ -319,7 +314,7 @@ mod_trialdataxplor_server <- function(id, rv){
           rv_tdx$var_no_dat <- vnd
       })
       
-      observeEvent(input$rename_envt, {
+      observeEvent(input$rank_list_2, {
         x <- copy(rv_tdx$data_dq)
         st <- copy(rv_tdx$st)
         if (!any(input$rank_list_2=="studyDbId")){
