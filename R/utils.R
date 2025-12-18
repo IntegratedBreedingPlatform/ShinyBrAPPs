@@ -678,7 +678,7 @@ update_selectors_with_groups <- function(rv, new_group, initial_name = NULL) {
 
 #' @export
 summary.stats <- function(x){
-  
+  x <- x[!is.na(observationValue)]
   sumtable_notexcl_nodat <- x[scale.dataType != "Date", .(
     "Environment" = study_name_app,
     "No. of observations" = .N,
@@ -695,8 +695,8 @@ summary.stats <- function(x){
       observationValue - mean(observationValue, na.rm = T)
     ) ^ 2),
     "Uncorrected sum of squares" = sum(observationValue ^ 2, na.rm = T),
-    "Skewness" = e1071::skewness(observationValue),
-    "Kurtosis" = e1071::kurtosis(observationValue)
+    "Skewness" = e1071::skewness(observationValue, na.rm = TRUE),
+    "Kurtosis" = e1071::kurtosis(observationValue, na.rm = TRUE)
   ), .(study_name_app, observationVariableName)]
   
   if (any(x$scale.dataType == "Date")){
@@ -716,8 +716,8 @@ summary.stats <- function(x){
         observationValue - mean(observationValue, na.rm = T)
       ) ^ 2),
       "Uncorrected sum of squares" = sum(observationValue ^ 2, na.rm = T),
-      "Skewness" = e1071::skewness(observationValue),
-      "Kurtosis" = e1071::kurtosis(observationValue)
+      "Skewness" = e1071::skewness(observationValue, na.rm = TRUE),
+      "Kurtosis" = e1071::kurtosis(observationValue, na.rm = TRUE)
     ), .(study_name_app, observationVariableName)]
     
     sumtable_notexcl <- rbind(sumtable_notexcl_nodat,sumtable_notexcl_dat)        
