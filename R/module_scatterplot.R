@@ -32,6 +32,14 @@ mod_scatterplot_ui <- function(id){
            options = pickerOptions(`actions-box` = TRUE, size=FALSE), 
            multiple = T
          ),
+        pickerInput(
+          inputId = ns("germp"),
+          label = "Genotypes",
+          choices = NULL,
+          width = "100%",
+          options = pickerOptions(`actions-box` = TRUE, size=FALSE), 
+          multiple = T
+        ),
          #tags$h4("Aggregate observations", style = "display:inline", class = "space-right"),
          fluidRow(
            materialSwitch(inputId = ns("switch_aggregate"), label = "Aggregate observations", value = F, inline = T, status = "info"),
@@ -244,7 +252,7 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         }
         
         ## Set germplasm refs ####
-        germplasmNames <- rv$extradata[,.(germplasmNames = list(unique(germplasmName))), .(entryType)][order(entryType)]
+        germplasmNames <- rv$extradata[,.(germplasmNames = list(sort(unique(germplasmName)))), .(entryType)][order(entryType)]
         updatePickerInput(
           session = session, inputId = "ref_genotype_X",
           choices = setNames(germplasmNames[,germplasmNames], germplasmNames[,entryType]),
@@ -258,6 +266,15 @@ mod_scatterplot_server <- function(id, rv, parent_session){
           choices = setNames(germplasmNames[,germplasmNames], germplasmNames[,entryType]),
           options = list(
             title = "Select reference germplasm",
+            `live-search` = TRUE
+          )
+        )
+        updatePickerInput(
+          session = session, inputId = "germp",
+          choices = setNames(germplasmNames[,germplasmNames], germplasmNames[,entryType]),
+          selected = unique(rv$extradata$germplasmName),
+          options = list(
+            title = "Germplasm",
             `live-search` = TRUE
           )
         )
@@ -348,6 +365,10 @@ mod_scatterplot_server <- function(id, rv, parent_session){
         
         rv_plot$data <- rv$extradata
 
+      })
+      
+      observeEvent(input$germp, {
+        rv_plot$data <- rv$extradata[germplasmName%in%input$germp]
       })
       
       ## update colour aggreg functions ####
