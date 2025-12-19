@@ -1152,13 +1152,15 @@ mod_model_server <- function(id, rv){
                 wbd <- tempdir()
                 for (e in seq_along(envs)){
                   sumst <- summary.stats(rv$data[!observationDbId%in%rv$excluded_obs$observationDbId & study_name_app%in%envs[e] & observationVariableName%in%input$select_traits])
-                  modst <- rbindlist(Map(function(a,n) data.table(Environment=n,
+                  modst <- rbindlist(Map(function(a,n,i) data.table(studyDbId=i,
+                                                                    Environment=n,
                                                                   Variable=names(a$heritability),
                                                                   h2=a$heritability,
                                                                   CV=a$CV,
                                                                   Wald_p.value=unlist(lapply(a$wald,function(b) b$p.value))),
                                          rv_mod$fitextr[e],
-                                         names(rv_mod$fitextr)[e]),
+                                         names(rv_mod$fitextr)[e],
+                                         unique(rv$study_metadata[,.(studyDbId,study_name_app)])[study_name_app==envs[e], studyDbId]),
                                       use.names = TRUE,
                                       fill = TRUE
                                     )
@@ -1188,13 +1190,15 @@ mod_model_server <- function(id, rv){
                 zip::zip(zipfile = file, files = wbn, include_directories = FALSE, root = wbd)
               } else {
                 sumst <- summary.stats(rv$data[!observationDbId%in%rv$excluded_obs$observationDbId &  study_name_app%in%input$select_environments & observationVariableName%in%input$select_traits])
-                modst <- rbindlist(Map(function(a,n) data.table(Environment=n,
+                modst <- rbindlist(Map(function(a,n,i) data.table(studyDbId=i,
+                                                                  Environment=n,
                                                                 Variable=names(a$heritability),
                                                                 h2=a$heritability,
                                                                 CV=a$CV,
                                                                 Wald_p.value=unlist(lapply(a$wald,function(b) b$p.value))),
                                        rv_mod$fitextr,
-                                       names(rv_mod$fitextr)
+                                       names(rv_mod$fitextr),
+                                       unique(rv$study_metadata[,.(studyDbId,study_name_app)])[match(names(rv_mod$fitextr), study_name_app), studyDbId]
                                        ),
                                    use.names = TRUE,
                                    fill = TRUE
