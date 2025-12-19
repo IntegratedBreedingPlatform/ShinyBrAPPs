@@ -543,8 +543,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         TDAMMI = NULL,
         TDStab = NULL,
         sensclust = NULL,
-        STSclicked_genotypes = NULL,
-        use_weight = T
+        STSclicked_genotypes = NULL
       )
       
       dtproxy <<- dataTableProxy('FW_sens_clusters_DT')
@@ -560,72 +559,27 @@ mod_gxe_server <- function(id, rv, parent_session){
       #lastsel_stabtab <- Sys.time()
 
       ## initialize all inputs ####
-      observe({
+      observeEvent(rv$extradata, {
         req(rv$extradata)
-        req(rv$column_datasource)
-        req(!isTRUE(input$picker_germplasm_attr_open))
-        #update trait dropdown
-        trait_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_regexp,cols)]$cols
-        weight_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_wt_regexp,cols)]$cols
         if ("startDate"%in%colnames(rv$study_metadata)){
           rv_gxe$data <- rv$extradata[unique(rv$study_metadata[studyDbId%in%unique(rv$extradata$studyDbId),.(studyDbId, study_startYear = year(as.POSIXct(startDate)))]), on=.(studyDbId)]
         } else {
           rv_gxe$data <- rv$extradata
-        }
-        if (!is.null(input$picker_trait)){
-          updatePickerInput(
-            session, "picker_trait",
-            choices = trait_choices,
-            selected = input$picker_trait
-          )
-        } else {
+        }           
+      })
+
+      observeEvent(c(rv$column_datasource, input$picker_germplasm_attr, input$picker_germplasm_attr_open), {
+        req(!isTRUE(input$picker_germplasm_attr_open))
+        trait_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_regexp,cols)]$cols
+
+        if (is.null(input$picker_trait)) {
           updatePickerInput(
             session, "picker_trait",
             choices = trait_choices,
             selected = character(0)
-          )
-        }
-        
-        if (!is.null(input$weight_var)){
-          updatePickerInput(
-            session, "weight_var",
-            choices = weight_choices,
-            selected = input$weight_var
-          )
-        } else {
-          updatePickerInput(
-            session, "weight_var",
-            choices = weight_choices,
-            selected = character(0)
-          )
-        }
-        if (!is.null(input$picker_trait)){
-          if (grepl("BLUEs",input$picker_trait) || grepl("BLUPs",input$picker_trait)){
-            # is any weight variable 
-            trait_name <- gsub(paste0("(.*)",variable_regexp),"\\1",input$picker_trait)
-            blueorblup <- gsub(paste0(".*(",variable_regexp,")"),"\\1",input$picker_trait)
-            if(any(grepl(trait_name,weight_choices))){
-              
-              updateMaterialSwitch(
-                session, "use_weights",
-                value = rv_gxe$use_weight
-              )
-              updateMaterialSwitch(
-                session, "transf_weights",
-                value = TRUE
-              )
-              updatePickerInput(
-                session, "weight_var",
-                choices = weight_choices,
-                selected = grep(paste0(trait_name,gsub("_","_se",blueorblup)),weight_choices,value = T)
-              )
-            }
-          }          
+          ) 
         }
 
-        #browser()
-        #colorbychoices <- input$picker_germplasm_attr
-        #colorbychoices <- c(colorbychoices,rv$column_datasource[source %in% "group"]$cols)
         colorbychoices <- list(Nothing=c("Nothing"))
         if (nrow(rv$column_datasource[source %in% "group"])>0){
           colorbychoices <- c(colorbychoices, list(`Groups`=as.list(rv$column_datasource[source %in% "group"]$cols)))
@@ -654,8 +608,47 @@ mod_gxe_server <- function(id, rv, parent_session){
           choices = colorbychoices,
           #choices = c("Nothing",colorbychoices, "sensitivity clusters"),
           selected = "Nothing"
-        )          
+        )
       })
+
+      observeEvent(input$picker_trait, {
+        req(rv$column_datasource)
+        weight_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_wt_regexp,cols)]$cols
+        if (!is.null(input$weight_var)){
+          updatePickerInput(
+            session, "weight_var",
+            choices = weight_choices,
+            selected = input$weight_var
+          )
+        } else {
+          updatePickerInput(
+            session, "weight_var",
+            choices = weight_choices,
+            selected = character(0)
+          )
+        }
+        if (grepl("BLUEs",input$picker_trait) || grepl("BLUPs",input$picker_trait)){
+          # is any weight variable 
+          trait_name <- gsub(paste0("(.*)",variable_regexp),"\\1",input$picker_trait)
+          blueorblup <- gsub(paste0(".*(",variable_regexp,")"),"\\1",input$picker_trait)
+          if(any(grepl(trait_name,weight_choices))){
+            
+            updateMaterialSwitch(
+              session, "use_weights",
+              value = TRUE
+            )
+            updateMaterialSwitch(
+              session, "transf_weights",
+              value = TRUE
+            )
+            updatePickerInput(
+              session, "weight_var",
+              choices = weight_choices,
+              selected = grep(paste0(trait_name,gsub("_","_se",blueorblup)),weight_choices,value = T)
+            )
+          }
+        } 
+      })        
       
       ## update env picker when trait or env_variable is chosen ####
       observeEvent(c(input$picker_trait,  rv_gxe$data),{ 
@@ -816,6 +809,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           selected = ifelse(is.null(input$picker_region),character(0),input$picker_region)
         )
       })
+      
       observeEvent(input$picker_germplasm_attr, {
         #updatePickerInput(
         #  session, "FW_picker_color_by",
@@ -864,101 +858,23 @@ mod_gxe_server <- function(id, rv, parent_session){
           rv_gxe$genot_manexcl <- rv_gxe$genot_manexcl[!genotype%in%rv_gxe$genot_to_excl[input$TD_excluded_geno_rows_selected,genotype]]
         }
       })
-      ## main observer to build TD object and output basic plots ####
-      observe({
-        req(rv_gxe$data)
-        req(rv$column_datasource)
-        req(input$picker_trait)
-        #req(input$picker_env)
-        req(!isTRUE(input$picker_germplasm_attr_open))
-        #browser()
-        data2TD <- copy(rv_gxe$data[observationLevel=="MEANS"])
-        if (input$picker_germplasm_level=="germplasmDbId"){
-          data2TD[, genotype:=paste0(germplasmDbId," (",germplasmName,")")]
-        } else {
-          if(any(length(data2TD[, .N,.(germplasmName,studyDbId)][N>1, germplasmName]))){
-            namedups <- unique(data2TD[, .N,.(germplasmName,studyDbId)][N>1, germplasmName])
-            data2TD[germplasmName%in%unique(data2TD[, .N,.(germplasmName,studyDbId)][N>1, germplasmName]),germplasmName:=paste0(germplasmName,".",1:.N),.(germplasmName, studyDbId)]
-            data2TD[, genotype:=germplasmName]
-            showNotification(paste0("Duplicates found in germplasmName for germplasm(s) ",paste(namedups, collapse = ", "),". Germplasms were renamed with a suffix number."), type = "warning", duration = NULL)
-          } else {
-            data2TD[, genotype:=germplasmName]
-          }
-        }        
-        #browser()
-        if (!is.null(input$picker_env)){
-          data2TD <- data2TD[studyDbId%in%input$picker_env]
-        } else {
-          data2TD <- data2TD[0L]
-        }
-        
-        genot_to_excl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype][N<input$exclude_geno_nb_env]
-        genot_to_excl <- rbind(genot_to_excl, rv_gxe$genot_manexcl)
-        #browser()
-        data2TD <- data2TD[!genotype%in%genot_to_excl$genotype]
-        genot_incl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype]
-        output$TD_included_geno <- DT::renderDataTable(datatable(genot_incl,
-                                                                  options = list(dom="if<t>lpr"), rownames= FALSE))
-        output$copy_incgeno_table <- renderUI({
-          rclipboard::rclipButton("clipbtnincg_table", "Copy table", paste(paste(colnames(genot_incl),collapse="\t"),
-                                                                          paste(apply(genot_incl,1,paste,collapse="\t"),collapse = "\n"),
-                                                                          sep="\n"))#, shiny::icon("clipboard"))
-        })
-        #if (exists("genot_to_excl")){
-          if (nrow(genot_to_excl)>0){
-            #showNotification(paste0("Excluding ", nrow(genot_to_excl)," genotypes"), type = "message")
-            output$TD_excluded_geno <- DT::renderDataTable(datatable(genot_to_excl,
-                                                                      options = list(dom="if<t>lpr"), rownames= FALSE))
-            output$copy_excgeno_table <- renderUI({
-              rclipboard::rclipButton("clipbtnincg_table", "Copy table", paste(paste(colnames(genot_to_excl),collapse="\t"),
-                                                                                paste(apply(genot_to_excl,1,paste,collapse="\t"),collapse = "\n"),
-                                                                                sep="\n"))#, shiny::icon("clipboard"))
-            })
 
-          } else {
-            #showNotification(paste0("Using all genotypes"), type = "message")
-            output$TD_excluded_geno <- DT::renderDataTable(data.table()[0L], rownames= FALSE)
-            output$copy_excgeno_table <- renderUI({NULL})
-          }
-        rv_gxe$genot_incl <- genot_incl  
-        rv_gxe$genot_to_excl <- genot_to_excl  
+      observeEvent(input$weight_var, {
+        req(data2TD_react())
+        data2TD <- data2TD_react()
         
-          
-        #}
-
-        if (length(input$picker_scenario)>=1){ #& input$check_combine_scenario){
-          data2TD[, scenario:= do.call(paste0, .SD), .SDcols = input$picker_scenario]
-        } #else {
-        #  if (length(input$picker_scenario)==1){
-        #    data2TD[, scenario:= do.call(paste0, .SD), .SDcols = input$picker_scenario]
-        #    #setnames(data2TD, old=input$picker_scenario, new="scenario")
-        #  }
-        #}
-        if (!is.null(input$picker_year)){
-          data2TD[, year:= .SD, .SDcols = input$picker_year]
-          #setnames(data2TD, old=input$picker_year, new="year")
-        }
-        if (!is.null(input$picker_location)){
-          data2TD[, loc:= .SD, .SDcols = input$picker_location]
-          #setnames(data2TD, old=input$picker_location, new="loc")
-        }
-        if (!is.null(input$picker_region)){
-          data2TD[, region:= .SD, .SDcols = input$picker_region]
-          #setnames(data2TD, old=input$picker_region, new="region")
-        }
         if (input$use_weights){          
           if (!is.null(input$weight_var)){
             seBlues_zero <- rv_gxe$data[get(input$weight_var) == 0,]
             if (nrow(seBlues_zero) > 0) {
               showNotification(paste0("Can't use weights because some values of ", input$weight_var, " are equal to 0 "), type = "error", duration = notification_duration)
-              rv_gxe$use_weight <- F
+              updateMaterialSwitch(
+                session, "use_weights",
+                value = F
+              )
               return(NULL)
             }
-            if (input$transf_weights==TRUE){
-              data2TD[,wt:=(1/.SD)^2, .SDcols=input$weight_var]             
-            } else {
-              data2TD[,wt:=.SD, .SDcols=input$weight_var]
-            }
+            
             # check if weights are in acceptable range
             R_q <- quantile(data2TD[[input$weight_var]],0.95, na.rm = T)/quantile(data2TD[[input$weight_var]],0.05, na.rm = T)
             median_w <- median(data2TD$wt, na.rm = T)
@@ -989,8 +905,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             }
             
             # Messages
-            if (risk == "medium") {
-              
+            if (risk == "medium") {              
               shiny::showNotification(
                 shiny::HTML(paste0(
                   "Warning: the provided standard errors (",input$weight_var,") may lead to numerical instability in the mixed model.<br>",
@@ -1001,11 +916,8 @@ mod_gxe_server <- function(id, rv, parent_session){
                 type = "warning",
                 duration = 10,
                 session = session
-              )
-              
-              
-            } else if (risk == "high") {
-              
+              )    
+            } else if (risk == "high") {              
               shiny::showNotification(
                 shiny::HTML(paste0(
                   "Warning: the provided standard errors (",input$weight_var,") have high risk of numerical instability in the mixed model.<br>",
@@ -1019,25 +931,135 @@ mod_gxe_server <- function(id, rv, parent_session){
                 session = session
               )
             }
-            #problematic_weights <- data2TD[wt < 0.01 | wt > 100,]
-            #if (nrow(problematic_weights) > 0) {
-            #  m <- "Some weights are out or range[0.1,10], which may cause issues in predictions."
-            #  #FIXME find a way to add the message to the console instead of replacing it, this leads to an infinite loop due to observe.
-            #  #rv_gxe$console <- paste0("Calculating weights on ", input$weight_var, " at ", Sys.time(), " : ", m)
-            #  showNotification("Some weights are out or range[0.1,10], which may cause issues in predictions.", type = "error", duration = notification_duration)
-            #}
           }
         }
+      })
+
+      ## main observer to build TD object and output basic plots ####
+      data2TD_react <- reactive({
+        req(rv_gxe$data)
+        req(rv$column_datasource)
+        req(input$picker_trait)
+        req(!isTRUE(input$picker_germplasm_attr_open))
+        data2TD <- copy(rv_gxe$data[observationLevel=="MEANS"])
+        if (input$picker_germplasm_level=="germplasmDbId"){
+          data2TD[, genotype:=paste0(germplasmDbId," (",germplasmName,")")]
+        } else {
+          if(any(length(data2TD[, .N,.(germplasmName,studyDbId)][N>1, germplasmName]))){
+            namedups <- unique(data2TD[, .N,.(germplasmName,studyDbId)][N>1, germplasmName])
+            data2TD[germplasmName%in%unique(data2TD[, .N,.(germplasmName,studyDbId)][N>1, germplasmName]),germplasmName:=paste0(germplasmName,".",1:.N),.(germplasmName, studyDbId)]
+            data2TD[, genotype:=germplasmName]
+            showNotification(paste0("Duplicates found in germplasmName for germplasm(s) ",paste(namedups, collapse = ", "),". Germplasms were renamed with a suffix number."), type = "warning", duration = NULL)
+          } else {
+            data2TD[, genotype:=germplasmName]
+          }
+        }        
+        #browser()
+        if (!is.null(input$picker_env)){
+          data2TD <- data2TD[studyDbId%in%input$picker_env]
+        } else {
+          data2TD <- data2TD[0L]
+        }
+        
+        genot_to_excl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype][N<input$exclude_geno_nb_env]
+        genot_to_excl <- rbind(genot_to_excl, rv_gxe$genot_manexcl)
+        #browser()
+        data2TD <- data2TD[!genotype%in%genot_to_excl$genotype]
+        genot_incl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype]
+        rv_gxe$genot_incl <- genot_incl  
+        rv_gxe$genot_to_excl <- genot_to_excl  
+
+        if (length(input$picker_scenario)>=1){ #& input$check_combine_scenario){
+          data2TD[, scenario:= do.call(paste0, .SD), .SDcols = input$picker_scenario]
+        } #else {
+        #  if (length(input$picker_scenario)==1){
+        #    data2TD[, scenario:= do.call(paste0, .SD), .SDcols = input$picker_scenario]
+        #    #setnames(data2TD, old=input$picker_scenario, new="scenario")
+        #  }
+        #}
+        if (!is.null(input$picker_year)){
+          data2TD[, year:= .SD, .SDcols = input$picker_year]
+          #setnames(data2TD, old=input$picker_year, new="year")
+        }
+        if (!is.null(input$picker_location)){
+          data2TD[, loc:= .SD, .SDcols = input$picker_location]
+          #setnames(data2TD, old=input$picker_location, new="loc")
+        }
+        if (!is.null(input$picker_region)){
+          data2TD[, region:= .SD, .SDcols = input$picker_region]
+          #setnames(data2TD, old=input$picker_region, new="region")
+        }
+
+        if (input$use_weights && !is.null(input$weight_var)) {
+          if (input$transf_weights==TRUE){
+              data2TD[,wt:=(1/.SD)^2, .SDcols=input$weight_var]             
+          } else {
+            data2TD[,wt:=.SD, .SDcols=input$weight_var]
+          }
+          
+        }
+
         if (any(colnames(data2TD)%in%input$picker_germplasm_attr)){
           for (ga in input$picker_germplasm_attr){
             data2TD[[ga]][is.na(data2TD[[ga]])] <- replace_na_germplasm_attr_by
           }
         }
-        rv$TD <- statgenSTA::createTD(data = data2TD[studyDbId%in%input$picker_env],
-                                      genotype = "genotype",
-                                      trial = if (any(colnames(data2TD)=="label_study")) "label_study" else "studyDbId")
+        return(data2TD)
+      })
 
-        
+      observeEvent(data2TD_react(),{
+        req(input$picker_env, input$picker_trait, input$picker_germplasm_level)
+        rv$TD <- statgenSTA::createTD(
+          data = data2TD_react()[studyDbId%in%input$picker_env],
+          genotype = "genotype",
+          trial = if (any(colnames(data2TD_react())=="label_study")) "label_study" else "studyDbId"
+        )
+      })
+
+      ## table included genotypes
+      output$TD_included_geno <- DT::renderDataTable({
+                                      req(rv_gxe$genot_incl)
+                                      datatable(
+                                        rv_gxe$genot_incl, 
+                                        options = list(dom="if<t>lpr"), 
+                                        rownames= FALSE
+                                      )
+                                  })
+      output$copy_incgeno_table <- renderUI({
+        req(rv_gxe$genot_incl)
+        rclipboard::rclipButton(
+          "clipbtnincg_table", 
+          "Copy table", 
+          paste(
+            paste(colnames(rv_gxe$genot_incl),collapse="\t"), 
+            paste(apply(rv_gxe$genot_incl,1,paste,collapse="\t"),collapse = "\n"),
+            sep="\n"
+          )
+        )#, shiny::icon("clipboard"))
+      })
+      
+      output$TD_excluded_geno <- DT::renderDataTable({
+                                  req(rv_gxe$genot_to_excl)
+                                  datatable(
+                                    rv_gxe$genot_to_excl,
+                                    options = list(dom="if<t>lpr"), 
+                                    rownames= FALSE
+                                  )
+                                })
+      output$copy_excgeno_table <- renderUI({
+        req(rv_gxe$genot_to_excl)
+        rclipboard::rclipButton(
+          "clipbtnincg_table", 
+          "Copy table", 
+          paste(
+            paste(colnames(rv_gxe$genot_to_excl),collapse="\t"),
+            paste(apply(rv_gxe$genot_to_excl,1,paste,collapse="\t"),collapse = "\n"),
+            sep="\n"
+          )
+        )#, shiny::icon("clipboard"))
+      })
+
+      observeEvent(rv$TD, {
         #Update number of AMMI PCs picker as the smallest of the number of genotypes or environments minus one
         updatePickerInput(
           session, "AMMI_nPC",
@@ -1110,7 +1132,7 @@ mod_gxe_server <- function(id, rv, parent_session){
           }, message = function(m) rv_gxe$console <- paste(rv_gxe$console, paste0("Mixed model run at ",Sys.time(), " : ",m), sep=""),
              warning = function(w) rv_gxe$console <- paste(rv_gxe$console, paste0("Mixed model run at ",Sys.time(), " : ",w), sep=""))
       }
-})
+      })
       
       output$MM_text_output <- renderPrint({
         req(rv_gxe$TDVarComp)
