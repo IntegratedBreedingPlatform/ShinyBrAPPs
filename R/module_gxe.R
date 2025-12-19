@@ -959,14 +959,73 @@ mod_gxe_server <- function(id, rv, parent_session){
             } else {
               data2TD[,wt:=.SD, .SDcols=input$weight_var]
             }
-            # check if weights are out of range
-            problematic_weights <- data2TD[wt < 0.1 | wt > 10,]
-            if (nrow(problematic_weights) > 0) {
-              m <- "Some weights are out or range[0.1,10], which may cause issues in predictions."
-              #FIXME find a way to add the message to the console instead of replacing it, this leads to an infinite loop due to observe.
-              #rv_gxe$console <- paste0("Calculating weights on ", input$weight_var, " at ", Sys.time(), " : ", m)
-              showNotification("Some weights are out or range[0.1,10], which may cause issues in predictions.", type = "error", duration = notification_duration)
+            # check if weights are in acceptable range
+            R_q <- quantile(data2TD[[input$weight_var]],0.95, na.rm = T)/quantile(data2TD[[input$weight_var]],0.05, na.rm = T)
+            median_w <- median(data2TD$wt, na.rm = T)
+            # Risk level
+            risk_w <- if (median_w < 1e-5 || median_w > 1e5) {
+              "high"
+            } else if (median_w < 1e-3 || median_w > 1e3) {
+              "medium"
+            } else {
+              "low"
             }
+            
+            risk_Rq <- if (R_q > 100) {
+              "high"
+            } else if (R_q > 20) {
+              "medium"
+            } else {
+              "low"
+            }
+            
+            # Combine risks
+            risk <- if ("high" %in% c(risk_w, risk_Rq)) {
+              "high"
+            } else if ("medium" %in% c(risk_w, risk_Rq)) {
+              "medium"
+            } else {
+              "low"
+            }
+            
+            # Messages
+            if (risk == "medium") {
+              
+              shiny::showNotification(
+                shiny::HTML(paste0(
+                  "Warning: the provided standard errors (",input$weight_var,") may lead to numerical instability in the mixed model.<br>",
+                  "– Median weight (1/SE²): ", signif(median_w, 3), "<br>",
+                  "– Heterogeneity of standard errors (Q95/Q05): ", signif(R_q, 3), "<br>",
+                  "Rescaling the data or changing the measurement unit (e.g. kg/ha → t/ha) is recommended."
+                )),
+                type = "warning",
+                duration = 10,
+                session = session
+              )
+              
+              
+            } else if (risk == "high") {
+              
+              shiny::showNotification(
+                shiny::HTML(paste0(
+                  "Warning: the provided standard errors (",input$weight_var,") have high risk of numerical instability in the mixed model.<br>",
+                  "– Median weight (1/SE²): ", signif(median_w, 3), "<br>",
+                  "– Heterogeneity of standard errors (Q95/Q05): ", signif(R_q, 3), "<br>",
+                  "Please verify the scale and units of the BLUEs and their standard errors ",
+                  "(e.g. convert from kg/ha to t/ha) before fitting the model."
+                )),
+                type = "error",
+                duration = NULL,  # persistent
+                session = session
+              )
+            }
+            #problematic_weights <- data2TD[wt < 0.01 | wt > 100,]
+            #if (nrow(problematic_weights) > 0) {
+            #  m <- "Some weights are out or range[0.1,10], which may cause issues in predictions."
+            #  #FIXME find a way to add the message to the console instead of replacing it, this leads to an infinite loop due to observe.
+            #  #rv_gxe$console <- paste0("Calculating weights on ", input$weight_var, " at ", Sys.time(), " : ", m)
+            #  showNotification("Some weights are out or range[0.1,10], which may cause issues in predictions.", type = "error", duration = notification_duration)
+            #}
           }
         }
         if (any(colnames(data2TD)%in%input$picker_germplasm_attr)){
