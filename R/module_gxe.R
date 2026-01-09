@@ -1671,7 +1671,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         #if (any(colnames(dtsc)%in%"sensitivity_cluster")){
         #  dtsc[,sensitivity_cluster:=as.character(sensitivity_cluster)]
         #}
-        if (any(colnames(rv_gxe$sensclust)=="sensitivity_cluster")){
+        if (!all(is.na(rv_gxe$sensclust[, sensitivity_cluster]))){
           shinyjs::enable("create_groups_from_sensclusters")
           #shinyjs::addClass("create_groups_from_sensclusters", "active")
         } else {
