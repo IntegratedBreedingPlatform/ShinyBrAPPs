@@ -859,7 +859,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         }
       })
 
-      observeEvent(input$weight_var, {
+      observeEvent(c(input$weight_var,input$use_weights), {
         req(data2TD_react())
         data2TD <- data2TD_react()
         
@@ -920,7 +920,7 @@ mod_gxe_server <- function(id, rv, parent_session){
             } else if (risk == "high") {              
               shiny::showNotification(
                 shiny::HTML(paste0(
-                  "Warning: the provided standard errors (",input$weight_var,") have high risk of numerical instability in the mixed model.<br>",
+                  "The provided standard errors (",input$weight_var,") have high risk of numerical instability in the mixed model.<br>",
                   "– Median weight (1/SE²): ", signif(median_w, 3), "<br>",
                   "– Heterogeneity of standard errors (Q95/Q05): ", signif(R_q, 3), "<br>",
                   "Please verify the scale and units of the BLUEs and their standard errors ",
