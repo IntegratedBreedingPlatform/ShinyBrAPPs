@@ -10,7 +10,10 @@ mod_get_extradata_server <- function(id, rv){
 
       observeEvent(rv$data, {
         req(rv$study_metadata)
-        req(is.null(rv$extradata))
+
+        # no need to reload extradata if we get it from user session
+        # needed in ui_mode when loading environments one by one
+        req(rv$ui_mode | is.null(rv$extradata))   
 
         if(!isTruthy("observationVariableName"%in%names(rv$data))){
           showNotification("Data set without observations", type = "warning", duration = notification_duration)

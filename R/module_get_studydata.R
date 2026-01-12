@@ -112,6 +112,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         parse_GET_param = NULL,
         ui_mode = NULL
       )
+      rv$ui_mode <- TRUE
       
       if(!is.null(dataset_4_dev)){ # XXX
         rv$data <- dataset_4_dev$data
@@ -122,6 +123,9 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
         observeEvent(session$clientData$url_search, {
           rv_st$parse_GET_param <- parseQueryString(session$clientData$url_search)
+          if (length(rv_st$parse_GET_param) > 0) {
+            rv$ui_mode <- FALSE
+          }
         })
   
         observeEvent(rv_st$parse_GET_param,{
@@ -348,7 +352,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
           ## save rv in .rds ####
           ## Not saving for ui mode, should be based on connection input parameters
-          if (length(rv_st$parse_GET_param)) {
+          if (!rv$ui_mode) {
             txt <- toJSON(rv_st$parse_GET_param, auto_unbox = TRUE, sort_keys = TRUE)
             rv$hash <- digest(txt, algo = "sha256")
             session$sendCustomMessage("storeHash", rv$hash)          
