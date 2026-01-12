@@ -258,6 +258,14 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           shinyjs::show(id = "load_all_env")
           rv$study_metadata <- study_metadata
         })
+
+        observeEvent(input$picker_obs_unit_level, {
+          if (!is.null(input$picker_obs_unit_level)) {
+            rv$obs_unit_level <- input$picker_obs_unit_level
+          } else {
+            rv$obs_unit_level <- allowed_obs_unit_levels
+          }          
+        }, ignoreNULL = F, ignoreInit = F)
   
         ## load environment data
         observeEvent(input$load_env,{
@@ -277,10 +285,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           
           withProgress(message = "Loading", value = 0, {
             n_studies <- length(rv_st$env_to_load)
-            if (is.null(rv_st$parse_GET_param$obs_unit_level)){
-              rv$obs_unit_level <- input$picker_obs_unit_level
-            }
-  
+
             studies <- rbindlist(lapply(1:n_studies, function(k){
               id <- rv_st$env_to_load[k]
   
@@ -342,10 +347,13 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           })
 
           ## save rv in .rds ####
-          txt <- toJSON(rv_st$parse_GET_param, auto_unbox = TRUE, sort_keys = TRUE)
-          rv$hash <- digest(txt, algo = "sha256")
-          session$sendCustomMessage("storeHash", rv$hash)          
-          save_user_data(rv)
+          ## Not saving for ui mode, should be based on connection input parameters
+          if (length(rv_st$parse_GET_param)) {
+            txt <- toJSON(rv_st$parse_GET_param, auto_unbox = TRUE, sort_keys = TRUE)
+            rv$hash <- digest(txt, algo = "sha256")
+            session$sendCustomMessage("storeHash", rv$hash)          
+            save_user_data(rv)
+          }
         })
   
         output$table_trial_metadata <- renderDT({
