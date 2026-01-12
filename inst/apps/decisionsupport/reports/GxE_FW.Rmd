@@ -61,10 +61,10 @@ summary(rv_gxe$TDFW)
              p$layers[[1]] <- NULL
              p$layers[[2]] <- NULL
              p <- p + 
-               ggplot2::geom_line(data=p$data[p$data[[input$FW_picker_color_by]]==levs[2],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=0.5) +
-               ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[2],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=1) +
-               ggplot2::geom_line(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=2) +
-               ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=2) +
+               ggplot2::geom_line(data=p$data[p$data[[input$FW_picker_color_by]]==levs[2],], aes(y = fitted, color=base::get(input$FW_picker_color_by)), size=0.5) +
+               ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[2],], aes(y = fitted, color=base::get(input$FW_picker_color_by)), size=1) +
+               ggplot2::geom_line(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=base::get(input$FW_picker_color_by)), size=2) +
+               ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=base::get(input$FW_picker_color_by)), size=2) +
                scale_color_manual(values=cols)
            }
 

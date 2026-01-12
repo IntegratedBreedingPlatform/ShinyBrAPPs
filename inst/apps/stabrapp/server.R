@@ -10,9 +10,9 @@ server <- function(input, output, session){
     hash = NULL                 # to track user query in browser sessionStorage
   )
   
-  mod_banner_server("banner", rv, appname)
+  mod_banner_server("banner", rv, conf)
   mod_connect_server("connect",rv)
-  mod_get_studydata_server("get_studydata", rv)
+  mod_get_studydata_server("get_studydata", rv, conf)
   mod_dataquality_server("dataquality", rv)
   mod_model_server("model", rv)
 

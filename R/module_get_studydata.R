@@ -1,8 +1,9 @@
 #' @import shinyWidgets
 #' @import bslib
 #' @export
-mod_get_studydata_ui <- function(id){
+mod_get_studydata_ui <- function(id, conf){
   ns <- NS(id)
+  print(conf)
   div(
     id = ns("get_studydata"),
     tagList(
@@ -48,7 +49,7 @@ mod_get_studydata_ui <- function(id){
             layout_columns(
               col_widths = c(6,3,3),
               div(
-                selectInput(ns("picker_obs_unit_level"), label = "Observation unit levels", choices = allowed_obs_unit_levels, selected = allowed_obs_unit_levels, multiple = T, width = "100%"),
+                selectInput(ns("picker_obs_unit_level"), label = "Observation unit levels", choices = conf$allowed_obs_unit_levels, selected = conf$allowed_obs_unit_levels, multiple = T, width = "100%"),
                 selectizeInput(
                   ns("trials"), label = "Study", choices = NULL, multiple = FALSE, width = "100%",
                   options = list(
@@ -101,7 +102,7 @@ mod_get_studydata_ui <- function(id){
 #' @importFrom varhandle check.numeric
 #' @importFrom digest digest
 #' @export
-mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_dev = NULL
+mod_get_studydata_server <- function(id, rv, conf, dataset_4_dev = NULL){ # XXX dataset_4_dev = NULL
   moduleServer(
     id,
     function(input, output, session){
@@ -114,6 +115,8 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
       )
       rv$ui_mode <- TRUE
       
+      clean_expired_files(conf)
+
       if(!is.null(dataset_4_dev)){ # XXX
         rv$data <- dataset_4_dev$data
         rv$trial_metadata <- dataset_4_dev$trial_metadata
@@ -131,7 +134,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         observeEvent(rv_st$parse_GET_param,{
           txt <- toJSON(rv_st$parse_GET_param, auto_unbox = TRUE, sort_keys = TRUE)
           hash <- digest(txt, algo = "sha256")
-          filename <- paste0(hash, ".rds")
+          filename <- file.path(conf$data_dir, paste0(rv$hash, ".rds"))
           if (file.exists(filename) && !is.null(rv$hash)) {
             stored_rv <- readRDS(file = filename)
             rv$con <- if (!is.null(stored_rv$con)) stored_rv$con
@@ -181,16 +184,17 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             rv_st$env_to_load <- study_metadata[,unique(studyDbId)]
             
             rv$study_metadata <- study_metadata
+            browser()
             
-            if (isTruthy(can_filter_obs_unit_level_in_url)) {
+            if (isTruthy(conf$can_filter_obs_unit_level_in_url)) {
               chosen_levels <- rv_st$parse_GET_param$obs_unit_level
               if (!is.null(chosen_levels)) {
-                rv$obs_unit_level <- intersect(allowed_obs_unit_levels, unlist(strsplit(chosen_levels, ",")))
+                rv$obs_unit_level <- intersect(conf$allowed_obs_unit_levels, unlist(strsplit(chosen_levels, ",")))
               } else {
                 rv$obs_unit_level <- NULL
               }
             } else {
-              rv$obs_unit_level <- allowed_obs_unit_levels
+              rv$obs_unit_level <- conf$allowed_obs_unit_levels
             }
   
           } else {
@@ -282,17 +286,25 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           req(rv$study_metadata)
           rv_st$env_to_load <- rv$study_metadata[loaded==F,unique(studyDbId)]
         })
+
+        observeEvent(input$picker_obs_unit_level, {
+          if (!is.null(input$picker_obs_unit_level)) {
+            rv$obs_unit_level <- input$picker_obs_unit_level
+          } else {
+            rv$obs_unit_level <- conf$allowed_obs_unit_levels
+          }
+          
+        }, ignoreNULL = F, ignoreInit = F)
+
         observeEvent(rv_st$env_to_load,{
           req(rv$study_metadata)
           study_metadata <- rv$study_metadata
           accordion_panel_close(id = "dataImportAcc", values = "diap", session = session)
-          
+          browser()
           withProgress(message = "Loading", value = 0, {
-            n_studies <- length(rv_st$env_to_load)
-
+            n_studies <- length(rv_st$env_to_load)  
             studies <- rbindlist(lapply(1:n_studies, function(k){
-              id <- rv_st$env_to_load[k]
-  
+              id <- rv_st$env_to_load[k]  
               incProgress(1/n_studies, detail = rv$study_metadata[studyDbId == id,unique(study_name_app)])
               study <- get_env_data(
                 con = rv$con, studyDbId = id,
@@ -356,7 +368,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             txt <- toJSON(rv_st$parse_GET_param, auto_unbox = TRUE, sort_keys = TRUE)
             rv$hash <- digest(txt, algo = "sha256")
             session$sendCustomMessage("storeHash", rv$hash)          
-            save_user_data(rv)
+            save_user_data(rv, conf)
           }
         })
   

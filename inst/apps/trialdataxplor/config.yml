@@ -1,0 +1,5 @@
+default:
+  appname: "TDxPLOR"
+  can_filter_obs_unit_level_in_url: false
+  allowed_obs_unit_levels:
+    - PLOT

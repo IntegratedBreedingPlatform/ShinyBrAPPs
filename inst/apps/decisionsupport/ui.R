@@ -73,7 +73,7 @@ ui <- fluidPage(
       tags$section(
         mod_banner_ui("banner"),
         mod_connect_ui("connect"),
-        mod_get_studydata_ui("get_studydata"),
+        mod_get_studydata_ui("get_studydata", conf),
         mod_get_extradata_ui("get_extradata"),
         div(style="position: relative; z-index: 10;",
         bslib::page_navbar(

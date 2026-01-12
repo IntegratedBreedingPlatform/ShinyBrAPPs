@@ -8,6 +8,8 @@ mod_get_extradata_server <- function(id, rv){
     id,
     function(input, output, session){
 
+      notification_duration <- conf$notification_duration
+
       observeEvent(rv$data, {
         req(rv$study_metadata)
 
@@ -178,10 +180,10 @@ mod_get_extradata_server <- function(id, rv){
           # and try to convert nominal observations variables as numeric
           # check if the variable can be safely converted to num and then convert. Assign type "Text" otherwise
           nothing <- lapply(column_datasource[is.na(type) | type == "Nominal", cols], function(col){
-            var <- extradata[, get(col)]
+            var <- extradata[, base::get(col)]
             var_is_num <- all(check.numeric(var[!is.na(var) & var != "NA"]))
             if (var_is_num) {
-              extradata[, (col) := as.numeric(get(col))]
+              extradata[, (col) := as.numeric(extradata[[col]])]
               column_datasource[cols == col, type := "Numerical"]
             }else{
               column_datasource[cols == col, type := "Text"]
@@ -201,7 +203,7 @@ mod_get_extradata_server <- function(id, rv){
           rv$column_datasource <- column_datasource
           #rv$ontology_variables <- ontology_variables
           
-          save_user_data(rv)
+          save_user_data(rv, conf)
         })
       })
     }
