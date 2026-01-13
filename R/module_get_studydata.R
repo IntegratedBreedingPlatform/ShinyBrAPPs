@@ -184,7 +184,6 @@ mod_get_studydata_server <- function(id, rv, conf, dataset_4_dev = NULL){ # XXX 
             rv_st$env_to_load <- study_metadata[,unique(studyDbId)]
             
             rv$study_metadata <- study_metadata
-            browser()
             
             if (isTruthy(conf$can_filter_obs_unit_level_in_url)) {
               chosen_levels <- rv_st$parse_GET_param$obs_unit_level
@@ -300,7 +299,6 @@ mod_get_studydata_server <- function(id, rv, conf, dataset_4_dev = NULL){ # XXX 
           req(rv$study_metadata)
           study_metadata <- rv$study_metadata
           accordion_panel_close(id = "dataImportAcc", values = "diap", session = session)
-          browser()
           withProgress(message = "Loading", value = 0, {
             n_studies <- length(rv_st$env_to_load)  
             studies <- rbindlist(lapply(1:n_studies, function(k){
