@@ -169,9 +169,11 @@ mod_dataquality_server <- function(id, rv) {
         )
       )
       
-      rv_dq$data <- rv$data
-      rv_dq$data[, status := "default"]
-      rv_dq$data[, status := factor(status, levels = c("default", "selected", "excluded"))]
+      newdt <- rv$data
+      newdt[, status := "default"]
+      newdt[, status := factor(status, levels = c("default", "selected", "excluded"))]
+      
+      rv_dq$data <- newdt
       
       env_choices <- rv$data[!is.na(observationValue)][, unique(studyDbId)]
       names(env_choices) <- rv$data[!is.na(observationValue)][, unique(study_name_app)]
@@ -228,7 +230,10 @@ mod_dataquality_server <- function(id, rv) {
     observeEvent(input$studies, {
       req(rv$data)
       
-      choices_traits <- unique(rv$data[studyDbId %in% input$studies]$observationVariableName)
+      #only keep variables that are numerical, date or nominal that can be converted as numeric
+      choices_traits <- rv$data[scale.dataType %in% c("Numerical", "Date") | (scale.dataType == "Nominal" & !is.na(suppressWarnings(as.numeric(observationValue)))),
+                                unique(observationVariableName)]
+
       if (input$trait %in% choices_traits) {
         selected_trait <- input$trait
       } else {
@@ -258,11 +263,17 @@ mod_dataquality_server <- function(id, rv) {
       
       rv_dq$data_viz[observationDbId %in% rv_dq$sel_observationDbIds &
                        !(observationDbId %in% rv$excluded_obs$observationDbId)]
-      if (length(unique(rv_dq$data_viz$scale.dataType)) &&
-          unique(rv_dq$data_viz$scale.dataType) == "Numerical") {
+      types <- unique(rv_dq$data_viz$scale.dataType)
+      if (length(types) == 1 && types %in% c("Numerical", "Nominal")) {
+        all_data_count = nrow(rv_dq$data_viz)
         rv_dq$data_viz[, observationValue := as.numeric(observationValue)]
-      } else if (length(unique(rv_dq$data_viz$scale.dataType)) &&
-                 unique(rv_dq$data_viz$scale.dataType) == "Date") {
+        rv_dq$data_viz <- rv_dq$data_viz[!is.na(observationValue),]
+        no_na_data_count = nrow(rv_dq$data_viz)
+        rv_dq$data_viz <- rv_dq$data_viz[!is.na(observationValue),]
+        if (all_data_count - no_na_data_count > 0) {
+          showNotification(paste0(all_data_count - no_na_data_count, " values of ", input$trait ," couldn't be converted as numeric and were discarded"), type = "warning", duration = notification_duration)
+        }
+      } else if (length(types) == 1 && types == "Date") {
         rv_dq$data_viz[, observationValue := as.Date(observationValue)]
       }
       
@@ -643,10 +654,11 @@ mod_dataquality_server <- function(id, rv) {
       newdt <- copy(rv_dq$data)
       newdt[status == "excluded", status := "default"]
       newdt[observationDbId %in% rv_dq$sel_observationDbIds, status := "selected"]
-      if (length(rv$excluded_obs) > 0) {
+      if (nrow(rv$excluded_obs) > 0) {
         newdt[observationDbId %in% rv$excluded_obs$observationDbId, status := "excluded"]
       }
       rv_dq$data <- newdt
+      save_user_data(rv)
     }, ignoreNULL = F)
     
     ## output correlation plot ####
@@ -685,7 +697,7 @@ mod_dataquality_server <- function(id, rv) {
       data_dq <- rv_dq$data_viz
       data_dq_notexcl <- rv_dq$data_viz[!(observationDbId %in% rv$excluded_obs$observationDbId)]
       
-      sumtable_all <- data_dq[, .("No. of values" = .N), study_name_app]
+      sumtable_all <- data_dq[!is.na(observationValue), .("No. of values" = .N), study_name_app]
       
       dataType = unique(data_dq_notexcl$scale.dataType)
       
@@ -698,17 +710,20 @@ mod_dataquality_server <- function(id, rv) {
           "Quantile 0.25" = quantile(
             observationValue,
             probs = c(0.25),
-            type = 1
+            type = 1,
+            na.rm = T
           ),
           "Median" = quantile(
             observationValue,
             probs = c(0.5),
-            type = 1
+            type = 1,
+            na.rm = T
           ),
           "Quantile 0.75" = quantile(
             observationValue,
             probs = c(0.75),
-            type = 1
+            type = 1,
+            na.rm = T
           ),
           "Maximum" = max(observationValue, na.rm = T)
         ), study_name_app]
@@ -731,33 +746,9 @@ mod_dataquality_server <- function(id, rv) {
           "No. of observations" = .N,
           "Mean" = mean(observationValue, na.rm = T),
           "Minimum" = min(observationValue, na.rm = T),
-          "Quantile 0.25" = ifelse(
-            dataType == "Date",
-            quantile(
-              observationValue,
-              probs = c(0.25),
-              type = 1
-            ),
-            quantile(observationValue, probs = c(0.25))
-          ),
-          "Median" = ifelse(
-            dataType == "Date",
-            quantile(
-              observationValue,
-              probs = c(0.5),
-              type = 1
-            ),
-            quantile(observationValue, probs = c(0.5))
-          ),
-          "Quantile 0.75" = ifelse(
-            dataType == "Date",
-            quantile(
-              observationValue,
-              probs = c(0.75),
-              type = 1
-            ),
-            quantile(observationValue, probs = c(0.75))
-          ),
+          "Quantile 0.25" = quantile(observationValue, probs = c(0.25), na.rm = T),
+          "Median" = quantile(observationValue, probs = c(0.5), na.rm = T),
+          "Quantile 0.75" = quantile(observationValue, probs = c(0.75), na.rm = T),
           "Maximum" = max(observationValue, na.rm = T),
           "Standard deviation" = sd(observationValue, na.rm = T),
           "Variance" = var(observationValue, na.rm = T),
@@ -766,8 +757,8 @@ mod_dataquality_server <- function(id, rv) {
             observationValue - mean(observationValue, na.rm = T)
           ) ^ 2),
           "Uncorrected sum of squares" = sum(observationValue ^ 2, na.rm = T),
-          "Skewness" = e1071::skewness(observationValue),
-          "Kurtosis" = e1071::kurtosis(observationValue)
+          "Skewness" = e1071::skewness(observationValue, na.rm = T),
+          "Kurtosis" = e1071::kurtosis(observationValue, na.rm = T)
         ), study_name_app]
         
         sumtable_notexcl[, "Standard error of mean" := `Standard deviation` /

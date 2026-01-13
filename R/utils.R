@@ -158,6 +158,9 @@ get_env_data <- function(con = NULL,
         observationValue = `observations.value`
       )]
       
+      # remove NA or "" observations
+      study_obs <- study_obs[!is.na(observationValue) & observationValue != "",]
+      
       #study_obs <- study_obs[, .(plotNumber = levelCode[levelName == "PLOT"],
       #                           replicate = levelCode[levelName == "REP"],
       #                           blockNumber = levelCode[levelName == "BLOCK"]),
@@ -176,18 +179,6 @@ get_env_data <- function(con = NULL,
                  new=c("plotNumber",
                        "replicate",
                        "blockNumber"))        
-      }
-
-      variables <- as.data.table(brapir::phenotyping_variables_get(con = con, studyDbId = studyDbId)$data)
-      variables <- variables[trait.traitClass != "Breedingprocess", .(observationVariableDbId, scale.dataType)] 
-      if (any(colnames(study_obs)=="observationVariableDbId")){
-        study_obs <- merge(study_obs, variables, 
-                       by.x = "observationVariableDbId", 
-                       by.y = "observationVariableDbId")
-      }
-      
-      if(!("observationValue"%in%names(study_obs))){
-        study_obs[,observationValue:=NA]
       }
       
       study_obs[,study_name_BMS := paste0(
@@ -247,14 +238,17 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
   }else if(!is.null(studyDbIds)){
     ## get environment metadata by studyDbId
     ids <- unlist(strsplit(studyDbIds, ","))
-    study_metadata <- rbindlist(lapply(ids,function(id){
-      tryCatch({
-        as.data.table(brapir::core_studies_get_studyDbId(con = con, studyDbId = id)$data)
-      },
-      error=function(e){
-        showNotification(paste0("Environment metadata not found for studyDbId ",id), type = "error", duration = notification_duration)
-      })
-    }),use.names = T, fill = T)
+    #browser()
+    srid <- brapir::core_studies_post_search(con = con, studyDbIds = ids, commonCropNames = con$commoncropname)
+    study_metadata <- as.data.table(tidyr::unnest( brapir::core_studies_get_search_searchResultsDbId(con, searchResultsDbId = srid$data$searchResultsDbId)$data, cols = "environmentParameters", names_sep = "."))
+    #study_metadata <- rbindlist(lapply(ids,function(id){
+    # tryCatch({
+    #   as.data.table(brapir::core_studies_get_studyDbId(con = con, studyDbId = id)$data)
+    # },
+    # error=function(e){
+    #   showNotification(paste0("Environment metadata not found for studyDbId ",id), type = "error", duration = notification_duration)
+    # })
+    #}),use.names = T, fill = T)
     if(study_metadata[,.N]==0){
       showNotification("No environment data found. Check apiURL, token, cropDb and studyDbIds", type = "error", duration = notification_duration)
     }
@@ -348,10 +342,15 @@ groupModal <- function(rv, parent_session, modal_title, group_description, group
     tagList(
       tags$label(paste(rv$selection[,N]," selected germplasms")),
       tags$p(rv$selection[,germplasmNames_label]),
-      textInput(ns("modal_create_group_text_input_label"), label = "Group Name", value = paste(group_prefix, rv$selection[,group_id]), placeholder = "Group Label"),
+      textInput(
+        ns("modal_create_group_text_input_label"), 
+        label = tags$label("Group Name", class = "required"), 
+        value = paste(group_prefix, rv$selection[,group_id]), 
+        placeholder = "Group Label"
+      ),
       textAreaInput(
         ns("modal_create_group_text_input_descr"), 
-        label = "Group Description", 
+        label = tags$label("Group Description", class = "required"), 
         placeholder = "Group Description", 
         resize = "vertical",
         value = group_description
@@ -391,7 +390,6 @@ renameGroupModal <- function(rv, parent_session) {
     )
   )
 }
-
 
 whoami_bmsapi <- function(con){
   progs <- brapir::core_programs_get(con)$data
@@ -547,6 +545,7 @@ generate_ui_with_grid <- function(num_rows, num_cols, choices, ns=ns, control_la
 }
 
 # Function to get variable methods
+#' @export
 get_BLUES_methodsDbIds <- function(con, programDbId) {
   methodNames = list(
     "BLUEs" = "STABrAPP BLUES", 
@@ -571,22 +570,27 @@ get_BLUES_methodsDbIds <- function(con, programDbId) {
   
   cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
   res <- jsonlite::fromJSON(cont)
-
   methodIds <- list()
-  if (nrow(res[res$name == methodNames$BLUEs, ]) > 0) { methodIds["BLUEs"] =  res[res$name == methodNames$BLUEs, "id"]}
-  if (nrow(res[res$name == methodNames$BLUPs, ]) > 0) { methodIds["BLUPs"] =  res[res$name == methodNames$BLUPs, "id"]}
-  if (nrow(res[res$name == methodNames$seBLUEs, ]) > 0) { methodIds["seBLUEs"] =  res[res$name == methodNames$seBLUEs, "id"]}
-  if (nrow(res[res$name == methodNames$seBLUPs, ]) > 0) { methodIds["seBLUPs"] =  res[res$name == methodNames$seBLUPs, "id"]}
-  
-  if (length(methodIds) < 4) {
-    #missing at least one method
-    missing_methods = c()
-    if (is.null(methodIds$BLUEs)) {missing_methods = append(missing_methods, methodNames$BLUEs)}
-    if (is.null(methodIds$BLUPs)) {missing_methods = append(missing_methods, methodNames$BLUPs)}
-    if (is.null(methodIds$seBLUEs)) {missing_methods = append(missing_methods, methodNames$seBLUEs)}
-    if (is.null(methodIds$seBLUPs)) {missing_methods = append(missing_methods, methodNames$seBLUPs)}
-    message = paste("Missing variable methods in BMS:",paste0(missing_methods, collapse = ", "))
-    stop(message)
+  if (resp$status_code == 200) {
+    if (nrow(res[res$name == methodNames$BLUEs, ]) > 0) { methodIds["BLUEs"] =  res[res$name == methodNames$BLUEs, "id"]}
+    if (nrow(res[res$name == methodNames$BLUPs, ]) > 0) { methodIds["BLUPs"] =  res[res$name == methodNames$BLUPs, "id"]}
+    if (nrow(res[res$name == methodNames$seBLUEs, ]) > 0) { methodIds["seBLUEs"] =  res[res$name == methodNames$seBLUEs, "id"]}
+    if (nrow(res[res$name == methodNames$seBLUPs, ]) > 0) { methodIds["seBLUPs"] =  res[res$name == methodNames$seBLUPs, "id"]}
+    
+    if (length(methodIds) < 4) {
+      #missing at least one method
+      missing_methods = c()
+      if (is.null(methodIds$BLUEs)) {missing_methods = append(missing_methods, methodNames$BLUEs)}
+      if (is.null(methodIds$BLUPs)) {missing_methods = append(missing_methods, methodNames$BLUPs)}
+      if (is.null(methodIds$seBLUEs)) {missing_methods = append(missing_methods, methodNames$seBLUEs)}
+      if (is.null(methodIds$seBLUPs)) {missing_methods = append(missing_methods, methodNames$seBLUPs)}
+      message = paste("Missing variable methods in BMS:",paste0(missing_methods, collapse = ", "))
+      stop(message)
+    }
+  } else if (resp$status_code == 401) {
+    stop("Couldn't retrieve BLUES/BLUPS methods, please authenticate again in BMS")
+  } else {
+    stop("Couldn't retrieve BLUES/BLUPS methods, you won't be able to push BLUEs/BLUPs")
   }
   
   return(methodIds)
@@ -615,4 +619,153 @@ colgeno <- function(genofac, shortpal=getOption("statgen.genoColors"), longpal=t
     colGeno <- NULL
   }
   return(colGeno)
+}
+
+#' Save rv in .rds file
+#' @param rv 
+#'
+#' @importFrom later later
+#' @export
+save_user_data <- function(rv) {
+  if (!is.null(rv$hash)) {
+    filename <- paste0(rv$hash, ".rds")
+    snapshot <- list(
+      con = rv$con,
+      connect_mode = rv$connect_mode,
+      data = rv$data,
+      excluded_obs = rv$excluded_obs,
+      obs_unit_level = rv$obs_unit_level,
+      study_metadata = rv$study_metadata,
+      trial_metadata = rv$trial_metadata,
+      extradata = rv$extradata,
+      groups = rv$groups,
+      selection = rv$selection,
+      column_datasource = rv$column_datasource,
+      environmentParameters = rv$environmentParameters
+    )
+    # remove all NULL elements to avoid error notification (nrow dimension error)
+    snapshot <- snapshot[!vapply(snapshot, is.null, logical(1))]
+    later(function() {
+      saveRDS(snapshot, filename)
+      print("rv saved !")
+    }, 0)
+  }
+}
+
+#' @export
+update_selectors_with_groups <- function(rv, new_group, initial_name = NULL) {
+  ## update selectors (shape, colour)
+  data_plot <- copy(rv$extradata) # to avoid issues related to assignment by reference
+  data_plot[germplasmDbId %in% new_group[,unlist(germplasmDbIds)], eval(new_group$group_name) := paste0('In')]
+  data_plot[!(germplasmDbId %in% new_group[,unlist(germplasmDbIds)]), eval(new_group$group_name) := paste0('Out')]
+
+  if (!is.null(initial_name)) { # renaming a group
+    data_plot[, eval(initial_name) := NULL]
+    rv$column_datasource[cols == initial_name & source == "group", cols := new_group$group_name]
+  } else { # add a new group
+    rv$column_datasource <- rbindlist(
+      list(
+        rv$column_datasource,
+        data.table(cols = new_group$group_name, source = "group", type = "Text", visible = T)
+      ),
+      use.names = T
+    )
+  }
+  
+  rv$new_group_created <- T #to avoid environments selection reset
+  rv$extradata <- data_plot
+}
+
+#' @export
+summary.stats <- function(x){
+  x <- x[!is.na(observationValue)]
+  sumtable_notexcl_nodat <- x[scale.dataType != "Date", .(
+    "studyDbId"=studyDbId,
+    "Environment" = study_name_app,
+    "No. of observations" = .N,
+    "Mean" = mean(observationValue, na.rm = T),
+    "Minimum" = min(observationValue, na.rm = T),
+    "Quantile 0.25" = quantile(observationValue, probs = c(0.25), na.rm = TRUE),
+    "Median" = quantile(observationValue, probs = c(0.5),na.rm = TRUE),
+    "Quantile 0.75" = quantile(observationValue, probs = c(0.75),na.rm = TRUE),
+    "Maximum" = max(observationValue, na.rm = T),
+    "Standard deviation" = sd(observationValue, na.rm = T),
+    "Variance" = var(observationValue, na.rm = T),
+    "Sum of values" = sum(observationValue, na.rm = T),
+    "Sum of squares" = sum((
+      observationValue - mean(observationValue, na.rm = T)
+    ) ^ 2),
+    "Uncorrected sum of squares" = sum(observationValue ^ 2, na.rm = T),
+    "Skewness" = e1071::skewness(observationValue, na.rm = TRUE),
+    "Kurtosis" = e1071::kurtosis(observationValue, na.rm = TRUE)
+  ), .(study_name_app, observationVariableName)]
+  
+  if (any(x$scale.dataType == "Date")){
+    sumtable_notexcl_dat <- x[scale.dataType == "Date", .(
+      "studyDbId"=studyDbId,
+      "Environment" = study_name_app,
+      "No. of observations" = .N,
+      "Mean" = mean(observationValue, na.rm = T),
+      "Minimum" = min(observationValue, na.rm = T),
+      "Quantile 0.25" = quantile(observationValue, type=1, probs = c(0.25), na.rm = TRUE),
+      "Median" = quantile(observationValue, type=1, probs = c(0.5),na.rm = TRUE),
+      "Quantile 0.75" = quantile(observationValue, type=1, probs = c(0.75),na.rm = TRUE),
+      "Maximum" = max(observationValue, na.rm = T),
+      "Standard deviation" = sd(observationValue, na.rm = T),
+      "Variance" = var(observationValue, na.rm = T),
+      "Sum of values" = sum(observationValue, na.rm = T),
+      "Sum of squares" = sum((
+        observationValue - mean(observationValue, na.rm = T)
+      ) ^ 2),
+      "Uncorrected sum of squares" = sum(observationValue ^ 2, na.rm = T),
+      "Skewness" = e1071::skewness(observationValue, na.rm = TRUE),
+      "Kurtosis" = e1071::kurtosis(observationValue, na.rm = TRUE)
+    ), .(study_name_app, observationVariableName)]
+    
+    sumtable_notexcl <- rbind(sumtable_notexcl_nodat,sumtable_notexcl_dat)        
+  } else {
+    sumtable_notexcl <- sumtable_notexcl_nodat
+  }
+  
+  
+  sumtable_notexcl[, "Standard error of mean" := `Standard deviation` /
+                     sqrt(`No. of observations`)]
+  sumtable_notexcl[, "Standard error of variance" := `Variance` /
+                     sqrt(`No. of observations`)]
+  sumtable_notexcl[, "%cov" := `Variance` / `Mean`]
+  sumtable_notexcl[, "%Standard error of skewness" := `Skewness` /
+                     sqrt(`No. of observations`)]
+  sumtable_notexcl[, "%Standard error of kurtosis" := `Kurtosis` /
+                     sqrt(`No. of observations`)]
+  sumtable_notexcl[, "Range" := Maximum - Minimum]
+  
+  columns <- c(
+    "studyDbId",
+    "Environment",
+    "observationVariableName",
+    #"No. of values",
+    "No. of observations",
+    #"No. of excluded values",
+    "Mean",
+    "Minimum",
+    "Quantile 0.25",
+    "Median",
+    "Quantile 0.75",
+    "Maximum",
+    "Range",
+    "Standard deviation",
+    "Standard error of mean",
+    "Variance",
+    "Standard error of variance",
+    "%cov",
+    "Sum of values",
+    "Sum of squares",
+    "Uncorrected sum of squares",
+    "Skewness",
+    "%Standard error of skewness",
+    "Kurtosis",
+    "%Standard error of kurtosis"
+  )
+  setkey(sumtable_notexcl, study_name_app)
+  return(sumtable_notexcl[, columns, with = F])
 }

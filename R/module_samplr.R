@@ -248,7 +248,6 @@ mod_samplr_server <- function(id, rv){
             } else {
               selectedst <- input$studies
             }
-            
             stdata <- lapply(selectedst, function(s){
               samp_srDbId <- brapir::genotyping_samples_post_search(rv$con, studyDbIds = s)$data$searchResultsDbId
               resp <- brapir::genotyping_samples_get_search_searchResultsDbId(rv$con, searchResultsDbId = samp_srDbId)
@@ -256,7 +255,7 @@ mod_samplr_server <- function(id, rv){
               samples.pag <- resp$metadata$pagination
               if (samples.pag$pageSize < samples.pag$totalCount){
                 for (p in (1:(samples.pag$totalPages-1))){
-                  nextp <- setDT(brapir::genotyping_samples_get_search_searchResultsDbId(rv$con, searchResultsDbId = samp_srDbId, page = p))
+                  nextp <- setDT(brapir::genotyping_samples_get_search_searchResultsDbId(rv$con, searchResultsDbId = samp_srDbId, page = p)$data)
                   samples <- rbind(samples, nextp, fill=T)
                 }
               }

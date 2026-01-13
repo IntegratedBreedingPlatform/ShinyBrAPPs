@@ -10,6 +10,7 @@ mod_get_studydata_ui <- function(id){
       # tags$style(".modal-dialog 
       #            {max-width: 80%;
       #            width: fit-content !important;}"),
+      shinyjs::useShinyjs(),
       
       tags$style(HTML(
         ".accordion-header {
@@ -18,6 +19,22 @@ mod_get_studydata_ui <- function(id){
           border-bottom: 1px solid #dee2e6; 
         }"
       )),
+        
+      tags$script(HTML("  
+        // Store hash in localStorage
+        Shiny.addCustomMessageHandler('storeHash', function(hash) {
+          sessionStorage.setItem('hash', hash);
+        });
+        
+        // When page is reloaded, we check for the hash
+          $(document).on('shiny:connected', function() {
+            var hash = sessionStorage.getItem('hash');
+            console.log('hash:', hash);
+            if (hash) {
+              Shiny.setInputValue('hash', hash, {priority: 'event'});
+            }
+          });
+      ")),
       
       div(
         id = "get_studydata_by_ui",
@@ -82,6 +99,7 @@ mod_get_studydata_ui <- function(id){
 
 #' @importFrom DT renderDT
 #' @importFrom varhandle check.numeric
+#' @importFrom digest digest
 #' @export
 mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_dev = NULL
   moduleServer(
@@ -94,6 +112,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         parse_GET_param = NULL,
         ui_mode = NULL
       )
+      rv$ui_mode <- TRUE
       
       if(!is.null(dataset_4_dev)){ # XXX
         rv$data <- dataset_4_dev$data
@@ -104,15 +123,44 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
         observeEvent(session$clientData$url_search, {
           rv_st$parse_GET_param <- parseQueryString(session$clientData$url_search)
+          if (length(rv_st$parse_GET_param) > 0) {
+            rv$ui_mode <- FALSE
+          }
         })
   
-  
         observeEvent(rv_st$parse_GET_param,{
+          txt <- toJSON(rv_st$parse_GET_param, auto_unbox = TRUE, sort_keys = TRUE)
+          hash <- digest(txt, algo = "sha256")
+          filename <- paste0(hash, ".rds")
+          if (file.exists(filename) && !is.null(rv$hash)) {
+            stored_rv <- readRDS(file = filename)
+            rv$con <- if (!is.null(stored_rv$con)) stored_rv$con
+            rv$connect_mode <- if (!is.null(stored_rv$connect_mode)) stored_rv$connect_mode
+            rv$data <- if (!is.null(stored_rv$data)) stored_rv$data
+            rv$excluded_obs <- if (!is.null(stored_rv$excluded_obs)) stored_rv$excluded_obs
+            rv$obs_unit_level <- if (!is.null(stored_rv$obs_unit_level)) stored_rv$obs_unit_level
+            rv$study_metadata <- if (!is.null(stored_rv$study_metadata)) stored_rv$study_metadata
+            rv$trial_metadata <- if (!is.null(stored_rv$trial_metadata)) stored_rv$trial_metadata
+
+            #Bravise
+            rv$extradata <- if (!is.null(stored_rv$extradata)) stored_rv$extradata
+            rv$groups <- data.table()
+            rv$groups <- if(!is.null(stored_rv$groups)) stored_rv$groups
+            rv$selection <- if (!is.null(stored_rv$selection)) stored_rv$selection
+            rv$column_datasource <- if (!is.null(stored_rv$column_datasource)) stored_rv$column_datasource
+            rv$environmentParameters <- if (!is.null(stored_rv$environmentParameters)) stored_rv$environmentParameters
+
+            rv_st$need_get_data <- FALSE
+          } else {
+            rv_st$need_get_data <- TRUE
+          }
+          
           if(!is.null(rv_st$parse_GET_param$pushOK)){
             rv$pushOK <- rv_st$parse_GET_param$pushOK
           }
           
           if(!is.null(rv_st$parse_GET_param$studyDbIds)){
+            req(rv_st$need_get_data)
             
             ### set up connection
             parsed_url <- parse_api_url(rv_st$parse_GET_param$apiURL)
@@ -152,7 +200,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         })
         observeEvent(rv$con,{
           ## get trials
-          
+          req(rv_st$need_get_data)
           withProgress(message = "Reaching studies", value = 0, {
             incProgress(1)
             tryCatch({
@@ -190,6 +238,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         
         ### BrAPI GET studies and GET locations
         observeEvent(rv_st$trialDbId,{
+          req(rv_st$need_get_data)
           req(rv_st$trialDbId)
           # get study_metadata
           tryCatch({
@@ -213,6 +262,14 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           shinyjs::show(id = "load_all_env")
           rv$study_metadata <- study_metadata
         })
+
+        observeEvent(input$picker_obs_unit_level, {
+          if (!is.null(input$picker_obs_unit_level)) {
+            rv$obs_unit_level <- input$picker_obs_unit_level
+          } else {
+            rv$obs_unit_level <- allowed_obs_unit_levels
+          }          
+        }, ignoreNULL = F, ignoreInit = F)
   
         ## load environment data
         observeEvent(input$load_env,{
@@ -232,10 +289,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           
           withProgress(message = "Loading", value = 0, {
             n_studies <- length(rv_st$env_to_load)
-            if (is.null(rv_st$parse_GET_param$obs_unit_level)){
-              rv$obs_unit_level <- input$picker_obs_unit_level
-            }
-  
+
             studies <- rbindlist(lapply(1:n_studies, function(k){
               id <- rv_st$env_to_load[k]
   
@@ -253,16 +307,15 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               return(study)
             }), use.names = T,fill = T
             )
-  
-            ## convert variables from text to numeric (when variable is numeric)
-            studies <- studies[,lapply(.SD, function(x){
-              if(all(check.numeric(x))){
-                as.numeric(x)
-              }else{
-                x
-              }
-            })]
-            
+
+            # get studies variables
+            resp <- brapir::phenotyping_variables_post_search(rv$con, observationVariableDbIds = studies[, unique(observationVariableDbId)])
+            srId <- resp$data$searchResultsDbId
+            resp2 <- brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, searchResultsDbId = srId)
+            variables <- as.data.table(resp2$data)
+            variables <- variables[trait.traitClass != "Breedingprocess", .(observationVariableDbId, scale.dataType)] 
+            studies <- merge(studies, variables, by = "observationVariableDbId")
+
             env_choices <- rv$study_metadata[loaded==F,unique(studyDbId)]
             if(length(env_choices)==0){
               updateAwesomeCheckboxGroup(session = session,inputId = "environments", label = "", choices = vector())
@@ -296,6 +349,15 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               rv$data[, observationDbId := as.character(observationDbId)]
             }
           })
+
+          ## save rv in .rds ####
+          ## Not saving for ui mode, should be based on connection input parameters
+          if (!rv$ui_mode) {
+            txt <- toJSON(rv_st$parse_GET_param, auto_unbox = TRUE, sort_keys = TRUE)
+            rv$hash <- digest(txt, algo = "sha256")
+            session$sendCustomMessage("storeHash", rv$hash)          
+            save_user_data(rv)
+          }
         })
   
         output$table_trial_metadata <- renderDT({

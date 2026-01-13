@@ -11,7 +11,6 @@
 #' @export
 group_selector <- function(input_id, group_table, column_datasource, data_plot, panel_style = "default", ...) {
   ns <- NS(input_id)
-  
   # Split the table by clustering_id
   group_list <- split(group_table, by = "clustering_id", drop = FALSE)
   cluster_ids <- unique(group_table[, clustering_id])
@@ -33,8 +32,6 @@ group_selector <- function(input_id, group_table, column_datasource, data_plot, 
     id = input_id,
     class = "genotypes_groups",
     tagList(
-      tags$h3("Groups of Genotypes"),
-      
       # Global checkbox
       tags$div(
         class = "form-check mb-3 ms-2",

@@ -2,6 +2,7 @@
 #' @export
 mod_model_ui <- function(id){
   ns <- NS(id)
+
   tagList(
     layout_columns(
       col_widths = c(4, 3, 3, 2),
@@ -125,28 +126,78 @@ mod_model_ui <- function(id){
         "Results",
         layout_columns(
           col_widths = c(6,6),
-          div(
-            # tags$h4("Metrics ~ Environment x Trait"),
-            # pickerInput(ns("select_metrics_A"), "Statistics", multiple = F, choices = NULL, width = "40%", inline = T),
-            downloadButton(ns("export_metrics_A"), "CSV Export", class = "btn btn-info", style = "float:right; margin:5px"),
-            shiny::actionButton(
-              inputId = ns("push_metrics_to_BMS_B"), 
-              label = "Push BLUES/BLUPS to BMS", 
-              icon = icon("leaf"), 
-              class = "btn btn-primary", 
-              style = "float:right; margin:5px"
-            ) |>
-              tooltip("You can select the traits you want to push by selecting raws in the table below"),
-            dataTableOutput(ns("metrics_A_table"))
+          #div(
+            bslib::card(
+            bslib::card_header(
+            tags$h4("Model statistics")),
+            dataTableOutput(ns("metrics_A_table")),
+            bslib::card_footer(
+              style="display: flex;
+                    margin:5px;
+                    align-items: flex-start;
+                    gap: 10px;",
+              # tags$h4("Metrics ~ Environment x Trait"),
+              # pickerInput(ns("select_metrics_A"), "Statistics", multiple = F, choices = NULL, width = "40%", inline = T),
+              downloadButton(ns("export_metrics_A"), "CSV Export", class = "btn btn-info"),
+            )
+            #)
           ),
-          div(
+          #div(
+            bslib::card(
+            bslib::card_header(
+            tags$h4("BLUEs and BLUPs"),
             # tags$h4("Metrics ~ Environment x Trait x Genotype"),
-            downloadButton(ns("export_metrics_B"), "CSV Export", class = "btn btn-info", style = "float:right; margin:5px"),
             #disabled(shiny::actionButton(ns("push_metrics_to_BMS_B"), "Push to BMS", icon = icon("leaf"), class="btn btn-primary", style = "float:right; margin:5px")),
             #br(),
-            pickerInput(ns("select_metrics_B"), "BLUPs/BLUEs", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs"), width = "40%", inline = T, options = list(`style` = "margin-bottom: 0;")),
-            pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL, width = "40%", inline = T, options = list(`style` = "margin-bottom: 0;")),
-            dataTableOutput(ns("metrics_B_table"))
+              div(
+              style="display: flex;
+                    margin:5px;
+                    align-items: flex-start;
+                    gap: 10px;",
+            pickerInput(ns("select_metrics_B"), "Display:", multiple = F, choices = c("BLUPs","seBLUPs","BLUEs","seBLUEs")),
+            pickerInput(ns("select_environment_metrics"), "Filter by Environment", multiple = F, choices = NULL), #width = "40%"), 
+            )),
+            dataTableOutput(ns("metrics_B_table")),
+            bslib::card_footer(
+              div(
+              style="display: flex;
+                    margin:5px;
+                    align-items: flex-end;
+                    gap: 10px;
+                    width:180px;",
+              downloadButton(ns("export_metrics_B"), "Export results", class = "btn btn-info", style = "height: 35px;"),
+              div(
+                class = "my-checkbox-container",
+                style = "display: flex;
+                    margin:5px;
+                    align-items: flex-start;
+                    flex-direction: column; 
+                gap: 10px;width:400px;
+                font-size: 12px !important;",
+                
+                # Scoped CSS targeting children of this container
+                tags$style(HTML(".my-checkbox-container .form-check,
+                               .my-checkbox-container .shiny-input-container .checkbox,
+                               .my-checkbox-container .shiny-input-container .radio {
+                                 padding-left: 2.5rem !important;
+                                 margin-bottom: 0 !important;
+                               }
+                               .my-checkbox-container .form-group {
+                                 margin-bottom: -10px !important;
+                               }")
+                ),
+                prettySwitch(ns("allinone_export"),label = "All in one file", value = FALSE)|>
+                  tooltip("By selecting this option, summary statistics (from the data quality panel), model statistics, BLUEs, and BLUPs will be exported into a single Excel file. If 'One file per environment' is also selected, a zip file will be created with separate Excel files for each environment. Otherwise, all data will be combined into one Excel file.", options = list(trigger="hover")),
+                checkboxInput(ns("onefileperenv"), label = "One file per environment"),
+              ),
+              shiny::actionButton(
+                inputId = ns("push_metrics_to_BMS_B"), 
+                label = "Push BLUES/BLUPS to BMS", 
+                icon = icon("cloud-upload-alt"), 
+                class = "btn btn-primary"
+              ) |>
+                tooltip("You can select the traits you want to push by selecting rows in the model statistics table")
+            ))
           )
         )
       ),
@@ -174,20 +225,22 @@ mod_model_ui <- function(id){
       ## Fitted models panel ####
       nav_panel(
         title = "Fitted models",
-        layout_columns(
-          col_widths = c(3, 3),
+        #layout_columns(
+        #  col_widths = c(3, 3),
+        div(style="display: flex; gap: 10px;  width: 50%;",
           pickerInput(
-            ns("select_environment_fit"),"Environments", multiple = T, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
+            ns("select_environment_fit"),"Environments", multiple = F, choices = NULL, width = "100%", options = list(`actions-box` = TRUE)
           ),
           pickerInput(
             ns("select_trait_fit"),"Trait", multiple = F, choices = NULL, width = "100%"
           )
         ),      
-        layout_columns(
-          col_widths = c(4, 4, 4),
-          verbatimTextOutput(ns("fit_summary")),
-          plotOutput(ns("fit_residuals")),
-          plotOutput(ns("fit_spatial"))
+        layout_column_wrap(
+          width = 1/3,
+          height = 500,
+          bslib::card(verbatimTextOutput(ns("fit_summary")), full_screen = TRUE),
+          bslib::card(plotOutput(ns("fit_residuals")), full_screen = TRUE),
+          bslib::card(plotOutput(ns("fit_spatial")), full_screen = TRUE)
         )
       )
     )
@@ -237,10 +290,12 @@ mod_model_server <- function(id, rv){
           )
         )
 
-        choices_traits <- unique(rv$data[scale.dataType == "Numerical"]$observationVariableName)
+        #only keep variables that are numerical or nominal that can be converted as numeric
+        choices_traits <- rv$data[scale.dataType == "Numerical" | (scale.dataType == "Nominal" & !is.na(suppressWarnings(as.numeric(observationValue)))),
+                                  unique(observationVariableName)]
         updatePickerInput(
           session,"select_traits",
-          choices = choices_traits,
+          choices = sort(choices_traits),
           options = list(
             placeholder = 'Select 1 or more traits',
             onInitialize = I('function() { this.setValue(""); }')
@@ -440,6 +495,8 @@ mod_model_server <- function(id, rv){
         ## exclude observations
         rv$data[,observationValue:=as.numeric(observationValue)]
         data_filtered <- rv$data[!(observationDbId %in% rv$excluded_obs$observationDbId)]
+        data_keep <- data_filtered[,.(sd=sd(observationValue, na.rm=T)),.(observationVariableName,studyDbId)][!(sd==0 | is.na(sd)), .(observationVariableName, studyDbId)]
+        data_filtered <- data_filtered[data_keep, on=.(observationVariableName, studyDbId)]
         rv_mod$fitted_data <- data_filtered
         fitModel(data_filtered)
         enable("push_metrics_to_BMS_B")
@@ -549,45 +606,56 @@ mod_model_server <- function(id, rv){
               incProgress(1/length(input$select_environments), detail = input$select_environments[i])
               env_traits <- comb_env_trait[trial == input$select_environments[i] & observationVariableName %in% input$select_traits, observationVariableName]
               
-              fit <- fitTD(
-                TD = rv$TD,
-                trials = input$select_environments[i],
-                design = input$model_design,
-                traits = env_traits,
-                engine = input$model_engine,
-                covariates = input$covariates,
-                what = input$what,
-                # useCheckId = FALSE,
-                spatial = ifelse(input$model_engine=="SpATS", input$spatial_opt, F),
-                control = cntrl
-              )
-              
-              rv_mod$fit <- append(rv_mod$fit, fit)
-              
-              tryCatch({
-                fitextr <- extractSTA(fit)
-                rv_mod$fitextr <- append(rv_mod$fitextr, fitextr)
-                
-                outliers <-  outlierSTA(fit, 
-                                        what = "random",
-                                        commonFactors = "genotype")$outliers
-                if (!is.null(outliers)) {
-                  outliers <- merge(
-                    as.data.table(outliers),
-                    rv$data[,.(study_name_app, observationUnitDbId, observationVariableName, observationDbId)],
-                    by.x = c("trial", "observationUnitDbId", "trait"),
-                    by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
-                  )
-                  rv_mod$outliers <- append(rv_mod$outliers, list(outliers))
+              if (length(env_traits) == 0) {
+                showNotification(paste0("No data to fit on ", input$select_environments[i]), type = "warning", duration = notification_duration)
+              } else {
+                fit <- fitTD(
+                  TD = rv$TD,
+                  trials = input$select_environments[i],
+                  design = input$model_design,
+                  traits = env_traits,
+                  engine = input$model_engine,
+                  covariates = input$covariates,
+                  what = input$what,
+                  # useCheckId = FALSE,
+                  spatial = ifelse(input$model_engine=="SpATS", input$spatial_opt, F),
+                  control = cntrl
+                )
+  
+                if (any(unlist(lapply(fit[[1]]$mRand, is.null)))){
+                  keeptr <- !(unlist(lapply(fit[[1]]$mRand, is.null)))
+                  fit[[1]]$mRand <- fit[[1]]$mRand[keeptr]
+                  fit[[1]]$mFix <- fit[[1]]$mFix[keeptr]
+                  fit[[1]]$traits <- fit[[1]]$traits[keeptr]
+                  fit[[1]]$sumTab <- fit[[1]]$sumTab[keeptr]
                 }
-              },
-              error=function(e){
-                showNotification(paste0("could not fit model on ", input$select_environments[i]), type = "error", duration = notification_duration)
-                return(NULL)
-              })
- 
+                if (length(fit[[1]]$mFix)>0){
+                  rv_mod$fit <- append(rv_mod$fit, fit)
+                  tryCatch({
+                    fitextr <- extractSTA(fit)
+                    rv_mod$fitextr <- append(rv_mod$fitextr, fitextr)
+                    
+                    outliers <-  outlierSTA(fit, 
+                                            what = "random",
+                                            commonFactors = "genotype")$outliers
+                    if (!is.null(outliers)) {
+                      outliers <- merge(
+                        as.data.table(outliers),
+                        rv$data[,.(study_name_app, observationUnitDbId, observationVariableName, observationDbId)],
+                        by.x = c("trial", "observationUnitDbId", "trait"),
+                        by.y = c("study_name_app", "observationUnitDbId", "observationVariableName")
+                      )
+                      rv_mod$outliers <- append(rv_mod$outliers, list(outliers))
+                    }
+                  },
+                  error=function(e){
+                    #browser()
+                    showNotification(paste0("could not fit model on ", input$select_environments[i]), type = "error", duration = notification_duration)
+                    return(NULL)
+                  })
+                }
+              }
             }
-            
           })
         },
         error=function(e){ e })
@@ -610,12 +678,11 @@ mod_model_server <- function(id, rv){
             showNotification(paste0(trial,':\nno modelling for what=fixed'), type = "default", duration = notification_duration)
           }
         }
-        
+        req(length(rv_mod$fit)>0)
         ## update selectors
         updatePickerInput(
           session, "select_environment_fit",
-          choices = input$select_environments,
-          selected = input$select_environments
+          choices = names(rv_mod$fit)
         )
         updatePickerInput(
           session, "select_trait_fit",
@@ -645,7 +712,7 @@ mod_model_server <- function(id, rv){
         )
         updatePickerInput(
           session, "select_environment_metrics",
-          choices = input$select_environments
+          choices = names(rv_mod$fit)
         )
         
         # assign input$model_engine to a reactive variable (isolated in the "observeEvent-go fit model") to prevent the app from changing model results unless "go fit model" is clicked
@@ -654,112 +721,64 @@ mod_model_server <- function(id, rv){
       
       
       ## show fitted models per trait and environments ####
-      observeEvent(c(input$select_trait_fit, input$select_environment_fit), {
-        rv_mod$result_envs <- rv_mod$comb_env_trait[trial %in% input$select_environment_fit
-                                                    & observationVariableName == input$select_trait_fit, trial]
-      })
+      # observeEvent(c(input$select_trait_fit, input$select_environment_fit), {
+      #   rv_mod$result_envs <- rv_mod$comb_env_trait[trial %in% input$select_environment_fit
+      #                                               & observationVariableName == input$select_trait_fit, trial]
+      # })
       
+      ## fit_summary ####
       output$fit_summary <- renderPrint({
         req(rv_mod$fit)
-        req(rv_mod$result_envs)
+        validate(
+          need(length(rv_mod$fit)>0, "Could not fit any model")
+        )
+        print(input$select_environment_fit)
         req(input$select_environment_fit)
         req(input$select_trait_fit)
         
-        # s_all <- summary(
-        #   rv_mod$fit,
-        #   trait = input$select_trait_fit,
-        #   trials = input$select_environment_fit
-        # )
-        envs <- rv_mod$result_envs
-        s <- lapply(envs, function(env){
-          summary(
-            rv_mod$fit,
-            trait = input$select_trait_fit,
-            trials = env
-          )
-        })
-        names(s) <- envs
-        # s["all environments"] <- s_all
-        s
+        summary(
+          rv_mod$fit,
+          trait = input$select_trait_fit,
+          trials = input$select_environment_fit
+        )
       })
           
+      ## plot residuals ####
       output$fit_residuals <- renderPlot({
-        req(rv_mod$fit)
-        req(rv_mod$result_envs)
-        envs <- rv_mod$result_envs
-        plots_envs <- lapply(envs, function(trial){
-          plot(
-            rv_mod$fit,
-            traits = input$select_trait_fit,
-            trials = trial,
-            output = F
-            # output = F,
-            # what = c("random","fixed")[c(
-            #   !is.null(rv_mod$fit[[trial]]$mRand),
-            #   !is.null(rv_mod$fit[[trial]]$mFixed)
-            # )]
-          )
-        })
-          
-        plot_envs <- lapply(1:length(envs), function(k){
-          do.call("arrangeGrob",
-                  c(
-                    plots_envs[[k]][[envs[k]]][[input$select_trait_fit]],
-                    ncol=2,
-                    top = paste0("Trial: ", envs[k],
-                                 "\nTrait: ", input$select_trait_fit)
-                  )
-          )
-        })
-        plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
-        plot(plot_multi_env)
-      },
-      height = function(){ length(rv_mod$result_envs)*500}
-      )
-          
+        req(length(rv_mod$fit)>0)
+        req(input$select_environment_fit)
+        req(input$select_trait_fit)
+        plot(
+          rv_mod$fit,
+          traits = input$select_trait_fit,
+          trials = input$select_environment_fit
+        )
+      })
+
+      ## spatial plot ####
       output$fit_spatial <- renderPlot({
+        validate(
+          need(rv_mod$data_checks$has_coords, "No spatial data")
+        )
         isolate(req(rv_mod$data_checks$has_coords))
         req(input$select_environment_fit)
         req(input$select_trait_fit)
-        req(rv_mod$fit)
-        envs <- rv_mod$result_envs
-        plots_envs <- lapply(envs, function(trial){
-          if(rv$data[observationVariableName == input$select_trait_fit & study_name_app == trial,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
-            p <- plot(
+        req(length(rv_mod$fit)>0)
+
+        if(rv$data[observationVariableName == input$select_trait_fit & study_name_app == input$select_environment_fit,.N,.(positionCoordinateX, positionCoordinateY)][,.N]>1){
+            plot(
               rv_mod$fit,
               plotType = "spatial",
               traits = input$select_trait_fit,
-              trials = trial,
-              output = F
-              # output = F,
-              # what = c("random","fixed")[c(
-              #   !is.null(rv_mod$fit[[trial]]$mRand),
-              #   !is.null(rv_mod$fit[[trial]]$mFixed)
-              # )]
-            )
-            p
-          }else{
-            a_STATgen_like_list <- list()
-            a_STATgen_like_list[[trial]][[input$select_trait_fit]][["p1"]] <- ggplot() + geom_text(aes(x = 0, y = 0), label = "no spatial data") + theme_void()
-            a_STATgen_like_list
-          }
-        })
-        plot_envs <- lapply(1:length(envs), function(k){
-          do.call("arrangeGrob",
-                  c(
-                    plots_envs[[k]][[envs[k]]][[input$select_trait_fit]],
-                    ncol=2,
-                    top = paste0("Trial: ", envs[k],
-                                 "\nTrait: ", input$select_trait_fit)
-                  )
-          )
-        })
-        plot_multi_env <- do.call("arrangeGrob", c(plot_envs, ncol=1))
-        plot(plot_multi_env)
-      },
-      height = function(){ length(rv_mod$result_envs)*500}
-      )
-      
+              trials = input$select_environment_fit
+            )            
+        }else{
+          a_STATgen_like_list <- list()
+          a_STATgen_like_list[[trial]][[input$select_trait_fit]][["p1"]] <- ggplot() + geom_text(aes(x = 0, y = 0), label = "no spatial data") + theme_void()
+          a_STATgen_like_list
+        }
+      })
+
       observeEvent(c(input$select_trait_outliers, rv_mod$outliers), {
         req(rv_mod$fit)
         req(input$select_trait_outliers)
@@ -804,10 +823,12 @@ mod_model_server <- function(id, rv){
       }, ignoreInit = F)
 
       ## output$outliers_DT ####
-      output$outliers_DT <- renderDataTable({
-        
+      output$outliers_DT <- renderDataTable({        
         validate(
-          need(rv_mod$outliers_table, message = "No outlier for this trait")
+          need(length(rv_mod$fit)>0, message = "Could not fit any model")
+        )
+        validate(
+          need(nrow(rv_mod$outliers_table) > 0, message = "No outlier for this trait")
         )
         
         outliers <- rv_mod$outliers_table
@@ -917,13 +938,14 @@ mod_model_server <- function(id, rv){
 
       ## output$metrics_A_table ####
       output$metrics_A_table <- renderDT({
-        # req(rv_mod$fit)
-        # req(rv_mod$fitextr)
-
         validate(
-          need(rv_mod$fitextr, "you must fit a model")
+          need(rv_mod$fit, "you must fit a model")
         )
-        
+        validate(
+          need(length(rv_mod$fit) > 0, "No metrics to display, could not fit any model")
+        )
+        req(rv_mod$fitextr)
+
         ## heritability
         allex <- rv_mod$fitextr
         if(rv_mod$model_engine%in%c("lme4")){
@@ -963,6 +985,13 @@ mod_model_server <- function(id, rv){
 
       ## output$metrics_B_table ####
       output$metrics_B_table <- renderDataTable({
+        validate(
+          need(rv_mod$fit, "you must fit a model")
+        )
+        validate(
+          need(length(rv_mod$fit) > 0, "No metrics to display, could not fit any model")
+        )
+        req(rv_mod$fitextr)
         req(input$select_metrics_B)
         req(input$select_environment_metrics)
         req(rv_mod$fitextr)
@@ -1048,44 +1077,164 @@ mod_model_server <- function(id, rv){
       })
 
       ## output$export_metrics_B ####
+      observeEvent(input$allinone_export,{
+        if (input$allinone_export){
+          shinyjs::enable(id = "onefileperenv")
+          updateCheckboxInput(inputId = "onefileperenv", value=TRUE)
+        } else {
+          shinyjs::disable(id = "onefileperenv")
+        }
+      })
       output$export_metrics_B <- downloadHandler(
-        filename = function() {"BLUPs_and_BLUEs.csv"},
+        filename = function() {
+          username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
+          trial <- unique(rv$study_metadata$trialName)[1]
+          if (input$allinone_export) {
+            if (input$onefileperenv) {
+              if (length(rv_mod$fitextr)>1){
+                return(paste0(trial, "_", username, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.zip"))
+              } else {
+                return(paste0(trial, "_", names(rv_mod$fitextr)[1], "_", username, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.xlsx"))
+              }
+            } else {
+              return(paste0(trial, "_", username, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.xlsx"))
+            }
+          } else {
+            return(paste0(trial, "_", username, "_", format(Sys.time(), "%Y%m%d-%H%M%S"), "_STA_BLUES_BLUPS.csv"))
+          }
+          },
         content = function(file) {
-          withProgress(message = "Generating csv", min=1, max=1, {
+          withProgress(message = "Generating file", min=1, max=1, {
             req(rv_mod$fitextr)
-            table_metrics <- list()
-            for (i in 1:length(rv_mod$fitextr)) {
-              dt_BLUPs <- as.data.table(rv_mod$fitextr[[i]][["BLUPs"]])
-              dt_seBLUPs <- as.data.table(rv_mod$fitextr[[i]][["seBLUPs"]])
-              dt_BLUEs <- as.data.table(rv_mod$fitextr[[i]][["BLUEs"]])
-              dt_seBLUEs <- as.data.table(rv_mod$fitextr[[i]][["seBLUEs"]])
-              for (j in 2:length(colnames(dt_BLUPs))) {
-                colnames(dt_BLUPs)[j] <- paste0(colnames(dt_BLUPs)[j], "_BLUPs")
-                colnames(dt_seBLUPs)[j] <- paste0(colnames(dt_seBLUPs)[j], "_seBLUPs")
-                colnames(dt_BLUEs)[j] <- paste0(colnames(dt_BLUEs)[j], "_BLUEs")
-                colnames(dt_seBLUEs)[j] <- paste0(colnames(dt_seBLUEs)[j], "_seBLUEs")
+            if (!input$allinone_export) {
+              table_metrics <- list()
+              for (i in 1:length(rv_mod$fitextr)) {
+                dt_BLUPs <- as.data.table(rv_mod$fitextr[[i]][["BLUPs"]])
+                dt_seBLUPs <- as.data.table(rv_mod$fitextr[[i]][["seBLUPs"]])
+                dt_BLUEs <- as.data.table(rv_mod$fitextr[[i]][["BLUEs"]])
+                dt_seBLUEs <- as.data.table(rv_mod$fitextr[[i]][["seBLUEs"]])
+                for (j in 2:length(colnames(dt_BLUPs))) {
+                  colnames(dt_BLUPs)[j] <- paste0(colnames(dt_BLUPs)[j], "_BLUPs")
+                  colnames(dt_seBLUPs)[j] <- paste0(colnames(dt_seBLUPs)[j], "_seBLUPs")
+                  colnames(dt_BLUEs)[j] <- paste0(colnames(dt_BLUEs)[j], "_BLUEs")
+                  colnames(dt_seBLUEs)[j] <- paste0(colnames(dt_seBLUEs)[j], "_seBLUEs")
+                }
+                table_metrics_env <- merge(dt_BLUPs, dt_seBLUPs, by=c("genotype"))
+                table_metrics_env <- merge(table_metrics_env, dt_BLUEs, by=c("genotype"))
+                table_metrics_env <- merge(table_metrics_env, dt_seBLUEs, by=c("genotype"))
+                
+                #add environment column at first position
+                #table_metrics_env[, environment:=names(rv_mod$fitextr)[i]]
+                table_metrics_env <- data.table(environment = names(rv_mod$fitextr)[i], table_metrics_env)
+                
+                #concatenate table_metrics for each environment
+                if (!is.null(table_metrics_env)) {
+                  table_metrics <- append(table_metrics, list(table_metrics_env))
+                }
               }
               
-              table_metrics_env <- merge(dt_BLUPs, dt_seBLUPs, by=c("genotype"))
-              table_metrics_env <- merge(table_metrics_env, dt_BLUEs, by=c("genotype"))
-              table_metrics_env <- merge(table_metrics_env, dt_seBLUEs, by=c("genotype"))
+              table_metrics <- rbindlist(table_metrics, fill = T)
               
-              #add environment column at first position
-              #table_metrics_env[, environment:=names(rv_mod$fitextr)[i]]
-              table_metrics_env <- data.table(environment = names(rv_mod$fitextr)[i], table_metrics_env)
+              #change col name genotype
+              setnames(table_metrics, "genotype", "germplasm")
               
-              #concatenate table_metrics for each environment
-              if (!is.null(table_metrics_env)) {
-                table_metrics <- append(table_metrics, list(table_metrics_env))
+              write.csv(table_metrics, file, row.names = FALSE)
+            } else {
+              #browser()
+              
+              username <- gsub("(^.*?)\\:.*","\\1",rv$con$token)
+              trial <- unique(rv$study_metadata$trialName)[1]
+              
+              if (input$onefileperenv & length(rv_mod$fitextr)>1){
+                envs <- names(rv_mod$fitextr)
+                envsnosp <- gsub( "[ ,\\-]", "_", envs)
+                wbn <- NULL
+                wbd <- tempdir()
+                for (e in seq_along(envs)){
+                  sumst <- summary.stats(rv$data[!observationDbId%in%rv$excluded_obs$observationDbId & study_name_app%in%envs[e] & observationVariableName%in%input$select_traits])
+                  modst <- rbindlist(Map(function(a,n,i) data.table(studyDbId=i,
+                                                                    Environment=n,
+                                                                  Variable=names(a$heritability),
+                                                                  h2=a$heritability,
+                                                                  CV=a$CV,
+                                                                  Wald_p.value=unlist(lapply(a$wald,function(b) b$p.value))),
+                                         rv_mod$fitextr[e],
+                                         names(rv_mod$fitextr)[e],
+                                         unique(rv$study_metadata[,.(studyDbId,study_name_app)])[study_name_app==envs[e], studyDbId]),
+                                      use.names = TRUE,
+                                      fill = TRUE
+                                    )
+                  wbn[e] <- paste0(trial, "_", envsnosp[e] ,"_", username, "_", format(Sys.time(), "%Y%m%d_%H%M%S"), "_STA.xlsx")
+                  wb <- openxlsx::createWorkbook()
+                  openxlsx::addWorksheet(wb, "Summary statistics")
+                  openxlsx::addWorksheet(wb, "Model statistics")
+                  openxlsx::addWorksheet(wb, "BLUPS")
+                  openxlsx::addWorksheet(wb, "BLUES")
+                  openxlsx::addWorksheet(wb, "Excluded observations")
+                  openxlsx::addWorksheet(wb, "Candidate outliers")
+                  openxlsx::writeData(wb, 1, t(sumst[,-c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 3)
+                  openxlsx::writeData(wb, 1, t(sumst[,c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 1)
+                  #openxlsx::writeData(wb, 2, startRow = 2, rbind(h2=rv_mod$fitextr[[e]]$heritability,
+                  #                                               CV=rv_mod$fitextr[[e]]$CV,
+                  #                                               Wald_p.value=unlist(lapply(rv_mod$fitextr[[e]]$wald,function(a) a$p.value))),
+                  #                    rowNames = TRUE)
+                  #openxlsx::writeData(wb, 2, startRow = 1, startCol = 2, t(rep(envs[e], length(rv_mod$fitextr[[e]]$heritability))), colNames = FALSE)
+                  openxlsx::writeData(wb, 2, t(modst[,-c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 3)
+                  openxlsx::writeData(wb, 2, t(modst[,c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 1)
+                  openxlsx::writeData(wb, 3, data.frame(Environment=envs[e],rv_mod$fitextr[[e]]$BLUPs))
+                  openxlsx::writeData(wb, 4, data.frame(Environment=envs[e],rv_mod$fitextr[[e]]$BLUEs))
+                  openxlsx::writeData(wb, 5, merge(rv$excluded_obs, rv$data, by = "observationDbId")[study_name_app%in%envs[e] & !observationDbId%in%rv_mod$fitted_data$observationDbId])
+                  openxlsx::writeData(wb, 6,rbindlist(rv_mod$outliers)[trial==envs[e]])
+                  openxlsx::saveWorkbook(wb, file = paste0(wbd,"/",wbn[e]), overwrite = TRUE)
+                }
+                zip::zip(zipfile = file, files = wbn, include_directories = FALSE, root = wbd)
+              } else {
+                sumst <- summary.stats(rv$data[!observationDbId%in%rv$excluded_obs$observationDbId &  study_name_app%in%input$select_environments & observationVariableName%in%input$select_traits])
+                modst <- rbindlist(Map(function(a,n,i) data.table(studyDbId=i,
+                                                                  Environment=n,
+                                                                Variable=names(a$heritability),
+                                                                h2=a$heritability,
+                                                                CV=a$CV,
+                                                                Wald_p.value=unlist(lapply(a$wald,function(b) b$p.value))),
+                                       rv_mod$fitextr,
+                                       names(rv_mod$fitextr),
+                                       unique(rv$study_metadata[,.(studyDbId,study_name_app)])[match(names(rv_mod$fitextr), study_name_app), studyDbId]
+                                       ),
+                                   use.names = TRUE,
+                                   fill = TRUE
+                        )
+                wb <- openxlsx::createWorkbook()
+                openxlsx::addWorksheet(wb, "Summary statistics")
+                openxlsx::addWorksheet(wb, "Model statistics")
+                openxlsx::addWorksheet(wb, "BLUPS")
+                openxlsx::addWorksheet(wb, "BLUES")
+                openxlsx::addWorksheet(wb, "Excluded observations")
+                openxlsx::addWorksheet(wb, "Candidate outliers")
+                openxlsx::writeData(wb, 1, t(sumst[,-c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 3)
+                openxlsx::writeData(wb, 1, t(sumst[,c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 1)
+                openxlsx::writeData(wb, 2, t(modst[,-c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 3)
+                openxlsx::writeData(wb, 2, t(modst[,c(1,2)]),colNames = FALSE, rowNames = TRUE, startRow = 1)
+                openxlsx::writeData(wb, 3, rbindlist(Map(function(a,n) data.table(Environment=n,a$BLUPs), 
+                                                         rv_mod$fitextr, 
+                                                         names(rv_mod$fitextr)
+                                                         ),
+                                                     use.names = TRUE,
+                                                     fill = TRUE
+                                                     )
+                                    )
+                openxlsx::writeData(wb, 4, rbindlist(Map(function(a,n) data.table(Environment=n,a$BLUEs), 
+                                                         rv_mod$fitextr, 
+                                                         names(rv_mod$fitextr)
+                                                         ),
+                                                     use.names = TRUE,
+                                                     fill = TRUE
+                                                     )
+                                    )
+                openxlsx::writeData(wb, 5, merge(rv$excluded_obs, rv$data, by = "observationDbId")[!observationDbId%in%rv_mod$fitted_data$observationDbId])
+                openxlsx::writeData(wb, 6,rbindlist(rv_mod$outliers))
+                openxlsx::saveWorkbook(wb, file = file, overwrite = TRUE)
               }
             }
-            
-            table_metrics <- rbindlist(table_metrics, fill = T)
-            
-            #change col name genotype
-            setnames(table_metrics, "genotype", "germplasm")
-            
-            write.csv(table_metrics, file, row.names = FALSE)
           })
         }
       )
@@ -1282,130 +1431,31 @@ mod_model_server <- function(id, rv){
               #filter table_metrics on variable
               data_to_push_by_var <- bluesToPush[originVariableName==var_name,]
               
-              ## push missing variables ####
-              # Get variable scale and trait
-              resp_variable <- brapir::phenotyping_variables_get(con = rv$con, observationVariableDbId = variableDbId)
-              
-              if (resp_variable$status_code != 200) {
-                showNotification(paste0("An error occured"), type = "error", duration = notification_duration)
-                return(NULL)
-              } else {
-                # Checking if relative BLUES/BLUPS variables already exist
-                # which means looking for variables with the same scaleDbId, traitDbId but with BLUEs/BLUPs methodDbIds 
-                scaleDbId <- resp_variable$data$scale.scaleDbId #"6085"
-                variableName <- resp_variable$data$observationVariableName
-                traitDbId <-  resp_variable$data$trait.traitDbId #"20454"
-                #variableDbId <- origin_variables$originVariableDbId[i]
-                
-                resp_search_variables <- brapir::phenotyping_variables_post_search(
-                  con = rv$con,
-                  methodDbIds = c(methodIds$BLUEs, methodIds$BLUPs, methodIds$seBLUEs, methodIds$seBLUPs),
-                  scaleDbIds = scaleDbId,
-                  traitDbIds = traitDbId
-                )
-                if (resp_search_variables$status_code == 200 | resp_search_variables$status_code == 202) {
-                  resp_get_search_variables <- brapir::phenotyping_variables_get_search_searchResultsDbId(
-                    con = rv$con,
-                    searchResultsDbId = resp_search_variables$data$searchResultsDbId
+              env_names <- comb[originVariableName == var_name, environment]  
+              for (j in 1:length(env_names)) {
+                incProgress(1/nrow(comb), detail = paste0(var_name, " - ", env_names[j]))
+                ## push observations ####
+                print("Posting observations")
+                #filter on env
+                data_to_push <- data_to_push_by_var[environment == env_names[j],]
+                # Building body POST request
+                body <- apply(data_to_push,1,function(a){
+                  list(
+                    germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
+                    observationUnitDbId = jsonlite::unbox(as.character(a["observationUnitDbId"])),
+                    studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
+                    observationVariableDbId = jsonlite::unbox(as.character(a["observationVariableDbId"])),
+                    value = jsonlite::unbox(as.numeric(a["value"]))
                   )
-                  if (resp_get_search_variables$status_code == 200) {
-                    existing_variables <- NULL
-                    if (resp_get_search_variables$metadata$pagination$totalCount > 0) {
-                      existing_variables <- data.table(resp_get_search_variables$data)[,.(observationVariableName, observationVariableDbId, 
-                                                                                          methodDbId = method.methodDbId, scaleDbId = scale.scaleDbId,
-                                                                                          traitDbId = trait.traitDbId, originVariableDbId = variableDbId,
-                                                                                          originVariableName = variableName)]
-                      #[,result := names(methodIds)[which(unlist(methodIds) == methodDbId)]]
-                      existing_variables <- merge(existing_variables, methods, by="methodDbId")
-                      missing_methods <- unlist(methodIds)[!(unlist(methodIds) %in% existing_variables$methodDbId)]
-                    } else {
-                      missing_methods <- unlist(methodIds)
-                    }
-                    
-                    if (length(missing_methods) > 0) {
-                      #some variables are missing
-                      missing_variables_dt <- data.table(
-                        methodDbId = unname(missing_methods),
-                        methodName = names(missing_methods)
-                      )[, observationVariableName := paste0(variableName, "_", methodName)
-                      ][, contextOfUse := "MEANS"
-                      ][, scaleDbId := scaleDbId
-                      ][, traitDbId := traitDbId]
-                      
-                      # Create missing variables
-                      if (nrow(missing_variables_dt) > 0) {
-                        print("Creating missing BLUES/BLUPS variables")
-                        print(paste0("Creating ", nrow(missing_variables_dt) , " new variables"))
-                        print(missing_variables_dt$observationVariableName)
-                        
-                        body <- apply(missing_variables_dt,1,function(a){
-                          list(
-                            contextOfUse = c("MEANS"),
-                            method = list(methodDbId = jsonlite::unbox(a["methodDbId"])),
-                            observationVariableName = jsonlite::unbox(a["observationVariableName"]),
-                            scale = list(scaleDbId = jsonlite::unbox(a["scaleDbId"])),
-                            trait = list(traitDbId = jsonlite::unbox(a["traitDbId"]))
-                          )
-                        })
-                        
-                        resp_post_variables <- brapir::phenotyping_variables_post_batch(con = rv$con, data = body)
-                        
-                        if (resp_post_variables$status_code == 200) {
-                          created_variables_dt <- data.table(resp_post_variables$data)[
-                            , .(observationVariableDbId, observationVariableName,
-                                methodDbId = method.methodDbId,
-                                scaleDbId = scale.scaleDbId,
-                                traitDbId = trait.traitDbId,
-                                originVariableName = variableName,
-                                originVariableDbId = variableDbId
-                            )]
-                          created_variables_dt <- merge(created_variables_dt, methods, by="methodDbId")
-                          
-                          print("Created variables:")
-                          print(created_variables_dt)
-                          # Add new variables to the existing variables
-                          if (is.null(existing_variables)) {
-                            existing_variables <- created_variables_dt
-                          } else {
-                            existing_variables <- rbind(existing_variables, created_variables_dt)
-                          }
-                        }
-                        print("All variables:")
-                        print(existing_variables)
-                      }
-                    }
-                    
-                    # add variableDbIds to data table
-                    data_to_push_by_var <- merge(data_to_push_by_var, existing_variables, by=c("originVariableName","result"))
-                    
-                    env_names <- comb[originVariableName == var_name, environment]  
-                    for (j in 1:length(env_names)) {
-                      incProgress(1/nrow(comb), detail = paste0(var_name, " - ", env_names[j]))
-                      ## push observations ####
-                      print("Posting observations")
-                      #filter on env
-                      data_to_push <- data_to_push_by_var[environment == env_names[j],]
-                      # Building body POST request
-                      body <- apply(data_to_push,1,function(a){
-                        list(
-                          germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
-                          observationUnitDbId = jsonlite::unbox(as.character(a["observationUnitDbId"])),
-                          studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
-                          observationVariableDbId = jsonlite::unbox(as.character(a["observationVariableDbId"])),
-                          value = jsonlite::unbox(as.numeric(a["value"]))
-                        )
-                      })
-                      
-                      resp <- brapir::phenotyping_observations_post_batch(con = rv$con, data = body)
-                      if (resp$status_code == 200) {
-                        created_observations_df <- resp$data
-                        showNotification(paste0(var_name, " BLUES/BLUPS were pushed to ", env_names[j], " (",nrow(created_observations_df), " data)"), type = "message", duration = notification_duration)
-                      } else {
-                        showNotification(paste0("An error occured while creating BLUES/BLUPS observations for ", var_name), type = "error", duration = notification_duration)
-                        showNotification(paste0(resp$metadata), type = "error", duration = notification_duration)
-                      }
-                    }
-                  }
+                })
+                
+                resp <- brapir::phenotyping_observations_post_batch(con = rv$con, data = body)
+                if (resp$status_code == 200) {
+                  created_observations_df <- resp$data
+                  showNotification(paste0(var_name, " BLUES/BLUPS were pushed to ", env_names[j], " (",nrow(created_observations_df), " data)"), type = "message", duration = notification_duration)
+                } else {
+                  showNotification(paste0("An error occured while creating BLUES/BLUPS observations for ", var_name), type = "error", duration = notification_duration)
+                  showNotification(paste0(resp$metadata), type = "error", duration = notification_duration)
                 }
               }
             }
@@ -1439,11 +1489,13 @@ mod_model_server <- function(id, rv){
           print("PUSH BLUEs/BLUPs")
           colnames(table_metrics) = c("germplasmName", "environment", "result", "originVariableName", "value")
           table_metrics <- merge(table_metrics, unique(rv$data[,.(environment = study_name_app, studyDbId = as.character(studyDbId), germplasmName, entryNumber = as.character(entryNumber))]))
-          bluesToPush <<- table_metrics
+          
+          # don't push NA value
+          bluesToPush <<- table_metrics[!is.na(value),]
           
           #exit the function if missing method ids
           if (is.null(methodIds)) {
-            return(NULL)
+            stop("missing Blues/Blups methods")
           }
           
           methods <- data.table(result = names(methodIds), methodDbId = unname(unlist(methodIds)))
@@ -1485,7 +1537,7 @@ mod_model_server <- function(id, rv){
           print("Checking if BLUES/BLUPS variables already exist")
           missing_variables_df <- data.frame(matrix(nrow = 0, ncol = 5))
           metrics_variables_df <- data.frame(matrix(nrow = 0, ncol = 8))
-          # 
+
           # for each origin variable, we are looking for corresponding BLUPs/BLUEs variables
           # which means looking for variables with the same scaleDbId, traitDbId but with BLUEs/BLUPs methodDbIds 
           missing_variables_list <- list()
@@ -1494,9 +1546,9 @@ mod_model_server <- function(id, rv){
             # Checking if relative BLUES/BLUPS variables already exist
             # which means looking for variables with the same scaleDbId, traitDbId but with BLUEs/BLUPs methodDbIds 
             scaleDbId <- origin_variables$scaleDbId[i] #"6085"
-            variableName <- origin_variables$originVariableDbId[i]
+            originVariableDbId <- origin_variables$originVariableDbId[i]
             traitDbId <-  origin_variables$traitDbId[i] #"20454"
-            #variableDbId <- origin_variables$originVariableDbId[i]
+            originVariableName <- origin_variables$originVariableName[i]
             
             resp_search_variables <- brapir::phenotyping_variables_post_search(
               con = rv$con,
@@ -1512,13 +1564,31 @@ mod_model_server <- function(id, rv){
               if (resp_get_search_variables$status_code == 200) {
                 existing_variables <- NULL
                 if (resp_get_search_variables$metadata$pagination$totalCount > 0) {
-                  existing_variables <- data.table(resp_get_search_variables$data)[,.(observationVariableName, observationVariableDbId, 
-                                                                                      methodDbId = method.methodDbId, scaleDbId = scale.scaleDbId,
-                                                                                      traitDbId = trait.traitDbId, originVariableDbId = observationVariableDbId,
-                                                                                      originVariableName = observationVariableName)]
-                  #[,result := names(methodIds)[which(unlist(methodIds) == methodDbId)]]
-                  existing_variables <- merge(existing_variables, methods, by="methodDbId")
-                  missing_methods <- unlist(methodIds)[!(unlist(methodIds) %in% existing_variables$methodDbId)]
+                  existing_variables <- data.table(resp_get_search_variables$data)
+                  
+                  if ("additionalInfo.ParentID" %in% names(existing_variables)) {
+                    existing_variables <- existing_variables[,.(observationVariableName, observationVariableDbId, 
+                                                                methodDbId = method.methodDbId, scaleDbId = scale.scaleDbId,
+                                                                traitDbId = trait.traitDbId,
+                                                                ParentID = additionalInfo.ParentID)]
+                    #[,result := names(methodIds)[which(unlist(methodIds) == methodDbId)]]
+                    existing_variables <- existing_variables[ParentID == originVariableDbId,][,originVariableName:=originVariableName]
+                    existing_variables <- merge(existing_variables, methods, by="methodDbId")
+                    if (nrow(existing_variables>0)) {
+                      # check for duplicated variables (should not happen)
+                      cols_to_check <- setdiff(names(existing_variables), c("observationVariableName", "observationVariableDbId"))
+                      duplicated_var <- existing_variables[duplicated(existing_variables[, ..cols_to_check])]
+                      if (nrow(duplicated_var)>0) {
+                        stop(paste0("can't push because of duplicated analysis variables:", duplicated_var$observationVariableName))
+                      }
+                      missing_methods <- unlist(methodIds)[!(unlist(methodIds) %in% existing_variables$methodDbId)]  
+                    } else {
+                      missing_methods <- unlist(methodIds)
+                    }
+                  } else {
+                    existing_variables <- NULL
+                    missing_methods <- unlist(methodIds)
+                  }
                 } else {
                   missing_methods <- unlist(methodIds)
                 }
@@ -1531,7 +1601,9 @@ mod_model_server <- function(id, rv){
                   )[, observationVariableName := paste0(origin_variables$originVariableName[i], "_", methodName)
                   ][, contextOfUse := "MEANS"
                   ][, scaleDbId := scaleDbId
-                  ][, traitDbId := traitDbId]
+                  ][, traitDbId := traitDbId
+                  ][, originVariableName := originVariableName
+                  ][, ParentID := origin_variables$originVariableDbId[i]]
                   
                   missing_variables_list <- append(missing_variables_list, list(missing_variables_dt))
                 }
@@ -1552,6 +1624,7 @@ mod_model_server <- function(id, rv){
             
             body <- apply(missing_variables,1,function(a){
               list(
+                additionalInfo = list(ParentID = jsonlite::unbox(a["ParentID"])),
                 contextOfUse = c("MEANS"),
                 method = list(methodDbId = jsonlite::unbox(a["methodDbId"])),
                 observationVariableName = jsonlite::unbox(a["observationVariableName"]),
@@ -1568,10 +1641,10 @@ mod_model_server <- function(id, rv){
                     methodDbId = method.methodDbId,
                     scaleDbId = scale.scaleDbId,
                     traitDbId = trait.traitDbId,
-                    originVariableName = observationVariableName,
-                    originVariableDbId = observationVariableDbId
+                    ParentID = additionalInfo.ParentID
                 )]
               created_variables_dt <- merge(created_variables_dt, methods, by="methodDbId")
+              created_variables_dt <- merge(created_variables_dt, unique(missing_variables[,.(originVariableName, ParentID)]), by="ParentID")
               
               print("Created variables:")
               print(created_variables_dt)
@@ -1583,6 +1656,10 @@ mod_model_server <- function(id, rv){
           existing_variables <- rbindlist(existing_variables_list, use.names = T)
           print("All variables:")
           print(existing_variables)
+          
+          bluesToPush <<- merge(bluesToPush, 
+            existing_variables[,.(observationVariableName, observationVariableDbId, originVariableName, result)], 
+            by = c("originVariableName", "result"))
           
           ## check if existing BLUEs/BLUPs ####          
           withProgress(message = "check if BLUEs/BLUPs are already stored in the database", min=1, max=1, {
@@ -1606,8 +1683,8 @@ mod_model_server <- function(id, rv){
           
         },
         error = function(e) {
-          showNotification(paste0("An error occured: ", e), type = "error", duration = notification_duration)
-          print(e)
+          showNotification(paste0("An error occured: ", e$message), type = "error", duration = notification_duration)
+          print(e$message)
           return(NULL)
         })
       }
@@ -1625,12 +1702,12 @@ mod_model_server <- function(id, rv){
             return(NULL)
           } else {
             withProgress(message = "Building report", value = 0,max = (length(rv_mod$fit[[1]]$traits)*length(rv_mod$fit))+1, {
-            stareport(fit=rv_mod$fit,
-                      file=file,
-                      template="reports/STA_Model.docx",
-                      trialName=unique(rv$study_metadata$trialName),
-                      trialdesc = rv$trial_metadata[trialDbId==unique(rv$study_metadata$trialDbId),trialDescription],
-                      crop = rv$trial_metadata[trialDbId==unique(rv$study_metadata$trialDbId),commonCropName],
+            stareport(fit = rv_mod$fit,
+                      file = file,
+                      template = "reports/STA_Model.docx",
+                      trialName = paste(sort(unique(rv$study_metadata$trialName)), collapse=", "),
+                      trialdesc = paste(rv$trial_metadata[trialDbId%in%unique(rv$study_metadata$trialDbId),.(trialName,trialDescription)][order(trialName),trialDescription], collapse=", "),
+                      crop = paste(unique(rv$trial_metadata[trialDbId%in%unique(rv$study_metadata$trialDbId),commonCropName]), collapse=", "),
                       spatial = rv_mod$data_checks$has_coords,
                       outliers = rbindlist(rv_mod$outliers),
                       excluded = if(nrow(rv$excluded_obs)>0) rv$data[observationDbId %in% rv$excluded_obs$observationDbId] else NULL,

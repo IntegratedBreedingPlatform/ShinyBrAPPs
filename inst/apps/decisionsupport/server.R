@@ -9,7 +9,8 @@ server <- function(input, output, session){
     pushOK = FALSE,             # to avoid pushing BLUES/BLUPS to easily
     groups = data.table(),
     visu_as_group = NULL,
-    new_group_created = F
+    new_group_created = F,
+    hash = NULL                 # to track user query in browser sessionStorage
   )
   mod_connect_server("connect",rv)  
   mod_get_studydata_server("get_studydata", rv)
@@ -23,45 +24,45 @@ server <- function(input, output, session){
 
   output$Rsi <- renderPrint(sessionInfo())
   
+  ## user session hash ####
+  observeEvent(input$hash, {
+    rv$hash <- input$hash
+  }, priority = 1) #to be triggered before other observeEvents
+  
   ## Action when clicking on button create group in modal
   observeEvent(input$modal_create_group_go, {
     rv$selection[, group_name := input$modal_create_group_text_input_label]
     rv$selection[, group_desc := input$modal_create_group_text_input_descr]
     rv$selection[, clustering_id := NA]
+    new_group <- rv$selection
     rv$groups <- rbindlist(list(
       rv$groups,
-      rv$selection
+      new_group
     ), fill = T, use.names = T)
-
-    ## update selectors (shape, colour)
-    data_plot <- copy(rv$extradata) # to avoid issues related to assignment by reference
-    data_plot[germplasmDbId %in% rv$selection[,unlist(germplasmDbIds)], eval(input$modal_create_group_text_input_label) := paste0('In')]
-    data_plot[!(germplasmDbId %in% rv$selection[,unlist(germplasmDbIds)]), eval(input$modal_create_group_text_input_label) := paste0('Out')]
-    rv$column_datasource <- rbindlist(
-      list(
-        rv$column_datasource,
-        data.table(cols = input$modal_create_group_text_input_label, source = "group", type = "Text", visible = T)
-      ),
-      use.names = T
-    )
-
-    rv$new_group_created <- T #to avoid environments selection reset
-    rv$extradata <- data_plot
-
-    rv$selection <- data.table()
+    
+    update_selectors_with_groups(rv, new_group)
 
     #TODO reset plot selection after group creation ?
     #rv_plot$plot_selection <- data.table()
-
+    
+    rv$selection <- data.table()
     removeModal()
   })
   
   ## Action when clicking on button rename group in modal
   observeEvent(input$modal_rename_group_go, {
     req(length(rv$selected_group_id) == 1)
-    rv$groups[group_id == rv$selected_group_id, group_name := input$modal_rename_group_text_input_label]
-    rv$groups[group_id == rv$selected_group_id, group_desc := input$modal_rename_group_text_input_descr]
+    initial_name <- rv$groups[group_id == rv$selected_group_id, group_name]
+    groups <- copy(rv$groups)
+    groups[group_id == rv$selected_group_id, group_name := input$modal_rename_group_text_input_label]
+    groups[group_id == rv$selected_group_id, group_desc := input$modal_rename_group_text_input_descr]
+    rv$groups <- groups
+    # Update colorGenotypeBy pickerInputs if the name has been changed and if it is not a cluster group
+    if (initial_name != input$modal_rename_group_text_input_label & is.na(rv$groups[group_id == rv$selected_group_id, clustering_id])) {
+      update_selectors_with_groups(rv, rv$groups[group_id == rv$selected_group_id,], initial_name)
+    }
     removeModal()
+    save_user_data(rv)
   })
 
   # open or close the groups sidebar
@@ -77,6 +78,7 @@ server <- function(input, output, session){
         open = F
       )
     }
+    save_user_data(rv)
   }, ignoreNULL = TRUE)
   
 }

@@ -11,6 +11,10 @@ mod_get_extradata_server <- function(id, rv){
       observeEvent(rv$data, {
         req(rv$study_metadata)
 
+        # no need to reload extradata if we get it from user session
+        # needed in ui_mode when loading environments one by one
+        req(rv$ui_mode | is.null(rv$extradata))   
+
         if(!isTruthy("observationVariableName"%in%names(rv$data))){
           showNotification("Data set without observations", type = "warning", duration = notification_duration)
           req(F)
@@ -48,7 +52,7 @@ mod_get_extradata_server <- function(id, rv){
           ## 1 trait per column
           formul <- paste(
             paste(
-              names(data_tmp)[!names(data_tmp)%in%c("observationVariableName", "observationValue", "observationDbId", "observationVariableDbId")],
+              names(data_tmp)[!names(data_tmp)%in%c("observationVariableName", "observationValue", "observationDbId", "observationVariableDbId", "scale.dataType")],
               collapse = " + "
             ),
             " ~ observationVariableName"
@@ -59,15 +63,20 @@ mod_get_extradata_server <- function(id, rv){
             formula = formul,
             value.var = "observationValue"
           )
-          #browser()
           ### Data source "environment"
           ## extract environment parameters from rv$study_metadata
           if(length(grep("environmentParameters", names(rv$study_metadata)))){
             environmentParameters <- dcast(data = unique(rv$study_metadata[,grep("environmentParameters|studyDbId", names(rv$study_metadata)), with = F]),
                                            formula = "studyDbId ~ environmentParameters.parameterName",
                                            value.var = "environmentParameters.value")
-            environmentParameters[,studyDbId:=as.numeric(studyDbId)]
             env_cols <- unique(rv$study_metadata[, .(cols = environmentParameters.parameterName, type = NA, source = "environment", visible = T)])
+            comcols <- setdiff(colnames(environmentParameters)[colnames(environmentParameters)%in%colnames(extradata)],"studyDbId")
+            if (length(comcols)>0){
+              setnames(environmentParameters, old = comcols, new = paste0(comcols,".env"))
+              setnames(extradata, old = comcols, new = paste0(comcols,".obs"))
+              column_datasource[cols%in%comcols, cols:=paste0(cols,".obs")]
+              env_cols[cols%in%comcols, cols:=paste0(cols,".obs")]
+            }
             extradata <- merge(extradata, environmentParameters, by = "studyDbId")
           }else{
             environmentParameters <- unique(rv$study_metadata[,studyDbId])
@@ -77,10 +86,19 @@ mod_get_extradata_server <- function(id, rv){
             geo <- rv$study_metadata[,c("studyDbId",grep("coordinates", names(rv$study_metadata),value = T)), with = F]
             geo <- geo[!is.na(coordinates.type)]
             latlon <- unique(geo[,.(studyDbId,geo.lat=unlist(lapply(coordinates.geometry.coordinates,function(a) a[1])),geo.lon=unlist(lapply(coordinates.geometry.coordinates,function(a) a[2])))])
-            latlon[,studyDbId:=as.numeric(studyDbId)]
             environmentParameters <- latlon[environmentParameters,on=.(studyDbId)]
-            env_cols <- rbind(env_cols, data.table(cols=c("geo.lat","geo.lon"), type = NA, source = "environment", visible = T))
+            env_cols <- rbind(env_cols, data.table(cols=c("geo.lat","geo.lon"), type = "Numerical", source = "environment", visible = T))
             extradata <- merge(extradata, latlon, by = "studyDbId", all.x=TRUE)
+          }
+
+          locols <- c( "locationType", "locationName","abbreviation", "countryCode", "countryName", "parentLocationName")
+          if(sum(names(rv$study_metadata)%in%locols)){
+            locs <- unique(rv$study_metadata[,c("studyDbId",locols[locols%in%names(rv$study_metadata)]), with = F])
+           environmentParameters <- locs[environmentParameters,on=.(studyDbId)]
+            locs[,locationName:=NULL]
+            locols <- names(locs)
+            env_cols <- rbind(env_cols, data.table(cols=locols[locols%in%names(rv$study_metadata)], type = "Text", source = "environment", visible = T))
+            extradata <- merge(extradata, locs, by = "studyDbId", all.x=TRUE)
           }
           
           column_datasource <- rbindlist(list(column_datasource, env_cols), use.names = T)
@@ -157,10 +175,13 @@ mod_get_extradata_server <- function(id, rv){
           }
 
           # for columns that are not typed (environmentParameters for example) assign type manually
+          # and try to convert nominal observations variables as numeric
           # check if the variable can be safely converted to num and then convert. Assign type "Text" otherwise
-          nothing <- lapply(column_datasource[is.na(type), cols], function(col){
-            if(all(check.numeric(extradata[,eval(as.name(col))]))){
-              extradata[,eval(col) := as.numeric(eval(as.name(col)))]
+          nothing <- lapply(column_datasource[is.na(type) | type == "Nominal", cols], function(col){
+            var <- extradata[, get(col)]
+            var_is_num <- all(check.numeric(var[!is.na(var) & var != "NA"]))
+            if (var_is_num) {
+              extradata[, (col) := as.numeric(get(col))]
               column_datasource[cols == col, type := "Numerical"]
             }else{
               column_datasource[cols == col, type := "Text"]
@@ -172,12 +193,15 @@ mod_get_extradata_server <- function(id, rv){
           nothing <- lapply(column_datasource[type=="Numerical", cols], function(col){
             extradata[,eval(col) := as.numeric(eval(as.name(col)))]
           })
+          extradata[, label_study:=paste(locationName, studyDbId, sep="-")]
           
           rv$environmentParameters <- environmentParameters
           rv$extradata <- extradata
 
           rv$column_datasource <- column_datasource
           #rv$ontology_variables <- ontology_variables
+          
+          save_user_data(rv)
         })
       })
     }
