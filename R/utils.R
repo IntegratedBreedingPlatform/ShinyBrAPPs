@@ -680,8 +680,8 @@ update_selectors_with_groups <- function(rv, new_group, initial_name = NULL) {
 summary.stats <- function(x){
   x <- x[!is.na(observationValue)]
   sumtable_notexcl_nodat <- x[scale.dataType != "Date", .(
-    "studyDbId"=studyDbId,
-    "Environment" = study_name_app,
+    "studyDbId"=studyDbId[1],
+    "Environment" = study_name_app[1],
     "No. of observations" = .N,
     "Mean" = mean(observationValue, na.rm = T),
     "Minimum" = min(observationValue, na.rm = T),
@@ -702,8 +702,8 @@ summary.stats <- function(x){
   
   if (any(x$scale.dataType == "Date")){
     sumtable_notexcl_dat <- x[scale.dataType == "Date", .(
-      "studyDbId"=studyDbId,
-      "Environment" = study_name_app,
+      "studyDbId"=studyDbId[1],
+      "Environment" = study_name_app[1],
       "No. of observations" = .N,
       "Mean" = mean(observationValue, na.rm = T),
       "Minimum" = min(observationValue, na.rm = T),
