@@ -258,8 +258,10 @@ mod_dataquality_server <- function(id, rv) {
       req(rv$data)
       req(input$trait != "")
       req(input$studies != "")
-      rv_dq$data_viz <- rv_dq$data[observationVariableName == input$trait &
+      data_viz <- rv_dq$data[observationVariableName == input$trait &
                                   studyDbId %in% input$studies]
+      if (nrow(data_viz) > 0) { rv_dq$data_viz <- data_viz }      
+      req(rv_dq$data_viz)        
       
       rv_dq$data_viz[observationDbId %in% rv_dq$sel_observationDbIds &
                        !(observationDbId %in% rv$excluded_obs$observationDbId)]
