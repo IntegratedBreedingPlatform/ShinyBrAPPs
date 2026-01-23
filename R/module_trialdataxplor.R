@@ -255,6 +255,8 @@ mod_trialdataxplor_server <- function(id, rv){
             rv_tdx$data_dq <- data_dq
             rv_tdx$locs <- locs
             rv_tdx$st <- st
+          }, error = function(e) {
+            showNotification(paste0("An error occured: ", e$message), type = "error", duration = notification_duration)
           })
         }
       })

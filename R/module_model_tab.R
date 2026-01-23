@@ -279,28 +279,32 @@ mod_model_server <- function(id, rv){
             "There is no trait data for this study"
           )
         )
-        
-        choices_env <- rv$data[!is.na(study_name_app)][,unique(study_name_app)]
-        updatePickerInput(
-          session,"select_environments",
-          choices = choices_env,
-          options = list(
-            placeholder = 'Select 1 or more environments',
-            onInitialize = I('function() { this.setValue(""); }')
-          )
-        )
 
-        #only keep variables that are numerical or nominal that can be converted as numeric
-        choices_traits <- rv$data[scale.dataType == "Numerical" | (scale.dataType == "Nominal" & !is.na(suppressWarnings(as.numeric(observationValue)))),
-                                  unique(observationVariableName)]
-        updatePickerInput(
-          session,"select_traits",
-          choices = sort(choices_traits),
-          options = list(
-            placeholder = 'Select 1 or more traits',
-            onInitialize = I('function() { this.setValue(""); }')
+        tryCatch({
+          choices_env <- rv$data[!is.na(study_name_app)][,unique(study_name_app)]
+          updatePickerInput(
+            session,"select_environments",
+            choices = choices_env,
+            options = list(
+              placeholder = 'Select 1 or more environments',
+              onInitialize = I('function() { this.setValue(""); }')
+            )
           )
-        )
+
+          #only keep variables that are numerical or nominal that can be converted as numeric
+          choices_traits <- rv$data[scale.dataType == "Numerical" | (scale.dataType == "Nominal" & !is.na(suppressWarnings(as.numeric(observationValue)))),
+                                    unique(observationVariableName)]
+          updatePickerInput(
+            session,"select_traits",
+            choices = sort(choices_traits),
+            options = list(
+              placeholder = 'Select 1 or more traits',
+              onInitialize = I('function() { this.setValue(""); }')
+            )
+          )
+        },  error=function(e){
+            showNotification(paste0("An error occured retrieving env and traits list: ", e$message), type = "error", duration = notification_duration)
+        })
         
         shinyjs::hide("go_fit_no_outlier")
         shinyjs::hide("fit_outliers_output")
