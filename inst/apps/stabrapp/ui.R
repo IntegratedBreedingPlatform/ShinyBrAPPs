@@ -1,5 +1,5 @@
 library(shinybrapps)
-source("config.R")
+
 ui <- fluidPage(
   #theme = bslib::bs_theme(version = 5),
   tags$head(
@@ -72,7 +72,7 @@ ui <- fluidPage(
   div(class = "container-fluid",
       mod_banner_ui("banner"),
       mod_connect_ui("connect"),
-      mod_get_studydata_ui("get_studydata"),
+      mod_get_studydata_ui("get_studydata", conf),
       div(style="position: relative; z-index: 10;",
       bslib::page_navbar(
         bslib::nav_panel(

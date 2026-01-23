@@ -49,19 +49,21 @@ mod_groups_sidebar_ui <- function(id){
 
 #' @export
 # SERVER ####
-mod_groups_sidebar_server <- function(id, rv, parent_session){
+mod_groups_sidebar_server <- function(id, rv, conf, parent_session){
   moduleServer(
     id,
     function(input, output, session){
       ns <- session$ns
       parent_ns <- parent_session$ns
+      notification_duration <- conf$notification_duration
+      
       observeEvent(rv$groups,{
         req(rv$groups)
         req(length(rv$groups) > 0)
         output$ui_groups <- renderUI({
           group_selector(input_id = ns("group_sel_input"), group_table = rv$groups, column_datasource = rv$column_datasource, data_plot = rv$extradata, panel_style = "info")
         })
-        save_user_data(rv)
+        save_user_data(rv, conf)
       })
       
       ## Displaying buttons ####
@@ -295,7 +297,7 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
             resp <- handle_api_response(brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, res$data$searchResultsDbId))
             var <- data.table(resp$data)
             if (nrow(var) > 0) {
-              var <- var[trait.traitName == selection_traitName, .(observationVariableDbId, observationVariableName)]
+              var <- var[trait.traitName == conf$selection_traitName, .(observationVariableDbId, observationVariableName)]
             }
             return(var)            
           }, error = function(e) {

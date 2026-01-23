@@ -209,7 +209,7 @@ parse_api_url <- function(url){
 
 #' @import data.table
 #' @export
-make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
+make_study_metadata <- function(con, conf, studyDbIds=NULL, trialDbId= NULL){
   study_metadata <- NULL
   if(!is.null(trialDbId)){
     ## get environment metadata by trialDbId
@@ -219,7 +219,7 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
       study_metadata <- as.data.table(study_metadata)
     },
     error=function(e){
-      showNotification(paste0("Environment metadata not found for trialDbId ",trialDbId, ": ", e$message), type = "error", duration = notification_duration)
+      showNotification(paste0("Environment metadata not found for trialDbId ",trialDbId, ": ", e$message), type = "error", duration = conf$notification_duration)
     })
   }else if(!is.null(studyDbIds)){
     ## get environment metadata by studyDbId
@@ -234,7 +234,7 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
     #   as.data.table(brapir::core_studies_get_studyDbId(con = con, studyDbId = id)$data)
     # },
     # error=function(e){
-    #   showNotification(paste0("Environment metadata not found for studyDbId ",id), type = "error", duration = notification_duration)
+    #   showNotification(paste0("Environment metadata not found for studyDbId ",id), type = "error", duration = conf$notification_duration)
     # })
     #}),use.names = T, fill = T)
     if(study_metadata[,.N]==0){
@@ -443,7 +443,7 @@ bmsapi_post_germplasm_search <- function(con = NULL,
   mf <- match.call()
   mf <- mf[-1]
   mf <- mf[!names(mf)%in%c("con","page","pageSize")]
-  args <- lapply(names(mf), function(a) get(a))
+  args <- lapply(names(mf), function(a) base::get(a))
   names(args) <- names(mf)
   if (length(args)==0) args<-NULL
   url1 <- bmscon_geturl(con)
@@ -600,6 +600,7 @@ get_BLUES_methodsDbIds <- function(con, programDbId) {
 
 # Function to construct colgeno vector of named colors from a factor of genotypes descriptors
 # and using two possible palettes one for a few levels, and the other for many levels
+#' @export
 colgeno <- function(genofac, shortpal=getOption("statgen.genoColors"), longpal=topo.colors, missing="Unknown", missing.col="grey"){
   if (!is.null(genofac)){
     if (length(shortpal) >= length(genofac)) {
@@ -627,9 +628,9 @@ colgeno <- function(genofac, shortpal=getOption("statgen.genoColors"), longpal=t
 #'
 #' @importFrom later later
 #' @export
-save_user_data <- function(rv) {
+save_user_data <- function(rv, conf) {
   if (!is.null(rv$hash)) {
-    filename <- paste0(rv$hash, ".rds")
+    filename <- file.path(conf$data_dir, paste0(rv$hash, ".rds"))
     snapshot <- list(
       con = rv$con,
       connect_mode = rv$connect_mode,
@@ -647,9 +648,25 @@ save_user_data <- function(rv) {
     # remove all NULL elements to avoid error notification (nrow dimension error)
     snapshot <- snapshot[!vapply(snapshot, is.null, logical(1))]
     later(function() {
+      if (!dir.exists(conf$data_dir)) {
+        dir.create(conf$data_dir, recursive = TRUE)
+      }
       saveRDS(snapshot, filename)
       print("rv saved !")
     }, 0)
+  }
+}
+
+#' Remove expired user session files
+#' @export
+clean_expired_files <- function(conf) {
+  files <- list.files(conf$data_dir, full.names = TRUE)
+  now <- Sys.time()
+  for(f in files){
+    info <- file.info(f)
+    if(difftime(now, info$ctime, units = "secs") > conf$files_expiration){
+      try(file.remove(f))
+    }
   }
 }
 
@@ -794,4 +811,27 @@ handle_api_response <- function(out, custom_message = NULL) {
     }
     stop(message)
   }
+}
+
+#' @export
+get_model_designs <- function() {
+  exp_designs_corresp <- data.table(
+    StatGenSTA_code = c(
+      "ibd","res.ibd", "rcbd", "rowcol", "res.rowcol"
+    ),
+    statGenSTA = c(
+      "incomplete block",
+      "resolvable incomplete block",
+      "randomized complete block",
+      "row column",
+      "resolvable row column"
+      ),
+    BMS_pui = c(
+      NA, "10130", "10110", NA, "10145"
+    )
+  )
+
+  choices_model_design <- exp_designs_corresp$StatGenSTA_code
+  names(choices_model_design) <- exp_designs_corresp$statGenSTA
+  return(choices_model_design)
 }

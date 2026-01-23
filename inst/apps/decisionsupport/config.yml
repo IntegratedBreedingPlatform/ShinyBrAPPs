@@ -1,0 +1,11 @@
+default:
+  appname: "BrAVISE"
+  can_filter_obs_unit_level_in_url: false
+  allowed_obs_unit_levels:
+    - PLOT
+    - MEANS
+  selection_traitClass: "Breedingprocess"
+  selection_traitName: "Selections"
+  variable_regexp: "_BLU[E,P]s$"
+  variable_wt_regexp: "_seBLU[E,P]s$"
+  replace_na_germplasm_attr_by: "Unknown"

@@ -257,16 +257,15 @@ mod_model_server <- function(id, rv){
     function(input, output, session){
 
       ns <- session$ns
-      
-      # store blues before confirmation modal
-      bluesToPush <- NULL
-      methodIds <- NULL
-      
-      outliersDTproxy <<- dataTableProxy('outliers_DT')
+      choices_model_design <- get_model_designs()
+      notification_duration <- conf$notification_duration      
 
       rv_mod <- reactiveValues(
         fit = NULL,
-        obsUnit_outliers = NULL
+        obsUnit_outliers = NULL,
+        bluesToPush = NULL,
+        methodIds = NULL,      
+        outliersDTproxy = dataTableProxy('outliers_DT')
       )
       shinyjs::disable("STA_report")
       
@@ -314,7 +313,7 @@ mod_model_server <- function(id, rv){
         # Get methodDbIds 
         #TODO use /search/methodDbIds
         programDbId <- unique(rv$study_metadata$programDbId)
-        methodIds <<- tryCatch({
+        rv_mod$methodIds <- tryCatch({
             get_BLUES_methodsDbIds(rv$con, programDbId)
           },
           error=function(e){
@@ -515,7 +514,7 @@ mod_model_server <- function(id, rv){
           reason = "model outlier"
         )
         rv$excluded_obs <- funion(rv$excluded_obs, new_excluded_obs,)
-        DT::selectRows(outliersDTproxy, selected=NULL)
+        DT::selectRows(rv_mod$outliersDTproxy, selected=NULL)
       })
       observeEvent(c(rv$excluded_obs,input$model_design),{
         shinyjs::disable("STA_report")
@@ -911,12 +910,12 @@ mod_model_server <- function(id, rv){
       ### handle select all ####
       observeEvent(input$outliers_select_all, {
         filtered_rows <- input$outliers_DT_rows_all
-        DT::selectRows(outliersDTproxy, selected=filtered_rows)
+        DT::selectRows(rv_mod$outliersDTproxy, selected=filtered_rows)
       })
       
       ### handle unselect ####
       observeEvent(input$outliers_unselect, {
-        DT::selectRows(outliersDTproxy, selected=NULL)
+        DT::selectRows(rv_mod$outliersDTproxy, selected=NULL)
       })
       
       ### Enable/disable select and mark as outliers buttons ####
@@ -1314,13 +1313,13 @@ mod_model_server <- function(id, rv){
       })
       
       postObservations <- function() {  
-        req(bluesToPush)
+        req(rv_mod$bluesToPush)
         tryCatch({
           ## push observationunits ####
           withProgress(message = "Looking for existing observationUnits", min=1, max=1, {
             # Getting existing observationunits
             print("Checking if observationUnits already exist")
-            needed_env <- unique(bluesToPush[,environment])
+            needed_env <- unique(rv_mod$bluesToPush[,environment])
             needed_observation_units <- unique(rv$data[study_name_app %in% needed_env,.(
               germplasmDbId, germplasmName, studyDbId = as.character(studyDbId), study_name_app, 
               programDbId, trialDbId = as.character(trialDbId), entryType, entryNumber = as.character(entryNumber))])
@@ -1329,7 +1328,7 @@ mod_model_server <- function(id, rv){
             needed_observation_units$entryNumber <- as.character(needed_observation_units$entryNumber)
             setnames(needed_observation_units, "study_name_app","environment")
 
-            bluesToPush <<- merge(needed_observation_units, bluesToPush, by=c("germplasmName", "environment", "studyDbId", "entryNumber"))
+            rv_mod$bluesToPush <- merge(needed_observation_units, rv_mod$bluesToPush, by=c("germplasmName", "environment", "studyDbId", "entryNumber"))
             
             env <- unique(bluesToPush[, .(environment, studyDbId)])
             resp_post_search_obsunit <- handle_api_response(
@@ -1417,14 +1416,14 @@ mod_model_server <- function(id, rv){
           print("all observation_units:")
           print(observation_units)
           
-          origin_variable_names <- unique(bluesToPush[,originVariableName])
-          methods <- data.table(result = names(methodIds), methodDbId = unname(unlist(methodIds)))
+          origin_variable_names <- unique(rv_mod$bluesToPush[,originVariableName])
+          methods <- data.table(result = names(rv_mod$methodIds), methodDbId = unname(unlist(rv_mod$methodIds)))
           
           #data_to_push$studyDbId = as.character(data_to_push$studyDbId)
-          bluesToPush <<- merge(bluesToPush, observation_units, by=c("germplasmDbId","studyDbId"))
+          rv_mod$bluesToPush <- merge(rv_mod$bluesToPush, observation_units, by=c("germplasmDbId","studyDbId"))
         
           ## push BLUES per variable ####
-          comb <- unique(bluesToPush[,.(environment, originVariableName)])
+          comb <- unique(rv_mod$bluesToPush[,.(environment, originVariableName)])
           withProgress(message = "Pushing BLUES/BLUPS", value = 0, {
             for (i in 1:length(origin_variable_names)) {
               var_name <- as.character(origin_variable_names[i])
@@ -1432,7 +1431,7 @@ mod_model_server <- function(id, rv){
               variable <- unique(rv$data[observationVariableName==var_name, .(observationVariableDbId)])
               variableDbId <- as.character(variable[1, observationVariableDbId])
               #filter table_metrics on variable
-              data_to_push_by_var <- bluesToPush[originVariableName==var_name,]
+              data_to_push_by_var <- rv_mod$bluesToPush[originVariableName==var_name,]
               
               env_names <- comb[originVariableName == var_name, environment]  
               for (j in 1:length(env_names)) {
@@ -1494,17 +1493,17 @@ mod_model_server <- function(id, rv){
           table_metrics <- merge(table_metrics, unique(rv$data[,.(environment = study_name_app, studyDbId = as.character(studyDbId), germplasmName, entryNumber = as.character(entryNumber))]))
           
           # don't push NA value
-          bluesToPush <<- table_metrics[!is.na(value),]
+          rv_mod$bluesToPush <- table_metrics[!is.na(value),]
           
           #exit the function if missing method ids
-          if (is.null(methodIds)) {
+          if (is.null(rv_mod$methodIds)) {
             stop("missing Blues/Blups methods")
           }
           
-          methods <- data.table(result = names(methodIds), methodDbId = unname(unlist(methodIds)))
+          methods <- data.table(result = names(rv_mod$methodIds), methodDbId = unname(unlist(rv_mod$methodIds)))
           
           # Get the ids of variables that were used in the model
-          origin_variable_names <- unique(bluesToPush[,originVariableName])
+          origin_variable_names <- unique(rv_mod$bluesToPush[,originVariableName])
 
           ## push blues variables ####
           # Get variables ids from data
@@ -1555,7 +1554,7 @@ mod_model_server <- function(id, rv){
             
             resp_search_variables <- handle_api_response(brapir::phenotyping_variables_post_search(
               con = rv$con,
-              methodDbIds = c(methodIds$BLUEs, methodIds$BLUPs, methodIds$seBLUEs, methodIds$seBLUPs),
+              methodDbIds = c(rv_mod$methodIds$BLUEs, rv_mod$methodIds$BLUPs, rv_mod$methodIds$seBLUEs, rv_mod$methodIds$seBLUPs),
               scaleDbIds = scaleDbId,
               traitDbIds = traitDbId
             ))
@@ -1574,7 +1573,7 @@ mod_model_server <- function(id, rv){
                                                                 methodDbId = method.methodDbId, scaleDbId = scale.scaleDbId,
                                                                 traitDbId = trait.traitDbId,
                                                                 ParentID = additionalInfo.ParentID)]
-                    #[,result := names(methodIds)[which(unlist(methodIds) == methodDbId)]]
+                    #[,result := names(rv_mod$methodIds)[which(unlist(rv_mod$methodIds) == methodDbId)]]
                     existing_variables <- existing_variables[ParentID == originVariableDbId,][,originVariableName:=originVariableName]
                     existing_variables <- merge(existing_variables, methods, by="methodDbId")
                     if (nrow(existing_variables>0)) {
@@ -1584,16 +1583,16 @@ mod_model_server <- function(id, rv){
                       if (nrow(duplicated_var)>0) {
                         stop(paste0("can't push because of duplicated analysis variables:", duplicated_var$observationVariableName))
                       }
-                      missing_methods <- unlist(methodIds)[!(unlist(methodIds) %in% existing_variables$methodDbId)]  
+                      missing_methods <- unlist(rv_mod$methodIds)[!(unlist(rv_mod$methodIds) %in% existing_variables$methodDbId)]  
                     } else {
-                      missing_methods <- unlist(methodIds)
+                      missing_methods <- unlist(rv_mod$methodIds)
                     }
                   } else {
                     existing_variables <- NULL
-                    missing_methods <- unlist(methodIds)
+                    missing_methods <- unlist(rv_mod$methodIds)
                   }
                 } else {
-                  missing_methods <- unlist(methodIds)
+                  missing_methods <- unlist(rv_mod$methodIds)
                 }
                 
                 if (length(missing_methods) > 0) {
@@ -1660,7 +1659,7 @@ mod_model_server <- function(id, rv){
           print("All variables:")
           print(existing_variables)
           
-          bluesToPush <<- merge(bluesToPush, 
+          rv_mod$bluesToPush <- merge(rv_mod$bluesToPush, 
             existing_variables[,.(observationVariableName, observationVariableDbId, originVariableName, result)], 
             by = c("originVariableName", "result"))
           
@@ -1669,7 +1668,7 @@ mod_model_server <- function(id, rv){
             print("Look for existing BLUEs/BLUPs")
             resp <- handle_api_response(brapir::phenotyping_observations_post_search(
               con = rv$con, 
-              studyDbIds = as.character(unique(bluesToPush$studyDbId)), 
+              studyDbIds = as.character(unique(rv_mod$bluesToPush$studyDbId)), 
               observationVariableDbIds = existing_variables$observationVariableDbId,
               pageSize = 1))
             if (resp$status_code == 200) {
@@ -1682,7 +1681,7 @@ mod_model_server <- function(id, rv){
               }
             }
           })
-          showModal(confirmationModal(nrow(bluesToPush), existing_obs_count))
+          showModal(confirmationModal(nrow(rv_mod$bluesToPush), existing_obs_count))
           
         },
         error = function(e) {

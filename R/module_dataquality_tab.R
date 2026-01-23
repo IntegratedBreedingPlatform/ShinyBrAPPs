@@ -160,6 +160,25 @@ mod_dataquality_server <- function(id, rv) {
       data = NULL
     )
     
+    ## constants
+    notification_duration <- conf$notification_duration
+
+    visible_columns_selected_obs <- c(
+      "study_name_abbrev_app",
+      "germplasmName",
+      "observationVariableName",
+      "observationValue",
+      "blockNumber",
+      "replicate",
+      "plotNumber",
+      "positionCoordinateX",
+      "positionCoordinateY",
+      "entryType",
+      "entryNumber"
+    )
+    ## columns to hide in widgets/table (columns created by the app)
+    hidden_col_names <- c("study_name_BMS", "study_name_app", "study_name_abbrev_app", "location_abbrev", "location_name")
+    
     ## observe rv$data ####
     observeEvent(rv$data, {
       validate(
@@ -663,7 +682,7 @@ mod_dataquality_server <- function(id, rv) {
         newdt[observationDbId %in% rv$excluded_obs$observationDbId, status := "excluded"]
       }
       rv_dq$data <- newdt
-      save_user_data(rv)
+      save_user_data(rv, conf)
     }, ignoreNULL = F)
     
     ## output correlation plot ####

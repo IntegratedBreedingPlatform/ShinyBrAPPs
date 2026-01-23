@@ -13,14 +13,12 @@ server <- function(input, output, session){
     hash = NULL                 # to track user query in browser sessionStorage
   )
   mod_connect_server("connect",rv)  
-  mod_get_studydata_server("get_studydata", rv)
+  mod_get_studydata_server("get_studydata", rv, conf)
   mod_get_extradata_server("get_extradata", rv)
-  print("appname")
-  print(appname)
-  mod_banner_server("banner", rv, appname)
+  mod_banner_server("banner", rv, conf)
   mod_scatterplot_server("scatterplot", rv, session)
-  mod_gxe_server("gxe", rv, session)
-  mod_groups_sidebar_server("groups_sidebar", rv, session)
+  mod_gxe_server("gxe", rv, conf, session)
+  mod_groups_sidebar_server("groups_sidebar", rv, conf, session)
 
   output$Rsi <- renderPrint(sessionInfo())
   
@@ -62,7 +60,7 @@ server <- function(input, output, session){
       update_selectors_with_groups(rv, rv$groups[group_id == rv$selected_group_id,], initial_name)
     }
     removeModal()
-    save_user_data(rv)
+    save_user_data(rv, conf)
   })
 
   # open or close the groups sidebar
@@ -78,7 +76,7 @@ server <- function(input, output, session){
         open = F
       )
     }
-    save_user_data(rv)
+    save_user_data(rv, conf)
   }, ignoreNULL = TRUE)
   
 }

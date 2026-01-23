@@ -172,6 +172,8 @@ mod_samplr_server <- function(id, rv){
         stdatadt_one=NULL,
         stdatadt_byg=NULL
       )
+
+      notification_duration <- conf$notification_duration
       
       ns <- session$ns
       observeEvent(rv$con,{
