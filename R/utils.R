@@ -103,8 +103,7 @@ get_env_data <- function(con = NULL,
       }
     }
     if (!"observations.observationDbId" %in% colnames(study_obs)) {
-      study_obs <- NULL
-      return(study_obs)
+      return(NULL)
     } else {
       
       #to manage the case when we get MEANS and PLOTS

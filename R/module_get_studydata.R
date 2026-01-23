@@ -292,8 +292,8 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
             studies <- rbindlist(lapply(1:n_studies, function(k){
               id <- rv_st$env_to_load[k]
-  
-              incProgress(1/n_studies, detail = rv$study_metadata[studyDbId == id,unique(study_name_app)])
+              study_name_app <- rv$study_metadata[studyDbId == id,unique(study_name_app)]
+              incProgress(1/n_studies, detail = study_name_app)
               study <- get_env_data(
                 con = rv$con, studyDbId = id,
                 env_number = rv$study_metadata[studyDbId == id,unique(environment_number)],
@@ -303,18 +303,13 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
                 stu_name_abbrev_app = rv$study_metadata[studyDbId == id,unique(study_name_abbrev_app)],
                 obs_unit_level =rv$obs_unit_level
               )
-              if (!is.null(study)) { rv$study_metadata[studyDbId == id,loaded:=T] }
+              rv$study_metadata[studyDbId == id,loaded:=T] #show study as loaded even if there is no data
+              if (is.null(study)) { 
+                showNotification(paste0("There is no observation data for study ", study_name_app), type = "warning", duration = notification_duration)
+              }             
               return(study)
             }), use.names = T,fill = T
             )
-
-            # get studies variables
-            resp <- brapir::phenotyping_variables_post_search(rv$con, observationVariableDbIds = studies[, unique(observationVariableDbId)])
-            srId <- resp$data$searchResultsDbId
-            resp2 <- brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, searchResultsDbId = srId)
-            variables <- as.data.table(resp2$data)
-            variables <- variables[trait.traitClass != "Breedingprocess", .(observationVariableDbId, scale.dataType)] 
-            studies <- merge(studies, variables, by = "observationVariableDbId")
 
             env_choices <- rv$study_metadata[loaded==F,unique(studyDbId)]
             if(length(env_choices)==0){
@@ -333,25 +328,43 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               )
             })
   
-            if("trialDbId" %in% names(rv$data)){
-              rv$data <- unique(rbindlist(
-                list(
-                  rv$data[trialDbId == rv_st$trialDbId],
-                  studies
-                ),
-                use.names = T, fill = T
-              ))
-            }else{
-              rv$data <- studies
-            }
-            
-            if("observationDbId" %in% names(rv$data)){
-              rv$data[, observationDbId := as.character(observationDbId)]
+            if (nrow(studies) == 0) {
+              # no observation
+              showNotification("There is no observation data on all loaded studies", type = "warning", duration = notification_duration)
+              return(NULL)
+            } else {
+
+              # get studies variables
+              if ("observationVariableDbId" %in% names(studies)) {
+                resp <- brapir::phenotyping_variables_post_search(rv$con, observationVariableDbIds = studies[, unique(observationVariableDbId)])
+                srId <- resp$data$searchResultsDbId
+                resp2 <- brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, searchResultsDbId = srId)
+                variables <- as.data.table(resp2$data)
+                variables <- variables[trait.traitClass != "Breedingprocess", .(observationVariableDbId, scale.dataType)] 
+                studies <- merge(studies, variables, by = "observationVariableDbId")
+              }
+
+              if("trialDbId" %in% names(rv$data)){
+                rv$data <- unique(rbindlist(
+                  list(
+                    rv$data[trialDbId == rv_st$trialDbId],
+                    studies
+                  ),
+                  use.names = T, fill = T
+                ))
+              }else{
+                rv$data <- studies
+              }
+              
+              if("observationDbId" %in% names(rv$data)){
+                rv$data[, observationDbId := as.character(observationDbId)]
+              }
             }
           })
 
           ## save rv in .rds ####
           ## Not saving for ui mode, should be based on connection input parameters
+          req(rv$data)
           if (!rv$ui_mode) {
             txt <- toJSON(rv_st$parse_GET_param, auto_unbox = TRUE, sort_keys = TRUE)
             rv$hash <- digest(txt, algo = "sha256")
