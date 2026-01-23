@@ -260,7 +260,7 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
           #   listSource = "test", # XXX
           #   listType = "germplasm"
           # )
-          resp <- brapir::core_lists_post(
+          resp <- handle_api_response(brapir::core_lists_post(
             con = rv$con,
             data = rv$groups[group_id == input$group_sel_input, germplasmDbIds][[1]],
             dateCreated = as.character(Sys.Date()),
@@ -272,15 +272,12 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
             listSize = rv$groups[group_id == input$group_sel_input, N],
             listSource = "test",
             listType = "germplasm"
-          )
-          if (resp$status_code == 200) {
-            showNotification("List posted", type = "message", duration = notification_duration)
-          } else {
-            showNotification(resp$status_code, type = "error", duration = notification_duration)
-          }
-        }, error = function(e)({
-          showNotification("Could not post list", type = "error", duration = notification_duration)
-        }))
+          ))
+          #TODO test show api response message
+          showNotification("List posted", type = "message", duration = notification_duration)
+        }, error = function(e) {
+          showNotification(paste0("Could not post list: ", e$message), type = "error", duration = notification_duration)
+        })
       })
       
       #Function to retrieve variables of selection type :
@@ -288,20 +285,22 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
       # Then, get variables with traitName = selection_trait_name (config param)
       getSelectionVariables <- function(studyDbIds) {
         withProgress(message = "Looking for variables of selection type", min=1, max=1, {
-          res <- brapir::phenotyping_variables_post_search(
-            con = rv$con, 
-            studyDbId = as.character(studyDbIds),
-            traitClasses = selection_traitClass
-          )
-          if (res$status_code == 200) {
-            resp <- brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, res$data$searchResultsDbId)$data
-            var <- data.table(brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, res$data$searchResultsDbId)$data)
+          tryCatch({
+            res <- handle_api_response(brapir::phenotyping_variables_post_search(
+              con = rv$con, 
+              studyDbId = as.character(studyDbIds),
+              traitClasses = selection_traitClass
+            ))
+
+            resp <- handle_api_response(brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, res$data$searchResultsDbId))
+            var <- data.table(resp$data)
             if (nrow(var) > 0) {
               var <- var[trait.traitName == selection_traitName, .(observationVariableDbId, observationVariableName)]
             }
-            return(var)
-          }
-          
+            return(var)            
+          }, error = function(e) {
+            showNotification(paste0("Could not get selection variable: ", e$message), type = "error", duration = notification_duration)
+          })          
         })
       }
       
@@ -414,14 +413,13 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
               )
             })
             
-            resp <- brapir::phenotyping_observations_post_batch(con = brapir_con, data = body)
-            if (resp$status_code == 200) {
+            tryCatch({
+              resp <- handle_api_response(brapir::phenotyping_observations_post_batch(con = brapir_con, data = body))
               created_observations_df <- resp$data
               showNotification(paste(nrow(created_observations_df), varname, "observations were pushed to BMS"), type = "message", duration = notification_duration)
-            } else {
-              showNotification(paste0("An error occured while creating BLUES/BLUPS observations for ", var_name), type = "error", duration = notification_duration)
-              showNotification(paste0(resp$metadata), type = "error", duration = notification_duration)
-            }
+            }, error = function(e) {
+              showNotification(paste0("An error occured: ", e$message), type = "error", duration = notification_duration)
+            })
           }
         })
         removeModal()

@@ -117,16 +117,23 @@ mod_get_extradata_server <- function(id, rv){
                 1/2,
                 detail = paste("POST brapi/v2/search/attributevalues/ of", length(germplasms), "genotypes")
               )
-              searchResultsDbId <- brapir::germplasm_attributevalues_post_search(con = rv$con, germplasmDbIds = germplasms)$data$searchResultsDbId
+              searchResultsDbId <- handle_api_response(
+                brapir::germplasm_attributevalues_post_search(con = rv$con, germplasmDbIds = germplasms)
+              )$data$searchResultsDbId
               incProgress(
                 2/2,
                 detail = paste0("GET brapi/v2/search/attributevalues/", searchResultsDbId)
               )
-              germ_resp <- brapir::germplasm_attributevalues_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId))
+              germ_resp <- handle_api_response(
+                brapir::germplasm_attributevalues_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId))
+              )
               germplasm_data <- germ_resp$data
                if (germ_resp$metadata$pagination$totalPages >1){
                 germplasm_data <- rbind(germplasm_data,rbindlist(lapply(2:germ_resp$metadata$pagination$totalPages, function(p){
-                  brapir::germplasm_attributevalues_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId), page = p-1)$data
+                  handle_api_response(
+                    brapir::germplasm_attributevalues_get_search_searchResultsDbId(
+                      con = rv$con, searchResultsDbId = as.character(searchResultsDbId), page = p-1)
+                    )$data
                 })))
               } 
               germplasm_data <- as.data.table(germplasm_data)
@@ -137,14 +144,18 @@ mod_get_extradata_server <- function(id, rv){
                   1/2,
                   detail = paste("POST brapi/v2/search/attributes/")
                 )
-                searchResultsDbId <- brapir::germplasm_attributes_post_search(con = rv$con, attributeDbIds = unique(germplasm_data$attributeDbId))$data$searchResultsDbId
+                searchResultsDbId <- handle_api_response(
+                  brapir::germplasm_attributes_post_search(con = rv$con, attributeDbIds = unique(germplasm_data$attributeDbId))
+                )$data$searchResultsDbId
                 incProgress(
                   2/2,
                   detail = paste0("GET brapi/v2/search/attributes/", searchResultsDbId)
                 )
                 server_url <- paste0(rv$con$protocol, rv$con$db, ":", rv$con$port, "/", rv$con$apipath, "/", rv$con$commoncropname, "/brapi/v2")
                 callurl <- paste0(server_url, "/search/attribute/", as.character(searchResultsDbId))
-                resp <- brapir::germplasm_attributes_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId))
+                resp <- handle_api_response(
+                  brapir::germplasm_attributes_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId))
+                )
                 if (resp$status_code == 200) {
                   germplasm_cols <- as.data.table(resp$data)[,.(cols = attributeName, type = scale.dataType)
                                                     ][, source := "germplasm"
@@ -153,9 +164,9 @@ mod_get_extradata_server <- function(id, rv){
                   germplasm_cols <- data.table(cols = unique(germplasm_data$attributeName), type = NA, source = "germplasm", visible = T)
                 }
               }
-            }, error = function(e)({
-              showNotification("Could not get germplasm data", type = "error", duration = notification_duration)
-            }))
+            }, error = function(e) {
+              showNotification(paste0("Could not get germplasm data: ", e$message), type = "error", duration = notification_duration)
+            })
           })
           
           if(exists("germplasm_data") && nrow(germplasm_data)>0){

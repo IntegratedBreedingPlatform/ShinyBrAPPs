@@ -49,150 +49,137 @@ get_env_data <- function(con = NULL,
                          stu_name_abbrev_app = NULL, 
                          obs_unit_level = NULL){
   
-  # brapir_con <- brapir::brapi_connect(
-  #   secure = con$secure, 
-  #   db = con$db, 
-  #   port = con$port, 
-  #   apipath = con$apipath, 
-  #   multicrop = con$multicrop, 
-  #   commoncropname = con$commoncropname,
-  #   token = con$token)
-
   print(paste0("retrieving data from study ", studyDbId))
-  try({
-    if (is.null(obs_unit_level)) {
-      res <- brapir::phenotyping_observationunits_post_search(
+
+  if (is.null(obs_unit_level)) {
+    res <- handle_api_response(
+      brapir::phenotyping_observationunits_post_search(
         con = con, 
         studyDbIds = studyDbId,
         includeObservations = T
       )
-      print(res$status_code)
-    } else {
-      obs_levels <- data.frame(levelName = obs_unit_level)
-      res <- brapir::phenotyping_observationunits_post_search(
+    )
+  } else {
+    obs_levels <- data.frame(levelName = obs_unit_level)
+    res <- handle_api_response(
+      brapir::phenotyping_observationunits_post_search(
         con = con, 
         studyDbIds = studyDbId,
         observationLevels = obs_levels,
         includeObservations = T
       )
-      print(res$status_code)
-    }
-    if (res$status_code == 200 | res$status_code == 202) {
-      searchResultDbId <- as.character(res$data$searchResultsDbId)
-      res <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con, searchResultsDbId = searchResultDbId)
-      print(res$status_code)
-      if (res$status_code == 200) {
-        if (nrow(res$data) > 0) {
-          observations <- tidyr::unnest(res$data, cols = "observationUnitPosition.observationLevelRelationships", names_sep = ".", keep_empty = T)
-          observations <- tidyr::unnest(observations, cols = "observations", names_sep = ".", keep_empty = T)
-          study_obs <- as.data.table(observations)
-        } else {
-          return(NULL)
-        }
-        
-        page = 0
-        while (res$metadata$pagination$totalCount > (res$metadata$pagination$currentPage + 1) * res$metadata$pagination$pageSize) {
-          page <- page + 1
-          res <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con, searchResultsDbId = searchResultDbId, page = page)
-          observations <- tidyr::unnest(res$data, cols = "observationUnitPosition.observationLevelRelationships", names_sep = ".", keep_empty = T)
-          observations <- tidyr::unnest(observations, cols = "observations", names_sep = ".", keep_empty = T)
-          study_obs <- rbindlist(list(study_obs, as.data.table(observations)), use.names = T,fill = T)
-        }
-      } else {
-        return(NULL)
-      }
-    }
-    if (!"observations.observationDbId" %in% colnames(study_obs)) {
-      return(NULL)
-    } else {
+    )
+  }
+  searchResultDbId <- as.character(res$data$searchResultsDbId)
+  res <- handle_api_response(brapir::phenotyping_observationunits_get_search_searchResultsDbId(con, searchResultsDbId = searchResultDbId))
+  if (nrow(res$data) > 0) {
+    observations <- tidyr::unnest(res$data, cols = "observationUnitPosition.observationLevelRelationships", names_sep = ".", keep_empty = T)
+    observations <- tidyr::unnest(observations, cols = "observations", names_sep = ".", keep_empty = T)
+    study_obs <- as.data.table(observations)
+  } else {
+    stop()
+    return(NULL)
+  }
       
-      #to manage the case when we get MEANS and PLOTS
-      if ("observationUnitPosition.observationLevelRelationships.levelCode" %in% names(study_obs)) {
-        study_obs[, oLR.levelCode := `observationUnitPosition.observationLevelRelationships.levelCode`]
-      } else {
-        study_obs[, oLR.levelCode := NA]
-      }
-      if ("observationUnitPosition.observationLevelRelationships.levelName" %in% names(study_obs)) {
-        study_obs[, oLR.levelName := `observationUnitPosition.observationLevelRelationships.levelName`]
-      } else {
-        study_obs[, oLR.levelName := NA]
-      }
-      
-      if ("observationUnitPosition.observationLevel.levelName" %in% names(study_obs)) {
-        study_obs[, observationLevel := `observationUnitPosition.observationLevel.levelName`]
-      } else {
-        study_obs[, observationLevel := NA]
-      }
-      if ("observationUnitPosition.observationLevel.levelCode" %in% names(study_obs)) {
-        study_obs[, observationLevelCode := `observationUnitPosition.observationLevel.levelCode`]
-      } else {
-        study_obs[, observationLevelCode := NA]
-      }
+  page = 0
+  while (res$metadata$pagination$totalCount > (res$metadata$pagination$currentPage + 1) * res$metadata$pagination$pageSize) {
+    page <- page + 1
+    res <- handle_api_response(brapir::phenotyping_observationunits_get_search_searchResultsDbId(con, searchResultsDbId = searchResultDbId, page = page))
+    observations <- tidyr::unnest(res$data, cols = "observationUnitPosition.observationLevelRelationships", names_sep = ".", keep_empty = T)
+    observations <- tidyr::unnest(observations, cols = "observations", names_sep = ".", keep_empty = T)
+    study_obs <- rbindlist(list(study_obs, as.data.table(observations)), use.names = T,fill = T)
+  }  
 
-      study_obs <- study_obs[, .(
-        observationUnitDbId,
-        observationUnitName,
-        germplasmDbId, 
-        germplasmName, 
-        studyDbId, 
-        studyName, 
-        programDbId, 
-        programName, 
-        locationDbId, 
-        locationName, 
-        trialDbId, 
-        trialName,
-        observationDbId = `observations.observationDbId`,
-        observationLevel, 
-        observationLevelCode, 
-        entryType = `observationUnitPosition.entryType`,
-        entryNumber = `additionalInfo.ENTRY_NO`,
-        oLR.levelCode,
-        oLR.levelName,
-        positionCoordinateX = `observationUnitPosition.positionCoordinateX`,
-        positionCoordinateY = `observationUnitPosition.positionCoordinateY`,
-        observationTimeStamp = `observations.observationTimeStamp`, 
-        observationVariableDbId = `observations.observationVariableDbId`, 
-        observationVariableName = `observations.observationVariableName`, 
-        observationValue = `observations.value`
-      )]
-      
-      # remove NA or "" observations
-      study_obs <- study_obs[!is.na(observationValue) & observationValue != "",]
-      
-      #study_obs <- study_obs[, .(plotNumber = levelCode[levelName == "PLOT"],
-      #                           replicate = levelCode[levelName == "REP"],
-      #                           blockNumber = levelCode[levelName == "BLOCK"]),
-      #                       by = grouping_cols]
-      if (any(study_obs$observationLevel=="PLOT")){
-        grouping_cols <- setdiff(names(study_obs), c("oLR.levelCode", "oLR.levelName"))
-        study_obs<-dcast(unique(study_obs[observationLevel=="PLOT",.(observationUnitDbId, oLR.levelCode, oLR.levelName)]),observationUnitDbId~oLR.levelName, value.var = "oLR.levelCode")[unique(study_obs[,.SD, .SDcols=grouping_cols]),on=.(observationUnitDbId)]
-        #browser()
-        for (f in setdiff(c("PLOT", "REP", "BLOCK"), names(study_obs))){
-          study_obs[[f]] <- NA
-        }
-        setnames(study_obs,
-                 old=c("PLOT",
-                       "REP",
-                       "BLOCK"),
-                 new=c("plotNumber",
-                       "replicate",
-                       "blockNumber"))        
-      }
-      
-      study_obs[,study_name_BMS := paste0(
-        env_number, "-",
-        loc_name
-      )]
-      study_obs[,environment_number := env_number]
-      study_obs[,location_name := loc_name]
-      study_obs[,location_abbrev := loc_name_abbrev]
-      study_obs[,study_name_app := stu_name_app]
-      study_obs[,study_name_abbrev_app := stu_name_abbrev_app]
-      return(unique(study_obs))
+  if (!"observations.observationDbId" %in% colnames(study_obs)) {
+    study_obs <- NULL
+    return(study_obs)
+  } else {
+    
+    #to manage the case when we get MEANS and PLOTS
+    if ("observationUnitPosition.observationLevelRelationships.levelCode" %in% names(study_obs)) {
+      study_obs[, oLR.levelCode := `observationUnitPosition.observationLevelRelationships.levelCode`]
+    } else {
+      study_obs[, oLR.levelCode := NA]
     }
-  })
-  
+    if ("observationUnitPosition.observationLevelRelationships.levelName" %in% names(study_obs)) {
+      study_obs[, oLR.levelName := `observationUnitPosition.observationLevelRelationships.levelName`]
+    } else {
+      study_obs[, oLR.levelName := NA]
+    }
+    
+    if ("observationUnitPosition.observationLevel.levelName" %in% names(study_obs)) {
+      study_obs[, observationLevel := `observationUnitPosition.observationLevel.levelName`]
+    } else {
+      study_obs[, observationLevel := NA]
+    }
+    if ("observationUnitPosition.observationLevel.levelCode" %in% names(study_obs)) {
+      study_obs[, observationLevelCode := `observationUnitPosition.observationLevel.levelCode`]
+    } else {
+      study_obs[, observationLevelCode := NA]
+    }
+
+    study_obs <- study_obs[, .(
+      observationUnitDbId,
+      observationUnitName,
+      germplasmDbId, 
+      germplasmName, 
+      studyDbId, 
+      studyName, 
+      programDbId, 
+      programName, 
+      locationDbId, 
+      locationName, 
+      trialDbId, 
+      trialName,
+      observationDbId = `observations.observationDbId`,
+      observationLevel, 
+      observationLevelCode, 
+      entryType = `observationUnitPosition.entryType`,
+      entryNumber = `additionalInfo.ENTRY_NO`,
+      oLR.levelCode,
+      oLR.levelName,
+      positionCoordinateX = `observationUnitPosition.positionCoordinateX`,
+      positionCoordinateY = `observationUnitPosition.positionCoordinateY`,
+      observationTimeStamp = `observations.observationTimeStamp`, 
+      observationVariableDbId = `observations.observationVariableDbId`, 
+      observationVariableName = `observations.observationVariableName`, 
+      observationValue = `observations.value`
+    )]
+    
+    # remove NA or "" observations
+    study_obs <- study_obs[!is.na(observationValue) & observationValue != "",]
+    
+    #study_obs <- study_obs[, .(plotNumber = levelCode[levelName == "PLOT"],
+    #                           replicate = levelCode[levelName == "REP"],
+    #                           blockNumber = levelCode[levelName == "BLOCK"]),
+    #                       by = grouping_cols]
+    if (any(study_obs$observationLevel=="PLOT")){
+      grouping_cols <- setdiff(names(study_obs), c("oLR.levelCode", "oLR.levelName"))
+      study_obs<-dcast(unique(study_obs[observationLevel=="PLOT",.(observationUnitDbId, oLR.levelCode, oLR.levelName)]),observationUnitDbId~oLR.levelName, value.var = "oLR.levelCode")[unique(study_obs[,.SD, .SDcols=grouping_cols]),on=.(observationUnitDbId)]
+      #browser()
+      for (f in setdiff(c("PLOT", "REP", "BLOCK"), names(study_obs))){
+        study_obs[[f]] <- NA
+      }
+      setnames(study_obs,
+                old=c("PLOT",
+                      "REP",
+                      "BLOCK"),
+                new=c("plotNumber",
+                      "replicate",
+                      "blockNumber"))        
+    }
+    
+    study_obs[,study_name_BMS := paste0(
+      env_number, "-",
+      loc_name
+    )]
+    study_obs[,environment_number := env_number]
+    study_obs[,location_name := loc_name]
+    study_obs[,location_abbrev := loc_name_abbrev]
+    study_obs[,study_name_app := stu_name_app]
+    study_obs[,study_name_abbrev_app := stu_name_abbrev_app]
+    return(unique(study_obs))
+  } 
 }
 
 #' @export
@@ -223,23 +210,25 @@ parse_api_url <- function(url){
 #' @import data.table
 #' @export
 make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
+  study_metadata <- NULL
   if(!is.null(trialDbId)){
     ## get environment metadata by trialDbId
     tryCatch({
-      study_metadata <- as.data.table(brapir::core_studies_get(con = con, trialDbId = trialDbId)$data)
+      study_metadata <- as.data.table(handle_api_response(brapir::core_studies_get(con = con, trialDbId = trialDbId))$data)
       study_metadata <- tidyr::unnest(study_metadata, cols = "environmentParameters", names_sep = ".", keep_empty = T)
       study_metadata <- as.data.table(study_metadata)
     },
     error=function(e){
-      print(e)
-      showNotification(paste0("Environment metadata not found for trialDbId ",trialDbId), type = "error", duration = notification_duration)
+      showNotification(paste0("Environment metadata not found for trialDbId ",trialDbId, ": ", e$message), type = "error", duration = notification_duration)
     })
   }else if(!is.null(studyDbIds)){
     ## get environment metadata by studyDbId
     ids <- unlist(strsplit(studyDbIds, ","))
-    #browser()
-    srid <- brapir::core_studies_post_search(con = con, studyDbIds = ids, commonCropNames = con$commoncropname)
-    study_metadata <- as.data.table(tidyr::unnest( brapir::core_studies_get_search_searchResultsDbId(con, searchResultsDbId = srid$data$searchResultsDbId)$data, cols = "environmentParameters", names_sep = "."))
+    srid <- handle_api_response(brapir::core_studies_post_search(con = con, studyDbIds = ids, commonCropNames = con$commoncropname))
+    study_metadata <- as.data.table(tidyr::unnest(
+      handle_api_response(brapir::core_studies_get_search_searchResultsDbId(con, searchResultsDbId = srid$data$searchResultsDbId))$data, 
+      cols = "environmentParameters", names_sep = "."
+    ))
     #study_metadata <- rbindlist(lapply(ids,function(id){
     # tryCatch({
     #   as.data.table(brapir::core_studies_get_studyDbId(con = con, studyDbId = id)$data)
@@ -249,10 +238,13 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
     # })
     #}),use.names = T, fill = T)
     if(study_metadata[,.N]==0){
-      showNotification("No environment data found. Check apiURL, token, cropDb and studyDbIds", type = "error", duration = notification_duration)
+      stop("No environment data found")
     }
   }
-
+  
+  # exit function if no metadata found
+  if (is.null(study_metadata)) return(NULL)
+  
   study_ids <- unique(study_metadata$studyDbId)
   location_ids <- unique(study_metadata$locationDbId)
 
@@ -269,7 +261,9 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
   #    })
   #  }), fill = T, use.names = T)
   #})
-  loc_names <- brapir::core_locations_get_search_searchResultsDbId(con, searchResultsDbId = brapir::core_locations_post_search(con, locationDbIds = location_ids)$data$searchResultsDbId)$data
+
+  srid <- handle_api_response(brapir::core_locations_post_search(con, locationDbIds = location_ids))$data$searchResultsDbId
+  loc_names <- handle_api_response(brapir::core_locations_get_search_searchResultsDbId(con, searchResultsDbId = srid))$data
   setDT(loc_names)
   req(loc_names)
   maxchar <- 9
@@ -289,6 +283,10 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
       x
     }
   })]
+  
+  # exit function if no location found
+  if (is.null(loc_names)) return(NULL)
+
   study_metadata <- merge.data.table(
     x = study_metadata[,-intersect(names(study_metadata)[names(study_metadata)!="locationDbId"], names(loc_names)), with = F],
     # x = study_metadata[,-"locationName", with = F],
@@ -391,24 +389,28 @@ renameGroupModal <- function(rv, parent_session) {
 }
 
 whoami_bmsapi <- function(con){
-  progs <- brapir::core_programs_get(con)$data
-  aprogr <- progs$programDbId[1]
-  if (con$secure) {
-    protocol <- "https://"
-  } else {
-    protocol <- "http://" 
-  }
-  server_url <- paste0(protocol, con$db, ":", con$port, "/", con$apipath)
-  callurl <- paste0(server_url, "/users/filter?cropName=",con$commoncropname,"&programUUID=",aprogr)
-  resp <-   httr::GET(url = callurl,
-                      httr::timeout(25),
-                      httr::add_headers(
-                        "Authorization" = paste("Bearer", con$token),
-                        "Content-Type"= "application/json",
-                        "accept"= "*/*"
-                      ))
-  cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
-  uname <- strsplit(con$token,split = ":")[[1]][1]
+  tryCatch({
+    progs <- handle_api_response(brapir::core_programs_get(con))$data
+    aprogr <- progs$programDbId[1]
+    if (con$secure) {
+      protocol <- "https://"
+    } else {
+      protocol <- "http://" 
+    }
+    server_url <- paste0(protocol, con$db, ":", con$port, "/", con$apipath)
+    callurl <- paste0(server_url, "/users/filter?cropName=",con$commoncropname,"&programUUID=",aprogr)
+    resp <-   httr::GET(url = callurl,
+                        httr::timeout(25),
+                        httr::add_headers(
+                          "Authorization" = paste("Bearer", con$token),
+                          "Content-Type"= "application/json",
+                          "accept"= "*/*"
+                        ))
+    cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
+    uname <- strsplit(con$token,split = ":")[[1]][1]
+  }, error = function(e) {
+    showNotification(paste0("Could not get userinfo: ", e$message), type = "error", duration = notification_duration)
+  })
   return(data.table(jsonlite::fromJSON(cont))[username==uname])
 }
 
@@ -767,4 +769,29 @@ summary.stats <- function(x){
   )
   setkey(sumtable_notexcl, study_name_app)
   return(sumtable_notexcl[, columns, with = F])
+}
+
+#' handle_api_response
+#'
+#' @param rv reactiveValues
+#' @param session session
+#' @param out api response from brapir
+#' @param custom_message an additional error message to display when status_code is not 200 or 401
+#'
+#' @returns response data and metadata
+#' @export
+handle_api_response <- function(out, custom_message = NULL) {
+  if (out$status_code %in% c(200,201,202)) {
+    return(out)
+  } else if (out$status_code == 401) {
+    stop("You must log in")
+  } else if (out$status_code == 403) {
+    stop("You don't have permission")
+  } else {
+    message <- paste0("API error (HTTP ", out$status_code, ")")
+    if (!is.null(custom_message)) {
+      message <- paste(message, custom_message, sep=",")
+    }
+    stop(message)
+  }
 }

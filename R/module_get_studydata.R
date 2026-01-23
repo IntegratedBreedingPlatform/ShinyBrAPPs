@@ -171,7 +171,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               print(rv$con$commoncropname)
               study_metadata <- make_study_metadata(con = rv$con, studyDbIds = rv_st$parse_GET_param$studyDbIds)
             }, error = function(e)({
-              showNotification("Could not get environment metadata", type = "error", duration = notification_duration)
+              showNotification(paste0("Could not get environment metadata: ", e$message), type = "error", duration = notification_duration)
             }))
             
             req(exists("study_metadata"))
@@ -204,7 +204,9 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           withProgress(message = "Reaching studies", value = 0, {
             incProgress(1)
             tryCatch({
-              trials <- as.data.table(brapir::core_trials_get(con = rv$con)$data)
+              trials <- as.data.table(
+                handle_api_response(brapir::core_trials_get(con = rv$con))$data
+              )
               rv$trial_metadata <- trials
               trial_choices <- trials[,trialDbId]
               names(trial_choices) <- trials[,trialName]
@@ -223,7 +225,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               }              
             },
             error=function(e){
-              showNotification("Check url, token and/or cropDb", type = "error", duration = notification_duration)
+              showNotification(paste0("Could not get trials: ", e$message), type = "error", duration = notification_duration)
             })
           })
           
@@ -294,20 +296,25 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               id <- rv_st$env_to_load[k]
               study_name_app <- rv$study_metadata[studyDbId == id,unique(study_name_app)]
               incProgress(1/n_studies, detail = study_name_app)
-              study <- get_env_data(
-                con = rv$con, studyDbId = id,
-                env_number = rv$study_metadata[studyDbId == id,unique(environment_number)],
-                loc_name = rv$study_metadata[studyDbId == id,unique(locationName)],
-                loc_name_abbrev = rv$study_metadata[studyDbId == id,unique(location_name_abbrev)],
-                stu_name_app = rv$study_metadata[studyDbId == id,unique(study_name_app)],
-                stu_name_abbrev_app = rv$study_metadata[studyDbId == id,unique(study_name_abbrev_app)],
-                obs_unit_level =rv$obs_unit_level
-              )
-              rv$study_metadata[studyDbId == id,loaded:=T] #show study as loaded even if there is no data
-              if (is.null(study)) { 
-                showNotification(paste0("There is no observation data for study ", study_name_app), type = "warning", duration = notification_duration)
-              }             
-              return(study)
+              tryCatch({
+                study <- get_env_data(
+                  con = rv$con, studyDbId = id,
+                  env_number = rv$study_metadata[studyDbId == id,unique(environment_number)],
+                  loc_name = rv$study_metadata[studyDbId == id,unique(locationName)],
+                  loc_name_abbrev = rv$study_metadata[studyDbId == id,unique(location_name_abbrev)],
+                  stu_name_app = rv$study_metadata[studyDbId == id,unique(study_name_app)],
+                  stu_name_abbrev_app = rv$study_metadata[studyDbId == id,unique(study_name_abbrev_app)],
+                  obs_unit_level =rv$obs_unit_level
+                )
+                rv$study_metadata[studyDbId == id,loaded:=T] #show study as loaded even if there is no data
+                if (is.null(study)) { 
+                  showNotification(paste0("There is no observation data for study ", study_name_app), type = "warning", duration = notification_duration)
+                }
+                return(study)
+              }, error = function(e) {
+                showNotification(paste0("Error retrieving study data: ", id, ". ", e$message), type = "error", duration = notification_duration)
+                return(NULL)
+              }) 
             }), use.names = T,fill = T
             )
 
@@ -336,12 +343,18 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
 
               # get studies variables
               if ("observationVariableDbId" %in% names(studies)) {
-                resp <- brapir::phenotyping_variables_post_search(rv$con, observationVariableDbIds = studies[, unique(observationVariableDbId)])
-                srId <- resp$data$searchResultsDbId
-                resp2 <- brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, searchResultsDbId = srId)
-                variables <- as.data.table(resp2$data)
-                variables <- variables[trait.traitClass != "Breedingprocess", .(observationVariableDbId, scale.dataType)] 
-                studies <- merge(studies, variables, by = "observationVariableDbId")
+                tryCatch({
+                  resp <- handle_api_response(
+                    brapir::phenotyping_variables_post_search(rv$con, observationVariableDbIds = studies[, unique(observationVariableDbId)])
+                  )
+                  srId <- resp$data$searchResultsDbId
+                  resp2 <- handle_api_response(brapir::phenotyping_variables_get_search_searchResultsDbId(rv$con, searchResultsDbId = srId))
+                  variables <- as.data.table(resp2$data)
+                  variables <- variables[trait.traitClass != "Breedingprocess", .(observationVariableDbId, scale.dataType)] 
+                  studies <- merge(studies, variables, by = "observationVariableDbId")
+                }, error = function(e) {
+                  showNotification(paste0("Could not get studies variables: ", e$message), type = "error", duration = notification_duration)
+                })
               }
 
               if("trialDbId" %in% names(rv$data)){
