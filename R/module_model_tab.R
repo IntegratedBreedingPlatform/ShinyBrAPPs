@@ -279,28 +279,32 @@ mod_model_server <- function(id, rv){
             "There is no trait data for this study"
           )
         )
-        
-        choices_env <- rv$data[!is.na(study_name_app)][,unique(study_name_app)]
-        updatePickerInput(
-          session,"select_environments",
-          choices = choices_env,
-          options = list(
-            placeholder = 'Select 1 or more environments',
-            onInitialize = I('function() { this.setValue(""); }')
-          )
-        )
 
-        #only keep variables that are numerical or nominal that can be converted as numeric
-        choices_traits <- rv$data[scale.dataType == "Numerical" | (scale.dataType == "Nominal" & !is.na(suppressWarnings(as.numeric(observationValue)))),
-                                  unique(observationVariableName)]
-        updatePickerInput(
-          session,"select_traits",
-          choices = sort(choices_traits),
-          options = list(
-            placeholder = 'Select 1 or more traits',
-            onInitialize = I('function() { this.setValue(""); }')
+        tryCatch({
+          choices_env <- rv$data[!is.na(study_name_app)][,unique(study_name_app)]
+          updatePickerInput(
+            session,"select_environments",
+            choices = choices_env,
+            options = list(
+              placeholder = 'Select 1 or more environments',
+              onInitialize = I('function() { this.setValue(""); }')
+            )
           )
-        )
+
+          #only keep variables that are numerical or nominal that can be converted as numeric
+          choices_traits <- rv$data[scale.dataType == "Numerical" | (scale.dataType == "Nominal" & !is.na(suppressWarnings(as.numeric(observationValue)))),
+                                    unique(observationVariableName)]
+          updatePickerInput(
+            session,"select_traits",
+            choices = sort(choices_traits),
+            options = list(
+              placeholder = 'Select 1 or more traits',
+              onInitialize = I('function() { this.setValue(""); }')
+            )
+          )
+        },  error=function(e){
+            showNotification(paste0("An error occured retrieving env and traits list: ", e$message), type = "error", duration = notification_duration)
+        })
         
         shinyjs::hide("go_fit_no_outlier")
         shinyjs::hide("fit_outliers_output")
@@ -1328,24 +1332,23 @@ mod_model_server <- function(id, rv){
             bluesToPush <<- merge(needed_observation_units, bluesToPush, by=c("germplasmName", "environment", "studyDbId", "entryNumber"))
             
             env <- unique(bluesToPush[, .(environment, studyDbId)])
-            resp_post_search_obsunit <- brapir::phenotyping_observationunits_post_search(con = rv$con, 
-                                                                                         observationLevels = data.frame(levelName = c("MEANS")),
-                                                                                         studyDbIds = env$studyDbId)
-            print(resp_post_search_obsunit$status_code)
-            if (resp_post_search_obsunit$status_code == 200 | resp_post_search_obsunit$status_code == 202) {
-              resp_get_search_obsunit <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId)
-              if (resp_post_search_obsunit$status_code == 200) {
-                existing_obs_units <- resp_get_search_obsunit$data
-                pagination <- resp_get_search_obsunit$metadata$pagination
-                page = 0
-                while (pagination$totalCount > (pagination$currentPage + 1)*pagination$pageSize) {
-                  page = page + 1
-                  resp_get_search_obsunit <- brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId, page = page)
-                  pagination <- resp_get_search_obsunit$metadata$pagination
-                  existing_obs_units <- rbindlist(list(existing_obs_units, resp_get_search_obsunit$data))
-                }
-              }
-            } 
+            resp_post_search_obsunit <- handle_api_response(
+              brapir::phenotyping_observationunits_post_search(con = rv$con, observationLevels = data.frame(levelName = c("MEANS")), studyDbIds = env$studyDbId)
+            )
+            resp_get_search_obsunit <- handle_api_response(
+              brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId)
+            )
+            existing_obs_units <- resp_get_search_obsunit$data
+            pagination <- resp_get_search_obsunit$metadata$pagination
+            page = 0
+            while (pagination$totalCount > (pagination$currentPage + 1)*pagination$pageSize) {
+              page = page + 1
+              resp_get_search_obsunit <- handle_api_response(
+                brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId, page = page)
+              )
+              pagination <- resp_get_search_obsunit$metadata$pagination
+              existing_obs_units <- rbindlist(list(existing_obs_units, resp_get_search_obsunit$data))
+            }
           })
           
           observation_units <- NULL
@@ -1388,7 +1391,7 @@ mod_model_server <- function(id, rv){
                 )
               })
               
-              resp <- brapir::phenotyping_observationunits_post_batch(con = rv$con, body)
+              resp <- handle_api_response(brapir::phenotyping_observationunits_post_batch(con = rv$con, body))
               print(resp$status_code)
               
               new_observation_units <- resp$data
@@ -1449,7 +1452,7 @@ mod_model_server <- function(id, rv){
                   )
                 })
                 
-                resp <- brapir::phenotyping_observations_post_batch(con = rv$con, data = body)
+                resp <- handle_api_response(brapir::phenotyping_observations_post_batch(con = rv$con, data = body))
                 if (resp$status_code == 200) {
                   created_observations_df <- resp$data
                   showNotification(paste0(var_name, " BLUES/BLUPS were pushed to ", env_names[j], " (",nrow(created_observations_df), " data)"), type = "message", duration = notification_duration)
@@ -1508,14 +1511,14 @@ mod_model_server <- function(id, rv){
           variables <- unique(rv$data[observationVariableName %in% origin_variable_names, .(observationVariableDbId)])
           
           # Search variables on ids to get scale and trait
-          resp <- brapir::phenotyping_variables_post_search(
+          resp <- handle_api_response(brapir::phenotyping_variables_post_search(
             con = rv$con,
             observationVariableDbIds = as.character(variables$observationVariableDbId)
-          )
+          ))
           if (resp$status_code == 200 | resp$status_code == 202) {
             if ("searchResultsDbId" %in% names(resp$data)) {
               searchResultsDbId = resp$data$searchResultsDbId
-              resp2 <- brapir::phenotyping_variables_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = searchResultsDbId)
+              resp2 <- handle_api_response(brapir::phenotyping_variables_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = searchResultsDbId))
               origin_variables = data.table(resp2$data)
             } else {
               origin_variables = data.table(resp$data)
@@ -1550,17 +1553,17 @@ mod_model_server <- function(id, rv){
             traitDbId <-  origin_variables$traitDbId[i] #"20454"
             originVariableName <- origin_variables$originVariableName[i]
             
-            resp_search_variables <- brapir::phenotyping_variables_post_search(
+            resp_search_variables <- handle_api_response(brapir::phenotyping_variables_post_search(
               con = rv$con,
               methodDbIds = c(methodIds$BLUEs, methodIds$BLUPs, methodIds$seBLUEs, methodIds$seBLUPs),
               scaleDbIds = scaleDbId,
               traitDbIds = traitDbId
-            )
+            ))
             if (resp_search_variables$status_code == 200 | resp_search_variables$status_code == 202) {
-              resp_get_search_variables <- brapir::phenotyping_variables_get_search_searchResultsDbId(
+              resp_get_search_variables <- handle_api_response(brapir::phenotyping_variables_get_search_searchResultsDbId(
                 con = rv$con,
                 searchResultsDbId = resp_search_variables$data$searchResultsDbId
-              )
+              ))
               if (resp_get_search_variables$status_code == 200) {
                 existing_variables <- NULL
                 if (resp_get_search_variables$metadata$pagination$totalCount > 0) {
@@ -1633,7 +1636,7 @@ mod_model_server <- function(id, rv){
               )
             })
             
-            resp_post_variables <- brapir::phenotyping_variables_post_batch(con = rv$con, data = body)
+            resp_post_variables <- handle_api_response(brapir::phenotyping_variables_post_batch(con = rv$con, data = body))
             
             if (resp_post_variables$status_code == 200) {
               created_variables_dt <- data.table(resp_post_variables$data)[
@@ -1664,15 +1667,15 @@ mod_model_server <- function(id, rv){
           ## check if existing BLUEs/BLUPs ####          
           withProgress(message = "check if BLUEs/BLUPs are already stored in the database", min=1, max=1, {
             print("Look for existing BLUEs/BLUPs")
-            resp <- brapir::phenotyping_observations_post_search(
+            resp <- handle_api_response(brapir::phenotyping_observations_post_search(
               con = rv$con, 
               studyDbIds = as.character(unique(bluesToPush$studyDbId)), 
               observationVariableDbIds = existing_variables$observationVariableDbId,
-              pageSize = 1)
+              pageSize = 1))
             if (resp$status_code == 200) {
               if ("searchResultsDbId" %in% names(resp$data)) {
                 searchResultsDbId = resp$data$searchResultsDbId
-                resp2 <- brapir::phenotyping_observations_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = searchResultsDbId)
+                resp2 <- handle_api_response(brapir::phenotyping_observations_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = searchResultsDbId))
                 existing_obs_count = resp2$metadata$pagination$totalCount
               } else {
                 existing_obs_count = resp$metadata$pagination$totalCount

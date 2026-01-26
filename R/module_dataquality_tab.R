@@ -229,27 +229,30 @@ mod_dataquality_server <- function(id, rv) {
     ## observe input$studies ####
     observeEvent(input$studies, {
       req(rv$data)
-      
-      #only keep variables that are numerical, date or nominal that can be converted as numeric
-      choices_traits <- rv$data[scale.dataType %in% c("Numerical", "Date") | (scale.dataType == "Nominal" & !is.na(suppressWarnings(as.numeric(observationValue)))),
-                                unique(observationVariableName)]
-
-      if (input$trait %in% choices_traits) {
-        selected_trait <- input$trait
-      } else {
-        selected_trait <- choices_traits[1]
-      }
-      
-      updatePickerInput(
-        session,
-        "trait",
-        choices = choices_traits,
-        selected = selected_trait,
-        options = list(
-          placeholder = 'Select 1 or more traits',
-          onInitialize = I('function() { this.setValue(""); }')
+      tryCatch({
+        #only keep variables that are numerical, date or nominal that can be converted as numeric
+        choices_traits <- rv$data[scale.dataType %in% c("Numerical", "Date") | (scale.dataType == "Nominal" & !is.na(suppressWarnings(as.numeric(observationValue)))),
+                                  unique(observationVariableName)]
+  
+        if (input$trait %in% choices_traits) {
+          selected_trait <- input$trait
+        } else {
+          selected_trait <- choices_traits[1]
+        }
+        
+        updatePickerInput(
+          session,
+          "trait",
+          choices = choices_traits,
+          selected = selected_trait,
+          options = list(
+            placeholder = 'Select 1 or more traits',
+            onInitialize = I('function() { this.setValue(""); }')
+          )
         )
-      )
+      }, error = function(e) {
+        showNotification(paste0("Could not fill traits selector: ", e$message), type = "error", duration = notification_duration)
+      })
     })
     
     ## update rv_dq$data_viz ####

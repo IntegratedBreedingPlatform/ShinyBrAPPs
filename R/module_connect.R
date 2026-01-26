@@ -86,16 +86,19 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_de
             #   clientid = "brapir",
             #   bms = TRUE
             # )
-            
-            rv$con <- brapir::brapi_connect(
-              secure = (parsed_url$brapi_protocol == "https://"), 
-              db = parsed_url$brapi_db,
-              port = parsed_url$brapi_port,
-              apipath = parsed_url$brapi_apipath,
-              multicrop = TRUE, 
-              commoncropname = rv_st$parse_GET_param$cropDb,
-              token = rv_st$parse_GET_param$token
-            )
+            tryCatch({
+              rv$con <- brapir::brapi_connect(
+                secure = (parsed_url$brapi_protocol == "https://"), 
+                db = parsed_url$brapi_db,
+                port = parsed_url$brapi_port,
+                apipath = parsed_url$brapi_apipath,
+                multicrop = TRUE, 
+                commoncropname = rv_st$parse_GET_param$cropDb,
+                token = rv_st$parse_GET_param$token
+              )
+            }, error=function(e){
+              showNotification(paste0(e$message), type = "error", duration = notification_duration)
+            })
             
             rv$connect_mode <- "url"
           } else {
@@ -137,17 +140,18 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_de
           #   bms = TRUE
           # )
           # 
-          rv$con <- brapir::brapi_connect(
-            secure = (parsed_url$brapi_protocol == "https://"), 
-            db = parsed_url$brapi_db,
-            port = parsed_url$brapi_port,
-            apipath = parsed_url$brapi_apipath,
-            multicrop = TRUE, 
-            commoncropname = input$cropDb,
-            token = input$token
-          )
-
+          tryCatch({
+            rv$con <- brapir::brapi_connect(
+              secure = (parsed_url$brapi_protocol == "https://"), 
+              db = parsed_url$brapi_db,
+              port = parsed_url$brapi_port,
+              apipath = parsed_url$brapi_apipath,
+              multicrop = TRUE, 
+              commoncropname = input$cropDb,
+              token = input$token
+            )
+          })
         })
     }
-        )
+  )
 }
