@@ -1,0 +1,3 @@
+default:
+  appname: "SampleR"
+  barcode_field: "sampleDbId"

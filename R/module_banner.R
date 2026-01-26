@@ -5,11 +5,13 @@ mod_banner_ui <- function(id){
 }
 
 #' @export
-mod_banner_server <- function(id, rv, appname){
+mod_banner_server <- function(id, rv, conf){
   moduleServer(
     id,
     function(input, output, session){
       ns <- NS(id)
+      appname <- conf$appname
+      notification_duration <- conf$notification_duration
       output$banner <- renderUI({
         req(rv$data)
         tags$div(

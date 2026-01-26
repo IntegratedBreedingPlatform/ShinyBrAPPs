@@ -7,11 +7,11 @@ server <- function(input, output, session){
   )
   output$Rsi <- renderPrint(sessionInfo())
   
-  mod_banner_server("banner", rv, appname)
+  mod_banner_server("banner", rv, conf)
   mod_connect_server("connect", rv)
-  mod_get_studydata_server("get_studydata", rv)
+  mod_get_studydata_server("get_studydata", rv, conf)
   mod_get_extradata_server("get_extradata", rv)
-  mod_trialdataxplor_server("xplor", rv)
+  mod_trialdataxplor_server("xplor", rv, conf)
   
   ## user session hash ####
   observeEvent(input$hash, {

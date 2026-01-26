@@ -1,0 +1,9 @@
+default:
+  brapi_version: "2.0"
+  data_dir: "/tmp/app-data"
+  files_expiration: 28800 # 8h in seconds
+  notification_duration: 10 # in seconds
+  can_filter_obs_unit_level_in_url: false
+  allowed_obs_unit_levels:
+    - PLOT
+    - MEANS

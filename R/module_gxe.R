@@ -521,7 +521,7 @@ mod_gxe_ui <- function(id){
 # SERVER ####
 #' @import statgenGxE
 #' @export
-mod_gxe_server <- function(id, rv, parent_session){
+mod_gxe_server <- function(id, rv, conf, parent_session){
   ns <- NS(id)
   moduleServer(
     id,
@@ -543,12 +543,14 @@ mod_gxe_server <- function(id, rv, parent_session){
         TDAMMI = NULL,
         TDStab = NULL,
         sensclust = NULL,
-        STSclicked_genotypes = NULL
+        STSclicked_genotypes = NULL,
+        dtproxy = dataTableProxy('FW_sens_clusters_DT'),
+        predictDTproxy = dataTableProxy('MM_predictions'),
+        STAB_supproxy = dataTableProxy('STAB_sup')
       )
-      
-      dtproxy <<- dataTableProxy('FW_sens_clusters_DT')
-      predictDTproxy <<- dataTableProxy('MM_predictions')
-      STAB_supproxy <<- dataTableProxy('STAB_sup')
+
+      notification_duration <- conf$notification_duration
+      replace_na_germplasm_attr_by <- conf$replace_na_germplasm_attr_by
       
       accordion_panel_close("GGE_adv_settings_acc", values="advs", session = session)
       accordion_panel_close("AMMI_adv_settings_acc", values="advs", session = session)
@@ -570,7 +572,7 @@ mod_gxe_server <- function(id, rv, parent_session){
 
       observeEvent(c(rv$column_datasource, input$picker_germplasm_attr, input$picker_germplasm_attr_open), {
         req(!isTRUE(input$picker_germplasm_attr_open))
-        trait_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_regexp,cols)]$cols
+        trait_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(conf$variable_regexp,cols)]$cols
 
         if (is.null(input$picker_trait)) {
           updatePickerInput(
@@ -613,7 +615,7 @@ mod_gxe_server <- function(id, rv, parent_session){
 
       observeEvent(input$picker_trait, {
         req(rv$column_datasource)
-        weight_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(variable_wt_regexp,cols)]$cols
+        weight_choices <- rv$column_datasource[source %in% c("GxE","Means") & grepl(conf$variable_wt_regexp,cols)]$cols
         if (!is.null(input$weight_var)){
           updatePickerInput(
             session, "weight_var",
@@ -629,8 +631,8 @@ mod_gxe_server <- function(id, rv, parent_session){
         }
         if (grepl("BLUEs",input$picker_trait) || grepl("BLUPs",input$picker_trait)){
           # is any weight variable 
-          trait_name <- gsub(paste0("(.*)",variable_regexp),"\\1",input$picker_trait)
-          blueorblup <- gsub(paste0(".*(",variable_regexp,")"),"\\1",input$picker_trait)
+          trait_name <- gsub(paste0("(.*)", conf$variable_regexp),"\\1",input$picker_trait)
+          blueorblup <- gsub(paste0(".*(", conf$variable_regexp,")"),"\\1",input$picker_trait)
           if(any(grepl(trait_name,weight_choices))){
             
             updateMaterialSwitch(
@@ -655,14 +657,14 @@ mod_gxe_server <- function(id, rv, parent_session){
         req(input$picker_trait)
         ## update environments dropdown
         if (any(colnames(rv_gxe$data)=="label_study")){
-        envs <- unique(rv_gxe$data[!is.na(get(input$picker_trait)),.SD,.SDcols = c("studyDbId", "label_study")])
-        env_choices <- envs[,studyDbId]
+          envs <- unique(rv_gxe$data[!is.na(base::get(input$picker_trait)),.SD,.SDcols = c("studyDbId", "label_study")])
+          env_choices <- envs[,studyDbId]
         names(env_choices) <- envs[["label_study"]]
         } else {
           env_choices <- unique(rv_gxe$data$studyDbId)
           names(env_choices) <- env_choices
         }
-        #browser()
+        
         updatePickerInput(
           session, "picker_env",
           choices = env_choices,
@@ -862,10 +864,9 @@ mod_gxe_server <- function(id, rv, parent_session){
       observeEvent(c(input$weight_var,input$use_weights), {
         req(data2TD_react())
         data2TD <- data2TD_react()
-        
         if (input$use_weights){          
           if (!is.null(input$weight_var)){
-            seBlues_zero <- rv_gxe$data[get(input$weight_var) == 0,]
+            seBlues_zero <- rv_gxe$data[base::get(input$weight_var) == 0,]
             if (nrow(seBlues_zero) > 0) {
               showNotification(paste0("Can't use weights because some values of ", input$weight_var, " are equal to 0 "), type = "error", duration = notification_duration)
               updateMaterialSwitch(
@@ -874,7 +875,7 @@ mod_gxe_server <- function(id, rv, parent_session){
               )
               return(NULL)
             }
-            
+
             # check if weights are in acceptable range
             R_q <- quantile(data2TD[[input$weight_var]],0.95, na.rm = T)/quantile(data2TD[[input$weight_var]],0.05, na.rm = T)
             median_w <- median(data2TD$wt, na.rm = T)
@@ -961,11 +962,11 @@ mod_gxe_server <- function(id, rv, parent_session){
           data2TD <- data2TD[0L]
         }
         
-        genot_to_excl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype][N<input$exclude_geno_nb_env]
+        genot_to_excl <- data2TD[!is.na(base::get(input$picker_trait)),.N,genotype][N<input$exclude_geno_nb_env]
         genot_to_excl <- rbind(genot_to_excl, rv_gxe$genot_manexcl)
         #browser()
         data2TD <- data2TD[!genotype%in%genot_to_excl$genotype]
-        genot_incl <- data2TD[!is.na(get(input$picker_trait)),.N,genotype]
+        genot_incl <- data2TD[!is.na(base::get(input$picker_trait)),.N,genotype]
         rv_gxe$genot_incl <- genot_incl  
         rv_gxe$genot_to_excl <- genot_to_excl  
 
@@ -1238,12 +1239,12 @@ mod_gxe_server <- function(id, rv, parent_session){
       ### handle select all ####
       observeEvent(input$MM_predict_select_all, {
         filtered_rows <- input$MM_predictions_rows_all
-        DT::selectRows(predictDTproxy, selected=filtered_rows)
+        DT::selectRows(rv_gxe$predictDTproxy, selected=filtered_rows)
       })
       
       ### handle unselect ####
       observeEvent(input$MM_predict_unselect, {
-        DT::selectRows(predictDTproxy, selected=NULL)
+        DT::selectRows(rv_gxe$predictDTproxy, selected=NULL)
       })
       
       ### handle download csv ####
@@ -1380,7 +1381,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                   ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                   geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3)
               if (input$FW_display_raw_data){
-                p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=base::get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
               }
             }
           }
@@ -1398,7 +1399,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                     ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                     geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3) + theme(legend.position = "right")
                 if (input$FW_display_raw_data){
-                  p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                  p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=base::get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
                 }
               }
               
@@ -1422,10 +1423,10 @@ mod_gxe_server <- function(id, rv, parent_session){
                 p$layers[[1]] <- NULL
                 p$layers[[2]] <- NULL
                 p <- p + 
-                  ggplot2::geom_line(data=p$data[p$data[[input$FW_picker_color_by]]==levs[2],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=0.5) +
-                  ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[2],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=0.5) +
-                  ggplot2::geom_line(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=1) +
-                  ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=get(input$FW_picker_color_by)), size=1) +
+                  ggplot2::geom_line(data=p$data[p$data[[input$FW_picker_color_by]]==levs[2],], aes(y = fitted, color=base::get(input$FW_picker_color_by)), size=0.5) +
+                  ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[2],], aes(y = fitted, color=base::get(input$FW_picker_color_by)), size=0.5) +
+                  ggplot2::geom_line(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=base::get(input$FW_picker_color_by)), size=1) +
+                  ggplot2::geom_point(data=p$data[p$data[[input$FW_picker_color_by]]==levs[1],], aes(y = fitted, color=base::get(input$FW_picker_color_by)), size=1) +
                   scale_color_manual(values=cols)
               }
               if (!is.null(input$FW_sens_clusters_DT_rows_selected) & input$FW_picker_plot_type=="line"){
@@ -1435,7 +1436,7 @@ mod_gxe_server <- function(id, rv, parent_session){
                     ggplot2::geom_line(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(y = fitted, color=genotype), size=2) + 
                     geom_point(data=p$data[p$data$genotype%in%rv_gxe$selected_genotypes,], aes(color=genotype), size=3)
                 if (input$FW_display_raw_data){
-                  p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
+                  p <- p + geom_point(data=as.data.table(p$data)[rbindlist(rv$TD)[genotype%in%rv_gxe$selected_genotypes,c("genotype", "trial" ,input$picker_trait), with=FALSE], on=.(genotype, trial)], aes(y=base::get(input$picker_trait), x=EnvMean, color=genotype), size=4, shape=1, stroke=2)
                 }
               }
             }
@@ -1555,7 +1556,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       #### Handle dbleclick event ####
       observeEvent(input$FWplot_dblclick,{
         rv_gxe$FWclicked_genotypes <- NULL
-        DT::selectRows(dtproxy, selected=NULL)
+        DT::selectRows(rv_gxe$dtproxy, selected=NULL)
       })
         # output$FWhover_info <- renderText({
         #   if(!is.null(input$FWplot_hover)) {
@@ -1682,7 +1683,7 @@ mod_gxe_server <- function(id, rv, parent_session){
       
       observeEvent(input$sens_clusters_DT.clearsel,{
         rv_gxe$FWclicked_genotypes <- NULL
-        DT::selectRows(dtproxy, selected=NULL)
+        DT::selectRows(rv_gxe$dtproxy, selected=NULL)
       })
       
       #### Handle FW group creation ####
@@ -2312,12 +2313,12 @@ mod_gxe_server <- function(id, rv, parent_session){
       ### handle select all ####
       observeEvent(input$STAB_select_all, {
         filtered_rows <- input$STAB_sup_rows_all
-        DT::selectRows(STAB_supproxy, selected=filtered_rows)
+        DT::selectRows(rv_gxe$STAB_supproxy, selected=filtered_rows)
       })
       
       ### handle unselect ####
       observeEvent(input$STAB_unselect, {
-        DT::selectRows(STAB_supproxy, selected=NULL)
+        DT::selectRows(rv_gxe$STAB_supproxy, selected=NULL)
         rv_gxe$STSclicked_genotypes <- NULL
       })
       

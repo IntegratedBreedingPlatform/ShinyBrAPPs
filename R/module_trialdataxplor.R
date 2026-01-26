@@ -157,7 +157,7 @@ mod_trialdataxplor_ui <- function(id){
 #' @import leaflet
 #' @import sortable
 #' @export
-mod_trialdataxplor_server <- function(id, rv){
+mod_trialdataxplor_server <- function(id, rv, conf){
   
   moduleServer(
     
@@ -187,6 +187,8 @@ mod_trialdataxplor_server <- function(id, rv){
         candidat_out = NULL,
         obs_study_to_sel = NULL
       )
+
+      notification_duration <- conf$notification_duration
 
       find_outlier <- function(x,c=1.5) {
         return(x < quantile(x, .25, na.rm = TRUE) - c*IQR(x, na.rm = TRUE) | x > quantile(x, .75, na.rm = TRUE) + c*IQR(x, na.rm = TRUE))
