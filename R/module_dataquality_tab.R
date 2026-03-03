@@ -263,29 +263,28 @@ mod_dataquality_server <- function(id, rv) {
       req(input$studies != "")
       data_viz <- rv_dq$data[observationVariableName == input$trait &
                                   studyDbId %in% input$studies]
-      if (nrow(data_viz) > 0) { rv_dq$data_viz <- data_viz }      
-      req(rv_dq$data_viz)        
-      
-      rv_dq$data_viz[observationDbId %in% rv_dq$sel_observationDbIds &
-                       !(observationDbId %in% rv$excluded_obs$observationDbId)]
-      types <- unique(rv_dq$data_viz$scale.dataType)
-      if (length(types) == 1 && types %in% c("Numerical", "Nominal")) {
-        all_data_count = nrow(rv_dq$data_viz)
-        rv_dq$data_viz[, observationValue := as.numeric(observationValue)]
-        rv_dq$data_viz <- rv_dq$data_viz[!is.na(observationValue),]
-        no_na_data_count = nrow(rv_dq$data_viz)
-        rv_dq$data_viz <- rv_dq$data_viz[!is.na(observationValue),]
-        if (all_data_count - no_na_data_count > 0) {
-          showNotification(paste0(all_data_count - no_na_data_count, " values of ", input$trait ," couldn't be converted as numeric and were discarded"), type = "warning", duration = notification_duration)
+      if (nrow(data_viz) > 0) {
+        data_viz[observationDbId %in% rv_dq$sel_observationDbIds &
+                         !(observationDbId %in% rv$excluded_obs$observationDbId)]
+        types <- unique(data_viz$scale.dataType)
+        if (length(types) == 1 && types %in% c("Numerical", "Nominal")) {
+          all_data_count = nrow(data_viz)
+          data_viz[, observationValue := as.numeric(observationValue)]
+          data_viz <- data_viz[!is.na(observationValue),]
+          no_na_data_count = nrow(data_viz)
+          data_viz <- data_viz[!is.na(observationValue),]
+          if (all_data_count - no_na_data_count > 0) {
+            showNotification(paste0(all_data_count - no_na_data_count, " values of ", input$trait ," couldn't be converted as numeric and were discarded"), type = "warning", duration = notification_duration)
+          }
+        } else if (length(types) == 1 && types == "Date") {
+          data_viz[, observationValue := as.Date(observationValue)]
         }
-      } else if (length(types) == 1 && types == "Date") {
-        rv_dq$data_viz[, observationValue := as.Date(observationValue)]
+        
+        data_viz[, study_name_abbrev_app := factor(study_name_abbrev_app, levels = rev(levels(factor(
+          study_name_abbrev_app
+        ))))]
       }
-      
-      rv_dq$data_viz[, study_name_abbrev_app := factor(study_name_abbrev_app, levels = rev(levels(factor(
-        study_name_abbrev_app
-      ))))]
-
+      rv_dq$data_viz <- data_viz
     })
     
     ## observe input$select_variable ####
@@ -326,7 +325,7 @@ mod_dataquality_server <- function(id, rv) {
     
     ## output distribution plot ####
     output$distribution_viz <- renderPlotly({
-      req(rv_dq$data_viz[, .N] > 0)
+      validate(need(rv_dq$data_viz[, .N] > 0, "No data for this trait and environments selection"))
       req(input$trait)
       req(input$studies)
       
@@ -668,6 +667,7 @@ mod_dataquality_server <- function(id, rv) {
     
     ## output correlation plot ####
     output$correlationPlot <- renderPlotly({
+      validate(need(rv_dq$data_viz[, .N] > 0, "No data for this trait and environments selection"))
       data_dq_casted <- dcast(
         rv_dq$data_viz[!(observationDbId %in% rv$excluded_obs$observationDbId) &
                          studyDbId %in% input$studies],
@@ -699,124 +699,127 @@ mod_dataquality_server <- function(id, rv) {
     })
     
     observeEvent(rv_dq$data_viz, {
-      data_dq <- rv_dq$data_viz
-      data_dq_notexcl <- rv_dq$data_viz[!(observationDbId %in% rv$excluded_obs$observationDbId)]
-      
-      sumtable_all <- data_dq[!is.na(observationValue), .("No. of values" = .N), study_name_app]
-      
-      dataType = unique(data_dq_notexcl$scale.dataType)
-      
-      if (dataType == "Date") {
-        sumtable_notexcl <- data_dq_notexcl[, .(
-          "Environment" = study_name_app,
-          "No. of observations" = .N,
-          "Mean" = mean(observationValue, na.rm = T),
-          "Minimum" = min(observationValue, na.rm = T),
-          "Quantile 0.25" = quantile(
-            observationValue,
-            probs = c(0.25),
-            type = 1,
-            na.rm = T
-          ),
-          "Median" = quantile(
-            observationValue,
-            probs = c(0.5),
-            type = 1,
-            na.rm = T
-          ),
-          "Quantile 0.75" = quantile(
-            observationValue,
-            probs = c(0.75),
-            type = 1,
-            na.rm = T
-          ),
-          "Maximum" = max(observationValue, na.rm = T)
-        ), study_name_app]
+      if(rv_dq$data_viz[, .N] > 0) {
+        data_dq <- rv_dq$data_viz
+        data_dq_notexcl <- rv_dq$data_viz[!(observationDbId %in% rv$excluded_obs$observationDbId)]
         
-        columns <- c(
-          "Environment",
-          "No. of values",
-          "No. of observations",
-          "No. of excluded values",
-          "Mean",
-          "Minimum",
-          "Quantile 0.25",
-          "Median",
-          "Quantile 0.75",
-          "Maximum"
-        )
+        sumtable_all <- data_dq[!is.na(observationValue), .("No. of values" = .N), study_name_app]
+        
+        dataType <- unique(data_dq_notexcl$scale.dataType)
+        
+        if (dataType == "Date") {
+          sumtable_notexcl <- data_dq_notexcl[, .(
+            "Environment" = study_name_app,
+            "No. of observations" = .N,
+            "Mean" = mean(observationValue, na.rm = T),
+            "Minimum" = min(observationValue, na.rm = T),
+            "Quantile 0.25" = quantile(
+              observationValue,
+              probs = c(0.25),
+              type = 1,
+              na.rm = T
+            ),
+            "Median" = quantile(
+              observationValue,
+              probs = c(0.5),
+              type = 1,
+              na.rm = T
+            ),
+            "Quantile 0.75" = quantile(
+              observationValue,
+              probs = c(0.75),
+              type = 1,
+              na.rm = T
+            ),
+            "Maximum" = max(observationValue, na.rm = T)
+          ), study_name_app]
+          
+          columns <- c(
+            "Environment",
+            "No. of values",
+            "No. of observations",
+            "No. of excluded values",
+            "Mean",
+            "Minimum",
+            "Quantile 0.25",
+            "Median",
+            "Quantile 0.75",
+            "Maximum"
+          )
+        } else {
+          sumtable_notexcl <- data_dq_notexcl[, .(
+            "Environment" = study_name_app,
+            "No. of observations" = .N,
+            "Mean" = mean(observationValue, na.rm = T),
+            "Minimum" = min(observationValue, na.rm = T),
+            "Quantile 0.25" = quantile(observationValue, probs = c(0.25), na.rm = T),
+            "Median" = quantile(observationValue, probs = c(0.5), na.rm = T),
+            "Quantile 0.75" = quantile(observationValue, probs = c(0.75), na.rm = T),
+            "Maximum" = max(observationValue, na.rm = T),
+            "Standard deviation" = sd(observationValue, na.rm = T),
+            "Variance" = var(observationValue, na.rm = T),
+            "Sum of values" = sum(observationValue, na.rm = T),
+            "Sum of squares" = sum((
+              observationValue - mean(observationValue, na.rm = T)
+            ) ^ 2),
+            "Uncorrected sum of squares" = sum(observationValue ^ 2, na.rm = T),
+            "Skewness" = e1071::skewness(observationValue, na.rm = T),
+            "Kurtosis" = e1071::kurtosis(observationValue, na.rm = T)
+          ), study_name_app]
+          
+          sumtable_notexcl[, "Standard error of mean" := `Standard deviation` /
+                             sqrt(`No. of observations`)]
+          sumtable_notexcl[, "Standard error of variance" := `Variance` /
+                             sqrt(`No. of observations`)]
+          sumtable_notexcl[, "%cov" := `Variance` / `Mean`]
+          sumtable_notexcl[, "%Standard error of skewness" := `Skewness` /
+                             sqrt(`No. of observations`)]
+          sumtable_notexcl[, "%Standard error of kurtosis" := `Kurtosis` /
+                             sqrt(`No. of observations`)]
+          sumtable_notexcl[, "Range" := Maximum - Minimum]
+          
+          columns <- c(
+            "Environment",
+            "No. of values",
+            "No. of observations",
+            "No. of excluded values",
+            "Mean",
+            "Minimum",
+            "Quantile 0.25",
+            "Median",
+            "Quantile 0.75",
+            "Maximum",
+            "Range",
+            "Standard deviation",
+            "Standard error of mean",
+            "Variance",
+            "Standard error of variance",
+            "%cov",
+            "Sum of values",
+            "Sum of squares",
+            "Uncorrected sum of squares",
+            "Skewness",
+            "%Standard error of skewness",
+            "Kurtosis",
+            "%Standard error of kurtosis"
+          )
+        }
+        
+        setkey(sumtable_all, study_name_app)
+        setkey(sumtable_notexcl, study_name_app)
+        sumtable <- sumtable_all[sumtable_notexcl]
+        sumtable[, "No. of excluded values" := `No. of values` - `No. of observations`]
+        rv_dq$sumtable <- sumtable[, columns, with = F]
+        
+        shinyjs::enable(id = "summary_stats_export")
       } else {
-        sumtable_notexcl <- data_dq_notexcl[, .(
-          "Environment" = study_name_app,
-          "No. of observations" = .N,
-          "Mean" = mean(observationValue, na.rm = T),
-          "Minimum" = min(observationValue, na.rm = T),
-          "Quantile 0.25" = quantile(observationValue, probs = c(0.25), na.rm = T),
-          "Median" = quantile(observationValue, probs = c(0.5), na.rm = T),
-          "Quantile 0.75" = quantile(observationValue, probs = c(0.75), na.rm = T),
-          "Maximum" = max(observationValue, na.rm = T),
-          "Standard deviation" = sd(observationValue, na.rm = T),
-          "Variance" = var(observationValue, na.rm = T),
-          "Sum of values" = sum(observationValue, na.rm = T),
-          "Sum of squares" = sum((
-            observationValue - mean(observationValue, na.rm = T)
-          ) ^ 2),
-          "Uncorrected sum of squares" = sum(observationValue ^ 2, na.rm = T),
-          "Skewness" = e1071::skewness(observationValue, na.rm = T),
-          "Kurtosis" = e1071::kurtosis(observationValue, na.rm = T)
-        ), study_name_app]
-        
-        sumtable_notexcl[, "Standard error of mean" := `Standard deviation` /
-                           sqrt(`No. of observations`)]
-        sumtable_notexcl[, "Standard error of variance" := `Variance` /
-                           sqrt(`No. of observations`)]
-        sumtable_notexcl[, "%cov" := `Variance` / `Mean`]
-        sumtable_notexcl[, "%Standard error of skewness" := `Skewness` /
-                           sqrt(`No. of observations`)]
-        sumtable_notexcl[, "%Standard error of kurtosis" := `Kurtosis` /
-                           sqrt(`No. of observations`)]
-        sumtable_notexcl[, "Range" := Maximum - Minimum]
-        
-        columns <- c(
-          "Environment",
-          "No. of values",
-          "No. of observations",
-          "No. of excluded values",
-          "Mean",
-          "Minimum",
-          "Quantile 0.25",
-          "Median",
-          "Quantile 0.75",
-          "Maximum",
-          "Range",
-          "Standard deviation",
-          "Standard error of mean",
-          "Variance",
-          "Standard error of variance",
-          "%cov",
-          "Sum of values",
-          "Sum of squares",
-          "Uncorrected sum of squares",
-          "Skewness",
-          "%Standard error of skewness",
-          "Kurtosis",
-          "%Standard error of kurtosis"
-        )
+        rv_dq$sumtable <- NULL
       }
-      
-      setkey(sumtable_all, study_name_app)
-      setkey(sumtable_notexcl, study_name_app)
-      sumtable <- sumtable_all[sumtable_notexcl]
-      sumtable[, "No. of excluded values" := `No. of values` - `No. of observations`]
-      rv_dq$sumtable <- sumtable[, columns, with = F]
-      
-      shinyjs::enable(id = "summary_stats_export")
     })
     
     ## output summary stats table ####
     output$sumstats_table <- renderDataTable({
       req(rv_dq$sumtable)
-      
       decimals_cols <- colnames(rv_dq$sumtable)[sapply(rv_dq$sumtable,
         function(c) {
           is.numeric(c) && any(c != as.integer(c))
