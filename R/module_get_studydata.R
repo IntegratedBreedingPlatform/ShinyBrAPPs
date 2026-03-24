@@ -50,7 +50,7 @@ mod_get_studydata_ui <- function(id){
               div(
                 selectInput(ns("picker_obs_unit_level"), label = "Observation unit levels", choices = allowed_obs_unit_levels, selected = allowed_obs_unit_levels, multiple = T, width = "100%"),
                 selectizeInput(
-                  ns("trials"), label = "Study", choices = NULL, multiple = FALSE, width = "100%",
+                  ns("trials"), label = "Studies (BMS trials)", choices = NULL, multiple = T, width = "100%",
                   options = list(
                     placeholder = '',
                     onInitialize = I('function() { this.setValue(""); }')
@@ -78,7 +78,7 @@ mod_get_studydata_ui <- function(id){
                   label = "Load All",
                   class = "btn btn-primary"
                 ),
-                actionButton(ns("go_study_metadata_ui"), "Show Environment Metadata", class = "btn btn-info")
+                actionButton(ns("go_study_metadata_ui"), "Show Environment Metadata", class = "btn btn-info"),
               ),
               div(
                 "Loaded Environments",
@@ -120,7 +120,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         rv$study_metadata <- dataset_4_dev$study_metadata
         
       } else {
-
+        ## observe URL ####
         observeEvent(session$clientData$url_search, {
           rv_st$parse_GET_param <- parseQueryString(session$clientData$url_search)
           if (length(rv_st$parse_GET_param) > 0) {
@@ -198,6 +198,8 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             shinyjs::runjs("$('#get_studydata_by_ui').css('display', 'block');") 
           }
         })
+        
+        ## observe connection ####
         observeEvent(rv$con,{
           ## get trials
           req(rv_st$need_get_data)
@@ -207,13 +209,16 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               trials <- as.data.table(
                 handle_api_response(brapir::core_trials_get(con = rv$con))$data
               )
+              # alphabetical sort
+              setorder(trials, trialName)
               rv$trial_metadata <- trials
+              rv$trial_metadata[, loaded:=F]
               trial_choices <- trials[,trialDbId]
               names(trial_choices) <- trials[,trialName]
               updateSelectizeInput(
                 inputId = "trials", session = session, choices = trial_choices,
                 options = list(
-                  placeholder = 'Select a study',
+                  placeholder = 'Select studies',
                   onInitialize = I('function() { this.setValue(""); }')
                 )
               )
@@ -231,40 +236,71 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           
         })
   
-        observeEvent(input$trials,{
-          req(input$trials)
-          rv$data <- NULL
-          rv_st$trialDbId <- input$trials
-        })
+        # observeEvent(input$trials,{
+        #   req(input$trials)
+        #   rv$data <- NULL
+        #   rv_st$trialDbId <- input$trials
+        # })
   
         
-        ### BrAPI GET studies and GET locations
-        observeEvent(rv_st$trialDbId,{
+        ## observe selected trials ####
+        observeEvent(input$trials,{
+          selected_trial <- setdiff(input$trials,rv_st$trialDbId)
+          unselected_trial <- setdiff(rv_st$trialDbId, input$trials)
+          rv_st$trialDbId <- input$trials
           req(rv_st$need_get_data)
           req(rv_st$trialDbId)
           # get study_metadata
-          tryCatch({
-            study_metadata <- make_study_metadata(con = rv$con, trialDbId = rv_st$trialDbId)
-          }, error = function(e)({
-            showNotification("Could not get environment metadata", type = "error", duration = notification_duration)
-          }))
-  
-          req(study_metadata[,.N]>0)
-  
-          env_choices <- study_metadata[,unique(studyDbId)]
-          names(env_choices) <- study_metadata[,unique(study_name_app)]
-  
-          updateAwesomeCheckboxGroup(
-            inputId = "environments",
-            session = session,
-            label = "Available environments",
-            choices = env_choices
-          )
-          shinyjs::show(id = "load_env")
-          shinyjs::show(id = "load_all_env")
-          rv$study_metadata <- study_metadata
+          if (length(selected_trial) > 0) {
+            tryCatch({
+              study_metadata <- make_study_metadata(con = rv$con, trialDbIds = selected_trial)
+              req(study_metadata[,.N]>0)
+              if (is.null(rv$study_metadata)) {
+                rv$study_metadata <- study_metadata
+              } else {
+                rv$study_metadata <- rbind(rv$study_metadata, study_metadata, fill = TRUE)
+              }
+            }, error = function(e) ({
+              showNotification("Could not get environment metadata", type = "error", duration = notification_duration)
+              print(e$message)
+            }))
+          }
+
+          req(rv$study_metadata)
+          # if (length(unselected_trial) > 0) {
+          #   rv$study_metadata <- rv$study_metadata[!trialDbId %in% unselected_trial,]
+          # }
+          env <- unique(rv$study_metadata[loaded==FALSE & trialDbId %in% input$trials,.(studyDbId, study_name_app)])
+          env_choices <- env[, studyDbId]
+          names(env_choices) <- env[, study_name_app]
+          rv_st$env_choices <- env_choices
         })
 
+        ## observe selected environments ####
+        observeEvent(rv_st$env_choices, {
+          if (is.null(rv_st$env_choices)) {
+            shinyjs::hide(id = "load_env")
+            shinyjs::hide(id = "load_all_env")
+            updateAwesomeCheckboxGroup(
+              inputId = "environments",
+              session = session,
+              label = "Available environments",
+              choices = character(0),
+              selected = character(0)
+            )
+          } else {
+            shinyjs::show(id = "load_env")
+            shinyjs::show(id = "load_all_env")
+            updateAwesomeCheckboxGroup(
+              inputId = "environments",
+              session = session,
+              label = "Available environments",
+              choices = rv_st$env_choices
+            )
+          }
+        }, ignoreNULL = F)
+
+        ## observe select obsLevel ####
         observeEvent(input$picker_obs_unit_level, {
           if (!is.null(input$picker_obs_unit_level)) {
             rv$obs_unit_level <- input$picker_obs_unit_level
@@ -273,7 +309,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           }          
         }, ignoreNULL = F, ignoreInit = F)
   
-        ## load environment data
+        ## load environment data ####
         observeEvent(input$load_env,{
           req(input$environments)
           req(rv$study_metadata)
@@ -286,7 +322,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         })
         observeEvent(rv_st$env_to_load,{
           req(rv$study_metadata)
-          study_metadata <- rv$study_metadata
+          study_metadata <- copy(rv$study_metadata) # force reactive update (data.table modifies by reference)
           accordion_panel_close(id = "dataImportAcc", values = "diap", session = session)
           
           withProgress(message = "Loading", value = 0, {
@@ -306,7 +342,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
                   stu_name_abbrev_app = rv$study_metadata[studyDbId == id,unique(study_name_abbrev_app)],
                   obs_unit_level =rv$obs_unit_level
                 )
-                rv$study_metadata[studyDbId == id,loaded:=T] #show study as loaded even if there is no data
+                study_metadata[studyDbId == id,loaded:=T] #show study as loaded even if there is no data
                 if (is.null(study)) { 
                   showNotification(paste0("There is no observation data for study ", study_name_app), type = "warning", duration = notification_duration)
                 }
@@ -317,23 +353,16 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               }) 
             }), use.names = T,fill = T
             )
-
-            env_choices <- rv$study_metadata[loaded==F,unique(studyDbId)]
+            
+            env_choices <- study_metadata[loaded==F,unique(studyDbId)]
             if(length(env_choices)==0){
-              updateAwesomeCheckboxGroup(session = session,inputId = "environments", label = "", choices = vector())
-              shinyjs::hide(id = "load_env")
-              shinyjs::hide(id = "load_all_env")
-              accordion_panel_close(id = "dataImportAcc", values = "dataImportAccPanel")
-              
+              rv_st$env_choices <- NULL
             }else{
-              names(env_choices) <- rv$study_metadata[loaded==F,unique(study_name_app)]
-              updateAwesomeCheckboxGroup(session = session,inputId = "environments", choices = env_choices)
+              names(env_choices) <- study_metadata[loaded==F,unique(study_name_app)]
+              rv_st$env_choices <- env_choices
             }
-            output$loaded_env <- renderUI({
-              tags$ul(
-                lapply(rv$study_metadata[loaded == T,unique(study_name_app)], tags$li)
-              )
-            })
+            
+            rv$study_metadata <- study_metadata
   
             if (nrow(studies) == 0) {
               # no observation
@@ -360,7 +389,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               if("trialDbId" %in% names(rv$data)){
                 rv$data <- unique(rbindlist(
                   list(
-                    rv$data[trialDbId == rv_st$trialDbId],
+                    rv$data[trialDbId %in% rv_st$trialDbId],
                     studies
                   ),
                   use.names = T, fill = T
@@ -384,8 +413,38 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             session$sendCustomMessage("storeHash", rv$hash)          
             save_user_data(rv)
           }
+          accordion_panel_close(id = "dataImportAcc", values = "dataImportAccPanel")
         })
+        
+        ## render loaded environments ####
+        output$loaded_env <- renderUI({
+          req(rv$study_metadata)
+          loaded_env <- rv$study_metadata[loaded == T,unique(study_name_app)]
+          tagList(
+            tags$ul(
+              lapply(loaded_env, tags$li)
+            ),
+            # if (length(loaded_env) > 0) {
+            #   actionButton(ns("reset_loaded_studies"), "Reset")
+            # }
+          )
+        })
+        
+        ## observe reset_loaded_studies ####
+        # observeEvent(input$reset_loaded_studies, {
+        #   rv$data <- NULL
+        #   rv$extradata <- NULL
+        #   rv$study_metadata <- NULL
+        #   trial_choices <- rv$trial_metadata[,trialDbId]
+        #   names(trial_choices) <- rv$trial_metadata[,trialName]
+        #   updateSelectizeInput(
+        #     inputId = "trials", session = session, choices = trial_choices, selected = NULL
+        #   )
+        #   rv_st$trials <- NULL
+        #   rv_st$env_choices <- NULL
+        # })
   
+        ## render trial metadata ####
         output$table_trial_metadata <- renderDT({
           req(input$trials)
           trial_metadata <- data.table(
@@ -418,6 +477,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
         #  )
         #})
         
+        ## observe go_trial_metadata ####
         observeEvent(input$go_trial_metadata, {
           showModal(
             modalDialog(
@@ -431,6 +491,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           )
         })
         
+        ## observe go_study_metadata ####
         observeEvent(input$go_study_metadata_ui, {
           showModal(
             modalDialog(
@@ -444,6 +505,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           )
         })
   
+        ## render study metadata table ####
         output$tables_study_metadata <- renderUI({
           req(rv$study_metadata)
   
