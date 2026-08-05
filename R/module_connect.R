@@ -5,6 +5,7 @@ mod_connect_ui <- function(id){
   ns <- NS(id)
   div(
     id = ns("get_connect_params"),
+    shinyOAuth::use_shinyOAuth(),
     tagList(
       ## UI for study selection (if no GET parameters)
       # tags$style(".modal-dialog 
@@ -48,62 +49,99 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_de
   moduleServer(
     id,
     function(input, output, session){
-      
       ns <- NS(id)
-      rv_st <- reactiveValues(
-        env_to_load = NULL,
-        parse_GET_param = NULL,
-        ui_mode = NULL
-      )
-        
-        observeEvent(session$clientData$url_search, {
-          rv_st$parse_GET_param <- parseQueryString(session$clientData$url_search)
-        })
-        
-        
-        observeEvent(rv_st$parse_GET_param,{
-          if(!is.null(rv_st$parse_GET_param$pushOK)){
-            rv$pushOK <- rv_st$parse_GET_param$pushOK
+      rv$parse_GET_param <- NULL
+      rv$connect_mode <- NULL
+      rv$show_study_selection <- FALSE
+
+      #TODO stop storing token in a cookie (for dev purposes meanwhil)
+      token <- isolate(cookies::get_cookie("shinybrapps_token"))
+      encoded <- isolate(cookies::get_cookie("shinybrapps_url_search"))
+      url_search <- if (!is.null(encoded)) utils::URLdecode(encoded) else NULL
+      auth <- NULL
+
+      if (!is.null(url_search)) {
+        query <- parseQueryString(url_search)
+        apiURL <- query$apiURL
+        if (is.null(token)) {
+          client <- build_oauth_client(apiURL)
+          auth <- shinyOAuth::oauth_module_server("auth", client, auto_redirect = T)
+        }
+      }
+
+      observeEvent(session$clientData$url_search, {
+        query <- parseQueryString(session$clientData$url_search)
+        if (!is.null(query$apiURL)) {
+          cookies::set_cookie("shinybrapps_url_search",
+                              utils::URLencode(session$clientData$url_search, reserved=T),
+                              expiration = 1)
+          rv$apiURL <- query$apiURL
+          rv$connect_mode <- "url"
+          token <- isolate(cookies::get_cookie("shinybrapps_token"))
+          if (!is.null(token)) {
+            rv$token <- token
           }
-          
-          if(!is.null(rv_st$parse_GET_param$apiURL) &
-             !is.null(rv_st$parse_GET_param$token) &
-             !is.null(rv_st$parse_GET_param$cropDb)){
-            
-            ### set up connection
-            parsed_url <- parse_api_url(rv_st$parse_GET_param$apiURL)
-            
-            # rv$con <- brapirv2::brapi_connect(
-            #   secure = TRUE,
-            #   protocol = parsed_url$brapi_protocol,
-            #   db = parsed_url$brapi_db,
-            #   port = parsed_url$brapi_port,
-            #   apipath = parsed_url$brapi_apipath,
-            #   multicrop = TRUE,
-            #   commoncropname = rv_st$parse_GET_param$cropDb,
-            #   token = rv_st$parse_GET_param$token,
-            #   granttype = "token",
-            #   clientid = "brapir",
-            #   bms = TRUE
-            # )
-            
-            rv$con <- brapir::brapi_connect(
-              secure = (parsed_url$brapi_protocol == "https://"), 
-              db = parsed_url$brapi_db,
-              port = parsed_url$brapi_port,
-              apipath = parsed_url$brapi_apipath,
-              multicrop = TRUE, 
-              commoncropname = rv_st$parse_GET_param$cropDb,
-              token = rv_st$parse_GET_param$token
-            )
-            
-            rv$connect_mode <- "url"
-          } else {
-              #### UI MODE
-              rv$connect_mode <- "UI"
-              shinyjs::runjs("$('#get_connect_params_by_ui').css('display', 'block');") 
-            } 
-          })
+          rv$query <- query
+        } else if (!is.null(cookies::get_cookie("shinybrapps_url_search"))) {
+          ### URL mode after oauth redirection
+          rv$connect_mode <- "url"
+        } else {
+          #### UI MODE
+          rv$connect_mode <- "UI"
+          shinyjs::runjs("$('#get_connect_params_by_ui').css('display', 'block');")
+          rv$show_study_selection <- T
+        }
+      })
+
+      observeEvent(rv$apiURL, {
+        if (is.null(token)) {
+          client <- build_oauth_client(rv$apiURL)
+          auth <- shinyOAuth::oauth_module_server("auth", client, auto_redirect = T)
+        }
+      })
+
+      observeEvent(auth$authenticated,  {
+        if (is.null(rv$token)) {
+          req(auth$authenticated)
+          req(auth$token@access_token)
+          showNotification("Connected successfully", type = "message", duration = notification_duration)
+          cookies::set_cookie("shinybrapps_token",
+                              auth$token@access_token,
+                              expiration = 1)
+          rv$token <- auth$token@access_token
+        }
+      })
+
+      observeEvent(rv$token,  {
+        if (!is.null(rv$query)) {
+          query <- rv$query
+        } else {
+          encoded <- isolate(cookies::get_cookie("shinybrapps_url_search"))
+          url_search <- if (!is.null(encoded)) utils::URLdecode(encoded) else NULL
+          query <- parseQueryString(url_search)
+        }
+
+        req(query$apiURL, query$cropDb)
+        parsed_url <- parse_api_url(query$apiURL)
+
+        rv$con <- brapir::brapi_connect(
+          secure = (parsed_url$brapi_protocol == "https://"),
+          db = parsed_url$brapi_db,
+          port = parsed_url$brapi_port,
+          apipath = parsed_url$brapi_apipath,
+          multicrop = TRUE,
+          commoncropname = query$cropDb,
+          token = rv$token
+        )
+        updateQueryString(url_search, mode = "replace", session = session)
+        rv$parse_GET_param <- query
+
+        #delete cookie
+        cookies::remove_cookie("shinybrapps_url_search")
+        rv$connect_mode <- "url"
+
+      })
+
         ### BrAPI GET trials
         observeEvent(c(input$apiURL, input$token, input$cropDb),{
           req(input$apiURL)
@@ -123,20 +161,6 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_de
           ## set up connection
           parsed_url <- parse_api_url(input$apiURL)
           
-          # rv$con <- brapirv2::brapi_connect(
-          #   secure = TRUE,
-          #   protocol = parsed_url$brapi_protocol,
-          #   db = parsed_url$brapi_db,
-          #   port = parsed_url$brapi_port,
-          #   apipath = parsed_url$brapi_apipath,
-          #   multicrop = TRUE,
-          #   commoncropname = input$cropDb,
-          #   token = input$token,
-          #   granttype = "token",
-          #   clientid = "brapir",
-          #   bms = TRUE
-          # )
-          # 
           rv$con <- brapir::brapi_connect(
             secure = (parsed_url$brapi_protocol == "https://"), 
             db = parsed_url$brapi_db,

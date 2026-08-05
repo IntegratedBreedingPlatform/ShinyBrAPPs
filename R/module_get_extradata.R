@@ -13,7 +13,7 @@ mod_get_extradata_server <- function(id, rv){
 
         # no need to reload extradata if we get it from user session
         # needed in ui_mode when loading environments one by one
-        req(rv$ui_mode | is.null(rv$extradata))   
+        req(rv$connect_mode == "UI" | is.null(rv$extradata))
 
         if(!isTruthy("observationVariableName"%in%names(rv$data))){
           showNotification("Data set without observations", type = "warning", duration = notification_duration)
@@ -128,9 +128,9 @@ mod_get_extradata_server <- function(id, rv){
                 germplasm_data <- rbind(germplasm_data,rbindlist(lapply(2:germ_resp$metadata$pagination$totalPages, function(p){
                   brapir::germplasm_attributevalues_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = as.character(searchResultsDbId), page = p-1)$data
                 })))
-              } 
+              }
               germplasm_data <- as.data.table(germplasm_data)
-            
+
               if (nrow(germplasm_data) > 0) {
                 # get attributes datatype
                 incProgress(

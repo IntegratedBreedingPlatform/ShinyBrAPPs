@@ -1,7 +1,7 @@
 library(shinybrapps)
 source("config.R")
 
-ui <- bslib::page_fillable(theme = bslib::bs_theme(preset = "bootstrap"),
+ui <- cookies::add_cookie_handlers(bslib::page_fillable(theme = bslib::bs_theme(preset = "bootstrap"),
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "css/app.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/custom_styles.css"),
@@ -76,4 +76,4 @@ ui <- bslib::page_fillable(theme = bslib::bs_theme(preset = "bootstrap"),
       mod_trialdataxplor_ui("xplor")
       #)
 
-  )
+  ))
