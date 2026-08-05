@@ -19,6 +19,8 @@ Imports:
     baRcodeR,
     brapir,
     bslib,
+    cachem,
+    cookies,
     cowplot,
     digest,
     DT,
@@ -48,6 +50,7 @@ Imports:
     shinybusy,
     shinycssloaders,
     shinyjs,
+    shinyOAuth,
     shinyWidgets,
     sortable,
     statgenGxE,
@@ -55,6 +58,7 @@ Imports:
     stringmagic,
     tableHTML,
     tidyr,
+    utils,
     varhandle,
     zip
 Encoding: UTF-8

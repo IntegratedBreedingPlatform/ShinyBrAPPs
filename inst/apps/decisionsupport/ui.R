@@ -1,7 +1,7 @@
 library(shinybrapps)
 source("config.R")
 
-ui <- fluidPage(
+ui <- cookies::add_cookie_handlers(fluidPage(
   #theme = bs_theme(version = 5),
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "css/app.css"),
@@ -121,4 +121,4 @@ ui <- fluidPage(
         ))
       )
   ),
-)
+))

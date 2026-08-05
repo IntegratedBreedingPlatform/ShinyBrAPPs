@@ -644,6 +644,32 @@ save_user_data <- function(rv) {
   }
 }
 
+shared_state_store <- cachem::cache_mem(max_age = 300)
+key <- Sys.getenv("SHINYOAUTH_STATE_KEY")
+
+#state_key <- shinyOAuth:::random_urlsafe(128)
+
+#' @export
+build_oauth_client <- function(apiURL) {
+  url <- sub("/bmsapi$", "", apiURL)
+  provider <- shinyOAuth::OAuthProvider(
+    name = "bms",
+    auth_url = paste0(url, "/ibpworkbench/login"),
+    token_url = paste0(url, "/bmsapi/oauth/token"),
+    issuer = paste0(url, "/bmsapi"),
+    issuer_match = "url",
+    token_auth_style = "body"
+  )
+  client <- shinyOAuth::oauth_client(
+    provider      = provider,
+    client_id     = "brapir",
+    redirect_uri  = "http://localhost:4321",
+    state_store   = shared_state_store,
+    state_key = key
+  )
+  return(client)
+}
+
 #' @export
 update_selectors_with_groups <- function(rv, new_group, initial_name = NULL) {
   ## update selectors (shape, colour)
@@ -730,7 +756,7 @@ summary.stats <- function(x){
   sumtable_notexcl[, "%Standard error of kurtosis" := `Kurtosis` /
                      sqrt(`No. of observations`)]
   sumtable_notexcl[, "Range" := Maximum - Minimum]
-  
+
   columns <- c(
     "studyDbId",
     "Environment",

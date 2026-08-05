@@ -109,97 +109,84 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
       ns <- NS(id)
       rv_st <- reactiveValues(
         env_to_load = NULL,
-        parse_GET_param = NULL,
-        ui_mode = NULL
+        need_get_data = TRUE
       )
-      rv$ui_mode <- TRUE
-      
+
       if(!is.null(dataset_4_dev)){ # XXX
         rv$data <- dataset_4_dev$data
         rv$trial_metadata <- dataset_4_dev$trial_metadata
         rv$study_metadata <- dataset_4_dev$study_metadata
-        
+
       } else {
-        ## observe URL ####
-        observeEvent(session$clientData$url_search, {
-          rv_st$parse_GET_param <- parseQueryString(session$clientData$url_search)
-          if (length(rv_st$parse_GET_param) > 0) {
-            rv$ui_mode <- FALSE
-          }
-        })
-  
-        observeEvent(rv_st$parse_GET_param,{
-          txt <- toJSON(rv_st$parse_GET_param, auto_unbox = TRUE, sort_keys = TRUE)
-          hash <- digest(txt, algo = "sha256")
-          filename <- paste0(hash, ".rds")
-          if (file.exists(filename) && !is.null(rv$hash)) {
-            stored_rv <- readRDS(file = filename)
-            rv$con <- if (!is.null(stored_rv$con)) stored_rv$con
-            rv$connect_mode <- if (!is.null(stored_rv$connect_mode)) stored_rv$connect_mode
-            rv$data <- if (!is.null(stored_rv$data)) stored_rv$data
-            rv$excluded_obs <- if (!is.null(stored_rv$excluded_obs)) stored_rv$excluded_obs
-            rv$obs_unit_level <- if (!is.null(stored_rv$obs_unit_level)) stored_rv$obs_unit_level
-            rv$study_metadata <- if (!is.null(stored_rv$study_metadata)) stored_rv$study_metadata
-            rv$trial_metadata <- if (!is.null(stored_rv$trial_metadata)) stored_rv$trial_metadata
 
-            #Bravise
-            rv$extradata <- if (!is.null(stored_rv$extradata)) stored_rv$extradata
-            rv$groups <- data.table()
-            rv$groups <- if(!is.null(stored_rv$groups)) stored_rv$groups
-            rv$selection <- if (!is.null(stored_rv$selection)) stored_rv$selection
-            rv$column_datasource <- if (!is.null(stored_rv$column_datasource)) stored_rv$column_datasource
-            rv$environmentParameters <- if (!is.null(stored_rv$environmentParameters)) stored_rv$environmentParameters
+        observeEvent(rv$parse_GET_param,{
+          rv_st$need_get_data <- T
+          if(!is.null(rv$parse_GET_param$apiURL)) {
+            #mode URL
+            req(rv$con$token) #After oauth or if token is in a cookie
+            params <- rv$parse_GET_param
+            params$token <- rv$con$token
+            txt <- toJSON(params, auto_unbox = TRUE, sort_keys = TRUE)
+            hash <- digest(txt, algo = "sha256")
+            filename <- paste0(hash, ".rds")
 
-            rv_st$need_get_data <- FALSE
-          } else {
-            rv_st$need_get_data <- TRUE
-          }
-          
-          if(!is.null(rv_st$parse_GET_param$pushOK)){
-            rv$pushOK <- rv_st$parse_GET_param$pushOK
-          }
-          
-          if(!is.null(rv_st$parse_GET_param$studyDbIds)){
-            req(rv_st$need_get_data)
-            
-            ### set up connection
-            parsed_url <- parse_api_url(rv_st$parse_GET_param$apiURL)
-            
-            # get study_metadata
-            tryCatch({
-              print(rv$con$token)
-              print(rv$con$commoncropname)
-              study_metadata <- make_study_metadata(con = rv$con, studyDbIds = rv_st$parse_GET_param$studyDbIds)
-            }, error = function(e)({
-              showNotification(paste0("Could not get environment metadata: ", e$message), type = "error", duration = notification_duration)
-            }))
-            
-            req(exists("study_metadata"))
-            req(study_metadata[,.N]>0)
-            
-            ## set environments to load
-            rv_st$env_to_load <- study_metadata[,unique(studyDbId)]
-            
-            rv$study_metadata <- study_metadata
-            
-            if (isTruthy(can_filter_obs_unit_level_in_url)) {
-              chosen_levels <- rv_st$parse_GET_param$obs_unit_level
-              if (!is.null(chosen_levels)) {
-                rv$obs_unit_level <- intersect(allowed_obs_unit_levels, unlist(strsplit(chosen_levels, ",")))
+            if (file.exists(filename) && !is.null(rv$hash)) {
+              stored_rv <- readRDS(file = filename)
+              rv$con <- if (!is.null(stored_rv$con)) stored_rv$con
+              rv$connect_mode <- if (!is.null(stored_rv$connect_mode)) stored_rv$connect_mode
+              rv$data <- if (!is.null(stored_rv$data)) stored_rv$data
+              rv$excluded_obs <- if (!is.null(stored_rv$excluded_obs)) stored_rv$excluded_obs
+              rv$obs_unit_level <- if (!is.null(stored_rv$obs_unit_level)) stored_rv$obs_unit_level
+              rv$study_metadata <- if (!is.null(stored_rv$study_metadata)) stored_rv$study_metadata
+              rv$trial_metadata <- if (!is.null(stored_rv$trial_metadata)) stored_rv$trial_metadata
+
+              #Bravise
+              rv$extradata <- if (!is.null(stored_rv$extradata)) stored_rv$extradata
+              rv$groups <- data.table()
+              rv$groups <- if(!is.null(stored_rv$groups)) stored_rv$groups
+              rv$selection <- if (!is.null(stored_rv$selection)) stored_rv$selection
+              rv$column_datasource <- if (!is.null(stored_rv$column_datasource)) stored_rv$column_datasource
+              rv$environmentParameters <- if (!is.null(stored_rv$environmentParameters)) stored_rv$environmentParameters
+
+              rv_st$need_get_data <- FALSE
+            }
+
+            if(!is.null(rv$parse_GET_param$studyDbIds)){
+              req(rv_st$need_get_data)
+
+              # get study_metadata
+              tryCatch({
+                print(rv$con$token)
+                print(rv$con$commoncropname)
+                study_metadata <- make_study_metadata(con = rv$con, studyDbIds = rv$parse_GET_param$studyDbIds)
+              }, error = function(e)({
+                showNotification("Could not get environment metadata", type = "error", duration = notification_duration)
+              }))
+
+              req(exists("study_metadata"))
+              req(study_metadata[,.N]>0)
+
+              ## set environments to load
+              rv_st$env_to_load <- study_metadata[,unique(studyDbId)]
+
+              rv$study_metadata <- study_metadata
+
+              if (isTruthy(can_filter_obs_unit_level_in_url)) {
+                chosen_levels <- rv$parse_GET_param$obs_unit_level
+                if (!is.null(chosen_levels)) {
+                  rv$obs_unit_level <- intersect(allowed_obs_unit_levels, unlist(strsplit(chosen_levels, ",")))
+                } else {
+                  rv$obs_unit_level <- NULL
+                }
               } else {
-                rv$obs_unit_level <- NULL
+                rv$obs_unit_level <- allowed_obs_unit_levels
               }
             } else {
-              rv$obs_unit_level <- allowed_obs_unit_levels
+              rv$show_study_selection <- T
             }
-  
-          } else {
-            #### UI MODE
-            shinyjs::runjs("$('#get_studydata_by_ui').css('display', 'block');") 
           }
         })
-        
-        ## observe connection ####
+
         observeEvent(rv$con,{
           ## get trials
           req(rv_st$need_get_data)
@@ -213,15 +200,19 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
               setorder(trials, trialName)
               rv$trial_metadata <- trials
               rv$trial_metadata[, loaded:=F]
-              trial_choices <- trials[,trialDbId]
-              names(trial_choices) <- trials[,trialName]
-              updateSelectizeInput(
-                inputId = "trials", session = session, choices = trial_choices,
-                options = list(
-                  placeholder = 'Select studies',
-                  onInitialize = I('function() { this.setValue(""); }')
+
+              if (rv$show_study_selection) {
+                trial_choices <- trials[,trialDbId]
+                names(trial_choices) <- trials[,trialName]
+                updateSelectizeInput(
+                  inputId = "trials", session = session, choices = trial_choices,
+                  options = list(
+                    placeholder = 'Select studies',
+                    onInitialize = I('function() { this.setValue(""); }')
+                  )
                 )
-              )
+                shinyjs::runjs("$('#get_studydata_by_ui').css('display', 'block');")
+              }
               if (rv$connect_mode=="UI"){
                 showNotification("Connection successful", type = "message", duration = notification_duration)
                 shinyjs::runjs('var accordionBody = $("#connect-connectAccPanel");
@@ -407,8 +398,10 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
           ## save rv in .rds ####
           ## Not saving for ui mode, should be based on connection input parameters
           req(rv$data)
-          if (!rv$ui_mode) {
-            txt <- toJSON(rv_st$parse_GET_param, auto_unbox = TRUE, sort_keys = TRUE)
+          if (rv$connect_mode == "url") {
+            params <- rv$parse_GET_param
+            params$token <- rv$con$token
+            txt <- toJSON(params, auto_unbox = TRUE, sort_keys = TRUE)
             rv$hash <- digest(txt, algo = "sha256")
             session$sendCustomMessage("storeHash", rv$hash)          
             save_user_data(rv)
