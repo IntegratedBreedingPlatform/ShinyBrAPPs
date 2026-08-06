@@ -1,25 +1,23 @@
 #' @import shinyWidgets
 #' @import bslib
 #' @export
-mod_connect_ui <- function(id){
+mod_connect_ui <- function(id) {
   ns <- NS(id)
   div(
     id = ns("get_connect_params"),
     shinyOAuth::use_shinyOAuth(),
     tagList(
       ## UI for study selection (if no GET parameters)
-      # tags$style(".modal-dialog 
+      # tags$style(".modal-dialog
       #            {max-width: 80%;
       #            width: fit-content !important;}"),
-      
       tags$style(HTML(
         ".accordion-header {
           background-color: #f8f9fa;
           font-size: 18px;
-          border-bottom: 1px solid #dee2e6; 
+          border-bottom: 1px solid #dee2e6;
         }"
       )),
-      
       div(
         id = "get_connect_params_by_ui",
         style = "display: none",
@@ -29,15 +27,15 @@ mod_connect_ui <- function(id){
           accordion_panel(
             id = ns("connectAccPanel"),
             title = "Connection parameters",
-              div(
-                # div(id = "select_trialDbId_UI",style = "display:block",
-                textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://test-server.brapi.org/", value = "", width = "100%"),
-                textInput(ns("token"), "Token", placeholder = "Enter Token", value = "", width = "100%"),
-                textInput(ns("cropDb"), "CropDb", value = "maize", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
-              )
+            div(
+              # div(id = "select_trialDbId_UI",style = "display:block",
+              textInput(ns("apiURL"), "BrAPI Endpoint", placeholder = "E.g. https://test-server.brapi.org/", value = "", width = "100%"),
+              textInput(ns("token"), "Token", placeholder = "Enter Token", value = "", width = "100%"),
+              textInput(ns("cropDb"), "CropDb", value = "maize", placeholder = "Enter cropDb -- or selectinput with GET /commoncropnames", width = "100%"),
+            )
           )
         )
-      ) 
+      )
     )
   )
 }
@@ -45,16 +43,16 @@ mod_connect_ui <- function(id){
 #' @importFrom DT renderDT
 #' @importFrom varhandle check.numeric
 #' @export
-mod_connect_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_dev = NULL
+mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_dev = NULL
   moduleServer(
     id,
-    function(input, output, session){
+    function(input, output, session) {
       ns <- NS(id)
       rv$parse_GET_param <- NULL
       rv$connect_mode <- NULL
       rv$show_study_selection <- FALSE
 
-      #TODO stop storing token in a cookie (for dev purposes meanwhil)
+      # TODO stop storing token in a cookie (for dev purposes meanwhil)
       token <- isolate(cookies::get_cookie("shinybrapps_token"))
       encoded <- isolate(cookies::get_cookie("shinybrapps_url_search"))
       url_search <- if (!is.null(encoded)) utils::URLdecode(encoded) else NULL
@@ -73,8 +71,9 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_de
         query <- parseQueryString(session$clientData$url_search)
         if (!is.null(query$apiURL)) {
           cookies::set_cookie("shinybrapps_url_search",
-                              utils::URLencode(session$clientData$url_search, reserved=T),
-                              expiration = 1)
+            utils::URLencode(session$clientData$url_search, reserved = T),
+            expiration = 1
+          )
           rv$apiURL <- query$apiURL
           rv$connect_mode <- "url"
           token <- isolate(cookies::get_cookie("shinybrapps_token"))
@@ -100,7 +99,7 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_de
         }
       })
 
-      observeEvent(auth$authenticated,  {
+      observeEvent(auth$authenticated, {
         if (is.null(rv$token)) {
           req(auth$authenticated)
           req(auth$token@access_token)
@@ -108,13 +107,14 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_de
           expiration_seconds <- auth$token@expires_at - as.numeric(Sys.time())
           expiration_days <- expiration_seconds / (3600 * 24)
           cookies::set_cookie("shinybrapps_token",
-                              auth$token@access_token,
-                              expiration = expiration_days)
+            auth$token@access_token,
+            expiration = expiration_days
+          )
           rv$token <- auth$token@access_token
         }
       })
 
-      observeEvent(rv$token,  {
+      observeEvent(rv$token, {
         if (!is.null(rv$query)) {
           query <- rv$query
         } else {
@@ -138,10 +138,9 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_de
         updateQueryString(url_search, mode = "replace", session = session)
         rv$parse_GET_param <- query
 
-        #delete cookie
+        # delete cookie
         cookies::remove_cookie("shinybrapps_url_search")
         rv$connect_mode <- "url"
-
       })
 
       ### BrAPI GET trials
