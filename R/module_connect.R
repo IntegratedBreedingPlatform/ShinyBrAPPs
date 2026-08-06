@@ -105,9 +105,11 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL){ # XXX dataset_4_de
           req(auth$authenticated)
           req(auth$token@access_token)
           showNotification("Connected successfully", type = "message", duration = notification_duration)
+          expiration_seconds <- auth$token@expires_at - as.numeric(Sys.time())
+          expiration_days <- expiration_seconds / (3600 * 24)
           cookies::set_cookie("shinybrapps_token",
                               auth$token@access_token,
-                              expiration = 1)
+                              expiration = expiration_days)
           rv$token <- auth$token@access_token
         }
       })
