@@ -31,30 +31,30 @@ select_from_layout <- function(d, input_click = NULL, input_brush = NULL){
 
 
 #' @param con brapi_connection
-#' @param studyDbId 
-#' @param env_number 
-#' @param loc_name 
-#' @param loc_name_abbrev 
-#' @param stu_name_app 
-#' @param stu_name_abbrev_app 
+#' @param studyDbId
+#' @param env_number
+#' @param loc_name
+#' @param loc_name_abbrev
+#' @param stu_name_app
+#' @param stu_name_abbrev_app
 #' @param obs_unit_level can be a vector, e.g. c('plot', 'rep')
 #'
 #' @export
-get_env_data <- function(con = NULL, 
-                         studyDbId = NULL, 
-                         env_number = NULL, 
-                         loc_name = NULL, 
-                         loc_name_abbrev = NULL, 
-                         stu_name_app = NULL, 
-                         stu_name_abbrev_app = NULL, 
+get_env_data <- function(con = NULL,
+                         studyDbId = NULL,
+                         env_number = NULL,
+                         loc_name = NULL,
+                         loc_name_abbrev = NULL,
+                         stu_name_app = NULL,
+                         stu_name_abbrev_app = NULL,
                          obs_unit_level = NULL){
-  
+
   # brapir_con <- brapir::brapi_connect(
-  #   secure = con$secure, 
-  #   db = con$db, 
-  #   port = con$port, 
-  #   apipath = con$apipath, 
-  #   multicrop = con$multicrop, 
+  #   secure = con$secure,
+  #   db = con$db,
+  #   port = con$port,
+  #   apipath = con$apipath,
+  #   multicrop = con$multicrop,
   #   commoncropname = con$commoncropname,
   #   token = con$token)
 
@@ -62,7 +62,7 @@ get_env_data <- function(con = NULL,
   try({
     if (is.null(obs_unit_level)) {
       res <- brapir::phenotyping_observationunits_post_search(
-        con = con, 
+        con = con,
         studyDbIds = studyDbId,
         includeObservations = T
       )
@@ -70,7 +70,7 @@ get_env_data <- function(con = NULL,
     } else {
       obs_levels <- data.frame(levelName = obs_unit_level)
       res <- brapir::phenotyping_observationunits_post_search(
-        con = con, 
+        con = con,
         studyDbIds = studyDbId,
         observationLevels = obs_levels,
         includeObservations = T
@@ -89,7 +89,7 @@ get_env_data <- function(con = NULL,
         } else {
           return(NULL)
         }
-        
+
         page = 0
         while (res$metadata$pagination$totalCount > (res$metadata$pagination$currentPage + 1) * res$metadata$pagination$pageSize) {
           page <- page + 1
@@ -106,7 +106,7 @@ get_env_data <- function(con = NULL,
       study_obs <- NULL
       return(study_obs)
     } else {
-      
+
       #to manage the case when we get means and plotS
       if ("observationUnitPosition.observationLevelRelationships.levelCode" %in% names(study_obs)) {
         study_obs[, oLR.levelCode := `observationUnitPosition.observationLevelRelationships.levelCode`]
@@ -118,7 +118,7 @@ get_env_data <- function(con = NULL,
       } else {
         study_obs[, oLR.levelName := NA]
       }
-      
+
       if ("observationUnitPosition.observationLevel.levelName" %in% names(study_obs)) {
         study_obs[, observationLevel := `observationUnitPosition.observationLevel.levelName`]
       } else {
@@ -133,34 +133,34 @@ get_env_data <- function(con = NULL,
       study_obs <- study_obs[, .(
         observationUnitDbId,
         observationUnitName,
-        germplasmDbId, 
-        germplasmName, 
-        studyDbId, 
-        studyName, 
-        programDbId, 
-        programName, 
-        locationDbId, 
-        locationName, 
-        trialDbId, 
+        germplasmDbId,
+        germplasmName,
+        studyDbId,
+        studyName,
+        programDbId,
+        programName,
+        locationDbId,
+        locationName,
+        trialDbId,
         trialName,
         observationDbId = `observations.observationDbId`,
-        observationLevel, 
-        observationLevelCode, 
+        observationLevel,
+        observationLevelCode,
         entryType = `observationUnitPosition.entryType`,
         entryNumber = `additionalInfo.ENTRY_NO`,
         oLR.levelCode,
         oLR.levelName,
         positionCoordinateX = `observationUnitPosition.positionCoordinateX`,
         positionCoordinateY = `observationUnitPosition.positionCoordinateY`,
-        observationTimeStamp = `observations.observationTimeStamp`, 
-        observationVariableDbId = `observations.observationVariableDbId`, 
-        observationVariableName = `observations.observationVariableName`, 
+        observationTimeStamp = `observations.observationTimeStamp`,
+        observationVariableDbId = `observations.observationVariableDbId`,
+        observationVariableName = `observations.observationVariableName`,
         observationValue = `observations.value`
       )]
-      
+
       # remove NA or "" observations
       study_obs <- study_obs[!is.na(observationValue) & observationValue != "",]
-      
+
       #study_obs <- study_obs[, .(plotNumber = levelCode[levelName == "plot"],
       #                           replicate = levelCode[levelName == "rep"],
       #                           blockNumber = levelCode[levelName == "block"]),
@@ -178,9 +178,9 @@ get_env_data <- function(con = NULL,
                        "block"),
                  new=c("plotNumber",
                        "replicate",
-                       "blockNumber"))        
+                       "blockNumber"))
       }
-      
+
       study_obs[,study_name_BMS := paste0(
         env_number, "-",
         loc_name
@@ -193,7 +193,7 @@ get_env_data <- function(con = NULL,
       return(unique(study_obs))
     }
   })
-  
+
 }
 
 #' @export
@@ -274,7 +274,7 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbId= NULL){
   setDT(loc_names)
   req(loc_names)
   maxchar <- 9
-  
+
   loc_names[,location_name_abbrev := lapply(abbreviation, function(x){
     if(is.na(x)){
       if(nchar(locationName)>maxchar){
@@ -343,15 +343,15 @@ groupModal <- function(rv, parent_session, modal_title, group_description, group
       tags$label(paste(rv$selection[,N]," selected germplasms")),
       tags$p(rv$selection[,germplasmNames_label]),
       textInput(
-        ns("modal_create_group_text_input_label"), 
-        label = tags$label("Group Name", class = "required"), 
-        value = paste(group_prefix, rv$selection[,group_id]), 
+        ns("modal_create_group_text_input_label"),
+        label = tags$label("Group Name", class = "required"),
+        value = paste(group_prefix, rv$selection[,group_id]),
         placeholder = "Group Label"
       ),
       textAreaInput(
-        ns("modal_create_group_text_input_descr"), 
-        label = tags$label("Group Description", class = "required"), 
-        placeholder = "Group Description", 
+        ns("modal_create_group_text_input_descr"),
+        label = tags$label("Group Description", class = "required"),
+        placeholder = "Group Description",
         resize = "vertical",
         value = group_description
       )
@@ -377,9 +377,9 @@ renameGroupModal <- function(rv, parent_session) {
     tagList(
       textInput(ns("modal_rename_group_text_input_label"), label = "Group Name", value = selected_group$group_name, placeholder = "Group Label"),
       textAreaInput(
-        ns("modal_rename_group_text_input_descr"), 
-        label = "Group Description", 
-        placeholder = "Group Description", 
+        ns("modal_rename_group_text_input_descr"),
+        label = "Group Description",
+        placeholder = "Group Description",
         resize = "vertical",
         value = selected_group$group_desc
       )
@@ -397,7 +397,7 @@ whoami_bmsapi <- function(con){
   if (con$secure) {
     protocol <- "https://"
   } else {
-    protocol <- "http://" 
+    protocol <- "http://"
   }
   server_url <- paste0(protocol, con$db, ":", con$port, "/", con$apipath)
   callurl <- paste0(server_url, "/users/filter?cropName=",con$commoncropname,"&programUUID=",aprogr)
@@ -524,7 +524,7 @@ generate_ui_with_grid <- function(num_rows, num_cols, choices, ns=ns, control_la
   for (i in 1:num_rows) {
     # Créer une liste pour stocker les colonnes de la ligne actuelle
     columns_list <- list()
-    
+
     for (j in 1:num_cols) {
       num <- num + 1
       # Ajouter une colonne à la liste avec un selectInput
@@ -535,11 +535,11 @@ generate_ui_with_grid <- function(num_rows, num_cols, choices, ns=ns, control_la
                     selected = choices[num])
       )
     }
-    
+
     # Ajouter la ligne à la liste des lignes
     rows_list[[i]] <- fluidRow(columns_list)
   }
-  
+
   # Retourner un div contenant toutes les lignes
   return(div(rows_list))
 }
@@ -548,9 +548,9 @@ generate_ui_with_grid <- function(num_rows, num_cols, choices, ns=ns, control_la
 #' @export
 get_BLUES_methodsDbIds <- function(con, programDbId) {
   methodNames = list(
-    "BLUEs" = "STABrAPP BLUES", 
-    "BLUPs" = "STABrAPP BLUPS", 
-    "seBLUEs" = "STABrAPP SEBLUES", 
+    "BLUEs" = "STABrAPP BLUES",
+    "BLUPs" = "STABrAPP BLUPS",
+    "seBLUEs" = "STABrAPP SEBLUES",
     "seBLUPs" = "STABrAPP SEBLUPS"
   )
   if (con$secure) {
@@ -567,7 +567,7 @@ get_BLUES_methodsDbIds <- function(con, programDbId) {
                       "accept"= "*/*"
                     )
   )
-  
+
   cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
   res <- jsonlite::fromJSON(cont)
   methodIds <- list()
@@ -576,7 +576,7 @@ get_BLUES_methodsDbIds <- function(con, programDbId) {
     if (nrow(res[res$name == methodNames$BLUPs, ]) > 0) { methodIds["BLUPs"] =  res[res$name == methodNames$BLUPs, "id"]}
     if (nrow(res[res$name == methodNames$seBLUEs, ]) > 0) { methodIds["seBLUEs"] =  res[res$name == methodNames$seBLUEs, "id"]}
     if (nrow(res[res$name == methodNames$seBLUPs, ]) > 0) { methodIds["seBLUPs"] =  res[res$name == methodNames$seBLUPs, "id"]}
-    
+
     if (length(methodIds) < 4) {
       #missing at least one method
       missing_methods = c()
@@ -592,7 +592,7 @@ get_BLUES_methodsDbIds <- function(con, programDbId) {
   } else {
     stop("Couldn't retrieve BLUES/BLUPS methods, you won't be able to push BLUEs/BLUPs")
   }
-  
+
   return(methodIds)
 }
 
@@ -622,7 +622,7 @@ colgeno <- function(genofac, shortpal=getOption("statgen.genoColors"), longpal=t
 }
 
 #' Save rv in .rds file
-#' @param rv 
+#' @param rv
 #'
 #' @importFrom later later
 #' @export
@@ -658,7 +658,7 @@ key <- Sys.getenv("SHINYOAUTH_STATE_KEY")
 #state_key <- shinyOAuth:::random_urlsafe(128)
 
 #' @export
-build_oauth_client <- function(apiURL) {
+build_oauth_client <- function(apiURL, redirect_uri) {
   url <- sub("/bmsapi$", "", apiURL)
   provider <- shinyOAuth::OAuthProvider(
     name = "bms",
@@ -671,7 +671,7 @@ build_oauth_client <- function(apiURL) {
   client <- shinyOAuth::oauth_client(
     provider      = provider,
     client_id     = Sys.getenv("OAUTH_CLIENT_ID"),
-    redirect_uri  = Sys.getenv("OAUTH_CLIENT_REDIRECT_URI"),
+    redirect_uri  = redirect_uri,
     state_store   = shared_state_store,
     state_key = key
   )
@@ -697,7 +697,7 @@ update_selectors_with_groups <- function(rv, new_group, initial_name = NULL) {
       use.names = T
     )
   }
-  
+
   rv$new_group_created <- T #to avoid environments selection reset
   rv$extradata <- data_plot
 }
@@ -725,7 +725,7 @@ summary.stats <- function(x){
     "Skewness" = e1071::skewness(observationValue, na.rm = TRUE),
     "Kurtosis" = e1071::kurtosis(observationValue, na.rm = TRUE)
   ), .(study_name_app, observationVariableName)]
-  
+
   if (any(x$scale.dataType == "Date")){
     sumtable_notexcl_dat <- x[scale.dataType == "Date", .(
       "studyDbId"=studyDbId[1],
@@ -747,13 +747,13 @@ summary.stats <- function(x){
       "Skewness" = e1071::skewness(observationValue, na.rm = TRUE),
       "Kurtosis" = e1071::kurtosis(observationValue, na.rm = TRUE)
     ), .(study_name_app, observationVariableName)]
-    
-    sumtable_notexcl <- rbind(sumtable_notexcl_nodat,sumtable_notexcl_dat)        
+
+    sumtable_notexcl <- rbind(sumtable_notexcl_nodat,sumtable_notexcl_dat)
   } else {
     sumtable_notexcl <- sumtable_notexcl_nodat
   }
-  
-  
+
+
   sumtable_notexcl[, "Standard error of mean" := `Standard deviation` /
                      sqrt(`No. of observations`)]
   sumtable_notexcl[, "Standard error of variance" := `Variance` /
