@@ -57,16 +57,24 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
       auth <- NULL
 
       app_url <- isolate({
+        port <- session$clientData$url_port
+
+        if (is.null(port) || !nzchar(port)) {
+          port <- NA
+        }
+
         url <- data.frame(
           scheme = sub(":$", "", session$clientData$url_protocol),
           domain = session$clientData$url_hostname,
-          port = session$clientData$url_port,
-          path = sub("/$", "", session$clientData$url_pathname),
+          port = port,
+          path = gsub("^/|/$", "", session$clientData$url_pathname),
           parameter = NA,
           fragment = NA
         )
         urltools::url_compose(url)
       })
+      # add a trailing / if missing
+      app_url <- paste0(app_url, ifelse(grepl("/$", app_url), "", "/"))
 
       if (!is.null(url_search)) {
         query <- parseQueryString(url_search)
