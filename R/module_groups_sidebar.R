@@ -391,7 +391,7 @@ mod_groups_sidebar_server <- function(id, rv, parent_session){
             env_name <- envs[studyDbId == input$mark_as_sel_envs[i], study_name_app]
             incProgress(1/length(input$mark_as_sel_envs), detail = env_name)
             as_sel_data <- rv$data[
-              observationLevel == "PLOT" & studyDbId %in% input$mark_as_sel_envs[i] &
+              observationLevel == "plot" & studyDbId %in% input$mark_as_sel_envs[i] &
                 germplasmDbId %in% rv$groups[group_id == input$group_sel_input, germplasmDbIds][[1]]
             ]
             if(input$mark_as_sel_all_plots_radio=="rep1" & as_sel_data[replicate=="1",.N]>0){

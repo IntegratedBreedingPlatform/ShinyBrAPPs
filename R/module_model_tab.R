@@ -1287,10 +1287,10 @@ mod_model_server <- function(id, rv){
       
       confirmationModal <- function(obs_count, existing_obs_count) {
         if (existing_obs_count == 0) {
-          message <- paste0("You are going to push to BMS ", obs_count, " new \"MEANS\" observations.")
+          message <- paste0("You are going to push to BMS ", obs_count, " new \"means\" observations.")
           warning_message <- ""
         } else {
-          message <- paste0("You are going to push to BMS ", obs_count, " \"MEANS\" observations.")
+          message <- paste0("You are going to push to BMS ", obs_count, " \"means\" observations.")
           warning_message <- paste0("Some BLUEs/BLUPs have already been pushed to BMS (", existing_obs_count," data). They will be erased by new values.")
         }
         
@@ -1333,7 +1333,7 @@ mod_model_server <- function(id, rv){
             
             env <- unique(bluesToPush[, .(environment, studyDbId)])
             resp_post_search_obsunit <- handle_api_response(
-              brapir::phenotyping_observationunits_post_search(con = rv$con, observationLevels = data.frame(levelName = c("MEANS")), studyDbIds = env$studyDbId)
+              brapir::phenotyping_observationunits_post_search(con = rv$con, observationLevels = data.frame(levelName = c("means")), studyDbIds = env$studyDbId)
             )
             resp_get_search_obsunit <- handle_api_response(
               brapir::phenotyping_observationunits_get_search_searchResultsDbId(con = rv$con, searchResultsDbId = resp_post_search_obsunit$data$searchResultsDbId)
@@ -1383,7 +1383,7 @@ mod_model_server <- function(id, rv){
                   additionalInfo = list(ENTRY_NO = jsonlite::unbox(a["entryNumber"])),
                   observationUnitPosition = list(
                     entryType =jsonlite::unbox(a["entryType"]), 
-                    observationLevel = list(levelName = jsonlite::unbox("MEANS"))),
+                    observationLevel = list(levelName = jsonlite::unbox("means"))),
                   germplasmDbId = jsonlite::unbox(as.character(a["germplasmDbId"])),
                   programDbId = jsonlite::unbox(as.character(a["programDbId"])),
                   studyDbId = jsonlite::unbox(as.character(a["studyDbId"])),
@@ -1602,7 +1602,7 @@ mod_model_server <- function(id, rv){
                     methodDbId = unname(missing_methods),
                     methodName = names(missing_methods)
                   )[, observationVariableName := paste0(origin_variables$originVariableName[i], "_", methodName)
-                  ][, contextOfUse := "MEANS"
+                  ][, contextOfUse := "means"
                   ][, scaleDbId := scaleDbId
                   ][, traitDbId := traitDbId
                   ][, originVariableName := originVariableName
@@ -1628,7 +1628,7 @@ mod_model_server <- function(id, rv){
             body <- apply(missing_variables,1,function(a){
               list(
                 additionalInfo = list(ParentID = jsonlite::unbox(a["ParentID"])),
-                contextOfUse = c("MEANS"),
+                contextOfUse = c("means"),
                 method = list(methodDbId = jsonlite::unbox(a["methodDbId"])),
                 observationVariableName = jsonlite::unbox(a["observationVariableName"]),
                 scale = list(scaleDbId = jsonlite::unbox(a["scaleDbId"])),

@@ -277,11 +277,11 @@ mod_samplr_server <- function(id, rv){
               srid2 <- handle_api_response(brapir::germplasm_germplasm_post_search(rv$con, germplasmDbIds = samples$germplasmDbId))$data$searchResultsDbId
               gp <- setDT(handle_api_response(brapir::germplasm_germplasm_get_search_searchResultsDbId(rv$con, searchResultsDbId = srid2))$data)
               gp <- gp[,.(germplasmDbId, germplasmName, pedigree)]
-              bc1 <- os[observationUnitPosition.observationLevelRelationships.levelName=="REP",.(observationUnitDbId,REP=observationUnitPosition.observationLevelRelationships.levelCode)][samples, on=.(observationUnitDbId)]
-              bc2 <- os[observationUnitPosition.observationLevelRelationships.levelName=="PLOT",.(observationUnitDbId,PLOT=observationUnitPosition.observationLevelRelationships.levelCode, trialName)][bc1, on=.(observationUnitDbId)]
+              bc1 <- os[observationUnitPosition.observationLevelRelationships.levelName=="rep",.(observationUnitDbId,rep=observationUnitPosition.observationLevelRelationships.levelCode)][samples, on=.(observationUnitDbId)]
+              bc2 <- os[observationUnitPosition.observationLevelRelationships.levelName=="plot",.(observationUnitDbId,plot=observationUnitPosition.observationLevelRelationships.levelCode, trialName)][bc1, on=.(observationUnitDbId)]
               bc3 <- gp[bc2, on=.(germplasmDbId)]
               bc <- rv_samp$st[,.(studyDbId,studyName, locationName)][bc3, on=.(studyDbId)]
-              #bc <- os[observationUnitPosition.observationLevelRelationships.levelName=="REP",.(observationUnitDbId,REP=observationUnitPosition.observationLevelRelationships.levelCode)][os[observationUnitPosition.observationLevelRelationships.levelName=="PLOT"][samples, on=.(observationUnitDbId)], on=.(observationUnitDbId)]
+              #bc <- os[observationUnitPosition.observationLevelRelationships.levelName=="rep",.(observationUnitDbId,rep=observationUnitPosition.observationLevelRelationships.levelCode)][os[observationUnitPosition.observationLevelRelationships.levelName=="plot"][samples, on=.(observationUnitDbId)], on=.(observationUnitDbId)]
               colorder <- c("sampleDbId",
                             "sampleName",
                             "observationUnitDbId",
@@ -291,8 +291,8 @@ mod_samplr_server <- function(id, rv){
                             "studyDbId",
                             "studyName",
                             "locationName",
-                            "PLOT",
-                            "REP",
+                            "plot",
+                            "rep",
                             "germplasmDbId",
                             "germplasmName",
                             "pedigree",
@@ -328,8 +328,8 @@ mod_samplr_server <- function(id, rv){
           os <- os[,.(observationUnitDbId,studyName,locationName,germplasmName,observationUnitPosition.observationLevelRelationships.levelName,observationUnitPosition.observationLevelRelationships.levelCode)]
           gp <- setDT(brapir::germplasm_germplasm_get_search_searchResultsDbId(rv$con, searchResultsDbId = brapir::germplasm_germplasm_post_search(rv$con, germplasmDbIds = unique(samples$germplasmDbId))$data$searchResultsDbId)$data)
           gp <- unique(gp[,.(germplasmDbId, germplasmName, pedigree)])
-          bc1 <- os[observationUnitPosition.observationLevelRelationships.levelName=="REP",.(observationUnitDbId,REP=observationUnitPosition.observationLevelRelationships.levelCode)][samples, on=.(observationUnitDbId)]
-          bc2 <- os[observationUnitPosition.observationLevelRelationships.levelName=="PLOT",.(observationUnitDbId,PLOT=observationUnitPosition.observationLevelRelationships.levelCode)][bc1, on=.(observationUnitDbId)]
+          bc1 <- os[observationUnitPosition.observationLevelRelationships.levelName=="rep",.(observationUnitDbId,rep=observationUnitPosition.observationLevelRelationships.levelCode)][samples, on=.(observationUnitDbId)]
+          bc2 <- os[observationUnitPosition.observationLevelRelationships.levelName=="plot",.(observationUnitDbId,plot=observationUnitPosition.observationLevelRelationships.levelCode)][bc1, on=.(observationUnitDbId)]
           bc3 <- gp[bc2, on=.(germplasmDbId)]
           #bc4 <- gs[,.(germplasmUUID,names)][bc3, on=.(germplasmUUID=germplasmDbId)]
           
@@ -346,7 +346,7 @@ mod_samplr_server <- function(id, rv){
           
           
           bc <- rv_samp$st[,.(studyDbId,studyName, locationName)][bc3, on=.(studyDbId)]
-          #bc <- os[observationUnitPosition.observationLevelRelationships.levelName=="REP",.(observationUnitDbId,REP=observationUnitPosition.observationLevelRelationships.levelCode)][os[observationUnitPosition.observationLevelRelationships.levelName=="PLOT"][samples, on=.(observationUnitDbId)], on=.(observationUnitDbId)]
+          #bc <- os[observationUnitPosition.observationLevelRelationships.levelName=="rep",.(observationUnitDbId,rep=observationUnitPosition.observationLevelRelationships.levelCode)][os[observationUnitPosition.observationLevelRelationships.levelName=="plot"][samples, on=.(observationUnitDbId)], on=.(observationUnitDbId)]
           colorder <- c("sampleDbId",
                         "sampleName",
                         "observationUnitDbId",
@@ -355,8 +355,8 @@ mod_samplr_server <- function(id, rv){
                         "studyDbId",
                         "studyName",
                         "locationName",
-                        "PLOT",
-                        "REP",
+                        "plot",
+                        "rep",
                         "germplasmDbId",
                         "germplasmName",
                         "names",
@@ -404,8 +404,8 @@ mod_samplr_server <- function(id, rv){
                 srid2 <- handle_api_response(brapir::germplasm_germplasm_post_search(rv$con, germplasmDbIds = unique(samples$germplasmDbId)))$data$searchResultsDbId
                 gp <- setDT(handle_api_response(brapir::germplasm_germplasm_get_search_searchResultsDbId(rv$con, searchResultsDbId = srid2))$data)
                 gp <- unique(gp[,.(germplasmDbId, germplasmName, pedigree)])
-                bc1 <- os[observationUnitPosition.observationLevelRelationships.levelName=="REP",.(observationUnitDbId,REP=observationUnitPosition.observationLevelRelationships.levelCode)][samples, on=.(observationUnitDbId)]
-                bc2 <- os[observationUnitPosition.observationLevelRelationships.levelName=="PLOT",.(observationUnitDbId,PLOT=observationUnitPosition.observationLevelRelationships.levelCode)][bc1, on=.(observationUnitDbId)]
+                bc1 <- os[observationUnitPosition.observationLevelRelationships.levelName=="rep",.(observationUnitDbId,rep=observationUnitPosition.observationLevelRelationships.levelCode)][samples, on=.(observationUnitDbId)]
+                bc2 <- os[observationUnitPosition.observationLevelRelationships.levelName=="plot",.(observationUnitDbId,plot=observationUnitPosition.observationLevelRelationships.levelCode)][bc1, on=.(observationUnitDbId)]
                 bc3 <- gp[bc2, on=.(germplasmDbId)]
                 bc4 <- gs[,.(germplasmUUID,names)][bc3, on=.(germplasmUUID=germplasmDbId)]
                 
@@ -422,7 +422,7 @@ mod_samplr_server <- function(id, rv){
                 
                 
                 bc <- rv_samp$st[,.(studyDbId,studyName, locationName)][bc4, on=.(studyDbId)]
-                #bc <- os[observationUnitPosition.observationLevelRelationships.levelName=="REP",.(observationUnitDbId,REP=observationUnitPosition.observationLevelRelationships.levelCode)][os[observationUnitPosition.observationLevelRelationships.levelName=="PLOT"][samples, on=.(observationUnitDbId)], on=.(observationUnitDbId)]
+                #bc <- os[observationUnitPosition.observationLevelRelationships.levelName=="rep",.(observationUnitDbId,rep=observationUnitPosition.observationLevelRelationships.levelCode)][os[observationUnitPosition.observationLevelRelationships.levelName=="plot"][samples, on=.(observationUnitDbId)], on=.(observationUnitDbId)]
                 colorder <- c("sampleDbId",
                               "sampleName",
                               "observationUnitDbId",
@@ -431,8 +431,8 @@ mod_samplr_server <- function(id, rv){
                               "studyDbId",
                               "studyName",
                               "locationName",
-                              "PLOT",
-                              "REP",
+                              "plot",
+                              "rep",
                               "germplasmDbId",
                               "germplasmName",
                               "names",
