@@ -54,5 +54,5 @@ notification_duration = 10 # in seconds
 hidden_col_names <- c("study_name_BMS", "study_name_app", "study_name_abbrev_app", "location_abbrev", "location_name")
 
 can_filter_obs_unit_level_in_url <- F
-allowed_obs_unit_levels <- c("PLOT")
+allowed_obs_unit_levels <- c("plot")
 
