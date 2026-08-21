@@ -37,7 +37,7 @@ select_from_layout <- function(d, input_click = NULL, input_brush = NULL){
 #' @param loc_name_abbrev 
 #' @param stu_name_app 
 #' @param stu_name_abbrev_app 
-#' @param obs_unit_level can be a vector, e.g. c('PLOT', 'REP')
+#' @param obs_unit_level can be a vector, e.g. c('plot', 'rep')
 #'
 #' @export
 get_env_data <- function(con = NULL, 
@@ -107,7 +107,7 @@ get_env_data <- function(con = NULL,
       return(study_obs)
     } else {
       
-      #to manage the case when we get MEANS and PLOTS
+      #to manage the case when we get means and plotS
       if ("observationUnitPosition.observationLevelRelationships.levelCode" %in% names(study_obs)) {
         study_obs[, oLR.levelCode := `observationUnitPosition.observationLevelRelationships.levelCode`]
       } else {
@@ -161,21 +161,21 @@ get_env_data <- function(con = NULL,
       # remove NA or "" observations
       study_obs <- study_obs[!is.na(observationValue) & observationValue != "",]
       
-      #study_obs <- study_obs[, .(plotNumber = levelCode[levelName == "PLOT"],
-      #                           replicate = levelCode[levelName == "REP"],
-      #                           blockNumber = levelCode[levelName == "BLOCK"]),
+      #study_obs <- study_obs[, .(plotNumber = levelCode[levelName == "plot"],
+      #                           replicate = levelCode[levelName == "rep"],
+      #                           blockNumber = levelCode[levelName == "block"]),
       #                       by = grouping_cols]
-      if (any(study_obs$observationLevel=="PLOT")){
+      if (any(study_obs$observationLevel=="plot")){
         grouping_cols <- setdiff(names(study_obs), c("oLR.levelCode", "oLR.levelName"))
-        study_obs<-dcast(unique(study_obs[observationLevel=="PLOT",.(observationUnitDbId, oLR.levelCode, oLR.levelName)]),observationUnitDbId~oLR.levelName, value.var = "oLR.levelCode")[unique(study_obs[,.SD, .SDcols=grouping_cols]),on=.(observationUnitDbId)]
+        study_obs<-dcast(unique(study_obs[observationLevel=="plot",.(observationUnitDbId, oLR.levelCode, oLR.levelName)]),observationUnitDbId~oLR.levelName, value.var = "oLR.levelCode")[unique(study_obs[,.SD, .SDcols=grouping_cols]),on=.(observationUnitDbId)]
         #browser()
-        for (f in setdiff(c("PLOT", "REP", "BLOCK"), names(study_obs))){
+        for (f in setdiff(c("plot", "rep", "block"), names(study_obs))){
           study_obs[[f]] <- NA
         }
         setnames(study_obs,
-                 old=c("PLOT",
-                       "REP",
-                       "BLOCK"),
+                 old=c("plot",
+                       "rep",
+                       "block"),
                  new=c("plotNumber",
                        "replicate",
                        "blockNumber"))        

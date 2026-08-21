@@ -198,12 +198,12 @@ mod_trialdataxplor_server <- function(id, rv){
         if (nrow(rv$data)==0){
           showModal(modalDialog(paste0("No data in the selected studies"), fade = FALSE))
         } else {
-          if(rv$data[observationLevel!="PLOT", .N]>0){
+          if(rv$data[observationLevel!="plot", .N]>0){
             showNotification(
               paste0("Taking away the level(s) of observation: ",
-                     rv$data[observationLevel!="PLOT", paste(unique(observationLevel), collapse = ", ")],
-                     "\n(",rv$data[observationLevel!="PLOT", .N], " values)",
-                     "\n\n(Only the PLOT observation level is considered for STA)"
+                     rv$data[observationLevel!="plot", paste(unique(observationLevel), collapse = ", ")],
+                     "\n(",rv$data[observationLevel!="plot", .N], " values)",
+                     "\n\n(Only the plot observation level is considered for STA)"
               ), type = "default", duration = notification_duration)
           }
           
@@ -306,8 +306,8 @@ mod_trialdataxplor_server <- function(id, rv){
                                            size = 15,
                                            `live-search` = TRUE))
           
-          #ct <- dcast(isolate(rv_tdx$data_dq)[observationLevel=="PLOT", .N, .(study=paste0(studyDbId,"-",locationName),Variable=observationVariableName)],
-          ct <- dcast(isolate(rv_tdx$data_dq)[observationLevel=="PLOT", .N, .(study=label_study,Variable=observationVariableName)],
+          #ct <- dcast(isolate(rv_tdx$data_dq)[observationLevel=="plot", .N, .(study=paste0(studyDbId,"-",locationName),Variable=observationVariableName)],
+          ct <- dcast(isolate(rv_tdx$data_dq)[observationLevel=="plot", .N, .(study=label_study,Variable=observationVariableName)],
                       Variable~study, fill = 0)
           rv_tdx$counts <- ct
           vnd <- melt(ct, variable.name = "StudyLocation")[value==0,.(StudyLocation, Variable)]
