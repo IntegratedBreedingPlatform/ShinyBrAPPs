@@ -56,10 +56,22 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
       url_search <- if (!is.null(encoded)) utils::URLdecode(encoded) else NULL
       auth <- NULL
 
+      app_url <- isolate({
+        url <- data.frame(
+          scheme = sub(":$", "", session$clientData$url_protocol),
+          domain = session$clientData$url_hostname,
+          port = session$clientData$url_port,
+          path = sub("/$", "", session$clientData$url_pathname),
+          parameter = NA,
+          fragment = NA
+        )
+        urltools::url_compose(url)
+      })
+
       if (!is.null(url_search)) {
         query <- parseQueryString(url_search)
         apiURL <- query$apiURL
-        client <- build_oauth_client(apiURL)
+        client <- build_oauth_client(apiURL, redirect_uri = app_url)
         auth <- shinyOAuth::oauth_module_server("auth", client, auto_redirect = T)
       }
 
@@ -85,7 +97,7 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
       })
 
       observeEvent(rv$apiURL, {
-        client <- build_oauth_client(rv$apiURL)
+        client <- build_oauth_client(rv$apiURL, redirect_uri = app_url)
         auth <- shinyOAuth::oauth_module_server("auth", client, auto_redirect = T)
       })
 
