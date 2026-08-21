@@ -52,8 +52,6 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
       rv$connect_mode <- NULL
       rv$show_study_selection <- FALSE
 
-      # TODO stop storing token in a cookie (for dev purposes meanwhil)
-      token <- isolate(cookies::get_cookie("shinybrapps_token"))
       encoded <- isolate(cookies::get_cookie("shinybrapps_url_search"))
       url_search <- if (!is.null(encoded)) utils::URLdecode(encoded) else NULL
       auth <- NULL
@@ -61,10 +59,8 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
       if (!is.null(url_search)) {
         query <- parseQueryString(url_search)
         apiURL <- query$apiURL
-        if (is.null(token)) {
-          client <- build_oauth_client(apiURL)
-          auth <- shinyOAuth::oauth_module_server("auth", client, auto_redirect = T)
-        }
+        client <- build_oauth_client(apiURL)
+        auth <- shinyOAuth::oauth_module_server("auth", client, auto_redirect = T)
       }
 
       observeEvent(session$clientData$url_search, {
@@ -76,10 +72,6 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
           )
           rv$apiURL <- query$apiURL
           rv$connect_mode <- "url"
-          token <- isolate(cookies::get_cookie("shinybrapps_token"))
-          if (!is.null(token)) {
-            rv$token <- token
-          }
           rv$query <- query
         } else if (!is.null(cookies::get_cookie("shinybrapps_url_search"))) {
           ### URL mode after oauth redirection
@@ -93,10 +85,8 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
       })
 
       observeEvent(rv$apiURL, {
-        if (is.null(token)) {
-          client <- build_oauth_client(rv$apiURL)
-          auth <- shinyOAuth::oauth_module_server("auth", client, auto_redirect = T)
-        }
+        client <- build_oauth_client(rv$apiURL)
+        auth <- shinyOAuth::oauth_module_server("auth", client, auto_redirect = T)
       })
 
       observeEvent(auth$authenticated, {
@@ -106,10 +96,6 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
           showNotification("Connected successfully", type = "message", duration = notification_duration)
           expiration_seconds <- auth$token@expires_at - as.numeric(Sys.time())
           expiration_days <- expiration_seconds / (3600 * 24)
-          cookies::set_cookie("shinybrapps_token",
-            auth$token@access_token,
-            expiration = expiration_days
-          )
           rv$token <- auth$token@access_token
         }
       })
