@@ -670,8 +670,8 @@ build_oauth_client <- function(apiURL) {
   )
   client <- shinyOAuth::oauth_client(
     provider      = provider,
-    client_id     = "brapir",
-    redirect_uri  = "http://localhost:4321",
+    client_id     = Sys.getenv("OAUTH_CLIENT_ID"),
+    redirect_uri  = Sys.getenv("OAUTH_CLIENT_REDIRECT_URI"),
     state_store   = shared_state_store,
     state_key = key
   )
