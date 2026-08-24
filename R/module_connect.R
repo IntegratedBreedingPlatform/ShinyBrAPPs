@@ -79,8 +79,10 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
       if (!is.null(url_search)) {
         query <- parseQueryString(url_search)
         apiURL <- query$apiURL
-        client <- build_oauth_client(apiURL, redirect_uri = app_url)
-        auth <- shinyOAuth::oauth_module_server("auth", client, auto_redirect = T)
+        if (is.null(query$token)) { # for backward compatibility
+          client <- build_oauth_client(apiURL, redirect_uri = app_url)
+          auth <- shinyOAuth::oauth_module_server("auth", client, auto_redirect = T)
+        }
       }
 
       observeEvent(session$clientData$url_search, {
@@ -93,6 +95,10 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
           rv$apiURL <- query$apiURL
           rv$connect_mode <- "url"
           rv$query <- query
+          if (!is.null(query$token)) { # for backward compatibility
+            rv$token <- query$token
+            allowed_obs_unit_levels <- stringr::str_to_upper(allowed_obs_unit_levels)
+          }
         } else if (!is.null(cookies::get_cookie("shinybrapps_url_search"))) {
           ### URL mode after oauth redirection
           rv$connect_mode <- "url"
@@ -105,6 +111,7 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
       })
 
       observeEvent(rv$apiURL, {
+        req(is.null(rv$query$token))
         client <- build_oauth_client(rv$apiURL, redirect_uri = app_url)
         auth <- shinyOAuth::oauth_module_server("auth", client, auto_redirect = T)
       })

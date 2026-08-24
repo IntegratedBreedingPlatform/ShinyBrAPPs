@@ -102,13 +102,13 @@ get_env_data <- function(con = NULL,
       study_obs[, oLR.levelCode := NA]
     }
     if ("observationUnitPosition.observationLevelRelationships.levelName" %in% names(study_obs)) {
-      study_obs[, oLR.levelName := `observationUnitPosition.observationLevelRelationships.levelName`]
+      study_obs[, oLR.levelName := stringr::str_to_lower(`observationUnitPosition.observationLevelRelationships.levelName`)]
     } else {
       study_obs[, oLR.levelName := NA]
     }
     
     if ("observationUnitPosition.observationLevel.levelName" %in% names(study_obs)) {
-      study_obs[, observationLevel := `observationUnitPosition.observationLevel.levelName`]
+      study_obs[, observationLevel := stringr::str_to_lower(`observationUnitPosition.observationLevel.levelName`)]
     } else {
       study_obs[, observationLevel := NA]
     }
