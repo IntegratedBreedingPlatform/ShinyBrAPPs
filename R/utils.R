@@ -88,7 +88,7 @@ get_env_data <- function(con = NULL,
     observations <- tidyr::unnest(res$data, cols = "observationUnitPosition.observationLevelRelationships", names_sep = ".", keep_empty = T)
     observations <- tidyr::unnest(observations, cols = "observations", names_sep = ".", keep_empty = T)
     study_obs <- rbindlist(list(study_obs, as.data.table(observations)), use.names = T,fill = T)
-  }  
+  }
 
   if (!"observations.observationDbId" %in% colnames(study_obs)) {
     study_obs <- NULL
@@ -644,6 +644,15 @@ save_user_data <- function(rv) {
   }
 }
 
+#' @export
+delete_user_data_file <- function(rv) {
+  if (!is.null(rv$hash)) {
+    filename <- paste0(rv$hash, ".rds")
+    if (file.exists(filename)) {
+      try(file.remove(filename))
+    }
+  }
+}
 
 shared_state_store <- cachem::cache_mem(max_age = 300)
 key <- Sys.getenv("SHINYOAUTH_STATE_KEY")

@@ -19,6 +19,16 @@ mod_banner_server <- function(id, rv, appname){
                 height:34px;
                 margin-right:10px"),paste(appname," - Study: ", if(length(rv$study_metadata[,unique(trialName)])>3) paste(c(rv$study_metadata[,unique(trialName)][1:3],paste0("and ",length(rv$study_metadata[,unique(trialName)])-3," more..")), collapse = ", ") else paste(rv$study_metadata[,unique(trialName)], collapse = ", ")),
           style="font: 500 20px/32px Roboto,Helvetica Neue,sans-serif;display: flex;justify-content: center;position: relative; z-index: 30;",
+          div(
+            style = "margin-left: 20px; font-size: 14px; font-weight: 400;",
+            textOutput(ns("load_data_time"), inline = TRUE)
+          ),
+          actionButton(ns("refresh"),
+                       "Refresh",
+                       icon = icon("refresh"),
+                       class = "btn btn-outline-secondary btn-sm btn-light",
+                       style = "margin-left: 10px;"
+          ),
           div(style="margin-left: auto;",
               dropdown(
                 #style = "unite", 
@@ -94,7 +104,16 @@ mod_banner_server <- function(id, rv, appname){
           }
         }
       )
-      
+
+      observeEvent(input$refresh, {
+        rv$refresh <- TRUE
+      })
+
+      output$load_data_time <- renderText({
+        req(rv$last_loaded_data_time)
+        paste0("data were loaded at: ", rv$last_loaded_data_time)
+      })
+
     }
   )
 }

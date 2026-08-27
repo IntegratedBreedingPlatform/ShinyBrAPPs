@@ -52,6 +52,9 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
       rv$connect_mode <- NULL
       rv$show_study_selection <- FALSE
 
+      #shinybrapps_token cookie is used to avoid the authentication step and the data reloading
+      token <- isolate(cookies::get_cookie("shinybrapps_token"))
+      #shinybrapps_url_search cookie is used to keep the search params in url
       encoded <- isolate(cookies::get_cookie("shinybrapps_url_search"))
       url_search <- if (!is.null(encoded)) utils::URLdecode(encoded) else NULL
       auth <- NULL
@@ -86,6 +89,10 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
       }
 
       observeEvent(session$clientData$url_search, {
+        token <- isolate(cookies::get_cookie("shinybrapps_token"))
+        if (!is.null(token)) {
+          rv$token <- token
+        }
         query <- parseQueryString(session$clientData$url_search)
         if (!is.null(query$apiURL)) {
           cookies::set_cookie("shinybrapps_url_search",
@@ -112,8 +119,10 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
 
       observeEvent(rv$apiURL, {
         req(is.null(rv$query$token))
-        client <- build_oauth_client(rv$apiURL, redirect_uri = app_url)
-        auth <- shinyOAuth::oauth_module_server("auth", client, auto_redirect = T)
+        if (is.null(token)) {
+          client <- build_oauth_client(rv$apiURL, redirect_uri = app_url)
+          auth <- shinyOAuth::oauth_module_server("auth", client, auto_redirect = T)
+        }
       })
 
       observeEvent(auth$authenticated, {
@@ -123,6 +132,12 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
           showNotification("Connected successfully", type = "message", duration = notification_duration)
           expiration_seconds <- auth$token@expires_at - as.numeric(Sys.time())
           expiration_days <- expiration_seconds / (3600 * 24)
+          #this cookie is used to avoid the authentication step and the data reloading
+          cookies::set_cookie("shinybrapps_token",
+                              auth$token@access_token,
+                              expiration = expiration_days,
+                              secure_only = TRUE
+          )
           rv$token <- auth$token@access_token
         }
       })
@@ -177,15 +192,24 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
 
         tryCatch({
           rv$con <- brapir::brapi_connect(
-            secure = (parsed_url$brapi_protocol == "https://"), 
+            secure = (parsed_url$brapi_protocol == "https://"),
             db = parsed_url$brapi_db,
             port = parsed_url$brapi_port,
             apipath = parsed_url$brapi_apipath,
-            multicrop = TRUE, 
+            multicrop = TRUE,
             commoncropname = input$cropDb,
             token = input$token
           )
         })
+      })
+
+      observeEvent(rv$refresh, {
+        if (rv$refresh) {
+          # delete cookie
+          cookies::remove_cookie("shinybrapps_token")
+          delete_user_data_file(rv)
+          session$reload()
+        }
       })
     }
   )

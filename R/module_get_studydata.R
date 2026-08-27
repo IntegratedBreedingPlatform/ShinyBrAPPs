@@ -128,9 +128,10 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             params$token <- rv$con$token
             txt <- toJSON(params, auto_unbox = TRUE, sort_keys = TRUE)
             hash <- digest(txt, algo = "sha256")
+            rv$hash <- hash
             filename <- paste0(hash, ".rds")
-
-            if (file.exists(filename) && !is.null(rv$hash)) {
+            if (file.exists(filename)) {
+              rv$last_loaded_data_time <- format(file.info(filename)$mtime, "%H:%M:%S")
               stored_rv <- readRDS(file = filename)
               rv$con <- if (!is.null(stored_rv$con)) stored_rv$con
               rv$connect_mode <- if (!is.null(stored_rv$connect_mode)) stored_rv$connect_mode
@@ -334,7 +335,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
                   obs_unit_level =rv$obs_unit_level
                 )
                 study_metadata[studyDbId == id,loaded:=T] #show study as loaded even if there is no data
-                if (is.null(study)) { 
+                if (is.null(study)) {
                   showNotification(paste0("There is no observation data for study ", study_name_app), type = "warning", duration = notification_duration)
                 }
                 return(study)
@@ -403,8 +404,9 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             params$token <- rv$con$token
             txt <- toJSON(params, auto_unbox = TRUE, sort_keys = TRUE)
             rv$hash <- digest(txt, algo = "sha256")
-            session$sendCustomMessage("storeHash", rv$hash)          
+            #session$sendCustomMessage("storeHash", rv$hash)
             save_user_data(rv)
+            rv$last_loaded_data_time <- format(Sys.time(), "%H:%M:%S")
           }
           accordion_panel_close(id = "dataImportAcc", values = "dataImportAccPanel")
         })
