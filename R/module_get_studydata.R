@@ -131,7 +131,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             rv$hash <- hash
             filename <- paste0(hash, ".rds")
             if (file.exists(filename)) {
-              rv$last_loaded_data_time <- format(file.info(filename)$mtime, "%H:%M:%S")
+              rv$last_loaded_data_time <- file.info(filename)$mtime
               stored_rv <- readRDS(file = filename)
               rv$con <- if (!is.null(stored_rv$con)) stored_rv$con
               rv$connect_mode <- if (!is.null(stored_rv$connect_mode)) stored_rv$connect_mode
@@ -406,7 +406,7 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
             rv$hash <- digest(txt, algo = "sha256")
             #session$sendCustomMessage("storeHash", rv$hash)
             save_user_data(rv)
-            rv$last_loaded_data_time <- format(Sys.time(), "%H:%M:%S")
+            rv$last_loaded_data_time <- Sys.time()
           }
           accordion_panel_close(id = "dataImportAcc", values = "dataImportAccPanel")
         })

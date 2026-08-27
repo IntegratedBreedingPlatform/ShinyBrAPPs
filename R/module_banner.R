@@ -1,7 +1,17 @@
 #' @export
 mod_banner_ui <- function(id){
   ns <- NS(id)
+  div(
+    tags$script(
+      HTML(sprintf("
+        $(document).on('shiny:connected', function() {
+          var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          Shiny.setInputValue('%s', tz, {priority: 'event'});
+        });
+      ", ns("client_timezone")))
+    ),
     uiOutput(ns("banner"))
+  )
 }
 
 #' @export
@@ -111,7 +121,8 @@ mod_banner_server <- function(id, rv, appname){
 
       output$load_data_time <- renderText({
         req(rv$last_loaded_data_time)
-        paste0("data were loaded at: ", rv$last_loaded_data_time)
+        time <- format(rv$last_loaded_data_time, "%H:%M:%S", tz = input$client_timezone)
+        paste0("data were loaded at: ", time)
       })
 
     }
