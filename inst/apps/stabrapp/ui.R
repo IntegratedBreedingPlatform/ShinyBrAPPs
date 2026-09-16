@@ -3,6 +3,7 @@ source("config.R")
 ui <- cookies::add_cookie_handlers(fluidPage(
   #theme = bslib::bs_theme(version = 5),
   tags$head(
+    tags$title("STABrAPP"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/app.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/custom_styles.css"),
     tags$script(
