@@ -1291,12 +1291,15 @@ mod_model_server <- function(id, rv){
 
       pushSumStats <- function() {
         tryCatch({
-          selected_rows <- input$metrics_A_table_rows_selected
+          if (!is.null(input$metrics_A_table_rows_selected)) {
+            metrics <- rv_mod$metrics_A[input$metrics_A_table_rows_selected]
+          } else {
+            metrics <- rv_mod$metrics_A
+          }
 
           ### OBSERVATION VARIABLES
-
           sumStats <- melt(
-            rv_mod$metrics_A[selected_rows],
+            metrics,
             id.vars = c("Environment", "Trait"),
             variable.name = "result",
             value.name = "value"
@@ -1386,8 +1389,10 @@ mod_model_server <- function(id, rv){
         tryCatch({
           ### OBSERVATION UNITS
           env <- unique(rv$data[, .(study_name_app, studyDbId, trialDbId, programDbId)])
+          setnames(env, "study_name_app", "Environment")
+          browser()
           needed_observation_units <- unique(sumstatsToPush[,.(Environment)])
-          needed_observation_units <- merge(needed_observation_units, env, by.x = c("Environment"), by.y = c("study_name_app"))
+          needed_observation_units <- merge(needed_observation_units, env, by = "Environment")
           # check if obsunits exist
           resp_post_search_obsunit <- handle_api_response(
             brapir::phenotyping_observationunits_post_search(con = rv$con, observationLevels = data.frame(levelName = c("summary_statistics")), studyDbIds = env$studyDbId)
@@ -1416,7 +1421,8 @@ mod_model_server <- function(id, rv){
             existing_obs_units <- data.table(existing_obs_units)
             existing_obs_units <- existing_obs_units[,.(observationUnitDbId,
                                                         studyDbId, trialDbId, programDbId)]
-            merge <- merge(needed_observation_units, existing_obs_units, by = c("studyDbId", "programDbId", "trialDbId"), all = TRUE)
+            existing_obs_units <- merge(env[,.(studyDbId, Environment)], existing_obs_units, by="studyDbId")
+            merge <- merge(needed_observation_units, existing_obs_units, by = c("studyDbId", "programDbId", "trialDbId","Environment"), all = TRUE)
             missing_observation_units <- merge[is.na(observationUnitDbId)]
             observation_units <- merge[!is.na(observationUnitDbId)]
           }
@@ -1439,12 +1445,10 @@ mod_model_server <- function(id, rv){
 
             resp <- handle_api_response(brapir::phenotyping_observationunits_post_batch(con = rv$con, body))
             print(resp$status_code)
-
             new_observation_units <- resp$data
             new_observation_units <- data.table(new_observation_units)
             new_observation_units <- new_observation_units[,.(observationUnitDbId,studyDbId, programDbId, trialDbId)]
-
-            browser()
+            new_observation_units <- merge(new_observation_units, env[,.(Environment, studyDbId)], by = "studyDbId")
             print("created observation_units:")
             print(new_observation_units)
 
@@ -2125,7 +2129,6 @@ mod_model_server <- function(id, rv){
       })
 
       resp_post_variables <- handle_api_response(brapir::phenotyping_variables_post_batch(con = rv$con, data = body))
-      browser()
       if (resp_post_variables$status_code == 200) {
         created_variables_dt <- data.table(resp_post_variables$data)[
           , .(observationVariableDbId, observationVariableName,
