@@ -50,6 +50,7 @@ get_env_data <- function(con = NULL,
                          obs_unit_level = NULL){
 
   print(paste0("retrieving data from study ", studyDbId))
+  print(paste0("obs_level: ", obs_unit_level))
 
   if (is.null(obs_unit_level)) {
     res <- handle_api_response(
