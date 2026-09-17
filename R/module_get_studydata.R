@@ -176,8 +176,6 @@ mod_get_studydata_server <- function(id, rv, dataset_4_dev = NULL){ # XXX datase
                 chosen_levels <- rv$parse_GET_param$obs_unit_level
                 if (!is.null(chosen_levels)) {
                   rv$obs_unit_level <- intersect(allowed_obs_unit_levels, unlist(strsplit(chosen_levels, ",")))
-                } else {
-                  rv$obs_unit_level <- NULL
                 }
               } else {
                 rv$obs_unit_level <- allowed_obs_unit_levels
