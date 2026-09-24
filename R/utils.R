@@ -598,6 +598,35 @@ get_BLUES_methodsDbIds <- function(con, programDbId) {
   return(methodIds)
 }
 
+# Function to get bms version
+#' @export
+get_BMS_version <- function(con) {
+  if (con$secure) {
+    protocol = "https://"
+  } else {
+    protocol = "http://"
+  }
+  callurl <- paste0(protocol, con$db, ":", con$port, "/", con$apipath, "/auth/login")
+  resp <- httr::GET(url = callurl,
+                    httr::timeout(25),
+                    httr::add_headers(
+                      "Authorization" = paste("Bearer", con$token),
+                      "Content-Type"= "application/json",
+                      "accept"= "*/*"
+                    )
+  )
+
+  cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
+  res <- jsonlite::fromJSON(cont)
+  version <- NULL
+  if (resp$status_code == 200) {
+    version <- res$version
+  } else {
+    version <- "33.0"
+  }
+  return(version)
+}
+
 
 # Function to construct colgeno vector of named colors from a factor of genotypes descriptors
 # and using two possible palettes one for a few levels, and the other for many levels
