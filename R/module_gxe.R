@@ -941,7 +941,7 @@ mod_gxe_server <- function(id, rv, parent_session){
         req(rv$column_datasource)
         req(input$picker_trait)
         req(!isTRUE(input$picker_germplasm_attr_open))
-        data2TD <- copy(rv_gxe$data[observationLevel=="MEANS"])
+        data2TD <- copy(rv_gxe$data[observationLevel=="means"])
         if (input$picker_germplasm_level=="germplasmDbId"){
           data2TD[, genotype:=paste0(germplasmDbId," (",germplasmName,")")]
         } else {
