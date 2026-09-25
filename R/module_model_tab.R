@@ -120,7 +120,7 @@ mod_model_ui <- function(id){
         style = "display: flex; justify-content: flex-end; width: 100%;",
           shinyjs::hidden(shiny::actionButton(
               inputId = ns("push_metrics"),
-              label = "Push statistics to BMS",
+              label = "Push model results to BMS",
               icon = icon("cloud-upload-alt"),
               class = "btn btn-primary"
             )) |>
@@ -200,12 +200,12 @@ mod_model_ui <- function(id){
                   tooltip("By selecting this option, summary statistics (from the data quality panel), model statistics, BLUEs, and BLUPs will be exported into a single Excel file. If 'One file per environment' is also selected, a zip file will be created with separate Excel files for each environment. Otherwise, all data will be combined into one Excel file.", options = list(trigger="hover")),
                 checkboxInput(ns("onefileperenv"), label = "One file per environment"),
               ),
-              shiny::actionButton(
+              shinyjs::hidden(shiny::actionButton(
                 inputId = ns("push_metrics_to_BMS_B"),
                 label = "Push BLUES/BLUPS to BMS",
                 icon = icon("cloud-upload-alt"),
                 class = "btn btn-primary"
-              ) |>
+              )) |>
                 tooltip("You can select the traits you want to push by selecting rows in the model statistics table")
             ))
           )
@@ -339,7 +339,7 @@ mod_model_server <- function(id, rv){
         if (as.numeric(version) >= 33) {
           # new push button
           shinyjs::show(id="push_metrics")
-          shinyjs::show(id="push_metrics_to_BMS_B")
+          shinyjs::hide(id="push_metrics_to_BMS_B")
         } else {
           shinyjs::show(id="push_metrics_to_BMS_B")
           shinyjs::hide(id="push_metrics")
@@ -1287,7 +1287,7 @@ mod_model_server <- function(id, rv){
       pushModal_sumstats <- function() {
         modalDialog(
           title = "Confirmation",
-          "The heritability is 0 for some traits and environment. Are you sure you still want to push summary statistics? You can select for which traits end environments you want by clicking on lines in the statistics table",
+          "The heritability is 0 for some traits and environment. Are you sure you still want to push those statistics? You can select for which traits end environments you want by clicking on lines in the statistics table",
           footer = tagList(
             modalButton("Cancel"),
             shiny::actionButton(ns("push_sumstats_ok"), "Push statistics", class = "btn btn-primary")
