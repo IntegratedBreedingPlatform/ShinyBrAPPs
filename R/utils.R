@@ -539,7 +539,7 @@ generate_ui_with_grid <- function(num_rows, num_cols, choices, ns=ns, control_la
 
 # Function to get variable methods
 #' @export
-get_BLUES_methodsDbIds <- function(con, programDbId) {
+get_BLUES_methodsDbIds <- function(con, programDbId, onlyBLUEs = F) {
   methodNames = list(
     "BLUEs" = "STABrAPP BLUES",
     "BLUPs" = "STABrAPP BLUPS",
@@ -568,24 +568,28 @@ get_BLUES_methodsDbIds <- function(con, programDbId) {
   res <- jsonlite::fromJSON(cont)
   methodIds <- list()
   if (resp$status_code == 200) {
-    if (nrow(res[res$name == methodNames$BLUEs, ]) > 0) { methodIds["BLUEs"] =  res[res$name == methodNames$BLUEs, "id"]}
-    if (nrow(res[res$name == methodNames$BLUPs, ]) > 0) { methodIds["BLUPs"] =  res[res$name == methodNames$BLUPs, "id"]}
-    if (nrow(res[res$name == methodNames$seBLUEs, ]) > 0) { methodIds["seBLUEs"] =  res[res$name == methodNames$seBLUEs, "id"]}
-    if (nrow(res[res$name == methodNames$seBLUPs, ]) > 0) { methodIds["seBLUPs"] =  res[res$name == methodNames$seBLUPs, "id"]}
-    if (nrow(res[res$name == methodNames$Heritability, ]) > 0) { methodIds["Heritability"] =  res[res$name == methodNames$Heritability, "id"]}
-    if (nrow(res[res$name == methodNames$CV, ]) > 0) { methodIds["CV"] =  res[res$name == methodNames$CV, "id"]}
-    if (nrow(res[res$name == methodNames$`Wald p.value`, ]) > 0) { methodIds["Wald p.value"] =  res[res$name == methodNames$`Wald p.value`, "id"]}
+    if (nrow(res[tolower(res$name) == tolower(methodNames$BLUEs), ]) > 0) { methodIds["BLUEs"] =  res[tolower(res$name) == tolower(methodNames$BLUEs), "id"]}
+    if (nrow(res[tolower(res$name) == tolower(methodNames$BLUPs), ]) > 0) { methodIds["BLUPs"] =  res[tolower(res$name) == tolower(methodNames$BLUPs), "id"]}
+    if (nrow(res[tolower(res$name) == tolower(methodNames$seBLUEs), ]) > 0) { methodIds["seBLUEs"] =  res[tolower(res$name) == tolower(methodNames$seBLUEs), "id"]}
+    if (nrow(res[tolower(res$name) == tolower(methodNames$seBLUPs), ]) > 0) { methodIds["seBLUPs"] =  res[tolower(res$name) == tolower(methodNames$seBLUPs), "id"]}
+    if (nrow(res[tolower(res$name) == tolower(methodNames$Heritability), ]) > 0) { methodIds["Heritability"] =  res[tolower(res$name) == tolower(methodNames$Heritability), "id"]}
+    if (nrow(res[tolower(res$name) == tolower(methodNames$CV), ]) > 0) { methodIds["CV"] =  res[tolower(res$name) == tolower(methodNames$CV), "id"]}
+    if (nrow(res[tolower(res$name) == tolower(methodNames$`Wald p.value`), ]) > 0) { methodIds["Wald p.value"] =  res[tolower(res$name) == tolower(methodNames$`Wald p.value`), "id"]}
 
-    if (length(methodIds) < 7) {
-      #missing at least one method
-      missing_methods = c()
-      if (is.null(methodIds$BLUEs)) {missing_methods = append(missing_methods, methodNames$BLUEs)}
-      if (is.null(methodIds$BLUPs)) {missing_methods = append(missing_methods, methodNames$BLUPs)}
-      if (is.null(methodIds$seBLUEs)) {missing_methods = append(missing_methods, methodNames$seBLUEs)}
-      if (is.null(methodIds$seBLUPs)) {missing_methods = append(missing_methods, methodNames$seBLUPs)}
+
+    if (is.null(methodIds$BLUEs)) {missing_methods = append(missing_methods, methodNames$BLUEs)}
+    if (is.null(methodIds$BLUPs)) {missing_methods = append(missing_methods, methodNames$BLUPs)}
+    if (is.null(methodIds$seBLUEs)) {missing_methods = append(missing_methods, methodNames$seBLUEs)}
+    if (is.null(methodIds$seBLUPs)) {missing_methods = append(missing_methods, methodNames$seBLUPs)}
+
+    if (!onlyBLUEs) {
       if (is.null(methodIds$Heritability)) {missing_methods = append(missing_methods, methodNames$Heritability)}
       if (is.null(methodIds$CV)) {missing_methods = append(missing_methods, methodNames$CV)}
       if (is.null(methodIds$`Wald p.value`)) {missing_methods = append(missing_methods, methodNames$`Wald p.value`)}
+    }
+    if ((length(methodIds) < 7 && !onlyBLUEs) || (length(methodIds) < 4 && onlyBLUEs)) {
+      #missing at least one method
+      missing_methods = c()
       message = paste("Missing variable methods in BMS:",paste0(missing_methods, collapse = ", "))
       stop(message)
     }

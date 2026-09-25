@@ -322,28 +322,30 @@ mod_model_server <- function(id, rv){
         rv_mod$selected_env <- NULL
         rv_mod$selected_traits <- NULL
 
+        # check BMS version
+        version <- get_BMS_version(rv$con)
+        if (as.numeric(sub("\\..*", "", version)) >= 33) {
+          # new push button
+          shinyjs::show(id="push_metrics")
+          shinyjs::hide(id="push_metrics_to_BMS_B")
+          checkOnlyBLUEsMethods <- F
+        } else {
+          shinyjs::show(id="push_metrics_to_BMS_B")
+          shinyjs::hide(id="push_metrics")
+          checkOnlyBLUEsMethods <- T
+        }
+
         # Get methodDbIds
         #TODO use /search/methodDbIds
         programDbId <- unique(rv$study_metadata$programDbId)
         all_methodIds <<- tryCatch({
-            get_BLUES_methodsDbIds(rv$con, programDbId)
+            get_BLUES_methodsDbIds(rv$con, programDbId, onlyBLUEs = checkOnlyBLUEsMethods)
           },
           error=function(e){
             showNotification(conditionMessage(e), type = "error", duration = notification_duration)
             return(NULL)
           }
         )
-
-        # check BMS version
-        version <- get_BMS_version(rv$con)
-        if (as.numeric(version) >= 33) {
-          # new push button
-          shinyjs::show(id="push_metrics")
-          shinyjs::hide(id="push_metrics_to_BMS_B")
-        } else {
-          shinyjs::show(id="push_metrics_to_BMS_B")
-          shinyjs::hide(id="push_metrics")
-        }
       })
 
       ## observe select_environments ####
