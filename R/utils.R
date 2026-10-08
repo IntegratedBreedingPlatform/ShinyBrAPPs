@@ -721,7 +721,7 @@ build_oauth_client <- function(apiURL, redirect_uri) {
     client_id     = Sys.getenv("OAUTH_CLIENT_ID"),
     redirect_uri  = redirect_uri,
     state_store   = shared_state_store,
-    state_key = key
+    state_key = Sys.getenv("SHINYOAUTH_STATE_KEY")
   )
   return(client)
 }
