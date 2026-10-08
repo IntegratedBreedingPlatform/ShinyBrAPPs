@@ -713,6 +713,9 @@ build_oauth_client <- function(apiURL, redirect_uri) {
     issuer_match = "url",
     token_auth_style = "body"
   )
+  print(shared_state_store)
+  print(key)
+  print(Sys.getenv("SHINYOAUTH_STATE_KEY"))
   client <- shinyOAuth::oauth_client(
     provider      = provider,
     client_id     = Sys.getenv("OAUTH_CLIENT_ID"),
