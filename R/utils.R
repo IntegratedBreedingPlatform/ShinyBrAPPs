@@ -48,13 +48,14 @@ get_env_data <- function(con = NULL,
                          stu_name_app = NULL,
                          stu_name_abbrev_app = NULL,
                          obs_unit_level = NULL){
-  
+
   print(paste0("retrieving data from study ", studyDbId))
+  print(paste0("obs_level: ", obs_unit_level))
 
   if (is.null(obs_unit_level)) {
     res <- handle_api_response(
       brapir::phenotyping_observationunits_post_search(
-        con = con, 
+        con = con,
         studyDbIds = studyDbId,
         includeObservations = T
       )
@@ -80,7 +81,7 @@ get_env_data <- function(con = NULL,
     stop()
     return(NULL)
   }
-      
+
   page = 0
   while (res$metadata$pagination$totalCount > (res$metadata$pagination$currentPage + 1) * res$metadata$pagination$pageSize) {
     page <- page + 1
@@ -94,7 +95,7 @@ get_env_data <- function(con = NULL,
     study_obs <- NULL
     return(study_obs)
   } else {
-    
+
     #to manage the case when we get means and plotS
     if ("observationUnitPosition.observationLevelRelationships.levelCode" %in% names(study_obs)) {
       study_obs[, oLR.levelCode := `observationUnitPosition.observationLevelRelationships.levelCode`]
@@ -106,7 +107,7 @@ get_env_data <- function(con = NULL,
     } else {
       study_obs[, oLR.levelName := NA]
     }
-    
+
     if ("observationUnitPosition.observationLevel.levelName" %in% names(study_obs)) {
       study_obs[, observationLevel := stringr::str_to_lower(`observationUnitPosition.observationLevel.levelName`)]
     } else {
@@ -121,34 +122,34 @@ get_env_data <- function(con = NULL,
     study_obs <- study_obs[, .(
       observationUnitDbId,
       observationUnitName,
-      germplasmDbId, 
-      germplasmName, 
-      studyDbId, 
-      studyName, 
-      programDbId, 
-      programName, 
-      locationDbId, 
-      locationName, 
-      trialDbId, 
+      germplasmDbId,
+      germplasmName,
+      studyDbId,
+      studyName,
+      programDbId,
+      programName,
+      locationDbId,
+      locationName,
+      trialDbId,
       trialName,
       observationDbId = `observations.observationDbId`,
-      observationLevel, 
-      observationLevelCode, 
+      observationLevel,
+      observationLevelCode,
       entryType = `observationUnitPosition.entryType`,
       entryNumber = `additionalInfo.ENTRY_NO`,
       oLR.levelCode,
       oLR.levelName,
       positionCoordinateX = `observationUnitPosition.positionCoordinateX`,
       positionCoordinateY = `observationUnitPosition.positionCoordinateY`,
-      observationTimeStamp = `observations.observationTimeStamp`, 
-      observationVariableDbId = `observations.observationVariableDbId`, 
-      observationVariableName = `observations.observationVariableName`, 
+      observationTimeStamp = `observations.observationTimeStamp`,
+      observationVariableDbId = `observations.observationVariableDbId`,
+      observationVariableName = `observations.observationVariableName`,
       observationValue = `observations.value`
     )]
-    
+
     # remove NA or "" observations
     study_obs <- study_obs[!is.na(observationValue) & observationValue != "",]
-    
+
     #study_obs <- study_obs[, .(plotNumber = levelCode[levelName == "plot"],
     #                           replicate = levelCode[levelName == "rep"],
     #                           blockNumber = levelCode[levelName == "block"]),
@@ -166,9 +167,9 @@ get_env_data <- function(con = NULL,
                       "block"),
                 new=c("plotNumber",
                       "replicate",
-                      "blockNumber"))        
+                      "blockNumber"))
     }
-    
+
     study_obs[,study_name_BMS := paste0(
       env_number, "-",
       loc_name
@@ -218,7 +219,7 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbIds= NULL, rv){
       #study_metadata <- as.data.table(handle_api_response(brapir::core_studies_get(con = con, trialDbId = trialDbId))$data)
       # study_metadata <- tidyr::unnest(study_metadata, cols = "environmentParameters", names_sep = ".", keep_empty = T)
       # study_metadata <- as.data.table(study_metadata)
-    
+
   }else if(!is.null(studyDbIds)){
     ## get environment metadata by studyDbIds
     ids <- unlist(strsplit(studyDbIds, ","))
@@ -226,16 +227,16 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbIds= NULL, rv){
   }
   req(srid)
   study_metadata <- as.data.table(tidyr::unnest(
-    handle_api_response(brapir::core_studies_get_search_searchResultsDbId(con, searchResultsDbId = srid$data$searchResultsDbId))$data, 
+    handle_api_response(brapir::core_studies_get_search_searchResultsDbId(con, searchResultsDbId = srid$data$searchResultsDbId))$data,
     cols = "environmentParameters", names_sep = "."
   ))
   if(study_metadata[,.N]==0){
     stop("No environment data found")
   }
-  
+
   # exit function if no metadata found
   if (is.null(study_metadata)) return(NULL)
-  
+
   study_ids <- unique(study_metadata$studyDbId)
   location_ids <- unique(study_metadata$locationDbId)
 
@@ -274,7 +275,7 @@ make_study_metadata <- function(con, studyDbIds=NULL, trialDbIds= NULL, rv){
       x
     }
   })]
-  
+
   # exit function if no location found
   if (is.null(loc_names)) return(NULL)
 
@@ -386,7 +387,7 @@ whoami_bmsapi <- function(con){
     if (con$secure) {
       protocol <- "https://"
     } else {
-      protocol <- "http://" 
+      protocol <- "http://"
     }
     server_url <- paste0(protocol, con$db, ":", con$port, "/", con$apipath)
     callurl <- paste0(server_url, "/users/filter?cropName=",con$commoncropname,"&programUUID=",aprogr)
@@ -538,12 +539,15 @@ generate_ui_with_grid <- function(num_rows, num_cols, choices, ns=ns, control_la
 
 # Function to get variable methods
 #' @export
-get_BLUES_methodsDbIds <- function(con, programDbId) {
+get_BLUES_methodsDbIds <- function(con, programDbId, onlyBLUEs = F) {
   methodNames = list(
     "BLUEs" = "STABrAPP BLUES",
     "BLUPs" = "STABrAPP BLUPS",
     "seBLUEs" = "STABrAPP SEBLUES",
-    "seBLUPs" = "STABrAPP SEBLUPS"
+    "seBLUPs" = "STABrAPP SEBLUPS",
+    "Heritability" = "STABrAPP heritability",
+    "CV" = "STABrAPP CV",
+    "Wald p.value" = "STABrAPP Pvalue"
   )
   if (con$secure) {
     protocol = "https://"
@@ -564,18 +568,28 @@ get_BLUES_methodsDbIds <- function(con, programDbId) {
   res <- jsonlite::fromJSON(cont)
   methodIds <- list()
   if (resp$status_code == 200) {
-    if (nrow(res[res$name == methodNames$BLUEs, ]) > 0) { methodIds["BLUEs"] =  res[res$name == methodNames$BLUEs, "id"]}
-    if (nrow(res[res$name == methodNames$BLUPs, ]) > 0) { methodIds["BLUPs"] =  res[res$name == methodNames$BLUPs, "id"]}
-    if (nrow(res[res$name == methodNames$seBLUEs, ]) > 0) { methodIds["seBLUEs"] =  res[res$name == methodNames$seBLUEs, "id"]}
-    if (nrow(res[res$name == methodNames$seBLUPs, ]) > 0) { methodIds["seBLUPs"] =  res[res$name == methodNames$seBLUPs, "id"]}
+    if (nrow(res[tolower(res$name) == tolower(methodNames$BLUEs), ]) > 0) { methodIds["BLUEs"] =  res[tolower(res$name) == tolower(methodNames$BLUEs), "id"]}
+    if (nrow(res[tolower(res$name) == tolower(methodNames$BLUPs), ]) > 0) { methodIds["BLUPs"] =  res[tolower(res$name) == tolower(methodNames$BLUPs), "id"]}
+    if (nrow(res[tolower(res$name) == tolower(methodNames$seBLUEs), ]) > 0) { methodIds["seBLUEs"] =  res[tolower(res$name) == tolower(methodNames$seBLUEs), "id"]}
+    if (nrow(res[tolower(res$name) == tolower(methodNames$seBLUPs), ]) > 0) { methodIds["seBLUPs"] =  res[tolower(res$name) == tolower(methodNames$seBLUPs), "id"]}
+    if (nrow(res[tolower(res$name) == tolower(methodNames$Heritability), ]) > 0) { methodIds["Heritability"] =  res[tolower(res$name) == tolower(methodNames$Heritability), "id"]}
+    if (nrow(res[tolower(res$name) == tolower(methodNames$CV), ]) > 0) { methodIds["CV"] =  res[tolower(res$name) == tolower(methodNames$CV), "id"]}
+    if (nrow(res[tolower(res$name) == tolower(methodNames$`Wald p.value`), ]) > 0) { methodIds["Wald p.value"] =  res[tolower(res$name) == tolower(methodNames$`Wald p.value`), "id"]}
 
-    if (length(methodIds) < 4) {
+
+    if (is.null(methodIds$BLUEs)) {missing_methods = append(missing_methods, methodNames$BLUEs)}
+    if (is.null(methodIds$BLUPs)) {missing_methods = append(missing_methods, methodNames$BLUPs)}
+    if (is.null(methodIds$seBLUEs)) {missing_methods = append(missing_methods, methodNames$seBLUEs)}
+    if (is.null(methodIds$seBLUPs)) {missing_methods = append(missing_methods, methodNames$seBLUPs)}
+
+    if (!onlyBLUEs) {
+      if (is.null(methodIds$Heritability)) {missing_methods = append(missing_methods, methodNames$Heritability)}
+      if (is.null(methodIds$CV)) {missing_methods = append(missing_methods, methodNames$CV)}
+      if (is.null(methodIds$`Wald p.value`)) {missing_methods = append(missing_methods, methodNames$`Wald p.value`)}
+    }
+    if ((length(methodIds) < 7 && !onlyBLUEs) || (length(methodIds) < 4 && onlyBLUEs)) {
       #missing at least one method
       missing_methods = c()
-      if (is.null(methodIds$BLUEs)) {missing_methods = append(missing_methods, methodNames$BLUEs)}
-      if (is.null(methodIds$BLUPs)) {missing_methods = append(missing_methods, methodNames$BLUPs)}
-      if (is.null(methodIds$seBLUEs)) {missing_methods = append(missing_methods, methodNames$seBLUEs)}
-      if (is.null(methodIds$seBLUPs)) {missing_methods = append(missing_methods, methodNames$seBLUPs)}
       message = paste("Missing variable methods in BMS:",paste0(missing_methods, collapse = ", "))
       stop(message)
     }
@@ -586,6 +600,35 @@ get_BLUES_methodsDbIds <- function(con, programDbId) {
   }
 
   return(methodIds)
+}
+
+# Function to get bms version
+#' @export
+get_BMS_version <- function(con) {
+  if (con$secure) {
+    protocol = "https://"
+  } else {
+    protocol = "http://"
+  }
+  callurl <- paste0(protocol, con$db, ":", con$port, "/", con$apipath, "/auth/login")
+  resp <- httr::GET(url = callurl,
+                    httr::timeout(25),
+                    httr::add_headers(
+                      "Authorization" = paste("Bearer", con$token),
+                      "Content-Type"= "application/json",
+                      "accept"= "*/*"
+                    )
+  )
+
+  cont <- httr::content(x = resp, as = "text", encoding = "UTF-8")
+  res <- jsonlite::fromJSON(cont)
+  version <- NULL
+  if (resp$status_code == 200) {
+    version <- res$version
+  } else {
+    version <- "33.0"
+  }
+  return(version)
 }
 
 
@@ -766,7 +809,7 @@ summary.stats <- function(x){
   sumtable_notexcl[, "%Standard error of kurtosis" := `Kurtosis` /
                      sqrt(`No. of observations`)]
   sumtable_notexcl[, "Range" := Maximum - Minimum]
-  
+
   columns <- c(
     "studyDbId",
     "Environment",

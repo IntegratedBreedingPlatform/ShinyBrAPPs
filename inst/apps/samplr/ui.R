@@ -3,6 +3,7 @@ source("config.R")
 
 ui <- cookies::add_cookie_handlers(bslib::page_fluid(theme = bslib::bs_theme(preset = "bootstrap"),
   tags$head(
+    tags$title("samplr"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/app.css"),
     tags$link(rel = "stylesheet", type = "text/css", href = "css/custom_styles.css")
   ),

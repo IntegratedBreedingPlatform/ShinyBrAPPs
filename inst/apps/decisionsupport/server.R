@@ -10,7 +10,8 @@ server <- function(input, output, session){
     groups = data.table(),
     visu_as_group = NULL,
     new_group_created = F,
-    hash = NULL                 # to track user query in browser sessionStorage
+    hash = NULL,                # to track user query in browser sessionStorage,
+    obs_unit_level = allowed_obs_unit_levels
   )
   mod_connect_server("connect",rv)  
   mod_get_studydata_server("get_studydata", rv)

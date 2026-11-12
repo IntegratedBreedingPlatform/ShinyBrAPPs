@@ -202,8 +202,8 @@ mod_get_extradata_server <- function(id, rv){
             })
             extradata[, label_study:=paste(locationName, studyDbId, sep="-")]
             
-            rv$environmentParameters <- environmentParameters
             rv$extradata <- extradata
+            rv$environmentParameters <- environmentParameters
 
             rv$column_datasource <- column_datasource
             #rv$ontology_variables <- ontology_variables
