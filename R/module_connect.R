@@ -52,8 +52,53 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
       rv$connect_mode <- NULL
       rv$show_study_selection <- FALSE
 
-      #shinybrapps_token cookie is used to avoid the authentication step and the data reloading
-      token <- isolate(cookies::get_cookie("shinybrapps_token"))
+      # shinybrapps_token_ cookie is used to avoid the authentication step and the data reloading
+      # one cookie per BrAPI endpoint: the token is scoped to the apiURL parameter
+      token_cookie_name <- function(api_url) {
+        if (is.null(api_url) || !nzchar(api_url)) {
+          return(NULL)
+        }
+        api_url <- sub("/+$", "", trimws(api_url))
+        paste0("shinybrapps_token_", digest::digest(api_url, algo = "sha256"))
+      }
+
+      current_api_url <- function() {
+        if (!is.null(rv$apiURL)) {
+          return(rv$apiURL)
+        }
+        if (!is.null(rv$query)) {
+          return(rv$query$apiURL)
+        }
+        encoded <- isolate(cookies::get_cookie("shinybrapps_url_search"))
+        if (!is.null(encoded)) {
+          return(parseQueryString(utils::URLdecode(encoded))$apiURL)
+        }
+        NULL
+      }
+
+      get_token_cookie <- function(api_url) {
+        cookie <- token_cookie_name(api_url)
+        if (is.null(cookie)) {
+          return(NULL)
+        }
+        isolate(cookies::get_cookie(cookie))
+      }
+
+      set_token_cookie <- function(api_url, token, expiration) {
+        cookie <- token_cookie_name(api_url)
+        if (is.null(cookie)) {
+          return(invisible(NULL))
+        }
+        cookies::set_cookie(cookie, token, expiration = expiration, secure_only = TRUE)
+      }
+
+      remove_token_cookie <- function(api_url) {
+        cookie <- token_cookie_name(api_url)
+        if (!is.null(cookie)) {
+          cookies::remove_cookie(cookie)
+        }
+      }
+      
       #shinybrapps_url_search cookie is used to keep the search params in url
       encoded <- isolate(cookies::get_cookie("shinybrapps_url_search"))
       url_search <- if (!is.null(encoded)) utils::URLdecode(encoded) else NULL
@@ -82,31 +127,43 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
       if (!is.null(url_search)) {
         query <- parseQueryString(url_search)
         apiURL <- query$apiURL
-        if (is.null(query$token)) { # for backward compatibility
+        if (is.null(query$token) && is.null(get_token_cookie(apiURL))) { # for backward compatibility
           client <- build_oauth_client(apiURL, redirect_uri = app_url)
           auth <- shinyOAuth::oauth_module_server("auth", client, auto_redirect = T)
         }
       }
 
       observeEvent(session$clientData$url_search, {
-        token <- isolate(cookies::get_cookie("shinybrapps_token"))
+        query <- parseQueryString(session$clientData$url_search)
+        api_url <- query$apiURL
+        saved_encoded <- isolate(cookies::get_cookie("shinybrapps_url_search"))
+        if (is.null(api_url) && !is.null(saved_encoded)) {
+          ## URL mode after oauth redirection: apiURL is kept in the url_search cookie
+          api_url <- parseQueryString(utils::URLdecode(saved_encoded))$apiURL
+        }
+
+        token <- isolate(get_token_cookie(api_url))
+        if (!is.null(api_url) && !identical(rv$apiURL, api_url)) {
+          ## a token from another endpoint must not be reused
+          rv$token <- NULL
+        }
         if (!is.null(token)) {
           rv$token <- token
         }
-        query <- parseQueryString(session$clientData$url_search)
+
         if (!is.null(query$apiURL)) {
           cookies::set_cookie("shinybrapps_url_search",
             utils::URLencode(session$clientData$url_search, reserved = T),
             expiration = 1
           )
-          rv$apiURL <- query$apiURL
+          rv$apiURL <- api_url
           rv$connect_mode <- "url"
           rv$query <- query
           if (!is.null(query$token)) { # for backward compatibility
             rv$token <- query$token
             allowed_obs_unit_levels <- stringr::str_to_upper(allowed_obs_unit_levels)
           }
-        } else if (!is.null(cookies::get_cookie("shinybrapps_url_search"))) {
+        } else if (!is.null(saved_encoded)) {
           ### URL mode after oauth redirection
           rv$connect_mode <- "url"
         } else {
@@ -119,7 +176,7 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
 
       observeEvent(rv$apiURL, {
         req(is.null(rv$query$token))
-        if (is.null(token)) {
+        if (is.null(get_token_cookie(rv$apiURL))) {
           client <- build_oauth_client(rv$apiURL, redirect_uri = app_url)
           auth <- shinyOAuth::oauth_module_server("auth", client, auto_redirect = T)
         }
@@ -132,12 +189,7 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
           showNotification("Connected successfully", type = "message", duration = notification_duration)
           expiration_seconds <- auth$token@expires_at - as.numeric(Sys.time())
           expiration_days <- expiration_seconds / (3600 * 24)
-          #this cookie is used to avoid the authentication step and the data reloading
-          cookies::set_cookie("shinybrapps_token",
-                              auth$token@access_token,
-                              expiration = expiration_days,
-                              secure_only = TRUE
-          )
+          set_token_cookie(current_api_url(), auth$token@access_token, expiration_days)
           rv$token <- auth$token@access_token
         }
       })
@@ -205,8 +257,8 @@ mod_connect_server <- function(id, rv, dataset_4_dev = NULL) { # XXX dataset_4_d
 
       observeEvent(rv$refresh, {
         if (rv$refresh) {
-          # delete cookie
-          cookies::remove_cookie("shinybrapps_token")
+          # delete the token cookie of the current BrAPI endpoint
+          remove_token_cookie(current_api_url())
           delete_user_data_file(rv)
           session$reload()
         }
