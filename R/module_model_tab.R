@@ -1358,7 +1358,7 @@ mod_model_server <- function(id, rv){
 
           print("PUSH BLUEs/BLUPs")
           colnames(table_metrics) = c("germplasmName", "environment", "result", "originVariableName", "value")
-          table_metrics <- merge(table_metrics, unique(rv$data[,.(environment = study_name_app, studyDbId = as.character(studyDbId), germplasmName, entryNumber = as.character(entryNumber))]))
+          table_metrics <- merge(table_metrics, unique(rv$data[,.(environment = study_name_app, studyDbId = as.character(studyDbId), germplasmName)]))
 
           # don't push NA value
           bluesToPush <<- table_metrics[!is.na(value),]
@@ -1543,13 +1543,13 @@ mod_model_server <- function(id, rv){
             needed_env <- unique(bluesToPush[,environment])
             needed_observation_units_blues <- unique(rv$data[study_name_app %in% needed_env,.(
               germplasmDbId, germplasmName, studyDbId = as.character(studyDbId), study_name_app,
-              programDbId, trialDbId = as.character(trialDbId), entryType, entryNumber = as.character(entryNumber))])
+              programDbId, trialDbId = as.character(trialDbId), entryType)])
             needed_observation_units_blues$studyDbId <- as.character(needed_observation_units_blues$studyDbId)
             needed_observation_units_blues$trialDbId <- as.character(needed_observation_units_blues$trialDbId)
-            needed_observation_units_blues$entryNumber <- as.character(needed_observation_units_blues$entryNumber)
+            #needed_observation_units_blues$entryNumber <- as.character(needed_observation_units_blues$entryNumber)
             setnames(needed_observation_units_blues, "study_name_app","environment")
 
-            bluesToPush <<- merge(needed_observation_units_blues, bluesToPush, by=c("germplasmName", "environment", "studyDbId", "entryNumber"))
+            bluesToPush <<- merge(needed_observation_units_blues, bluesToPush, by=c("germplasmName", "environment", "studyDbId"))
 
             env <- unique(bluesToPush[, .(environment, studyDbId)])
             resp_post_search_obsunit <- handle_api_response(
@@ -1581,10 +1581,9 @@ mod_model_server <- function(id, rv){
             existing_obs_units_blues <- data.table(existing_obs_units_blues)
             existing_obs_units_blues <- existing_obs_units_blues[,.(observationUnitDbId,
                                                         germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId,
-                                                        entryType = observationUnitPosition.entryType,
-                                                        entryNumber = additionalInfo.ENTRY_NO)]
+                                                        entryType = observationUnitPosition.entryType)]
             # COMPARE EXISTING OBSERVATION UNITS GERMPLASM TO DATA GERMPLASM
-            merge <- merge(needed_observation_units_blues, existing_obs_units_blues, by = c("studyDbId", "germplasmDbId", "germplasmName", "programDbId", "trialDbId", "entryType", "entryNumber"), all = TRUE)
+            merge <- merge(needed_observation_units_blues, existing_obs_units_blues, by = c("studyDbId", "germplasmDbId", "germplasmName", "programDbId", "trialDbId", "entryType"), all = TRUE)
             observation_units_blues <- merge[!is.na(observationUnitDbId)]
             missing_observation_units_blues <- merge[is.na(observationUnitDbId)]
           }
@@ -1600,7 +1599,6 @@ mod_model_server <- function(id, rv){
               # Building body POST request
               body <- apply(missing_observation_units_blues,1,function(a){
                 list(
-                  additionalInfo = list(ENTRY_NO = jsonlite::unbox(a["entryNumber"])),
                   observationUnitPosition = list(
                     entryType =jsonlite::unbox(a["entryType"]),
                     observationLevel = list(levelName = jsonlite::unbox("means"))),
@@ -1618,8 +1616,7 @@ mod_model_server <- function(id, rv){
               new_observation_units_blues <- data.table(new_observation_units_blues)
               new_observation_units_blues <- new_observation_units_blues[,.(observationUnitDbId,
                                                                 germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId,
-                                                                entryType = observationUnitPosition.entryType,
-                                                                entryNumber = additionalInfo.ENTRY_NO)]
+                                                                entryType = observationUnitPosition.entryType)]
 
               print("new_observation_units_blues:")
               print(new_observation_units_blues)
@@ -1767,13 +1764,13 @@ mod_model_server <- function(id, rv){
             needed_env <- unique(bluesToPush[,environment])
             needed_observation_units <- unique(rv$data[study_name_app %in% needed_env,.(
               germplasmDbId, germplasmName, studyDbId = as.character(studyDbId), study_name_app,
-              programDbId, trialDbId = as.character(trialDbId), entryType, entryNumber = as.character(entryNumber))])
+              programDbId, trialDbId = as.character(trialDbId), entryType)])
             needed_observation_units$studyDbId <- as.character(needed_observation_units$studyDbId)
             needed_observation_units$trialDbId <- as.character(needed_observation_units$trialDbId)
-            needed_observation_units$entryNumber <- as.character(needed_observation_units$entryNumber)
             setnames(needed_observation_units, "study_name_app","environment")
+            needed_observation_units <- unique(needed_observation_units, by = c("germplasmDbId", "studyDbId"))
 
-            bluesToPush <<- merge(needed_observation_units, bluesToPush, by=c("germplasmName", "environment", "studyDbId", "entryNumber"))
+            bluesToPush <<- merge(needed_observation_units, bluesToPush, by=c("germplasmName", "environment", "studyDbId"))
 
             env <- unique(bluesToPush[, .(environment, studyDbId)])
             resp_post_search_obsunit <- handle_api_response(
@@ -1805,10 +1802,9 @@ mod_model_server <- function(id, rv){
             existing_obs_units <- data.table(existing_obs_units)
             existing_obs_units <- existing_obs_units[,.(observationUnitDbId,
                                                         germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId,
-                                                        entryType = observationUnitPosition.entryType,
-                                                        entryNumber = additionalInfo.ENTRY_NO)]
+                                                        entryType = observationUnitPosition.entryType)]
             # COMPARE EXISTING OBSERVATION UNITS GERMPLASM TO DATA GERMPLASM
-            merge <- merge(needed_observation_units, existing_obs_units, by = c("studyDbId", "germplasmDbId", "germplasmName", "programDbId", "trialDbId", "entryType", "entryNumber"), all = TRUE)
+            merge <- merge(needed_observation_units, existing_obs_units, by = c("studyDbId", "germplasmDbId", "germplasmName", "programDbId", "trialDbId", "entryType"), all = TRUE)
             observation_units <- merge[!is.na(observationUnitDbId)]
             missing_observation_units <- merge[is.na(observationUnitDbId)]
           }
@@ -1824,7 +1820,6 @@ mod_model_server <- function(id, rv){
               # Building body POST request
               body <- apply(missing_observation_units,1,function(a){
                 list(
-                  additionalInfo = list(ENTRY_NO = jsonlite::unbox(a["entryNumber"])),
                   observationUnitPosition = list(
                     entryType =jsonlite::unbox(a["entryType"]),
                     observationLevel = list(levelName = jsonlite::unbox("means"))),
@@ -1842,8 +1837,7 @@ mod_model_server <- function(id, rv){
               new_observation_units <- data.table(new_observation_units)
               new_observation_units <- new_observation_units[,.(observationUnitDbId,
                                                                 germplasmDbId, germplasmName, studyDbId, programDbId, trialDbId,
-                                                                entryType = observationUnitPosition.entryType,
-                                                                entryNumber = additionalInfo.ENTRY_NO)]
+                                                                entryType = observationUnitPosition.entryType)]
 
               print("created observation_units:")
               print(new_observation_units)
@@ -1865,6 +1859,7 @@ mod_model_server <- function(id, rv){
           methods <- data.table(result = names(methodIds), methodDbId = unname(unlist(methodIds)))
 
           #data_to_push$studyDbId = as.character(data_to_push$studyDbId)
+          browser()
           bluesToPush <<- merge(bluesToPush, observation_units, by=c("germplasmDbId","studyDbId"))
 
           ## push BLUES per variable ####
@@ -1897,6 +1892,7 @@ mod_model_server <- function(id, rv){
                 })
 
                 resp <- handle_api_response(brapir::phenotyping_observations_post_batch(con = rv$con, data = body))
+                browser()
                 if (resp$status_code == 200) {
                   created_observations_df <- resp$data
                   showNotification(paste0(var_name, " BLUES/BLUPS were pushed to ", env_names[j], " (",nrow(created_observations_df), " data)"), type = "message", duration = notification_duration)
@@ -1935,7 +1931,7 @@ mod_model_server <- function(id, rv){
 
           print("PUSH BLUEs/BLUPs")
           colnames(table_metrics) = c("germplasmName", "environment", "result", "originVariableName", "value")
-          table_metrics <- merge(table_metrics, unique(rv$data[,.(environment = study_name_app, studyDbId = as.character(studyDbId), germplasmName, entryNumber = as.character(entryNumber))]))
+          table_metrics <- merge(table_metrics, unique(rv$data[,.(environment = study_name_app, studyDbId = as.character(studyDbId), germplasmName)]))
 
           # don't push NA value
           bluesToPush <<- table_metrics[!is.na(value),]
