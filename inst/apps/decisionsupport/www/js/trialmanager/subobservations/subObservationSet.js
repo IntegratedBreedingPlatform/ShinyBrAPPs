@@ -925,7 +925,7 @@
 						action: function (e, dt, node, config) {
 
 							var observationUnitsSearch = {
-								// We send all the data (with/without filter) to OpenCPU server,
+								// Retrieve all matching observations for the browser plot;
 								// No pagination is needed.
 								sortedRequest: null,
 								instanceId: $scope.nested.selectedEnvironment.instanceId,
