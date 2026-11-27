@@ -44,7 +44,7 @@ mod_samplr_ui <- function(id){
       }
     ")
     ),
-      bslib::page_navbar(title = "", id = ns("tabsetId"), 
+      bslib::page_navbar(title = "", id = ns("tabsetId"),
                          bslib::nav_panel("Search samples by trial/study",value="bystudy",
                                           layout_sidebar(
                                                          sidebar=bslib::sidebar(width = 350,
@@ -88,7 +88,7 @@ mod_samplr_ui <- function(id){
                                                                                 ),
                                                          card(full_screen = TRUE,
                                                               card_body(min_height = "600px",
-                                                                        
+
                                                               div(DTOutput(ns("one_sample_table")), style = "font-size: 75%;")
                                                               ))
                                           )
@@ -107,6 +107,7 @@ mod_samplr_ui <- function(id){
                                                                                     yes = icon("ok", lib = "glyphicon"),
                                                                                     no = icon("xmark", lib = "glyphicon"))
                                                                                 ),
+                                                                                selectizeInput(inputId = ns("barcodefield"),label = "Barcode Field", choices=c("sampleDbId","observationUnitDbId"), selected="sampleDbId"),
                                                                                 div(class = "p-3 flex-container",
                                                                                     div(class = "flex-item", numericInput(ns("fontsize"), label = "Font size", value = 6, min = 4, max = 12, step = 1)),
                                                                                     div(class = "flex-item", checkboxInput(ns("labelbold"), label = "Bold"))
@@ -128,7 +129,7 @@ mod_samplr_ui <- function(id){
                                                               plotOutput(ns("label_preview"), width = "300px", height = "200px")
                                                               )
                                                          )
-                                                         
+
 
                                           )
                          ),
@@ -156,14 +157,14 @@ mod_samplr_ui <- function(id){
                          )
                   )
   )
-  
+
 }
 
 #' @export
 mod_samplr_server <- function(id, rv){
-  
+
   moduleServer(
-    
+
     id,
     function(input, output, session){
       rv_samp <- reactiveValues(
@@ -172,12 +173,12 @@ mod_samplr_server <- function(id, rv){
         stdatadt_one=NULL,
         stdatadt_byg=NULL
       )
-      
+
       ns <- session$ns
       observeEvent(rv$con,{
         withProgress(message = "Getting programs", value = 0, {
           incProgress(1)
-          tryCatch({            
+          tryCatch({
             pr <- handle_api_response(brapir::core_programs_get(rv$con))$data
             updateSelectizeInput(session,
                                 inputId = "program",
@@ -203,7 +204,7 @@ mod_samplr_server <- function(id, rv){
           })
         })
       })
-      
+
       observeEvent(input$program,{
         if (input$program!=""){
           tryCatch({
@@ -216,7 +217,7 @@ mod_samplr_server <- function(id, rv){
           })
         }
       })
-          
+
       observeEvent(input$trial,{
         if (input$trial!=""){
           tryCatch({
@@ -332,7 +333,7 @@ mod_samplr_server <- function(id, rv){
           bc2 <- os[observationUnitPosition.observationLevelRelationships.levelName=="plot",.(observationUnitDbId,plot=observationUnitPosition.observationLevelRelationships.levelCode)][bc1, on=.(observationUnitDbId)]
           bc3 <- gp[bc2, on=.(germplasmDbId)]
           #bc4 <- gs[,.(germplasmUUID,names)][bc3, on=.(germplasmUUID=germplasmDbId)]
-          
+
           st <- as.data.table(do.call(gtools::smartbind,lapply(unique(bc3$studyDbId), function(s) handle_api_response(brapir::core_studies_get(rv$con, studyDbId = s))$data)))
           st <- unique(st[,.(studyDbId,studyName, locationDbId, locationName)])
           #locs <- brapi_get_search_locations_searchResultsDbId(rv$con,
@@ -343,8 +344,8 @@ mod_samplr_server <- function(id, rv){
           setDT(locs)
           if (!any(colnames(locs)=="countryName")) locs[,countryName:=NA]
           rv_samp$st <- locs[,.(locationDbId,countryName)][st, on=.(locationDbId)]
-          
-          
+
+
           bc <- rv_samp$st[,.(studyDbId,studyName, locationName)][bc3, on=.(studyDbId)]
           #bc <- os[observationUnitPosition.observationLevelRelationships.levelName=="rep",.(observationUnitDbId,rep=observationUnitPosition.observationLevelRelationships.levelCode)][os[observationUnitPosition.observationLevelRelationships.levelName=="plot"][samples, on=.(observationUnitDbId)], on=.(observationUnitDbId)]
           colorder <- c("sampleDbId",
@@ -371,7 +372,7 @@ mod_samplr_server <- function(id, rv){
           rv_samp$stdatadt_one <- data.table()
         }
       })
-          
+
       observeEvent(input$get_samples_byg,{
         if (!is.null(input$germp_search)){
           tryCatch({
@@ -408,7 +409,7 @@ mod_samplr_server <- function(id, rv){
                 bc2 <- os[observationUnitPosition.observationLevelRelationships.levelName=="plot",.(observationUnitDbId,plot=observationUnitPosition.observationLevelRelationships.levelCode)][bc1, on=.(observationUnitDbId)]
                 bc3 <- gp[bc2, on=.(germplasmDbId)]
                 bc4 <- gs[,.(germplasmUUID,names)][bc3, on=.(germplasmUUID=germplasmDbId)]
-                
+
                 st <- as.data.table(do.call(gtools::smartbind,lapply(unique(bc3$studyDbId), function(s) brapir::core_studies_get(rv$con, studyDbId = s)$data)))
                 st <- unique(st[,.(studyDbId,studyName, locationDbId, locationName)])
                 #locs <- brapi_get_search_locations_searchResultsDbId(rv$con,
@@ -419,8 +420,8 @@ mod_samplr_server <- function(id, rv){
                 setDT(locs)
                 if (!any(colnames(locs)=="countryName")) locs[,countryName:=NA]
                 rv_samp$st <- locs[,.(locationDbId,countryName)][st, on=.(locationDbId)]
-                
-                
+
+
                 bc <- rv_samp$st[,.(studyDbId,studyName, locationName)][bc4, on=.(studyDbId)]
                 #bc <- os[observationUnitPosition.observationLevelRelationships.levelName=="rep",.(observationUnitDbId,rep=observationUnitPosition.observationLevelRelationships.levelCode)][os[observationUnitPosition.observationLevelRelationships.levelName=="plot"][samples, on=.(observationUnitDbId)], on=.(observationUnitDbId)]
                 colorder <- c("sampleDbId",
@@ -448,14 +449,14 @@ mod_samplr_server <- function(id, rv){
               }
             } else {
                 showModal(modalDialog("No germplasm found", fade = F))
-                rv_samp$stdatadt_byg <- data.table()                
+                rv_samp$stdatadt_byg <- data.table()
             }
           }, error=function(e){
             showNotification(paste0(e$message), type = "error", duration = notification_duration)
           })
         }
       })
-      
+
           observe({
             req(rv_samp$stdatadt)
             if (rv_samp$stdatadt[,.N]>0){
@@ -465,7 +466,7 @@ mod_samplr_server <- function(id, rv){
               output$sample_table <- DT::renderDT(NULL)
               output$dbutton_container<- renderUI(NULL)
             }
-            
+
           })
           observe({
             req(rv_samp$stdatadt_byg)
@@ -476,7 +477,7 @@ mod_samplr_server <- function(id, rv){
               output$sample_table_byg <- DT::renderDT(NULL)
               output$dbutton_byg_container<- renderUI(NULL)
             }
-            
+
           })
           observe({
             req(rv_samp$stdatadt_one)
@@ -487,9 +488,9 @@ mod_samplr_server <- function(id, rv){
               output$one_sample_table <- DT::renderDT(NULL)
               #output$dbutton_byg_container<- renderUI(NULL)
             }
-            
+
           })
-          
+
           output$label_inputs <- renderUI({
             req(rv_samp$stdatadt)
             #browser()
@@ -497,22 +498,22 @@ mod_samplr_server <- function(id, rv){
             choices <- colnames(rv_samp$stdatadt)
             num_rows <- length(unique(unlist(lapply(layout,function(a) a[[1]][2]))))
             num_cols <- length(unique(unlist(lapply(layout,function(a) a[[1]][1]))))
-            
+
             generate_ui_with_grid(num_rows, num_cols, choices=choices, ns=ns)
           })
-          
+
           #observe({
           #  req(rv_samp$stdatadt)
           #  updateSelectInput(session = session, inputId = "bc_field", choices = colnames(rv_samp$stdatadt))
           #})
-          
+
           observe({
             output$label_preview <- renderPlot({
               layout <- label_layouts[[input$label_layout]]
               dat <- t(rv_samp$stdatadt[1,])[,1]
               cols <- sapply(1:length(layout), function(a) input[[paste0("select_",a)]])
               texts <- dat[match(cols,names(rv_samp$stdatadt))]
-              bc <- dat[match(barcode_field,names(rv_samp$stdatadt))]
+              bc <- dat[match(input$barcodefield,names(rv_samp$stdatadt))]
               if (input$labelbold){
                 ff <- "bold"
               } else {
@@ -538,22 +539,22 @@ mod_samplr_server <- function(id, rv){
               } else {
                 ff <- "plain"
               }
-              
+
               #browser()
               print_labels(filename = file,
                            data = rv_samp$stdatadt,
                            layout = layout,
                            columns = sapply(1:length(layout), function(a) input[[paste0("select_",a)]]),
-                           bccol = barcode_field,
+                           bccol = input$barcodefield,
                            bctype = bct,
                            label_sizes = label_sizes[Template==input$label_page],
-                           fontsize = input$fontsize, 
+                           fontsize = input$fontsize,
                            fontface = ff,
                            inner.border = input$inborder,
                            outer.border = input$outborder)
             }
           )
-          
+
           output$download_data <- downloadHandler(
             filename = function() {
               paste("data-", Sys.Date(), ".csv", sep="")
@@ -562,7 +563,7 @@ mod_samplr_server <- function(id, rv){
               write.csv(rv_samp$stdatadt, file, row.names = F)
             }
           )
-          
+
           output$download_data_byg <- downloadHandler(
             filename = function() {
               paste("data-", Sys.Date(), ".csv", sep="")
@@ -571,7 +572,7 @@ mod_samplr_server <- function(id, rv){
               write.csv(rv_samp$stdatadt_byg, file, row.names = F)
             }
           )
-          
-      
+
+
 })
 }
