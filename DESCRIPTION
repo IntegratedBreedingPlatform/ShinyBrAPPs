@@ -1,7 +1,7 @@
 Type: Package
 Package: shinybrapps
 Title: ShinyBrAPPs
-Version: 31.0
+Version: 33.0
 Authors@R: c(
     person("Jean-François", "Rami", email = "rami@cirad.fr", role = c("cre")),
     person("Alice", "Boizet", email = "alice.boizet@cirad.fr", role = c("aut")),
